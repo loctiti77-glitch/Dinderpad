@@ -24,6 +24,11 @@
   // ou la page est restauree telle quelle, voile compris.
   window.addEventListener('pageshow', reveal);
 
+  // Un retour dans la meme page (simple changement d'ancre) ne recharge rien
+  // et ne declenche donc pas 'pageshow' : sans ca, le voile resterait noir.
+  window.addEventListener('popstate', reveal);
+  window.addEventListener('hashchange', reveal);
+
   document.addEventListener('click', function (e) {
     if (e.defaultPrevented || e.button !== 0) return;
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -32,6 +37,11 @@
     if (!a) return;
 
     var href = a.getAttribute('href');
+
+    // href="#" : case encore vide. On neutralise le clic pour ne pas empiler
+    // des entrees d'historique qui casseraient le bouton retour.
+    if (href === '#') { e.preventDefault(); return; }
+
     if (!href || href.charAt(0) === '#') return;          // ancre : pas de fondu
     if (a.target && a.target !== '_self') return;         // nouvel onglet
     if (a.hasAttribute('download')) return;
