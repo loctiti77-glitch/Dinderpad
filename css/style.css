@@ -147,7 +147,10 @@ html, body {
 /* --- Une case --- */
 
 .slot {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: calc(22 * var(--px));
+  padding: 0 calc(30 * var(--px));
   position: relative;
   width: 100%;
   height: calc(var(--slot-h) * var(--px));
@@ -181,19 +184,54 @@ html, body {
 
 .slot:active { transform: scale(.995); }
 
-/* Numero temporaire, a retirer quand les cases seront remplies */
-.slot-num {
-  position: absolute;
-  inset: 0;
+/* Portrait du personnage, cale sur le bord gauche de la case */
+.slot-face {
+  flex: 0 0 auto;
+  width:  calc(158 * var(--px));
+  height: calc(158 * var(--px));
+  object-fit: contain;
+  object-position: center;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 calc(3 * var(--px)) calc(6 * var(--px)) rgba(0, 0, 0, .55));
+}
+
+/* Nom du personnage, police machine a ecrire.
+   Les formes entre parentheses passent sur une seconde ligne : sinon
+   les noms longs ("Gart Kervelor (King of Karsovia)") debordent de la case. */
+.slot-name {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
-  font-size: calc(74 * var(--px));
+  gap: calc(6 * var(--px));
+  font-family: "Courier New", Courier, ui-monospace, monospace;
+  line-height: 1.1;                  /* .pad impose line-height: 0 */
+  color: #fff;
+  text-shadow:
+    0 calc(3 * var(--px)) calc(5 * var(--px)) rgba(0, 0, 0, .75),
+    0 0 calc(12 * var(--px)) rgba(0, 241, 253, .45);
+}
+
+.slot-name-main,
+.slot-name-sub {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-name-main {
+  font-size: calc(54 * var(--px));
   font-weight: 700;
-  letter-spacing: calc(4 * var(--px));
-  color: rgba(255, 255, 255, .28);
-  -webkit-text-stroke: calc(2 * var(--px)) rgba(0, 0, 0, .35);
-  pointer-events: none;
+  letter-spacing: calc(2 * var(--px));
+}
+
+.slot-name-sub {
+  font-size: calc(34 * var(--px));
+  letter-spacing: calc(1 * var(--px));
+  color: rgba(255, 255, 255, .82);
 }
 
 
