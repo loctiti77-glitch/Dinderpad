@@ -11,6 +11,10 @@ const types = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon',
+  '.webmanifest': 'application/manifest+json',
+  '.json': 'application/json',
 };
 
 http.createServer((req, res) => {
