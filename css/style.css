@@ -1,0 +1,408 @@
+:root {
+  --bg: #000;
+  --ink: #f4f7ff;
+  --accent: #35d1ff;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+}
+
+/* ---------- Accueil : le DinderPad ---------- */
+
+.pad-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.pad {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  max-width: 100%;
+}
+
+.pad-img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 32px);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.hotspot {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: var(--h);
+  border-radius: 14px;
+  text-indent: -9999px;
+  overflow: hidden;
+  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+}
+
+.hotspot:hover,
+.hotspot:focus-visible {
+  background: rgba(255, 255, 255, .18);
+  box-shadow: 0 0 0 3px #fff, 0 0 26px 6px var(--accent);
+  transform: scale(1.02);
+  outline: none;
+}
+
+.hotspot:active { transform: scale(.985); }
+
+/* ---------- Pages internes ---------- */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 40px 20px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(53, 209, 255, .18), transparent 60%),
+    var(--bg);
+}
+
+.page h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 8vw, 4.5rem);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  -webkit-text-stroke: 2px #000;
+  text-shadow: 0 0 22px var(--accent);
+}
+
+.page p {
+  margin: 0;
+  max-width: 46ch;
+  opacity: .75;
+  font-size: 1.05rem;
+}
+
+.back {
+  margin-top: 10px;
+  display: inline-block;
+  padding: 12px 26px;
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.back:hover { background: var(--accent); color: #041018; }
+
+/* ==========================================================
+   Ecran scrollable (page Dinders)
+   Toutes les mesures sont en pixels de l'image source
+   (1612 x 976) converties via --px, donc tout suit le zoom.
+   ========================================================== */
+
+/* --px est calcule par js/pad.js (voir .pad[data-pad-width]) */
+
+.screen {
+  position: absolute;
+  left:   calc(292 * var(--px));
+  top:    calc(95  * var(--px));
+  width:  calc(1021 * var(--px));
+  height: calc(673 * var(--px));
+  overflow: hidden;
+  background: #000;
+  border-radius: calc(10 * var(--px));
+}
+
+.screen-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: calc(26 * var(--px)) calc(18 * var(--px)) calc(20 * var(--px));
+  scrollbar-width: none;             /* Firefox */
+  -ms-overflow-style: none;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  --slot-h: 205;              /* hauteur d'une case, en px de l'image */
+}
+
+.screen-scroll::-webkit-scrollbar { width: 0; height: 0; }
+
+/* --- Une case --- */
+
+.slot {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: calc(var(--slot-h) * var(--px));
+  margin-bottom: calc(13 * var(--px));
+  border: calc(6 * var(--px)) solid #000;
+  border-radius: calc(26 * var(--px));
+  box-shadow:
+    inset 0 0 0 calc(11 * var(--px)) #00f1fd,
+    inset 0 0 calc(18 * var(--px)) calc(12 * var(--px)) rgba(0, 241, 253, .45),
+    0 0 calc(10 * var(--px)) rgba(0, 241, 253, .25);
+  background:
+    linear-gradient(115deg,
+      transparent 18%,
+      rgba(255, 255, 255, .11) 20%, rgba(255, 255, 255, .11) 33%,
+      transparent 35%, transparent 43%,
+      rgba(255, 255, 255, .07) 45%, rgba(255, 255, 255, .07) 51%,
+      transparent 53%),
+    linear-gradient(180deg, #0a74c6 0%, #0568b8 55%, #03599f 100%);
+  text-decoration: none;
+  transition: filter .12s ease, transform .12s ease;
+}
+
+.slot:last-child { margin-bottom: 0; }
+
+.slot:hover,
+.slot:focus-visible {
+  filter: brightness(1.18) saturate(1.1);
+  transform: scale(1.005);
+  outline: none;
+}
+
+.slot:active { transform: scale(.995); }
+
+/* Numero temporaire, a retirer quand les cases seront remplies */
+.slot-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(74 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(4 * var(--px));
+  color: rgba(255, 255, 255, .28);
+  -webkit-text-stroke: calc(2 * var(--px)) rgba(0, 0, 0, .35);
+  pointer-events: none;
+}
+
+
+/* ---------- Fondu entre les pages ---------- */
+
+.fade-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity .38s ease;
+}
+
+.fade-veil.out { opacity: 0; }
+
+/* Pendant la sortie, le voile bloque les clics : evite un double depart. */
+.fade-veil.leaving { pointer-events: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-veil { transition: none; }
+}
+
+/* ==========================================================
+   Boutons de navigation (retour / accueil)
+   Style du pad : contour noir epais, lisere cyan, corps metal.
+   ========================================================== */
+
+/* Sur la page Dinders, la barre se pose sur le flanc gauche du pad
+   et suit --px (fourni par js/pad.js) pour rester calee au zoom. */
+.pad .pad-nav {
+  position: absolute;
+  left: calc(78 * var(--px));
+  top:  calc(345 * var(--px));
+  gap: calc(20 * var(--px));
+}
+
+/* Sur les pages sans pad, la barre est ancree au bord de l'ecran.
+   --px sert ici de simple facteur d'echelle. */
+.page .pad-nav {
+  --px: .4px;
+  position: fixed;
+  left: clamp(14px, 3vw, 34px);
+  top: 50%;
+  transform: translateY(-50%);
+  gap: calc(22 * var(--px));
+}
+
+.pad-nav {
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.nav-btn {
+  --btn: 160;                       /* taille en px de l'image source */
+  --shape: polygon(28% 0, 72% 0, 100% 28%, 100% 72%, 72% 100%, 28% 100%, 0 72%, 0 28%);
+  position: relative;
+  box-sizing: border-box;
+  width:  calc(var(--btn) * var(--px));
+  height: calc(var(--btn) * var(--px));
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #8ef3ff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .12s ease, filter .12s ease;
+  filter: drop-shadow(0 0 calc(6 * var(--px)) rgba(0, 241, 253, .3));
+}
+
+/* contour noir exterieur */
+.nav-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #000;
+  clip-path: var(--shape);
+}
+
+/* lisere cyan */
+.nav-btn::after {
+  content: '';
+  position: absolute;
+  inset: calc(7 * var(--px));
+  background: #00f1fd;
+  clip-path: var(--shape);
+  transition: background-color .12s ease;
+}
+
+.nav-btn-face {
+  position: absolute;
+  inset: calc(16 * var(--px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(158deg, #3d434c 0%, #262a30 46%, #14161a 100%);
+  clip-path: var(--shape);
+}
+
+/* reflet diagonal, comme sur les plaques du pad */
+.nav-btn-face::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(118deg,
+    transparent 30%,
+    rgba(255, 255, 255, .13) 32%, rgba(255, 255, 255, .13) 44%,
+    transparent 46%);
+}
+
+.nav-btn svg {
+  position: relative;
+  width: calc(var(--btn) * .42 * var(--px));
+  height: calc(var(--btn) * .42 * var(--px));
+  filter: drop-shadow(0 0 calc(5 * var(--px)) rgba(0, 241, 253, .9));
+}
+
+.nav-btn:hover,
+.nav-btn:focus-visible {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 calc(16 * var(--px)) rgba(0, 241, 253, .9));
+  outline: none;
+}
+
+.nav-btn:hover .nav-btn-face,
+.nav-btn:focus-visible .nav-btn-face {
+  background: linear-gradient(158deg, #4a515b 0%, #2e333a 46%, #1a1d21 100%);
+}
+
+.nav-btn:active { transform: scale(.97); }
+
+/* infobulle */
+.nav-btn .nav-label {
+  position: absolute;
+  left: calc(100% + 10 * var(--px));
+  top: 50%;
+  transform: translateY(-50%);
+  padding: calc(8 * var(--px)) calc(16 * var(--px));
+  border: calc(3 * var(--px)) solid #00f1fd;
+  border-radius: calc(8 * var(--px));
+  background: rgba(4, 12, 20, .92);
+  color: #d8f8ff;
+  font-size: calc(30 * var(--px));
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s ease;
+}
+
+.nav-btn:hover .nav-label,
+.nav-btn:focus-visible .nav-label { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-btn, .nav-btn .nav-label { transition: none; }
+}
+
+/* Variante sans defilement : les cases remplissent l'ecran d'un coup.
+   4 cases de 147 + 3 ecarts de 13 + les marges = les 673 px de l'ecran. */
+.screen-scroll.is-static {
+  --slot-h: 147;
+  overflow: hidden;
+}
+
+/* ---------- Cases credit : vignette a gauche, texte a droite ---------- */
+
+.slot--credit {
+  display: flex;
+  align-items: center;
+  gap: calc(28 * var(--px));
+  padding: 0 calc(30 * var(--px)) 0 calc(28 * var(--px));
+}
+
+.credit-card {
+  flex: 0 0 auto;
+  width:  calc(158 * var(--px));
+  height: calc(105 * var(--px));
+  object-fit: cover;
+  border-radius: calc(10 * var(--px));
+  border: calc(3 * var(--px)) solid rgba(0, 0, 0, .8);
+  box-shadow: 0 calc(3 * var(--px)) calc(10 * var(--px)) rgba(0, 0, 0, .55);
+}
+
+.credit-text {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--px));
+  min-width: 0;
+  font-family: "Courier New", Courier, "Lucida Console", monospace;
+  color: #fff;
+  text-shadow:
+    0 calc(2 * var(--px)) 0 rgba(0, 0, 0, .6),
+    0 0 calc(8 * var(--px)) rgba(0, 0, 0, .45);
+}
+
+.credit-name {
+  font-size: calc(42 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(1 * var(--px));
+  line-height: 1.05;
+}
+
+.credit-units {
+  font-size: calc(28 * var(--px));
+  font-weight: 400;
+  line-height: 1.05;
+  color: rgba(255, 255, 255, .85);
+}
