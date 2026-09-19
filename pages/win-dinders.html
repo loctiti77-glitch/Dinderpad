@@ -6,7 +6,6 @@
 <title>Win Dinders &ndash; DinderPad</title>
 <link rel="stylesheet" href="../css/style.css">
 <script src="../js/transition.js"></script>
-<style>:root { --accent: #c04dff; }</style>
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/icon/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="../assets/icon/favicon-16.png">
 <link rel="apple-touch-icon" href="../assets/icon/apple-touch-icon.png">
@@ -16,7 +15,46 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DinderPad">
 </head>
-<body class="page">
+<body class="home">
+
+  <main class="pad-wrap">
+    <div class="pad" data-pad-width="1612">
+      <img src="../assets/dinderspage.webp" alt="Ecran Win Dinders" class="pad-img">
+
+      <!-- Ecran boutique : la Dindise en haut, les paiements en bas -->
+      <div class="screen">
+        <div class="shop" id="shop" data-state="idle">
+
+          <p class="shop-status" id="shopStatus">&nbsp;</p>
+
+          <!-- La capsule. Coupee en deux moities qui s'ecartent a l'ouverture. -->
+          <div class="capsule-stage">
+            <div class="burst" aria-hidden="true"></div>
+            <div class="capsule" id="capsule">
+              <div class="capsule-half capsule-half--top">
+                <img src="../assets/dindise.webp" alt="Dindise">
+              </div>
+              <div class="capsule-half capsule-half--bottom">
+                <img src="../assets/dindise.webp" alt="">
+              </div>
+            </div>
+            <img class="prize" id="prizeImg" alt="" width="400" height="400">
+          </div>
+
+          <p class="prize-name" id="prizeName" aria-live="polite"></p>
+
+          <!-- Les quatre facons de payer une Dindise -->
+          <div class="shop-pay" id="shopPay"></div>
+
+          <!-- Ce qu'on propose une fois la Dindise ouverte -->
+          <div class="shop-after" id="shopAfter">
+            <button class="shop-btn shop-btn--wide" type="button" id="againBtn">Encore une</button>
+            <a class="shop-btn shop-btn--wide" href="dinders.html">Ma collection</a>
+          </div>
+
+        </div>
+      </div>
+
       <nav class="pad-nav">
         <button class="nav-btn" type="button" data-nav="back" aria-label="Retour">
           <span class="nav-btn-face">
@@ -39,7 +77,11 @@
           <span class="nav-label">Accueil</span>
         </a>
       </nav>
-  <h1>Win Dinders</h1>
-  <p>Cette page est en cours de construction. On la peaufinera juste apr&egrave;s.</p>
+    </div>
+  </main>
+
+  <script src="../js/dinderpad.js"></script>
+  <script src="../js/pad.js"></script>
+  <script src="../js/win-dinders.js"></script>
 </body>
 </html>

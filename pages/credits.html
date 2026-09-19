@@ -21,8 +21,29 @@
     <div class="pad" data-pad-width="1612">
       <img src="../assets/dinderspage.webp" alt="Ecran Credits" class="pad-img">
 
-      <!-- Ecran fixe : 4 cases, pas de defilement -->
-      <div class="screen">
+      <!-- Ecran fixe : bandeau de comptes + 4 cartes, pas de defilement -->
+      <div class="screen has-tally">
+
+        <!-- Ce que l'on possede, une petite case par monnaie -->
+        <div class="credit-tally" id="creditTally">
+          <div class="tally" data-credit="green">
+            <img class="tally-img" src="../assets/credits/green.webp" alt="Credit Universel">
+            <span class="tally-count">&ndash;</span>
+          </div>
+          <div class="tally" data-credit="blue">
+            <img class="tally-img" src="../assets/credits/blue.webp" alt="Credit Multiversel">
+            <span class="tally-count">&ndash;</span>
+          </div>
+          <div class="tally" data-credit="gold">
+            <img class="tally-img" src="../assets/credits/gold.webp" alt="Credit Omniversel">
+            <span class="tally-count">&ndash;</span>
+          </div>
+          <div class="tally" data-credit="pink">
+            <img class="tally-img" src="../assets/credits/pink.webp" alt="Credit Temporel">
+            <span class="tally-count">&ndash;</span>
+          </div>
+        </div>
+
         <div class="screen-scroll is-static">
           <a class="slot slot--credit" href="#" data-credit="green">
             <img class="credit-card" src="../assets/credits/green.webp" alt="Carte de credit verte">
@@ -80,6 +101,8 @@
     </div>
   </main>
 
+  <script src="../js/dinderpad.js"></script>
   <script src="../js/pad.js"></script>
+  <script src="../js/credits.js"></script>
 </body>
 </html>

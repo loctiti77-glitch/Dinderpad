@@ -63,6 +63,10 @@ html, body {
 
 .hotspot:active { transform: scale(.985); }
 
+/* L'engrenage est rond : le halo doit l'epouser, pas l'encadrer. */
+.hotspot--gear { border-radius: 50%; }
+
+
 /* ---------- Pages internes ---------- */
 
 .page {
@@ -443,4 +447,683 @@ html, body {
   font-weight: 400;
   line-height: 1.05;
   color: rgba(255, 255, 255, .85);
+}
+
+/* ==========================================================
+   Bandeau de credits (page Credits)
+   Quatre petites cases noires en haut de l'ecran, au-dessus
+   des quatre grandes cartes. L'ecran fait 673 px de haut :
+   104 pour le bandeau, le reste pour les cartes.
+   ========================================================== */
+
+.screen.has-tally {
+  display: flex;
+  flex-direction: column;
+}
+
+.credit-tally {
+  flex: 0 0 auto;
+  height: calc(104 * var(--px));
+  display: flex;
+  gap: calc(14 * var(--px));
+  padding: calc(14 * var(--px)) calc(18 * var(--px)) 0;
+}
+
+.tally {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(12 * var(--px));
+  background: linear-gradient(180deg, #0b0f14 0%, #05080b 100%);
+  border: calc(4 * var(--px)) solid #000;
+  border-radius: calc(16 * var(--px));
+  box-shadow:
+    inset 0 0 0 calc(2 * var(--px)) rgba(0, 241, 253, .55),
+    inset 0 0 calc(14 * var(--px)) rgba(0, 241, 253, .22);
+}
+
+.tally-img {
+  flex: 0 0 auto;
+  width:  calc(74 * var(--px));
+  height: calc(49 * var(--px));
+  object-fit: cover;
+  border-radius: calc(6 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(0, 0, 0, .85);
+}
+
+.tally-count {
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(40 * var(--px));
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 0 calc(10 * var(--px)) rgba(0, 241, 253, .8);
+}
+
+/* Le bandeau prend 104 px : les cartes se resserrent pour tenir dessous. */
+.screen.has-tally .screen-scroll.is-static {
+  flex: 1 1 auto;
+  height: auto;              /* sinon le 100% de .screen-scroll deborde */
+  min-height: 0;
+  --slot-h: 124;
+  padding: calc(14 * var(--px)) calc(18 * var(--px)) calc(16 * var(--px));
+}
+
+.screen.has-tally .slot { margin-bottom: calc(13 * var(--px)); }
+
+.screen.has-tally .credit-card {
+  width:  calc(140 * var(--px));
+  height: calc(86 * var(--px));
+}
+
+/* ==========================================================
+   Cases verrouillees (page Dinders)
+   Un Dinder n'apparait qu'une fois sorti d'une Dindise.
+   ========================================================== */
+
+.slot--locked {
+  cursor: default;
+  filter: saturate(.25) brightness(.55);
+}
+
+.slot--locked:hover,
+.slot--locked:active { filter: saturate(.25) brightness(.55); transform: none; }
+
+.slot-face--locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .45);
+  border: calc(4 * var(--px)) dashed rgba(255, 255, 255, .3);
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(78 * var(--px));
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, .45);
+}
+
+.slot--locked .slot-name-main { color: rgba(255, 255, 255, .55); }
+
+/* Le Dinder qui vient d'etre gagne pulse quelques secondes a l'arrivee. */
+.slot--fresh { animation: slot-fresh 1s ease-out 2; }
+
+@keyframes slot-fresh {
+  0%, 100% { box-shadow:
+      inset 0 0 0 calc(11 * var(--px)) #00f1fd,
+      inset 0 0 calc(18 * var(--px)) calc(12 * var(--px)) rgba(0, 241, 253, .45),
+      0 0 calc(10 * var(--px)) rgba(0, 241, 253, .25); }
+  50%      { box-shadow:
+      inset 0 0 0 calc(11 * var(--px)) #fff7a8,
+      inset 0 0 calc(26 * var(--px)) calc(16 * var(--px)) rgba(255, 224, 92, .75),
+      0 0 calc(40 * var(--px)) calc(10 * var(--px)) rgba(255, 210, 60, .8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot--fresh { animation: none; }
+}
+
+/* ==========================================================
+   Boutique de Dindises (page Win Dinders)
+   L'ecran fait 1021 x 673 px de l'image source. Tout est en --px,
+   donc la boutique suit le zoom comme le reste du pad.
+   ========================================================== */
+
+.shop {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(16 * var(--px)) calc(22 * var(--px)) calc(20 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  color: #fff;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.shop-status {
+  margin: 0;
+  flex: 0 0 auto;
+  font-size: calc(32 * var(--px));
+  letter-spacing: calc(1 * var(--px));
+  color: rgba(255, 255, 255, .8);
+  text-shadow: 0 0 calc(10 * var(--px)) rgba(0, 241, 253, .6);
+}
+
+.shop.is-complete .shop-status {
+  color: #ffd84a;
+  text-shadow: 0 0 calc(14 * var(--px)) rgba(255, 190, 40, .9);
+}
+
+/* ---------- La scene centrale : capsule, rayons, lot ---------- */
+
+.capsule-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.capsule {
+  position: absolute;
+  width:  calc(300 * var(--px));
+  height: calc(300 * var(--px));
+  animation: capsule-float 3.2s ease-in-out infinite;
+}
+
+.capsule-half {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  overflow: hidden;
+}
+
+.capsule-half img {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: calc(300 * var(--px));
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.capsule-half--top        { top: 0; }
+.capsule-half--top img    { top: 0; }
+.capsule-half--bottom     { top: 50%; }
+.capsule-half--bottom img { top: calc(-150 * var(--px)); }
+
+@keyframes capsule-float {
+  0%, 100% { transform: translateY(calc(-6 * var(--px))); }
+  50%      { transform: translateY(calc(6 * var(--px))); }
+}
+
+/* Les rayons qui jaillissent au moment de l'ouverture */
+.burst {
+  position: absolute;
+  width:  calc(620 * var(--px));
+  height: calc(620 * var(--px));
+  border-radius: 50%;
+  opacity: 0;
+  background: repeating-conic-gradient(
+    rgba(255, 244, 180, .85) 0deg 6deg,
+    transparent 6deg 16deg);
+  -webkit-mask-image: radial-gradient(circle, #000 12%, transparent 62%);
+          mask-image: radial-gradient(circle, #000 12%, transparent 62%);
+  pointer-events: none;
+}
+
+/* Le Dinder gagne */
+.prize {
+  position: absolute;
+  width:  calc(290 * var(--px));
+  height: calc(290 * var(--px));
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(.3);
+  filter: drop-shadow(0 calc(6 * var(--px)) calc(14 * var(--px)) rgba(0, 0, 0, .7));
+}
+
+.prize-name {
+  margin: 0;
+  flex: 0 0 auto;
+  height: calc(52 * var(--px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(38 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(1 * var(--px));
+  opacity: 0;
+  text-shadow:
+    0 calc(3 * var(--px)) calc(5 * var(--px)) rgba(0, 0, 0, .8),
+    0 0 calc(16 * var(--px)) rgba(255, 210, 60, .85);
+}
+
+/* ---------- Les boutons ---------- */
+
+.shop-pay,
+.shop-after {
+  flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  gap: calc(14 * var(--px));
+  justify-content: center;
+}
+
+.shop-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(12 * var(--px));
+  padding: calc(14 * var(--px)) calc(10 * var(--px));
+  background: linear-gradient(180deg, #0a74c6 0%, #0568b8 55%, #03599f 100%);
+  border: calc(5 * var(--px)) solid #000;
+  border-radius: calc(20 * var(--px));
+  box-shadow:
+    inset 0 0 0 calc(4 * var(--px)) #00f1fd,
+    0 calc(4 * var(--px)) calc(10 * var(--px)) rgba(0, 0, 0, .5);
+  font-family: inherit;
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter .12s ease, transform .12s ease;
+}
+
+.shop-btn:hover:not(:disabled),
+.shop-btn:focus-visible:not(:disabled) {
+  filter: brightness(1.2) saturate(1.1);
+  transform: translateY(calc(-3 * var(--px)));
+  outline: none;
+}
+
+.shop-btn:active:not(:disabled) { transform: translateY(calc(1 * var(--px))); }
+
+.shop-btn:disabled { filter: grayscale(.8) brightness(.55); cursor: not-allowed; }
+
+.shop-btn-card {
+  flex: 0 0 auto;
+  width:  calc(78 * var(--px));
+  height: calc(52 * var(--px));
+  object-fit: cover;
+  border-radius: calc(7 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(0, 0, 0, .8);
+}
+
+.shop-btn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(4 * var(--px));
+  min-width: 0;
+}
+
+.shop-btn-price {
+  font-size: calc(34 * var(--px));
+  font-weight: 700;
+  line-height: 1;
+}
+
+.shop-btn-label {
+  font-size: calc(22 * var(--px));
+  line-height: 1;
+  color: rgba(255, 255, 255, .85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.shop-btn--wide {
+  justify-content: center;
+  font-size: calc(32 * var(--px));
+  font-weight: 700;
+}
+
+/* ==========================================================
+   Les quatre temps de l'ouverture, pilotes par data-state
+   ========================================================== */
+
+/* 1. Au repos : la capsule flotte, on choisit son paiement. */
+.shop[data-state="idle"] .shop-after { display: none; }
+
+/* 2. L'ouverture : la capsule tremble, la lumiere monte. */
+.shop[data-state="opening"] .shop-pay,
+.shop[data-state="cracking"] .shop-pay,
+.shop[data-state="revealed"] .shop-pay { display: none; }
+
+.shop[data-state="opening"] .shop-after,
+.shop[data-state="cracking"] .shop-after { visibility: hidden; }
+
+.shop[data-state="opening"] .capsule {
+  animation: capsule-shake .13s linear infinite;
+  filter: drop-shadow(0 0 calc(30 * var(--px)) rgba(255, 230, 120, .9));
+}
+
+.shop[data-state="opening"] .burst { animation: burst-spin 1.1s ease-in forwards; }
+
+@keyframes capsule-shake {
+  0%   { transform: translate(calc(-4 * var(--px)), 0) rotate(-2.5deg); }
+  50%  { transform: translate(calc(4 * var(--px)), calc(-2 * var(--px))) rotate(2.5deg); }
+  100% { transform: translate(calc(-4 * var(--px)), 0) rotate(-2.5deg); }
+}
+
+@keyframes burst-spin {
+  0%   { opacity: 0;  transform: rotate(0deg)   scale(.4); }
+  100% { opacity: .5; transform: rotate(140deg) scale(1); }
+}
+
+/* 3. La rupture : les deux moities s'ecartent, flash de lumiere. */
+.shop[data-state="cracking"] .capsule-half--top {
+  animation: half-up .7s cubic-bezier(.3, -0.4, .4, 1) forwards;
+}
+
+.shop[data-state="cracking"] .capsule-half--bottom {
+  animation: half-down .7s cubic-bezier(.3, -0.4, .4, 1) forwards;
+}
+
+.shop[data-state="cracking"] .burst { animation: burst-flash .7s ease-out forwards; }
+
+@keyframes half-up {
+  0%   { transform: translateY(0) rotate(0deg);       opacity: 1; }
+  100% { transform: translateY(-115%) rotate(-18deg); opacity: 0; }
+}
+
+@keyframes half-down {
+  0%   { transform: translateY(0) rotate(0deg);      opacity: 1; }
+  100% { transform: translateY(115%) rotate(18deg);  opacity: 0; }
+}
+
+@keyframes burst-flash {
+  0%   { opacity: .5; transform: rotate(140deg) scale(1); }
+  35%  { opacity: 1;  transform: rotate(180deg) scale(1.3); }
+  100% { opacity: 0;  transform: rotate(230deg) scale(1.7); }
+}
+
+/* 4. Le lot : la capsule a disparu, le Dinder surgit. */
+.shop[data-state="revealed"] .capsule { display: none; }
+
+.shop[data-state="revealed"] .prize {
+  animation: prize-pop .6s cubic-bezier(.2, 1.5, .4, 1) forwards;
+}
+
+.shop[data-state="revealed"] .prize-name {
+  animation: prize-name-in .5s ease-out .35s forwards;
+}
+
+@keyframes prize-pop {
+  0%   { opacity: 0; transform: scale(.3)   rotate(-12deg); }
+  60%  { opacity: 1; transform: scale(1.12) rotate(3deg); }
+  100% { opacity: 1; transform: scale(1)    rotate(0deg); }
+}
+
+@keyframes prize-name-in {
+  0%   { opacity: 0; transform: translateY(calc(12 * var(--px))); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Mouvement reduit : on garde les etapes, on enleve le spectacle. */
+@media (prefers-reduced-motion: reduce) {
+  .capsule,
+  .shop[data-state="opening"] .capsule,
+  .shop[data-state="cracking"] .capsule-half--top,
+  .shop[data-state="cracking"] .capsule-half--bottom,
+  .shop[data-state="opening"] .burst,
+  .shop[data-state="cracking"] .burst { animation: none; }
+
+  .shop[data-state="revealed"] .prize,
+  .shop[data-state="revealed"] .prize-name {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ==========================================================
+   Page Parametres
+   Trois lignes dans l'ecran du pad (1021 x 673 px de l'image
+   source) : le compte, la progression, la remise a zero.
+   ========================================================== */
+
+.settings {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--px));
+  padding: calc(20 * var(--px)) calc(20 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  color: #fff;
+}
+
+.setting {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "label   actions"
+    "value   actions"
+    "sub     actions";
+  align-content: center;
+  gap: calc(4 * var(--px)) calc(16 * var(--px));
+  padding: 0 calc(26 * var(--px));
+  border: calc(6 * var(--px)) solid #000;
+  border-radius: calc(26 * var(--px));
+  box-shadow:
+    inset 0 0 0 calc(9 * var(--px)) #00f1fd,
+    inset 0 0 calc(16 * var(--px)) calc(10 * var(--px)) rgba(0, 241, 253, .4),
+    0 0 calc(10 * var(--px)) rgba(0, 241, 253, .25);
+  background: linear-gradient(180deg, #0a74c6 0%, #0568b8 55%, #03599f 100%);
+}
+
+/* La ligne du compte porte l'essentiel : on la distingue au premier coup d'oeil. */
+.setting--account {
+  background: linear-gradient(180deg, #123a6d 0%, #0d2b52 55%, #081d3a 100%);
+  box-shadow:
+    inset 0 0 0 calc(9 * var(--px)) #ffd84a,
+    inset 0 0 calc(16 * var(--px)) calc(10 * var(--px)) rgba(255, 200, 60, .3),
+    0 0 calc(12 * var(--px)) rgba(255, 200, 60, .3);
+}
+
+.setting-label {
+  grid-area: label;
+  font-size: calc(24 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .6);
+  line-height: 1;
+}
+
+.setting-value {
+  grid-area: value;
+  font-size: calc(48 * var(--px));
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 calc(3 * var(--px)) calc(5 * var(--px)) rgba(0, 0, 0, .7);
+}
+
+.setting-sub {
+  grid-area: sub;
+  font-size: calc(24 * var(--px));
+  line-height: 1.1;
+  color: rgba(255, 255, 255, .7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.setting-actions {
+  grid-area: actions;
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--px));
+  align-items: stretch;
+}
+
+/* ---------- Les boutons des Parametres ---------- */
+
+.set-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(12 * var(--px)) calc(22 * var(--px));
+  background: linear-gradient(180deg, #16406f 0%, #0c2a4c 100%);
+  border: calc(4 * var(--px)) solid #000;
+  border-radius: calc(16 * var(--px));
+  box-shadow: inset 0 0 0 calc(3 * var(--px)) rgba(0, 241, 253, .8);
+  font-family: inherit;
+  font-size: calc(26 * var(--px));
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: filter .12s ease, transform .12s ease;
+}
+
+.set-btn:hover:not(:disabled),
+.set-btn:focus-visible:not(:disabled) {
+  filter: brightness(1.35);
+  transform: translateY(calc(-2 * var(--px)));
+  outline: none;
+}
+
+.set-btn:active:not(:disabled) { transform: translateY(calc(1 * var(--px))); }
+.set-btn:disabled { filter: grayscale(.85) brightness(.5); cursor: not-allowed; }
+
+.set-btn--key { box-shadow: inset 0 0 0 calc(3 * var(--px)) #ffd84a; }
+.set-btn--danger { box-shadow: inset 0 0 0 calc(3 * var(--px)) #ff6b6b; }
+
+/* ==========================================================
+   Le panneau qui se leve par-dessus l'ecran
+   ========================================================== */
+
+.sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(26 * var(--px));
+  background: rgba(0, 6, 14, .82);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+
+.sheet.is-open { opacity: 1; }
+.sheet[hidden] { display: none; }
+
+.sheet-inner {
+  width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--px));
+  padding: calc(24 * var(--px)) calc(28 * var(--px));
+  background: linear-gradient(180deg, #0d2b52 0%, #081d3a 100%);
+  border: calc(6 * var(--px)) solid #000;
+  border-radius: calc(24 * var(--px));
+  box-shadow: inset 0 0 0 calc(4 * var(--px)) #00f1fd;
+  font-family: "Courier New", Courier, monospace;
+  color: #fff;
+  transform: translateY(calc(18 * var(--px))) scale(.97);
+  transition: transform .22s cubic-bezier(.2, 1.2, .4, 1);
+}
+
+.sheet.is-open .sheet-inner { transform: translateY(0) scale(1); }
+
+.sheet-title {
+  margin: 0;
+  font-size: calc(38 * var(--px));
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 0 calc(12 * var(--px)) rgba(0, 241, 253, .7);
+}
+
+.sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sheet-body::-webkit-scrollbar { width: 0; }
+
+.sheet-field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--px));
+  font-size: calc(24 * var(--px));
+  color: rgba(255, 255, 255, .7);
+  letter-spacing: calc(1 * var(--px));
+  text-transform: uppercase;
+}
+
+.sheet-field input {
+  width: 100%;
+  padding: calc(12 * var(--px)) calc(16 * var(--px));
+  background: rgba(0, 0, 0, .5);
+  border: calc(3 * var(--px)) solid rgba(0, 241, 253, .8);
+  border-radius: calc(12 * var(--px));
+  font-family: inherit;
+  font-size: calc(34 * var(--px));
+  font-weight: 700;
+  color: #fff;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.sheet-field input:focus {
+  outline: none;
+  border-color: #ffd84a;
+  box-shadow: 0 0 calc(14 * var(--px)) rgba(255, 210, 60, .6);
+}
+
+.sheet-note {
+  margin: calc(12 * var(--px)) 0 0;
+  font-size: calc(22 * var(--px));
+  line-height: 1.35;
+  color: rgba(255, 255, 255, .65);
+}
+
+.sheet-note--warn { color: #ffb0b0; }
+
+/* La liste des comptes existants */
+.sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--px));
+}
+
+.sheet-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(14 * var(--px));
+  width: 100%;
+  padding: calc(12 * var(--px)) calc(16 * var(--px));
+  background: rgba(0, 0, 0, .35);
+  border: calc(3 * var(--px)) solid rgba(255, 255, 255, .15);
+  border-radius: calc(12 * var(--px));
+  font-family: inherit;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .12s ease, background-color .12s ease;
+}
+
+.sheet-row strong { font-size: calc(30 * var(--px)); }
+.sheet-row span   { font-size: calc(22 * var(--px)); color: rgba(255, 255, 255, .6); white-space: nowrap; }
+
+.sheet-row:hover { border-color: rgba(0, 241, 253, .7); }
+.sheet-row.is-current { background: rgba(0, 241, 253, .12); }
+.sheet-row.is-picked  { border-color: #ffd84a; background: rgba(255, 210, 60, .16); }
+
+.sheet-error {
+  margin: 0;
+  min-height: calc(26 * var(--px));
+  font-size: calc(22 * var(--px));
+  line-height: 1.1;
+  color: #ff8b8b;
+}
+
+.sheet-foot {
+  display: flex;
+  gap: calc(12 * var(--px));
+  justify-content: flex-end;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet-inner, .set-btn { transition: none; }
 }
