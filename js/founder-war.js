@@ -123,7 +123,7 @@
     { id: 'founder-war', nom: 'The Founder War',
       sous: 'Cinq Dinders contre Le Fondateur',
       vue: 'founder-war', pret: true,
-      img: function () { return DP.sprite('lefondateur', 'duel'); } },
+      img: 'assets/games/icones/founder-war.webp' },
     { id: 'libre-2', nom: 'Emplacement libre', sous: 'À venir', pret: false },
     { id: 'libre-3', nom: 'Emplacement libre', sous: 'À venir', pret: false }
   ];
@@ -954,7 +954,25 @@
       jeu.appendChild(box);
     }
 
-    ecranEquipe();
+    // Le jeu s'ouvre sur sa jaquette.
+    if (window.INTRO) {
+      jeu.dataset.etape = 'intro';
+      jeu.appendChild(window.INTRO.ecran({
+        icone: 'assets/games/icones/founder-war.webp',
+        titre: 'The Founder War',
+        teinte: '#ff3b3b',
+        bouton: 'AU COMBAT',
+        lignes: [
+          'Au bout de la forêt, Le Fondateur a dressé son arène.',
+          'Personne n’en est jamais ressorti debout.',
+          'Réunis cinq Dinders et traverse les bois jusqu’au portail.',
+          'Puis fais tomber ses mille points de vie.'
+        ],
+        commencer: ecranEquipe
+      }));
+    } else {
+      ecranEquipe();
+    }
   }
 
   // ==========================================================

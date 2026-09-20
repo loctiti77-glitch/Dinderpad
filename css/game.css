@@ -71,16 +71,19 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width:  calc(96 * var(--px));
-  height: calc(96 * var(--px));
+  width:  calc(124 * var(--px));
+  height: calc(124 * var(--px));
   border: calc(3 * var(--px)) solid rgba(0, 241, 253, .4);
   border-radius: calc(10 * var(--px));
   background: #06131f;
 }
 
+/* Les jaquettes sont des illustrations, pas des sprites : pas de
+   rendu pixelise ici. */
 .mj-vignette img {
-  height: calc(80 * var(--px));
-  image-rendering: pixelated;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .mj-verrou {
@@ -1049,4 +1052,143 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
   .pe-action, .pe-prise-box { animation: none; }
   .pe-carte, .pe-btn { transition: none; }
+}
+
+/* ==========================================================
+   L'ecran-titre des mini-jeux
+   La jaquette monte en place, le texte s'inscrit ligne par ligne,
+   le bouton ferme la marche.
+   ========================================================== */
+
+.intro {
+  --t: #00f1fd;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(14 * var(--px));
+  padding: calc(20 * var(--px));
+  font-family: "Courier New", "Cutive Mono", monospace;
+  color: #e6f4ff;
+  text-align: center;
+  background: radial-gradient(90% 80% at 50% 42%,
+    color-mix(in srgb, var(--t) 18%, #05070d) 0%, #05070d 70%, #010306 100%);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  .intro { background: radial-gradient(90% 80% at 50% 42%, #10202e 0%, #05070d 70%, #010306 100%); }
+}
+
+.intro-halo {
+  position: absolute;
+  left: 50%;
+  top: calc(40 * var(--px));
+  width:  calc(420 * var(--px));
+  height: calc(420 * var(--px));
+  margin-left: calc(-210 * var(--px));
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--t) 0%, transparent 62%);
+  opacity: 0;
+  animation: intro-halo 1.1s .15s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes intro-halo {
+  to { opacity: .28; }
+}
+
+.intro-jaquette {
+  position: relative;
+  width:  calc(286 * var(--px));
+  height: calc(286 * var(--px));
+  object-fit: contain;
+  filter: drop-shadow(0 calc(10 * var(--px)) calc(18 * var(--px)) rgba(0, 0, 0, .7));
+  animation: intro-jaquette .78s cubic-bezier(.2, 1.4, .4, 1) both;
+}
+
+@keyframes intro-jaquette {
+  from { opacity: 0; transform: scale(.55) translateY(calc(30 * var(--px))); }
+  to   { opacity: 1; transform: none; }
+}
+
+.intro-texte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--px));
+  max-width: calc(940 * var(--px));
+}
+
+.intro-ligne {
+  margin: 0;
+  font-size: calc(23 * var(--px));
+  line-height: 1.35;
+  color: #cfe6f5;
+  opacity: 0;
+  animation: intro-ligne .4s ease forwards;
+  animation-delay: calc(0.55s + var(--i) * 0.22s);
+}
+
+.intro-ligne:first-child { color: #ffffff; font-size: calc(26 * var(--px)); }
+
+@keyframes intro-ligne {
+  from { opacity: 0; transform: translateY(calc(10 * var(--px))); }
+  to   { opacity: 1; transform: none; }
+}
+
+.intro-btn {
+  position: relative;
+  margin-top: calc(6 * var(--px));
+  padding: calc(12 * var(--px)) calc(38 * var(--px));
+  border: calc(4 * var(--px)) solid var(--t);
+  border-radius: calc(10 * var(--px));
+  background: rgba(4, 12, 20, .8);
+  color: #f2fbff;
+  font-family: inherit;
+  font-size: calc(26 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(3 * var(--px));
+  cursor: pointer;
+  opacity: 0;
+  animation: intro-ligne .4s ease forwards, intro-pulse 1.5s ease-in-out infinite;
+  animation-delay: calc(0.55s + var(--i) * 0.22s), calc(1s + var(--i) * 0.22s);
+}
+
+.intro-btn:hover, .intro-btn:focus-visible {
+  background: color-mix(in srgb, var(--t) 26%, rgba(4, 12, 20, .8));
+  outline: none;
+}
+
+@keyframes intro-pulse {
+  0%, 100% { box-shadow: 0 0 calc(10 * var(--px)) color-mix(in srgb, var(--t) 55%, transparent); }
+  50%      { box-shadow: 0 0 calc(30 * var(--px)) var(--t); }
+}
+
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  .intro-btn:hover { background: rgba(0, 241, 253, .24); }
+  @keyframes intro-pulse {
+    0%, 100% { box-shadow: 0 0 calc(10 * var(--px)) rgba(0, 241, 253, .5); }
+    50%      { box-shadow: 0 0 calc(30 * var(--px)) rgba(0, 241, 253, .95); }
+  }
+}
+
+/* Un clic pendant l'animation la termine d'un coup. */
+.intro.is-vite .intro-jaquette,
+.intro.is-vite .intro-ligne,
+.intro.is-vite .intro-btn,
+.intro.is-vite .intro-halo {
+  animation-delay: 0s, 0s;
+  animation-duration: .01s, 1.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-jaquette, .intro-ligne, .intro-btn, .intro-halo {
+    animation: none;
+    opacity: 1;
+  }
+  .intro-halo { opacity: .28; }
 }

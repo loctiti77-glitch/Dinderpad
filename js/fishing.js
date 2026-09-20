@@ -1,4 +1,4 @@
-// Le deuxieme mini-jeu : la Peche.
+// Le deuxieme mini-jeu : Fish n'Der.
 //
 // On choisit un Dinder parmi ceux qu'on a collectes, on arrive sur une
 // carte de lacs en 8 bits, on ramasse la canne qui flotte au sol — elle
@@ -144,7 +144,7 @@
       jeu.dataset.etape = 'choix';
 
       var tete = el('div', 'pe-tete');
-      tete.appendChild(el('h2', 'pe-titre', 'Pêche'));
+      tete.appendChild(el('h2', 'pe-titre', 'Fish n’Der'));
       var prises = Object.keys(DP.prises()).length;
       tete.appendChild(el('p', 'pe-compte', prises + ' / ' + P.LISTE.length + ' espèces'));
       jeu.appendChild(tete);
@@ -514,7 +514,25 @@
       majAction();
     }
 
-    ecranChoix();
+    // Le jeu s'ouvre sur sa jaquette.
+    if (window.INTRO) {
+      jeu.dataset.etape = 'intro';
+      jeu.appendChild(window.INTRO.ecran({
+        icone: 'assets/games/icones/fish-n-der.webp',
+        titre: 'Fish n’Der',
+        teinte: '#3ad6f0',
+        bouton: 'À L’EAU',
+        lignes: [
+          'Sept lacs et une rivière, à perte de vue.',
+          'Une canne flotte au bord de l’eau : ramasse-la,',
+          'elle rejoindra tes Items pour de bon.',
+          'Trente espèces à remonter — et parfois un Crédit Temporel.'
+        ],
+        commencer: ecranChoix
+      }));
+    } else {
+      ecranChoix();
+    }
   }
 
   // ==========================================================
@@ -577,14 +595,14 @@
     ? window.MINIJEUX.findIndex(function (j) { return j.id === 'libre-2'; })
     : -1;
   var entree = {
-    id: 'peche', nom: 'Pêche', sous: 'Trente espèces à remonter',
+    id: 'peche', nom: 'Fish n’Der', sous: 'Trente espèces à remonter',
     vue: 'peche', pret: true,
-    img: function () { return P.url('prisme'); }
+    img: 'assets/games/icones/fish-n-der.webp'
   };
   if (place !== -1) window.MINIJEUX[place] = entree;
   else window.MINIJEUX.push(entree);
 
-  window.VIEWS['peche'] = { title: 'Pêche', render: viewPeche };
+  window.VIEWS['peche'] = { title: 'Fish n’Der', render: viewPeche };
   window.VIEWS['peche-collection'] = { title: 'Carnet de pêche', render: viewCarnet };
 
   window.PECHE = {
