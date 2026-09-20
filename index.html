@@ -15,7 +15,27 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DinderPad">
 </head>
-<body class="home">
+<body class="home is-locked">
+
+  <!-- Ecran d'identification : il masque le pad jusqu'au bon code -->
+  <div class="lock" id="lock" data-phase="boot">
+    <p class="lock-title">Identifiez-vous</p>
+
+    <div class="lock-stage">
+      <div class="lock-slot" aria-hidden="true"></div>
+      <img class="lock-card" src="assets/accesscard.webp" alt="Carte d'acces DinderPad">
+    </div>
+
+    <div class="lock-form">
+      <div class="lock-boxes" id="lockBoxes" aria-hidden="true"></div>
+      <input class="lock-input" id="lockInput" type="text" inputmode="numeric"
+             pattern="[0-9]*" maxlength="8" autocomplete="one-time-code"
+             spellcheck="false" aria-label="Code d'acces a 8 chiffres">
+      <p class="lock-msg" id="lockMsg">&nbsp;</p>
+    </div>
+
+    <p class="lock-welcome">Bienvenue patron</p>
+  </div>
 
   <main class="pad-wrap">
     <div class="pad">
@@ -35,5 +55,6 @@
     </div>
   </main>
 
+  <script src="js/access.js"></script>
 </body>
 </html>

@@ -1127,3 +1127,249 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .sheet, .sheet-inner, .set-btn { transition: none; }
 }
+
+/* ==========================================================
+   Ecran d'identification
+   Noir plein cadre, la carte d'acces s'insere dans le lecteur,
+   puis le code a 8 chiffres ouvre le DinderPad.
+   Les tailles sont en vmin : cet ecran ne depend pas du pad.
+   ========================================================== */
+
+.is-locked .pad-wrap { visibility: hidden; }
+
+.lock {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;              /* sous le voile de transition (9999) */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3vmin;
+  padding: 5vmin 4vmin;
+  background: radial-gradient(circle at 50% 42%, #14060f 0%, #000 62%);
+  font-family: "Courier New", Courier, monospace;
+  color: #fff;
+  text-align: center;
+  opacity: 1;
+  transition: opacity .6s ease;
+}
+
+.lock.is-gone { opacity: 0; pointer-events: none; }
+
+/* ---------- Le titre ---------- */
+
+.lock-title {
+  margin: 0;
+  font-size: clamp(1.4rem, 5vmin, 3rem);
+  font-weight: 700;
+  letter-spacing: .35em;
+  text-transform: uppercase;
+  color: #ff3fa4;
+  text-shadow: 0 0 3vmin rgba(255, 63, 164, .85);
+  opacity: 0;
+  animation: lock-title-in .8s ease-out forwards;
+}
+
+.lock[data-phase="welcome"] .lock-title { display: none; }
+
+@keyframes lock-title-in {
+  0%   { opacity: 0; letter-spacing: .8em; }
+  100% { opacity: 1; letter-spacing: .35em; }
+}
+
+/* ---------- La carte et son lecteur ---------- */
+
+.lock-stage {
+  position: relative;
+  width: min(86vw, 70vmin);
+  height: 44vmin;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* La fente du lecteur : elle s'allume au passage de la carte. */
+.lock-slot {
+  position: absolute;
+  top: 12%;
+  width: 78%;
+  height: .9vmin;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .18);
+  box-shadow: 0 0 2vmin rgba(0, 241, 253, .35);
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+
+.lock[data-phase="card"] .lock-slot,
+.lock[data-phase="input"] .lock-slot { opacity: 1; }
+
+.lock[data-phase="card"] .lock-slot { animation: slot-read 1.9s ease-in-out; }
+
+@keyframes slot-read {
+  0%, 55% { background: rgba(255, 255, 255, .18); box-shadow: 0 0 2vmin rgba(0, 241, 253, .35); }
+  72%     { background: #00f1fd; box-shadow: 0 0 7vmin 1.4vmin rgba(0, 241, 253, .95); }
+  100%    { background: rgba(255, 255, 255, .18); box-shadow: 0 0 2vmin rgba(0, 241, 253, .35); }
+}
+
+.lock-card {
+  position: absolute;
+  top: 12%;
+  width: 100%;
+  max-width: 70vmin;
+  border-radius: 2.2vmin;
+  box-shadow: 0 2vmin 5vmin rgba(0, 0, 0, .8);
+  transform: translateY(120vh) rotate(-9deg);
+  transform-origin: 50% 0;
+  opacity: 0;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* La carte monte du bas, se redresse, puis s'enfonce dans la fente. */
+.lock[data-phase="card"] .lock-card {
+  animation: card-insert 2s cubic-bezier(.3, .8, .3, 1) forwards;
+}
+
+.lock[data-phase="input"] .lock-card,
+.lock[data-phase="welcome"] .lock-card {
+  opacity: 0;
+  transform: translateY(-4vmin) scaleY(.02);
+}
+
+@keyframes card-insert {
+  0%   { transform: translateY(120vh) rotate(-9deg) scale(1);      opacity: 0; }
+  28%  { transform: translateY(18vmin) rotate(2deg)  scale(1);     opacity: 1; }
+  45%  { transform: translateY(14vmin) rotate(0deg)  scale(1);     opacity: 1; }
+  100% { transform: translateY(-4vmin) rotate(0deg)  scaleY(.02);  opacity: 0; }
+}
+
+/* ---------- Le code ---------- */
+
+.lock-form {
+  position: relative;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .5s ease;
+}
+
+.lock[data-phase="input"] .lock-form { opacity: 1; pointer-events: auto; }
+.lock[data-phase="welcome"] .lock-form { display: none; }
+
+.lock-boxes {
+  display: flex;
+  gap: 1.2vmin;
+  justify-content: center;
+}
+
+.lock-box {
+  width:  clamp(26px, 6.2vmin, 62px);
+  height: clamp(36px, 8.6vmin, 86px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 63, 164, .08);
+  border: .35vmin solid rgba(255, 63, 164, .55);
+  border-radius: 1.2vmin;
+  font-size: clamp(1.1rem, 4.4vmin, 2.6rem);
+  font-weight: 700;
+  color: #fff;
+  transition: border-color .15s ease, background-color .15s ease, transform .15s ease;
+}
+
+.lock-box.is-filled {
+  background: rgba(255, 63, 164, .22);
+  border-color: #ff3fa4;
+}
+
+/* Respiration entre les 6 chiffres de l'application et les 2 chiffres perso. */
+.lock-box.is-split { margin-left: 3.2vmin; position: relative; }
+
+.lock-box.is-split::before {
+  content: '';
+  position: absolute;
+  left: -2vmin;
+  top: 50%;
+  width: .8vmin;
+  height: .35vmin;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .45);
+  transform: translateY(-50%);
+}
+
+.lock-box.is-active {
+  border-color: #fff;
+  box-shadow: 0 0 2.4vmin rgba(255, 63, 164, .9);
+  transform: translateY(-.5vmin);
+}
+
+/* Le champ reel : invisible, pose sur les cases, il porte le clavier. */
+.lock-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: clamp(36px, 8.6vmin, 86px);
+  opacity: 0;
+  border: 0;
+  background: transparent;
+  font-size: 16px;            /* sous 16px, iOS zoome sur le champ */
+  color: transparent;
+  caret-color: transparent;
+  cursor: pointer;
+}
+
+.lock-msg {
+  margin: 2vmin 0 0;
+  min-height: 3vmin;
+  font-size: clamp(.8rem, 2.4vmin, 1.1rem);
+  letter-spacing: .1em;
+  color: #ff8b8b;
+}
+
+/* Code refuse : les cases tremblent et virent au rouge. */
+.lock.is-wrong .lock-boxes { animation: lock-shake .5s ease; }
+.lock.is-wrong .lock-box { border-color: #ff5a5a; background: rgba(255, 90, 90, .18); }
+
+@keyframes lock-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-2.2vmin); }
+  40%      { transform: translateX(2.2vmin); }
+  60%      { transform: translateX(-1.4vmin); }
+  80%      { transform: translateX(1.4vmin); }
+}
+
+/* ---------- L'accueil ---------- */
+
+.lock-welcome {
+  position: absolute;
+  margin: 0;
+  font-size: clamp(1.6rem, 7vmin, 4.2rem);
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: #fff;
+  text-shadow: 0 0 4vmin rgba(0, 241, 253, .9);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lock[data-phase="welcome"] .lock-welcome {
+  animation: welcome-in .8s cubic-bezier(.2, 1.4, .4, 1) forwards;
+}
+
+@keyframes welcome-in {
+  0%   { opacity: 0; transform: scale(.7); letter-spacing: .4em; }
+  60%  { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); letter-spacing: .12em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lock-title,
+  .lock[data-phase="card"] .lock-card,
+  .lock[data-phase="card"] .lock-slot,
+  .lock.is-wrong .lock-boxes,
+  .lock[data-phase="welcome"] .lock-welcome { animation: none; }
+
+  .lock-title { opacity: 1; }
+  .lock[data-phase="welcome"] .lock-welcome { opacity: 1; }
+}

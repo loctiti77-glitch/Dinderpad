@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code d'acces &ndash; DinderPad</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px; padding: 32px 20px;
+    background: radial-gradient(circle at 50% 30%, #14060f, #000 65%);
+    color: #fff; font-family: "Courier New", Courier, monospace; text-align: center;
+  }
+  h1 { margin: 0; font-size: 1rem; letter-spacing: .3em; text-transform: uppercase; color: #ff3fa4; }
+  .code { font-size: clamp(2.4rem, 13vw, 5rem); font-weight: 700; letter-spacing: .1em;
+          text-shadow: 0 0 26px rgba(0, 241, 253, .8); }
+  .bar { width: min(90vw, 420px); height: 8px; border-radius: 999px; background: rgba(255,255,255,.15); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, #00f1fd, #ff3fa4); }
+  .left { font-size: .9rem; color: rgba(255,255,255,.6); letter-spacing: .1em; }
+  .card { width: min(92vw, 560px); padding: 18px 20px; text-align: left;
+          background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.15); border-radius: 14px; }
+  .card h2 { margin: 0 0 10px; font-size: .78rem; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.55); }
+  .mono { word-break: break-all; font-size: .82rem; line-height: 1.6; color: #9fe9ff; }
+  .note { width: min(92vw, 560px); font-size: .76rem; line-height: 1.6; color: rgba(255,255,255,.5); text-align: left; }
+  .warn { color: #ffb0b0; }
+  .qr { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .qr-frame {
+    width: min(74vw, 260px); aspect-ratio: 1; padding: 12px;
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 0 34px rgba(0, 241, 253, .35);
+  }
+  .qr-frame svg { display: block; width: 100%; height: 100%; }
+  .qr-cap { margin: 0; font-size: .82rem; letter-spacing: .08em; color: rgba(255,255,255,.7); text-align: center; }
+  details { max-width: min(92vw, 560px); font-size: .74rem; color: rgba(255,255,255,.5); }
+  summary { cursor: pointer; letter-spacing: .1em; text-transform: uppercase; }
+  details code { display: block; margin-top: 8px; word-break: break-all; color: #9fe9ff; }
+
+</style>
+</head>
+<body>
+
+  <h1>Code d'acc&egrave;s DinderPad</h1>
+
+  <div class="code" id="code">------ --</div>
+  <div class="bar"><i id="bar" style="width:100%"></i></div>
+  <div class="left" id="left">&nbsp;</div>
+
+  <div class="qr">
+    <div class="qr-frame"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 49 49" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h49v49H0z"/><path stroke="#000000" d="M2 2.5h7m3 0h1m2 0h5m1 0h2m1 0h2m3 0h2m1 0h1m2 0h1m2 0h1m1 0h7M2 3.5h1m5 0h1m9 0h3m3 0h1m1 0h2m1 0h1m5 0h1m1 0h1m2 0h1m5 0h1M2 4.5h1m1 0h3m1 0h1m1 0h1m2 0h1m1 0h2m3 0h1m1 0h1m1 0h1m1 0h1m2 0h3m1 0h2m2 0h1m2 0h1m1 0h3m1 0h1M2 5.5h1m1 0h3m1 0h1m1 0h2m1 0h1m1 0h1m1 0h1m2 0h3m1 0h3m1 0h1m1 0h3m2 0h1m1 0h2m1 0h1m1 0h3m1 0h1M2 6.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h2m1 0h6m2 0h2m2 0h2m1 0h3m1 0h1m1 0h3m1 0h1M2 7.5h1m5 0h1m1 0h1m2 0h1m5 0h1m2 0h1m3 0h2m1 0h3m8 0h1m5 0h1M2 8.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M10 9.5h1m1 0h2m2 0h2m4 0h1m3 0h2m1 0h2m1 0h3m1 0h3M2 10.5h1m1 0h5m2 0h1m1 0h1m1 0h1m2 0h2m2 0h6m8 0h2m2 0h5M4 11.5h4m1 0h5m4 0h1m1 0h2m4 0h2m1 0h1m2 0h4m3 0h1m3 0h1m1 0h2M3 12.5h2m1 0h3m2 0h2m2 0h1m1 0h1m2 0h2m2 0h1m1 0h3m2 0h1m1 0h1m1 0h2m2 0h2m2 0h1m1 0h1M2 13.5h6m1 0h1m2 0h2m1 0h1m7 0h2m1 0h3m1 0h1m4 0h1m2 0h1m3 0h5M3 14.5h1m3 0h2m2 0h3m2 0h1m1 0h4m2 0h1m1 0h2m1 0h2m1 0h3m5 0h2m1 0h1m1 0h2M2 15.5h6m1 0h1m3 0h1m1 0h1m1 0h1m6 0h2m1 0h1m2 0h1m1 0h4m2 0h2m2 0h1m3 0h1M3 16.5h1m3 0h2m1 0h3m4 0h2m1 0h5m2 0h1m3 0h1m1 0h3m1 0h2m1 0h2m4 0h1M5 17.5h2m2 0h2m1 0h8m4 0h2m4 0h2m1 0h5m2 0h1m1 0h1m1 0h2M2 18.5h1m5 0h1m1 0h1m1 0h1m3 0h2m1 0h2m1 0h2m2 0h6m1 0h1m5 0h1m1 0h4m1 0h1M3 19.5h2m1 0h2m5 0h2m1 0h1m2 0h1m2 0h3m4 0h1m1 0h2m2 0h1m2 0h1m1 0h2m1 0h4M3 20.5h4m1 0h1m2 0h1m2 0h1m2 0h1m1 0h6m2 0h3m2 0h2m5 0h2m3 0h1M2 21.5h6m5 0h1m3 0h2m2 0h1m3 0h1m1 0h2m1 0h4m1 0h2m5 0h1m1 0h2M5 22.5h6m4 0h1m1 0h1m3 0h6m1 0h1m1 0h1m1 0h1m2 0h8m2 0h2M2 23.5h2m2 0h1m3 0h2m1 0h1m1 0h1m2 0h3m1 0h1m3 0h1m1 0h2m2 0h4m1 0h2m3 0h5M3 24.5h1m1 0h2m1 0h1m1 0h3m1 0h4m2 0h3m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1M6 25.5h1m3 0h2m1 0h1m2 0h7m3 0h1m2 0h2m1 0h3m1 0h3m3 0h3m1 0h1M2 26.5h1m1 0h1m1 0h5m1 0h4m1 0h1m2 0h7m1 0h1m5 0h1m1 0h8m1 0h2M2 27.5h2m3 0h1m1 0h1m1 0h1m1 0h2m1 0h2m1 0h4m1 0h2m1 0h1m1 0h2m6 0h2m1 0h1m3 0h1m1 0h1M2 28.5h3m3 0h1m1 0h2m2 0h1m2 0h1m1 0h2m1 0h1m4 0h1m2 0h2m1 0h1m2 0h1m5 0h2m1 0h1M3 29.5h1m1 0h3m3 0h1m2 0h2m2 0h3m4 0h3m2 0h1m1 0h1m1 0h1m2 0h5m1 0h4M2 30.5h5m1 0h1m2 0h1m1 0h1m2 0h3m1 0h1m2 0h4m2 0h2m2 0h3m1 0h3m2 0h1m2 0h1M2 31.5h2m2 0h1m5 0h1m2 0h2m2 0h1m2 0h2m2 0h2m1 0h1m3 0h1m3 0h2m7 0h1M6 32.5h5m2 0h1m4 0h1m1 0h2m1 0h2m1 0h2m3 0h1m5 0h1m1 0h1m3 0h2m1 0h1M2 33.5h1m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1m3 0h1m2 0h3m3 0h1m3 0h5m1 0h3m1 0h2m4 0h1M8 34.5h1m1 0h4m1 0h5m1 0h3m2 0h1m2 0h1m2 0h2m1 0h2m1 0h2m3 0h4M2 35.5h4m5 0h1m2 0h1m4 0h1m1 0h1m2 0h1m3 0h2m1 0h6m2 0h1m1 0h2m1 0h2M6 36.5h1m1 0h1m1 0h2m1 0h4m1 0h1m1 0h2m1 0h1m1 0h1m1 0h4m2 0h4m2 0h1m1 0h1m2 0h1m1 0h1M3 37.5h4m8 0h1m2 0h1m3 0h1m3 0h1m1 0h1m2 0h1m1 0h1m1 0h8m2 0h2M2 38.5h1m2 0h2m1 0h2m1 0h2m3 0h1m1 0h1m3 0h6m1 0h1m1 0h2m1 0h1m3 0h7m1 0h1M10 39.5h2m1 0h5m1 0h2m1 0h1m3 0h1m1 0h1m2 0h1m2 0h3m1 0h1m3 0h1m1 0h1m1 0h1M2 40.5h7m10 0h4m1 0h1m1 0h2m5 0h2m3 0h1m1 0h1m1 0h1m1 0h2M2 41.5h1m5 0h1m1 0h1m1 0h1m2 0h1m2 0h1m1 0h1m1 0h1m3 0h1m2 0h2m2 0h2m3 0h1m3 0h5M2 42.5h1m1 0h3m1 0h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m1 0h5m4 0h2m2 0h1m1 0h6m2 0h2M2 43.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h2m3 0h4m3 0h1m4 0h1m1 0h1m2 0h1m2 0h1m1 0h3m1 0h1M2 44.5h1m1 0h3m1 0h1m1 0h2m1 0h1m2 0h1m2 0h1m2 0h1m2 0h2m1 0h3m4 0h2m2 0h1m1 0h1m1 0h2M2 45.5h1m5 0h1m2 0h1m1 0h1m1 0h1m4 0h1m1 0h2m2 0h2m2 0h1m2 0h4m1 0h1m1 0h1m1 0h3M2 46.5h7m1 0h2m1 0h4m1 0h4m1 0h1m3 0h3m1 0h3m2 0h6m3 0h1"/></svg></div>
+    <p class="qr-cap">Scanne ce code avec ton application d'authentification</p>
+    <details>
+      <summary>ou copier le lien</summary>
+      <code id="uri"></code>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>Saisie manuelle, si ton app ne scanne pas</h2>
+    <p class="mono">
+      Secret&nbsp;: <b id="secret"></b><br>
+      Type&nbsp;: TOTP &nbsp;&middot;&nbsp; Algorithme&nbsp;: SHA1<br>
+      Chiffres&nbsp;: 6 &nbsp;&middot;&nbsp; P&eacute;riode&nbsp;: 30 s
+    </p>
+  </div>
+
+  <p class="note">
+    <span class="warn">Cette page ne part pas en ligne</span> &mdash; elle est exclue du
+    d&eacute;ploiement. Elle sert &agrave; lire le code depuis ton PC et &agrave; configurer ton t&eacute;l&eacute;phone.<br><br>
+Le code affich&eacute; en haut est <b>celui &agrave; taper en entier</b>&nbsp;: les
+    6&nbsp;premiers chiffres sont ceux de ton application, les 2&nbsp;derniers sont ton
+    code personnel. Sur ton t&eacute;l&eacute;phone, l'application n'affichera que les 6&nbsp;premiers&nbsp;:
+    c'est &agrave; toi d'ajouter les 2&nbsp;autres.
+  </p>
+
+<script>
+  var SECRET = 'OZKBMLJHASEIMDWAOVPOMVHPG7PKXXKZ', DIGITS = 6, PERIOD = 30, PIN = '73';
+
+  document.getElementById('secret').textContent = SECRET;
+  var uri = 'otpauth://totp/DinderPad:patron?secret=' + SECRET +
+            '&issuer=DinderPad&algorithm=SHA1&digits=6&period=30';
+  document.getElementById('uri').textContent = uri;
+
+  function base32ToBytes(s) {
+    var A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', bits = '', out = [];
+    s = s.toUpperCase().replace(/[^A-Z2-7]/g, '');
+    for (var i = 0; i < s.length; i++) bits += A.indexOf(s[i]).toString(2).padStart(5, '0');
+    for (var j = 0; j + 8 <= bits.length; j += 8) out.push(parseInt(bits.slice(j, j + 8), 2));
+    return new Uint8Array(out);
+  }
+
+  function codeAt(counter) {
+    var buf = new ArrayBuffer(8), view = new DataView(buf);
+    view.setUint32(0, Math.floor(counter / 4294967296));
+    view.setUint32(4, counter >>> 0);
+    return crypto.subtle.importKey('raw', base32ToBytes(SECRET), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign'])
+      .then(function (k) { return crypto.subtle.sign('HMAC', k, buf); })
+      .then(function (sig) {
+        var h = new Uint8Array(sig), o = h[h.length - 1] & 0x0f;
+        var bin = ((h[o] & 0x7f) << 24) | (h[o+1] << 16) | (h[o+2] << 8) | h[o+3];
+        return String(bin % Math.pow(10, DIGITS)).padStart(DIGITS, '0');
+      });
+  }
+
+  var shown = -1;
+  function tick() {
+    var now = Date.now() / 1000;
+    var counter = Math.floor(now / PERIOD);
+    var left = PERIOD - Math.floor(now % PERIOD);
+
+    document.getElementById('bar').style.width = (left / PERIOD * 100) + '%';
+    document.getElementById('left').textContent = 'nouveau code dans ' +
+      Math.floor(left / 60) + ' min ' + String(left % 60).padStart(2, '0') + ' s';
+
+    if (counter !== shown) {
+      shown = counter;
+      codeAt(counter).then(function (c) {
+        document.getElementById('code').textContent = c + ' ' + PIN;
+      }).catch(function () {
+        document.getElementById('code').textContent = 'indisponible';
+      });
+    }
+  }
+
+  tick();
+  setInterval(tick, 500);
+</script>
+</body>
+</html>

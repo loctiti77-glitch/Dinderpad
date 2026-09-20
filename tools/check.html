@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reconnaitre ton app &ndash; DinderPad</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px; padding: 32px 20px;
+    background: radial-gradient(circle at 50% 28%, #14060f, #000 65%);
+    color: #fff; font-family: "Courier New", Courier, monospace;
+  }
+  h1 { margin: 0; font-size: 1rem; letter-spacing: .26em; text-transform: uppercase; color: #ff3fa4; text-align: center; }
+  p.intro { margin: 0; max-width: 56ch; font-size: .86rem; line-height: 1.6; color: rgba(255,255,255,.7); text-align: center; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  input {
+    width: 260px; padding: 14px 16px; text-align: center;
+    background: rgba(255,255,255,.06); border: 2px solid rgba(255,63,164,.6); border-radius: 12px;
+    font-family: inherit; font-size: 1.6rem; font-weight: 700; letter-spacing: .12em; color: #fff;
+  }
+  input:focus { outline: none; border-color: #ff3fa4; box-shadow: 0 0 20px rgba(255,63,164,.5); }
+  button {
+    padding: 14px 24px; background: linear-gradient(180deg,#16406f,#0c2a4c);
+    border: 2px solid #00f1fd; border-radius: 12px;
+    font-family: inherit; font-size: 1rem; font-weight: 700; color: #fff; cursor: pointer;
+  }
+  button:hover { filter: brightness(1.3); }
+  .out { width: min(92vw, 560px); min-height: 40px; }
+  .hit, .miss, .info {
+    padding: 14px 16px; margin-bottom: 10px; border-radius: 12px;
+    font-size: .88rem; line-height: 1.6;
+  }
+  .hit  { background: rgba(0,241,253,.12); border: 1px solid #00f1fd; }
+  .miss { background: rgba(255,90,90,.1); border: 1px solid rgba(255,90,90,.5); color: #ffb0b0; }
+  .info { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.15); color: rgba(255,255,255,.65); }
+  b { color: #9fe9ff; }
+  code { word-break: break-all; color: #9fe9ff; }
+  .qr { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .qr-frame {
+    width: min(74vw, 260px); aspect-ratio: 1; padding: 12px;
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 0 34px rgba(0, 241, 253, .35);
+  }
+  .qr-frame svg { display: block; width: 100%; height: 100%; }
+  .qr-cap { margin: 0; font-size: .82rem; letter-spacing: .08em; color: rgba(255,255,255,.7); text-align: center; }
+  details { max-width: min(92vw, 560px); font-size: .74rem; color: rgba(255,255,255,.5); }
+  summary { cursor: pointer; letter-spacing: .1em; text-transform: uppercase; }
+  details code { display: block; margin-top: 8px; word-break: break-all; color: #9fe9ff; }
+
+</style>
+</head>
+<body>
+
+  <h1>Quel code sort de ton app&nbsp;?</h1>
+
+  <p class="intro">
+Scanne le QR ci-dessous, puis tape ici les <b>6 chiffres</b> que ton
+    application affiche, pour v&eacute;rifier qu'elle est bien r&eacute;gl&eacute;e.
+    Sur le DinderPad, tu ajouteras ensuite tes 2 chiffres personnels.
+  </p>
+
+  <div class="qr">
+    <div class="qr-frame"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 49 49" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h49v49H0z"/><path stroke="#000000" d="M2 2.5h7m3 0h1m2 0h5m1 0h2m1 0h2m3 0h2m1 0h1m2 0h1m2 0h1m1 0h7M2 3.5h1m5 0h1m9 0h3m3 0h1m1 0h2m1 0h1m5 0h1m1 0h1m2 0h1m5 0h1M2 4.5h1m1 0h3m1 0h1m1 0h1m2 0h1m1 0h2m3 0h1m1 0h1m1 0h1m1 0h1m2 0h3m1 0h2m2 0h1m2 0h1m1 0h3m1 0h1M2 5.5h1m1 0h3m1 0h1m1 0h2m1 0h1m1 0h1m1 0h1m2 0h3m1 0h3m1 0h1m1 0h3m2 0h1m1 0h2m1 0h1m1 0h3m1 0h1M2 6.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h2m1 0h6m2 0h2m2 0h2m1 0h3m1 0h1m1 0h3m1 0h1M2 7.5h1m5 0h1m1 0h1m2 0h1m5 0h1m2 0h1m3 0h2m1 0h3m8 0h1m5 0h1M2 8.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M10 9.5h1m1 0h2m2 0h2m4 0h1m3 0h2m1 0h2m1 0h3m1 0h3M2 10.5h1m1 0h5m2 0h1m1 0h1m1 0h1m2 0h2m2 0h6m8 0h2m2 0h5M4 11.5h4m1 0h5m4 0h1m1 0h2m4 0h2m1 0h1m2 0h4m3 0h1m3 0h1m1 0h2M3 12.5h2m1 0h3m2 0h2m2 0h1m1 0h1m2 0h2m2 0h1m1 0h3m2 0h1m1 0h1m1 0h2m2 0h2m2 0h1m1 0h1M2 13.5h6m1 0h1m2 0h2m1 0h1m7 0h2m1 0h3m1 0h1m4 0h1m2 0h1m3 0h5M3 14.5h1m3 0h2m2 0h3m2 0h1m1 0h4m2 0h1m1 0h2m1 0h2m1 0h3m5 0h2m1 0h1m1 0h2M2 15.5h6m1 0h1m3 0h1m1 0h1m1 0h1m6 0h2m1 0h1m2 0h1m1 0h4m2 0h2m2 0h1m3 0h1M3 16.5h1m3 0h2m1 0h3m4 0h2m1 0h5m2 0h1m3 0h1m1 0h3m1 0h2m1 0h2m4 0h1M5 17.5h2m2 0h2m1 0h8m4 0h2m4 0h2m1 0h5m2 0h1m1 0h1m1 0h2M2 18.5h1m5 0h1m1 0h1m1 0h1m3 0h2m1 0h2m1 0h2m2 0h6m1 0h1m5 0h1m1 0h4m1 0h1M3 19.5h2m1 0h2m5 0h2m1 0h1m2 0h1m2 0h3m4 0h1m1 0h2m2 0h1m2 0h1m1 0h2m1 0h4M3 20.5h4m1 0h1m2 0h1m2 0h1m2 0h1m1 0h6m2 0h3m2 0h2m5 0h2m3 0h1M2 21.5h6m5 0h1m3 0h2m2 0h1m3 0h1m1 0h2m1 0h4m1 0h2m5 0h1m1 0h2M5 22.5h6m4 0h1m1 0h1m3 0h6m1 0h1m1 0h1m1 0h1m2 0h8m2 0h2M2 23.5h2m2 0h1m3 0h2m1 0h1m1 0h1m2 0h3m1 0h1m3 0h1m1 0h2m2 0h4m1 0h2m3 0h5M3 24.5h1m1 0h2m1 0h1m1 0h3m1 0h4m2 0h3m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1M6 25.5h1m3 0h2m1 0h1m2 0h7m3 0h1m2 0h2m1 0h3m1 0h3m3 0h3m1 0h1M2 26.5h1m1 0h1m1 0h5m1 0h4m1 0h1m2 0h7m1 0h1m5 0h1m1 0h8m1 0h2M2 27.5h2m3 0h1m1 0h1m1 0h1m1 0h2m1 0h2m1 0h4m1 0h2m1 0h1m1 0h2m6 0h2m1 0h1m3 0h1m1 0h1M2 28.5h3m3 0h1m1 0h2m2 0h1m2 0h1m1 0h2m1 0h1m4 0h1m2 0h2m1 0h1m2 0h1m5 0h2m1 0h1M3 29.5h1m1 0h3m3 0h1m2 0h2m2 0h3m4 0h3m2 0h1m1 0h1m1 0h1m2 0h5m1 0h4M2 30.5h5m1 0h1m2 0h1m1 0h1m2 0h3m1 0h1m2 0h4m2 0h2m2 0h3m1 0h3m2 0h1m2 0h1M2 31.5h2m2 0h1m5 0h1m2 0h2m2 0h1m2 0h2m2 0h2m1 0h1m3 0h1m3 0h2m7 0h1M6 32.5h5m2 0h1m4 0h1m1 0h2m1 0h2m1 0h2m3 0h1m5 0h1m1 0h1m3 0h2m1 0h1M2 33.5h1m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1m3 0h1m2 0h3m3 0h1m3 0h5m1 0h3m1 0h2m4 0h1M8 34.5h1m1 0h4m1 0h5m1 0h3m2 0h1m2 0h1m2 0h2m1 0h2m1 0h2m3 0h4M2 35.5h4m5 0h1m2 0h1m4 0h1m1 0h1m2 0h1m3 0h2m1 0h6m2 0h1m1 0h2m1 0h2M6 36.5h1m1 0h1m1 0h2m1 0h4m1 0h1m1 0h2m1 0h1m1 0h1m1 0h4m2 0h4m2 0h1m1 0h1m2 0h1m1 0h1M3 37.5h4m8 0h1m2 0h1m3 0h1m3 0h1m1 0h1m2 0h1m1 0h1m1 0h8m2 0h2M2 38.5h1m2 0h2m1 0h2m1 0h2m3 0h1m1 0h1m3 0h6m1 0h1m1 0h2m1 0h1m3 0h7m1 0h1M10 39.5h2m1 0h5m1 0h2m1 0h1m3 0h1m1 0h1m2 0h1m2 0h3m1 0h1m3 0h1m1 0h1m1 0h1M2 40.5h7m10 0h4m1 0h1m1 0h2m5 0h2m3 0h1m1 0h1m1 0h1m1 0h2M2 41.5h1m5 0h1m1 0h1m1 0h1m2 0h1m2 0h1m1 0h1m1 0h1m3 0h1m2 0h2m2 0h2m3 0h1m3 0h5M2 42.5h1m1 0h3m1 0h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m1 0h5m4 0h2m2 0h1m1 0h6m2 0h2M2 43.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h2m3 0h4m3 0h1m4 0h1m1 0h1m2 0h1m2 0h1m1 0h3m1 0h1M2 44.5h1m1 0h3m1 0h1m1 0h2m1 0h1m2 0h1m2 0h1m2 0h1m2 0h2m1 0h3m4 0h2m2 0h1m1 0h1m1 0h2M2 45.5h1m5 0h1m2 0h1m1 0h1m1 0h1m4 0h1m1 0h2m2 0h2m2 0h1m2 0h4m1 0h1m1 0h1m1 0h3M2 46.5h7m1 0h2m1 0h4m1 0h4m1 0h1m3 0h3m1 0h3m2 0h6m3 0h1"/></svg></div>
+    <p class="qr-cap">Scanne ce code avec ton application d'authentification</p>
+    <details>
+      <summary>ou copier le lien</summary>
+      <code id="uri"></code>
+    </details>
+  </div>
+
+  <div class="row">
+    <input id="code" inputmode="numeric" maxlength="10" placeholder="code affich&eacute;" autocomplete="off">
+    <button id="go">Identifier</button>
+  </div>
+
+  <div class="out" id="out"></div>
+
+<script>
+  var SECRET = 'OZKBMLJHASEIMDWAOVPOMVHPG7PKXXKZ';
+  document.getElementById('uri').textContent =
+    'otpauth://totp/DinderPad:patron?secret=' + SECRET +
+    '&issuer=DinderPad&algorithm=SHA1&digits=6&period=30';
+
+  function base32ToBytes(s) {
+    var A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', bits = '', out = [];
+    s = s.toUpperCase().replace(/[^A-Z2-7]/g, '');
+    for (var i = 0; i < s.length; i++) bits += A.indexOf(s[i]).toString(2).padStart(5, '0');
+    for (var j = 0; j + 8 <= bits.length; j += 8) out.push(parseInt(bits.slice(j, j + 8), 2));
+    return new Uint8Array(out);
+  }
+
+  function codeAt(counter, digits, hash) {
+    var buf = new ArrayBuffer(8), view = new DataView(buf);
+    view.setUint32(0, Math.floor(counter / 4294967296));
+    view.setUint32(4, counter >>> 0);
+    return crypto.subtle.importKey('raw', base32ToBytes(SECRET), { name: 'HMAC', hash: hash }, false, ['sign'])
+      .then(function (k) { return crypto.subtle.sign('HMAC', k, buf); })
+      .then(function (sig) {
+        var h = new Uint8Array(sig), o = h[h.length - 1] & 0x0f;
+        var bin = ((h[o] & 0x7f) << 24) | (h[o+1] << 16) | (h[o+2] << 8) | h[o+3];
+        return String(bin % Math.pow(10, digits)).padStart(digits, '0');
+      });
+  }
+
+  // Toutes les combinaisons courantes, y compris les apps qui ignorent
+  // les parametres et retombent sur le standard 6 chiffres / 30 s.
+  var PERIODS = [30, 60, 90, 120, 180];
+  var DIGITS  = [6, 7, 8];
+  var HASHES  = ['SHA-1', 'SHA-256', 'SHA-512'];
+
+  function run() {
+    var entered = document.getElementById('code').value.replace(/\D/g, '');
+    var out = document.getElementById('out');
+    out.textContent = '';
+
+    if (!entered) { out.innerHTML = '<div class="miss">Tape d\'abord le code affiche par ton application.</div>'; return; }
+
+    var jobs = [];
+    HASHES.forEach(function (hash) {
+      DIGITS.forEach(function (digits) {
+        if (digits !== entered.length) return;          // inutile de tester une autre longueur
+        PERIODS.forEach(function (period) {
+          var now = Math.floor(Date.now() / 1000 / period);
+          for (var d = -1; d <= 1; d++) {
+            (function (dd) {
+              jobs.push(codeAt(now + dd, digits, hash).then(function (c) {
+                return c === entered ? { hash: hash, digits: digits, period: period, drift: dd } : null;
+              }));
+            })(d);
+          }
+        });
+      });
+    });
+
+    if (!jobs.length) {
+      out.innerHTML = '<div class="miss">Aucun reglage courant ne donne un code de ' +
+                      entered.length + ' chiffres. Verifie que tu as bien copie le code en entier.</div>';
+      return;
+    }
+
+    Promise.all(jobs).then(function (res) {
+      var hits = res.filter(Boolean);
+      if (!hits.length) {
+        out.innerHTML = '<div class="miss"><b>Aucune correspondance.</b><br>' +
+          'Soit le code a change pendant la saisie (reessaie vite), soit le secret ' +
+          'n\'a pas ete ajoute correctement dans l\'application.</div>';
+        return;
+      }
+      var seen = {};
+      hits.forEach(function (h) {
+        var key = h.hash + h.digits + h.period;
+        if (seen[key]) return;
+        seen[key] = 1;
+        var div = document.createElement('div');
+        div.className = 'hit';
+        div.innerHTML = '<b>Trouve !</b><br>Ton application produit&nbsp;: <b>' +
+          h.digits + ' chiffres</b>, renouveles toutes les <b>' + h.period +
+          ' secondes</b>, algorithme <b>' + h.hash + '</b>.' +
+          '<br><br>Donne-moi cette ligne et je cale le DinderPad dessus.';
+        out.appendChild(div);
+      });
+    });
+  }
+
+  document.getElementById('go').addEventListener('click', run);
+  document.getElementById('code').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') run();
+  });
+</script>
+</body>
+</html>
