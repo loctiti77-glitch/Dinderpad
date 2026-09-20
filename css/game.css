@@ -659,6 +659,13 @@
 
 .fw-fin-txt { margin: 0; font-size: calc(24 * var(--px)); color: #cfe8f5; }
 
+.fw-chrono {
+  margin: 0;
+  font-size: calc(21 * var(--px));
+  letter-spacing: calc(1 * var(--px));
+  color: #8bf5c0;
+}
+
 .fw-prime {
   display: flex;
   align-items: center;
@@ -1191,4 +1198,63 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
     opacity: 1;
   }
   .intro-halo { opacity: .28; }
+}
+
+/* ==========================================================
+   Les Badges
+   Meme liste deroulante que la collection de Dinders, avec un
+   en-tete qui annonce le compte. Les paliers reutilisent le
+   mecanisme --r des raretes.
+   ========================================================== */
+
+.badges {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: "Courier New", "Cutive Mono", monospace;
+  color: #d8f8ff;
+}
+
+.badges-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(16 * var(--px));
+  padding: calc(18 * var(--px)) calc(30 * var(--px)) calc(6 * var(--px));
+}
+
+.badges-titre {
+  margin: 0;
+  font-size: calc(40 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  text-transform: uppercase;
+  color: #f5c93a;
+  text-shadow: 0 0 calc(16 * var(--px)) rgba(245, 201, 58, .55),
+               calc(2 * var(--px)) calc(2 * var(--px)) 0 #2a1f06;
+}
+
+.badges-compte { margin: 0; font-size: calc(24 * var(--px)); color: #ffe9a8; }
+
+/* La liste occupe ce qui reste sous l'en-tete. */
+.badges-liste { flex: 1; height: auto; padding-top: calc(6 * var(--px)); }
+
+/* Les paliers empruntent le jeton --r des raretes. */
+[data-palier="bois"]    { --r: #b5834a; }
+[data-palier="bronze"]  { --r: #cf8442; }
+[data-palier="argent"]  { --r: #cdd7e2; }
+[data-palier="or"]      { --r: #f5c93a; }
+[data-palier="diamant"] { --r: #c56bff; }
+
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  .slot-palier { box-shadow: none; text-shadow: none; }
+}
+
+/* La medaille remplit sa vignette : elle est ronde, pas carree. */
+.slot--badge .slot-face { object-fit: contain; }
+
+/* La condition tient sur une ligne de plus que le nom d'un Dinder. */
+.slot--badge .slot-name-sub {
+  white-space: normal;
+  line-height: 1.2;
 }

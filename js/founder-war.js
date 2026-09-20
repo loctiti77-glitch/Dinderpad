@@ -519,7 +519,8 @@
         faiblesse: 0, charge: null, saute: false,
         bouclier: 0,
         dernierDegat: 0,
-        tour: 1, index: 0, fini: false
+        tour: 1, index: 0, fini: false,
+        depart: 0
       };
 
       var troupe = equipe.map(function (id) {
@@ -586,6 +587,9 @@
       function vivants() { return troupe.filter(function (c) { return !c.ko; }); }
 
       function menuDe(c) {
+        // Le chronometre demarre quand le joueur peut agir pour la
+        // premiere fois, pas avant : l'annonce du premier tour ne compte pas.
+        if (!etat.depart) etat.depart = Date.now();
         menu.textContent = '';
         var t = el('p', 'fw-menu-qui', c.nom + (c.forme ? ' — ' + c.forme : ''));
         menu.appendChild(t);
@@ -793,7 +797,14 @@
         boss.classList.add('is-vaincu');
         menu.textContent = '';
         var gagne = DP.earn('green', 10);
-        dire('LE FONDATEUR EST TOMBÉ.', function () { ecranFin(true, gagne); }, 1400);
+
+        // On inscrit la victoire et le chrono : les badges s'en servent.
+        var chrono = etat.depart ? Math.round((Date.now() - etat.depart) / 1000) : 0;
+        DP.compterExploit('fondateurVaincu');
+        if (chrono > 0) DP.noterRecord('fondateurChrono', chrono, true);
+
+        dire('LE FONDATEUR EST TOMBÉ — ' + chrono + ' s.',
+             function () { ecranFin(true, gagne, chrono); }, 1400);
       }
 
       function defaite() {
@@ -801,7 +812,7 @@
         etat.fini = true;
         rafraichir();
         menu.textContent = '';
-        dire('Votre équipe est à terre…', function () { ecranFin(false, 0); }, 1400);
+        dire('Votre équipe est à terre…', function () { ecranFin(false, 0, 0); }, 1400);
       }
 
       rafraichir();
@@ -910,7 +921,7 @@
 
     // ---------- L'ecran de fin ----------
 
-    function ecranFin(gagne, cagnotte) {
+    function ecranFin(gagne, cagnotte, chrono) {
       toutAnnuler();
       jeu.textContent = '';
       jeu.dataset.etape = gagne ? 'victoire' : 'defaite';
@@ -920,6 +931,13 @@
       box.appendChild(el('p', 'fw-fin-txt', gagne
         ? 'Le Fondateur s’effondre. L’arène est à vous.'
         : 'Le Fondateur reste debout. Reviens plus nombreux.'));
+
+      if (gagne && chrono) {
+        var meilleur = DP.exploit('fondateurChrono');
+        var t = el('p', 'fw-chrono', 'Combat bouclé en ' + chrono + ' s'
+                 + (meilleur && meilleur < chrono ? '  ·  record : ' + meilleur + ' s' : ''));
+        box.appendChild(t);
+      }
 
       if (gagne) {
         var prime = el('div', 'fw-prime');

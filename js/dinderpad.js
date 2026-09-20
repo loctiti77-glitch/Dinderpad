@@ -280,7 +280,8 @@
       credits: { green: 0, blue: 0, gold: 0, pink: 0 },
       owned: [],
       canne: false,
-      peche: {}
+      peche: {},
+      exploits: {}
     };
   }
 
@@ -290,6 +291,7 @@
   function completer(p) {
     if (typeof p.canne !== 'boolean') p.canne = false;
     if (!p.peche || typeof p.peche !== 'object') p.peche = {};
+    if (!p.exploits || typeof p.exploits !== 'object') p.exploits = {};
     if (!p.credits) p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
     if (!Array.isArray(p.owned)) p.owned = [];
     return p;
@@ -493,6 +495,34 @@
     return e;
   }
 
+  // ---------- Les exploits ----------
+  // Ce que la seule collection ne dit pas : une victoire, un chrono. Les
+  // badges s'en servent pour savoir ce qui est acquis.
+
+  function exploits() { return me().exploits; }
+
+  function exploit(cle) { return me().exploits[cle] || 0; }
+
+  // Un compteur qui monte d'un cran.
+  function compterExploit(cle) {
+    var p = me();
+    p.exploits[cle] = (p.exploits[cle] || 0) + 1;
+    save();
+    return p.exploits[cle];
+  }
+
+  // Un record : on ne garde que le meilleur. "bas" pour un chrono, ou la
+  // plus petite valeur gagne ; sinon la plus grande.
+  function noterRecord(cle, valeur, bas) {
+    var p = me();
+    var actuel = p.exploits[cle];
+    if (actuel === undefined || (bas ? valeur < actuel : valeur > actuel)) {
+      p.exploits[cle] = valeur;
+      save();
+    }
+    return p.exploits[cle];
+  }
+
   // Vide la progression du profil courant, sans supprimer le profil.
   function reset() {
     var p = me();
@@ -500,6 +530,7 @@
     p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
     p.canne = false;
     p.peche = {};
+    p.exploits = {};
     save();
   }
 
@@ -541,6 +572,8 @@
     ITEMS: ITEMS, items: items, CONTINENTS: CONTINENTS,
     aLaCanne: aLaCanne, prendreCanne: prendreCanne,
     prises: prises, aPeche: aPeche, noterPrise: noterPrise,
+    exploits: exploits, exploit: exploit,
+    compterExploit: compterExploit, noterRecord: noterRecord,
     spots: spots, prochainSaut: prochainSaut,
     heureLocale: heureLocale, dateLocale: dateLocale,
     rarityKey: rarityKey,
