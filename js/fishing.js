@@ -34,9 +34,11 @@
   // Une chance sur cent : le Credit Temporel.
   var CHANCE_CREDIT = 100;
 
-  // Ce qu'on retient le temps d'un aller-retour a la Poissonnerie : le
-  // pecheur et l'endroit exact ou il se tenait. Sans cela, ressortir du
-  // magasin relancait le jeu depuis l'ecran-titre.
+  // Ou en est la partie en cours : le pecheur et l'endroit exact ou il se
+  // tient. Tant qu'on reste dans les ecrans de peche — boutique, carnet,
+  // vestiaire — on y revient sans relancer le jeu depuis l'ecran-titre.
+  // Le reperage est tenu a jour en continu : autrement, sortir par le
+  // Carnet plutot que par la boutique perdait la partie.
   var reprise = null;
 
   // La reprise ne vaut que pour l'aller-retour vers les ecrans de peche.
@@ -275,6 +277,14 @@
 
       var g = construireCarte();
 
+      // Des que la carte est la, la partie devient reprenable.
+      reprise = {
+        dinder: choisi,
+        x: ou ? ou.x : DEPART.x,
+        y: ou ? ou.y : DEPART.y,
+        dir: ou ? ou.dir : 0
+      };
+
       // --- L'etat de la peche ---
       // repos → lancee → attente → ca-mord → (prise | rate)
       var etat = 'repos';
@@ -471,13 +481,10 @@
         return dx * dx + dy * dy < 40 * 40;
       }
 
-      // On note ou l'on etait, on baisse le rideau, puis on pousse la porte.
+      // Le rideau tombe, puis on pousse la porte. Le point de reprise est
+      // deja tenu a jour par la marche.
       function entrerBoutique() {
         if (etat !== 'repos') return;
-        reprise = {
-          dinder: choisi,
-          x: balade.chef.x, y: balade.chef.y, dir: balade.chef.dir
-        };
         action.hidden = true;
         scene.classList.add('is-sortie');
         plusTard(function () {
@@ -752,6 +759,14 @@
           // La phase en cours, inscrite sur le conteneur : elle sert de
           // repere lisible, et rend la mise en scene verifiable.
           if (jeu.dataset.phase !== etat) jeu.dataset.phase = etat;
+
+          // Le point de reprise suit le pecheur : quel que soit l'ecran
+          // par lequel on s'echappe, on reviendra ici.
+          if (reprise) {
+            reprise.x = balade.chef.x;
+            reprise.y = balade.chef.y;
+            reprise.dir = balade.chef.dir;
+          }
           if (etat !== 'repos') return;
           majAction();
           // L'indication suit ce que le joueur a devant lui, a chaque pas.
@@ -778,8 +793,8 @@
     // De retour de la Poissonnerie : on reprend la partie ou elle en
     // etait, sans repasser par l'ecran-titre ni par le choix du pecheur.
     if (reprise && DP.has(reprise.dinder)) {
-      choisi = reprise.dinder;
       var ou = reprise;
+      choisi = ou.dinder;
       reprise = null;
       ecranCarte(ou);
       return;
