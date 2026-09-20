@@ -29,28 +29,6 @@
   var reduit = window.matchMedia &&
                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Un bruit stable : la meme case de foret est toujours dessinee pareil,
-  // d'une partie a l'autre et d'un joueur a l'autre.
-  function bruit(x, y, sel) {
-    var h = (x | 0) * 374761393 + (y | 0) * 668265263 + (sel || 0) * 2147483647;
-    h = (h ^ (h >>> 13)) * 1274126177;
-    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-  }
-
-  // Charge une serie d'images et ne rend la main que lorsque tout est pret.
-  function charger(liste, fini) {
-    var reste = liste.length, images = {};
-    if (!reste) return fini(images);
-    liste.forEach(function (e) {
-      var img = new Image();
-      img.onload = img.onerror = function () {
-        images[e.cle] = img;
-        if (--reste === 0) fini(images);
-      };
-      img.src = e.src;
-    });
-  }
-
   // ==========================================================
   //  Les attaques
   //  Chaque Dinder en a deux : une franche, une qui joue sur autre chose
@@ -139,12 +117,13 @@
   //  L'ecran des mini-jeux
   // ==========================================================
 
-  // Les deux emplacements libres attendent les prochains jeux : ils ne
-  // portent pas de nom tant que tu ne leur en as pas donne un.
-  var JEUX = [
+  // La liste est partagee : chaque mini-jeu vient y prendre sa place au
+  // chargement. Les emplacements restants attendent les prochains.
+  var JEUX = window.MINIJEUX = window.MINIJEUX || [
     { id: 'founder-war', nom: 'The Founder War',
       sous: 'Cinq Dinders contre Le Fondateur',
-      vue: 'founder-war', pret: true },
+      vue: 'founder-war', pret: true,
+      img: function () { return DP.sprite('lefondateur', 'duel'); } },
     { id: 'libre-2', nom: 'Emplacement libre', sous: 'À venir', pret: false },
     { id: 'libre-3', nom: 'Emplacement libre', sous: 'À venir', pret: false }
   ];
@@ -154,14 +133,14 @@
     box.appendChild(el('h2', 'mj-titre', 'Mini-jeux'));
 
     var liste = el('div', 'mj-liste');
-    JEUX.forEach(function (j) {
+    (window.MINIJEUX || JEUX).forEach(function (j) {
       var n = j.pret ? el('a', 'mj-jeu') : el('div', 'mj-jeu mj-jeu--soon');
       if (j.pret) n.href = '#' + j.vue;
 
       var vignette = el('span', 'mj-vignette');
       if (j.pret) {
         var img = el('img');
-        img.src = DP.sprite('lefondateur', 'duel');
+        img.src = typeof j.img === 'function' ? j.img() : (j.img || '');
         img.alt = '';
         vignette.appendChild(img);
       } else {
@@ -188,14 +167,14 @@
 
   // ---- La carte de la foret ----
   // 44 x 28 cases de 24 px : 1056 x 672 px de monde pour une fenetre de
-  // 480 x 316. La camera suit le meneur.
-  var MW = 44, MH = 28, TS = 24;
-  var HERBE = 0, FLEUR = 1, CHEMIN = 2, ARBRE = 3, BUISSON = 4,
-      ROCHER = 5, EAU = 6, MUR = 7, DALLE = 8, PORTE = 9;
-
-  var BLOQUANT = {};
-  BLOQUANT[ARBRE] = BLOQUANT[BUISSON] = BLOQUANT[ROCHER] =
-  BLOQUANT[EAU] = BLOQUANT[MUR] = true;
+  // 480 x 316. Le terrain et la marche sont geres par js/game-monde.js.
+  var M = window.MONDE;
+  var MW = 44, MH = 28, TS = M.TS;
+  var HERBE = M.T.HERBE, FLEUR = M.T.FLEUR, CHEMIN = M.T.CHEMIN,
+      ARBRE = M.T.ARBRE, BUISSON = M.T.BUISSON, ROCHER = M.T.ROCHER,
+      EAU = M.T.EAU, MUR = M.T.MUR, DALLE = M.T.DALLE, PORTE = M.T.PORTE;
+  var BLOQUANT = M.BLOQUANT;
+  var bruit = M.bruit;
 
   // L'arene, en haut a droite, et sa porte au milieu du mur du bas.
   // La porte fait quatre cases : assez large pour qu'on y entre sans
@@ -290,163 +269,6 @@
         if (g[y] && g[y][x] !== undefined) g[y][x] = CHEMIN;
 
     return g;
-  }
-
-  // ---- Le decor de la foret, peint une fois pour toutes ----
-
-  function peindreMonde(g) {
-    var c = document.createElement('canvas');
-    c.width = MW * TS; c.height = MH * TS;
-    var x = c.getContext('2d');
-    var y0, x0;
-
-    // Le sol d'abord : herbe, chemin, eau, dalles.
-    for (y0 = 0; y0 < MH; y0++)
-      for (x0 = 0; x0 < MW; x0++) solTuile(x, g, x0, y0);
-
-    // Puis ce qui depasse, du haut vers le bas pour que les cimes se
-    // recouvrent correctement.
-    for (y0 = 0; y0 < MH; y0++)
-      for (x0 = 0; x0 < MW; x0++) objetTuile(x, g, x0, y0);
-
-    return c;
-  }
-
-  function solTuile(x, g, tx, ty) {
-    var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
-
-    if (t === EAU) {
-      x.fillStyle = '#1d4f9c'; x.fillRect(px, py, TS, TS);
-      x.fillStyle = '#2a68c4';
-      for (i = 0; i < 5; i++) {
-        n = bruit(tx, ty, 10 + i);
-        x.fillRect(px + (n * 18 | 0), py + i * 5 + 1, 6, 2);
-      }
-      return;
-    }
-
-    if (t === DALLE || t === MUR || t === PORTE) {
-      x.fillStyle = '#6b6f7d'; x.fillRect(px, py, TS, TS);
-      x.fillStyle = '#7c8090';
-      x.fillRect(px + 1, py + 1, TS - 3, 10);
-      x.fillRect(px + 1, py + 13, TS - 3, 9);
-      x.fillStyle = 'rgba(0,0,0,.22)';
-      x.fillRect(px, py + 11, TS, 2);
-      x.fillRect(px + (ty % 2 ? 6 : 16), py, 2, 11);
-      x.fillRect(px + (ty % 2 ? 16 : 6), py + 13, 2, 9);
-      return;
-    }
-
-    if (t === CHEMIN) {
-      x.fillStyle = '#a5794a'; x.fillRect(px, py, TS, TS);
-      x.fillStyle = '#b98c59';
-      for (i = 0; i < 6; i++) {
-        n = bruit(tx, ty, 20 + i);
-        x.fillRect(px + (n * 20 | 0), py + ((bruit(tx, ty, 30 + i) * 20) | 0), 3, 2);
-      }
-      x.fillStyle = '#8e6539';
-      for (i = 0; i < 3; i++) {
-        n = bruit(tx, ty, 40 + i);
-        x.fillRect(px + (n * 21 | 0), py + ((bruit(tx, ty, 50 + i) * 21) | 0), 2, 2);
-      }
-      return;
-    }
-
-    // Herbe : deux verts en damier, puis des touffes.
-    x.fillStyle = (tx + ty) % 2 ? '#3d8b38' : '#438f3c';
-    x.fillRect(px, py, TS, TS);
-    x.fillStyle = '#4d9c42';
-    for (i = 0; i < 4; i++) {
-      n = bruit(tx, ty, 60 + i);
-      x.fillRect(px + (n * 21 | 0), py + ((bruit(tx, ty, 70 + i) * 21) | 0), 3, 2);
-    }
-    x.fillStyle = '#347a30';
-    for (i = 0; i < 3; i++) {
-      n = bruit(tx, ty, 80 + i);
-      x.fillRect(px + (n * 22 | 0), py + ((bruit(tx, ty, 90 + i) * 22) | 0), 2, 3);
-    }
-    if (t === FLEUR) {
-      var fx = px + 8 + ((bruit(tx, ty, 3) * 6) | 0);
-      var fy = py + 8 + ((bruit(tx, ty, 4) * 6) | 0);
-      var tons = ['#f6e05e', '#f28ab2', '#e8eef7', '#f0a15a'];
-      x.fillStyle = '#2f6e2c'; x.fillRect(fx + 2, fy + 3, 2, 4);
-      x.fillStyle = tons[(bruit(tx, ty, 5) * 4) | 0];
-      x.fillRect(fx + 1, fy, 4, 3);
-      x.fillRect(fx, fy + 1, 6, 1);
-    }
-  }
-
-  function objetTuile(x, g, tx, ty) {
-    var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
-
-    if (t === ARBRE) {
-      // Un arbre deborde d'une case vers le haut : c'est ce qui donne du
-      // relief a la foret.
-      var hx = px + TS / 2;
-      x.fillStyle = 'rgba(0,0,0,.25)';
-      x.fillRect(px + 3, py + TS - 5, TS - 6, 4);
-      x.fillStyle = '#6b4526'; x.fillRect(hx - 4, py + 8, 8, TS - 10);
-      x.fillStyle = '#7d5430'; x.fillRect(hx - 4, py + 8, 3, TS - 10);
-      x.fillStyle = '#573619'; x.fillRect(hx + 1, py + 12, 2, 5);
-
-      x.fillStyle = '#1f5c26';
-      x.fillRect(px - 2, py - 12, TS + 4, 22);
-      x.fillRect(px + 2, py - 18, TS - 4, 30);
-      x.fillStyle = '#2a7a2f';
-      x.fillRect(px + 1, py - 14, TS - 6, 16);
-      x.fillStyle = '#3a9b3a';
-      x.fillRect(px + 3, py - 16, 9, 7);
-      x.fillRect(px + 2, py - 9, 5, 4);
-      x.fillStyle = '#16451c';
-      for (i = 0; i < 4; i++) {
-        n = bruit(tx, ty, 100 + i);
-        x.fillRect(px + 2 + (n * 18 | 0), py - 12 + ((bruit(tx, ty, 110 + i) * 18) | 0), 4, 3);
-      }
-      return;
-    }
-
-    if (t === BUISSON) {
-      x.fillStyle = 'rgba(0,0,0,.22)'; x.fillRect(px + 3, py + TS - 4, TS - 6, 3);
-      x.fillStyle = '#1f5f28'; x.fillRect(px + 2, py + 6, TS - 4, TS - 9);
-      x.fillStyle = '#2d8034'; x.fillRect(px + 3, py + 5, TS - 8, 9);
-      x.fillStyle = '#3f9c42'; x.fillRect(px + 5, py + 6, 6, 4);
-      x.fillStyle = '#d8434f';
-      for (i = 0; i < 3; i++) {
-        n = bruit(tx, ty, 120 + i);
-        x.fillRect(px + 4 + (n * 14 | 0), py + 9 + ((bruit(tx, ty, 130 + i) * 9) | 0), 2, 2);
-      }
-      return;
-    }
-
-    if (t === ROCHER) {
-      x.fillStyle = 'rgba(0,0,0,.24)'; x.fillRect(px + 3, py + TS - 4, TS - 6, 3);
-      x.fillStyle = '#5d6270'; x.fillRect(px + 3, py + 7, TS - 6, TS - 10);
-      x.fillStyle = '#767c8c'; x.fillRect(px + 4, py + 6, TS - 10, 7);
-      x.fillStyle = '#8f95a6'; x.fillRect(px + 6, py + 7, 5, 3);
-      x.fillStyle = '#43485a'; x.fillRect(px + 10, py + 12, 7, 3);
-      return;
-    }
-
-    if (t === MUR) {
-      // Creneaux et torches sur la facade de l'arene.
-      x.fillStyle = '#4d5160'; x.fillRect(px, py, TS, 3);
-      if (ty === AR.y0) {
-        x.fillStyle = '#878ca0';
-        x.fillRect(px + (tx % 2 ? 2 : 12), py - 6, 9, 7);
-      }
-      if (ty === AR.y1 && tx % 3 === 0) {
-        x.fillStyle = '#4a3420'; x.fillRect(px + 10, py + 6, 3, 10);
-        x.fillStyle = '#ff9b35'; x.fillRect(px + 9, py + 1, 5, 6);
-        x.fillStyle = '#ffe27a'; x.fillRect(px + 10, py + 2, 3, 3);
-      }
-      return;
-    }
-
-    if (t === PORTE) {
-      x.fillStyle = '#20232e'; x.fillRect(px, py + 2, TS, TS - 2);
-      x.fillStyle = '#c9a227'; x.fillRect(px, py, TS, 3);
-      x.fillStyle = 'rgba(255,225,120,.16)'; x.fillRect(px, py + 4, TS, TS - 6);
-    }
   }
 
   // ==========================================================
@@ -574,235 +396,75 @@
       jeu.appendChild(scene);
 
       var g = construireCarte();
-      var monde = peindreMonde(g);
-      var ctx = cv.getContext('2d');
-      ctx.imageSmoothingEnabled = false;
 
-      var aCharger = equipe.map(function (id) {
-        return { cle: id, src: DP.sprite(id, 'walk') };
-      });
-      aCharger.push({ cle: 'lefondateur', src: DP.sprite('lefondateur', 'walk') });
+      // Toute la marche est confiee au moteur partage : il gere le
+      // joystick, la camera, les collisions et le pas de la troupe.
+      var balade = null, arrive = false;
+      var DIRS = (window.CHIBI && window.CHIBI.DIRS) || { bas: 0, gauche: 1, droite: 2, haut: 3 };
 
-      charger(aCharger, function (sprites) {
-        if (!vivant()) return;
-        lancerForet(g, monde, ctx, cv, sprites, stick, pomme, entrer, boussole);
-      });
-    }
+      balade = M.Balade({
+        grille: g,
+        canvas: cv,
+        stick: stick, pomme: pomme,
+        opts: { arene: AR },
+        depart: DEPART,
+        direction: DIRS.haut,
+        troupe: equipe,
+        vivant: vivant,
+        fige: function () { return arrive; },
 
-    function lancerForet(g, monde, ctx, cv, sprites, stick, pomme, entrer, boussole) {
-      var VUE_W = cv.width, VUE_H = cv.height;
-      var VITESSE = 86;                       // px de monde par seconde
+        // Le Fondateur attend au milieu de son arene, trie en profondeur
+        // avec la troupe pour qu'il passe devant ou derriere comme il faut.
+        extras: function () {
+          return [{ id: 'lefondateur', x: (AR.x0 + AR.x1 + 1) / 2 * TS,
+                    y: (AR.y0 + AR.y1 + 1) / 2 * TS, dir: DIRS.bas, fixe: true }];
+        },
 
-      var chef = { x: DEPART.x, y: DEPART.y, sens: 1, pas: 0 };
-      var trace = [];                         // les pas du meneur
-      var suite = equipe.slice(1);            // les quatre suiveurs
-      var dir = { x: 0, y: 0 };
-      var arrive = false;
-
-      // --- Le joystick ---
-      var actif = false, rayon = 0, centre = { x: 0, y: 0 };
-
-      function prendre(e) {
-        var r = stick.getBoundingClientRect();
-        rayon = r.width / 2;
-        centre.x = r.left + rayon; centre.y = r.top + rayon;
-        actif = true;
-        stick.classList.add('is-actif');
-        if (stick.setPointerCapture) { try { stick.setPointerCapture(e.pointerId); } catch (err) {} }
-        bouger(e);
-      }
-      function bouger(e) {
-        if (!actif) return;
-        var dx = e.clientX - centre.x, dy = e.clientY - centre.y;
-        var d = Math.sqrt(dx * dx + dy * dy) || 1;
-        var k = Math.min(1, d / (rayon * 0.72));
-        dir.x = dx / d * k; dir.y = dy / d * k;
-        pomme.style.transform = 'translate(' + (dir.x * rayon * 0.5) + 'px,' +
-                                               (dir.y * rayon * 0.5) + 'px)';
-      }
-      function lacher() {
-        actif = false;
-        dir.x = dir.y = 0;
-        stick.classList.remove('is-actif');
-        pomme.style.transform = '';
-      }
-      stick.addEventListener('pointerdown', prendre);
-      stick.addEventListener('pointermove', bouger);
-      stick.addEventListener('pointerup', lacher);
-      stick.addEventListener('pointercancel', lacher);
-      stick.addEventListener('lostpointercapture', lacher);
-
-      // --- Le clavier, pour jouer au bureau ---
-      var touches = {};
-      var CLAVIER = {
-        ArrowUp: 'h', ArrowDown: 'b', ArrowLeft: 'g', ArrowRight: 'd',
-        z: 'h', s: 'b', q: 'g', d: 'd', w: 'h', a: 'g'
-      };
-      function auClavier(e, enfonce) {
-        var k = CLAVIER[e.key];
-        if (!k) return;
-        touches[k] = enfonce;
-        e.preventDefault();
-      }
-      var kd = function (e) { auClavier(e, true); };
-      var ku = function (e) { auClavier(e, false); };
-      window.addEventListener('keydown', kd);
-      window.addEventListener('keyup', ku);
-
-      function retirerEcoutes() {
-        window.removeEventListener('keydown', kd);
-        window.removeEventListener('keyup', ku);
-      }
-
-      // --- Les collisions ---
-      // On teste les pieds du sprite, pas tout son corps : c'est ce qui
-      // permet de passer devant un arbre sans se coincer dedans.
-      function libre(x, y) {
-        var b = [[x - 7, y - 3], [x + 7, y - 3], [x - 7, y + 4], [x + 7, y + 4]];
-        for (var i = 0; i < b.length; i++) {
-          var tx = Math.floor(b[i][0] / TS), ty = Math.floor(b[i][1] / TS);
-          if (tx < 0 || ty < 0 || tx >= MW || ty >= MH) return false;
-          if (BLOQUANT[g[ty][tx]]) return false;
-        }
-        return true;
-      }
-
-      function surLaPorte() {
-        var tx = Math.floor(chef.x / TS), ty = Math.floor(chef.y / TS);
-        return g[ty] && g[ty][tx] === PORTE;
-      }
-
-      var dernier = 0, cam = { x: 0, y: 0 };
-
-      function boucle(t) {
-        if (!vivant()) { retirerEcoutes(); return; }
-        var dt = dernier ? Math.min(0.05, (t - dernier) / 1000) : 0;
-        dernier = t;
-
-        var vx = dir.x, vy = dir.y;
-        if (touches.g) vx = -1; if (touches.d) vx = 1;
-        if (touches.h) vy = -1; if (touches.b) vy = 1;
-        var n = Math.sqrt(vx * vx + vy * vy);
-        if (n > 1) { vx /= n; vy /= n; }
-
-        if (!arrive && (vx || vy)) {
-          var nx = chef.x + vx * VITESSE * dt;
-          var ny = chef.y + vy * VITESSE * dt;
-          if (libre(nx, chef.y)) chef.x = nx;
-          if (libre(chef.x, ny)) chef.y = ny;
-          if (vx) chef.sens = vx < 0 ? -1 : 1;
-          chef.pas += Math.abs(vx) + Math.abs(vy);
-          trace.unshift({ x: chef.x, y: chef.y, sens: chef.sens });
-          if (trace.length > 400) trace.length = 400;
-        }
-
-        // La camera suit, mais ne sort jamais de la carte.
-        cam.x = borne(chef.x - VUE_W / 2, 0, MW * TS - VUE_W);
-        cam.y = borne(chef.y - VUE_H / 2, 0, MH * TS - VUE_H);
-
-        // La case occupee par la troupe, inscrite sur le conteneur : elle
-        // sert de repere de position, et rend la marche verifiable.
-        var casier = Math.floor(chef.x / TS) + ',' + Math.floor(chef.y / TS);
-        if (jeu.dataset.tuile !== casier) jeu.dataset.tuile = casier;
-
-        dessinerForet(t);
-
-        var dedans = surLaPorte();
-        if (dedans !== !entrer.hidden) entrer.hidden = !dedans;
-
-        requestAnimationFrame(boucle);
-      }
-
-      function dessinerForet(t) {
-        ctx.drawImage(monde, cam.x | 0, cam.y | 0, VUE_W, VUE_H, 0, 0, VUE_W, VUE_H);
-
-        // L'eau bouge : deux lignes claires qui glissent.
-        var t0 = t / 320;
-        for (var ty = Math.floor(cam.y / TS); ty <= (cam.y + VUE_H) / TS; ty++) {
-          for (var tx = Math.floor(cam.x / TS); tx <= (cam.x + VUE_W) / TS; tx++) {
-            if (!g[ty] || g[ty][tx] !== EAU) continue;
-            var px = tx * TS - cam.x, py = ty * TS - cam.y;
-            ctx.fillStyle = 'rgba(190,225,255,.5)';
-            var o = ((Math.sin(t0 + tx * 0.7 + ty) * 7) | 0) + 8;
-            ctx.fillRect(px + o, py + 6, 7, 2);
-            ctx.fillRect(px + (TS - o - 6), py + 15, 5, 2);
+        avant: function (ctx, cam, t) {
+          // Les lucioles du sous-bois
+          if (!reduit) {
+            for (var i = 0; i < 18; i++) {
+              var bx = bruit(i, 7, 200) * MW * TS + Math.sin(t / 900 + i) * 26;
+              var by = bruit(i, 9, 201) * MH * TS + Math.cos(t / 1100 + i * 2) * 20;
+              var sx = bx - cam.x, sy = by - cam.y;
+              if (sx < -4 || sy < -4 || sx > cv.width || sy > cv.height) continue;
+              var a = 0.35 + 0.45 * (0.5 + 0.5 * Math.sin(t / 380 + i * 1.7));
+              ctx.fillStyle = 'rgba(214,255,140,' + a.toFixed(2) + ')';
+              ctx.fillRect(sx | 0, sy | 0, 2, 2);
+            }
           }
-        }
-
-        // Les lucioles : le detail qui fait vivre le sous-bois.
-        if (!reduit) {
-          for (var i = 0; i < 18; i++) {
-            var bx = (bruit(i, 7, 200) * MW * TS + Math.sin(t / 900 + i) * 26);
-            var by = (bruit(i, 9, 201) * MH * TS + Math.cos(t / 1100 + i * 2) * 20);
-            var sx = bx - cam.x, sy = by - cam.y;
-            if (sx < -4 || sy < -4 || sx > VUE_W || sy > VUE_H) continue;
-            var a = 0.35 + 0.45 * (0.5 + 0.5 * Math.sin(t / 380 + i * 1.7));
-            ctx.fillStyle = 'rgba(214,255,140,' + a.toFixed(2) + ')';
-            ctx.fillRect(sx | 0, sy | 0, 2, 2);
+          // La lueur rouge sous Le Fondateur
+          var fx = (AR.x0 + AR.x1 + 1) / 2 * TS - cam.x;
+          var fy = (AR.y0 + AR.y1 + 1) / 2 * TS - cam.y;
+          if (fx > -60 && fx < cv.width + 60) {
+            ctx.fillStyle = 'rgba(255,60,50,' + (0.18 + 0.12 * Math.sin(t / 500)).toFixed(2) + ')';
+            ctx.beginPath();
+            ctx.ellipse(fx, fy + 4, 30, 14, 0, 0, 6.3);
+            ctx.fill();
           }
+        },
+
+        chaqueImage: function () {
+          var c = balade.caseDuChef();
+          var casier = c[0] + ',' + c[1];
+          if (jeu.dataset.tuile !== casier) jeu.dataset.tuile = casier;
+
+          var dedans = balade.tuile(c[0], c[1]) === PORTE;
+          if (dedans !== !entrer.hidden) entrer.hidden = !dedans;
+
+          // La boussole pointe vers le portail de l'arene.
+          var ax = ((PORTE_X0 + PORTE_X1 + 1) / 2) * TS - balade.chef.x;
+          var ay = (PORTE_Y + 0.5) * TS - balade.chef.y;
+          boussole.style.transform = 'rotate(' + Math.atan2(ay, ax) + 'rad)';
         }
-
-        // Le Fondateur attend au milieu de son arene, on le voit d'en haut.
-        var fx = (AR.x0 + AR.x1 + 1) / 2 * TS, fy = (AR.y0 + AR.y1 + 1) / 2 * TS;
-        if (fx - cam.x > -60 && fx - cam.x < VUE_W + 60) {
-          var lueur = 0.18 + 0.12 * Math.sin(t / 500);
-          ctx.fillStyle = 'rgba(255,60,50,' + lueur.toFixed(2) + ')';
-          ctx.beginPath();
-          ctx.ellipse(fx - cam.x, fy - cam.y + 4, 30, 14, 0, 0, 6.3);
-          ctx.fill();
-        }
-
-        // La troupe : les suiveurs d'abord, le meneur par-dessus.
-        var ordre = [{ id: 'lefondateur', x: fx, y: fy, sens: 1, pas: 0, fixe: true }];
-        for (var k = suite.length - 1; k >= 0; k--) {
-          var p = trace[Math.min(trace.length - 1, (k + 1) * 26)] || chef;
-          ordre.push({ id: suite[k], x: p.x, y: p.y, sens: p.sens, pas: chef.pas + k * 3 });
-        }
-        ordre.push({ id: equipe[0], x: chef.x, y: chef.y, sens: chef.sens, pas: chef.pas });
-        ordre.sort(function (a, b) { return a.y - b.y; });
-        ordre.forEach(function (p) { poserSprite(p, t); });
-
-        // La boussole pointe vers la porte de l'arene.
-        var ax = ((PORTE_X0 + PORTE_X1 + 1) / 2) * TS - chef.x, ay = (PORTE_Y + 0.5) * TS - chef.y;
-        boussole.style.transform = 'rotate(' + Math.atan2(ay, ax) + 'rad)';
-      }
-
-      function poserSprite(p, t) {
-        var img = sprites[p.id];
-        if (!img || !img.width) return;
-        var w = img.width, h = img.height;
-        var sx = Math.round(p.x - cam.x - w / 2);
-        var sy = Math.round(p.y - cam.y - h + 6);
-        // Un leger balancement : deux poses, comme un sprite a deux frames.
-        // Le Fondateur, lui, ne marche pas : il respire sur place.
-        var bond = reduit ? 0
-                 : p.fixe ? (Math.floor(t / 520) % 2 ? 1 : 0)
-                 : (Math.floor(p.pas / 7) % 2 ? 1 : 0);
-
-        ctx.fillStyle = 'rgba(0,0,0,.3)';
-        ctx.beginPath();
-        ctx.ellipse(p.x - cam.x, p.y - cam.y + 3, w * 0.3, 3.5, 0, 0, 6.3);
-        ctx.fill();
-
-        ctx.save();
-        if (p.sens < 0) {
-          ctx.translate(sx + w, sy + bond);
-          ctx.scale(-1, 1);
-          ctx.drawImage(img, 0, 0);
-        } else {
-          ctx.drawImage(img, sx, sy + bond);
-        }
-        ctx.restore();
-      }
+      });
 
       entrer.addEventListener('click', function () {
         if (arrive) return;
         arrive = true;
-        retirerEcoutes();
+        balade.arreter();
         ecranCombat();
       });
-
-      requestAnimationFrame(boucle);
     }
 
     // ---------- 3. Le combat ----------

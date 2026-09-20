@@ -525,7 +525,8 @@
   function viewItems(view) {
     var list = el('div', 'screen-scroll');
 
-    DP.ITEMS.forEach(function (it) {
+    var possedes = DP.items();
+    possedes.forEach(function (it) {
       var row = el('a', 'slot slot--item');
       row.href = '#' + it.view;
       row.dataset.item = it.id;
@@ -546,7 +547,7 @@
     });
 
     // Les emplacements encore vides, pour montrer qu'il y a de la place.
-    for (var i = DP.ITEMS.length; i < 6; i++) {
+    for (var i = possedes.length; i < 6; i++) {
       var vide = el('div', 'slot slot--locked');
       var mark = el('span', 'slot-face slot-face--locked', '?');
       mark.setAttribute('aria-hidden', 'true');

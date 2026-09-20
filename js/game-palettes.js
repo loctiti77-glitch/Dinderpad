@@ -1,0 +1,161 @@
+// Genere par tools/generate-palettes.js — ne pas editer a la main.
+// Les couleurs de chaque personnage, relevees sur son illustration,
+// dont le mini-jeu habille ses sprites de balade.
+window.FW_PALETTES = {
+  "dr-islas-human-form": {
+    "peau": "#f9d4a9",
+    "peauOmbre": "#c2a584",
+    "cheveux": "#2e2e2e",
+    "cheveuxClair": "#717171",
+    "vetement": "#f7f2fe",
+    "vetementOmbre": "#adaab2",
+    "accent": "#dcd5f3",
+    "bas": "#dcd6f2",
+    "basOmbre": "#9a96aa",
+    "chaussures": "#2a203a"
+  },
+  "dr-islas-demicos-form": {
+    "peau": "#fadab7",
+    "peauOmbre": "#c3aa8f",
+    "cheveux": "#2e2c2d",
+    "cheveuxClair": "#716f71",
+    "vetement": "#8566aa",
+    "vetementOmbre": "#5d4877",
+    "accent": "#5b4686",
+    "bas": "#463857",
+    "basOmbre": "#31273d",
+    "chaussures": "#221d2d"
+  },
+  "dr-islas-final-form": {
+    "peau": "#e7be99",
+    "peauOmbre": "#b49477",
+    "cheveux": "#fcf7fd",
+    "cheveuxClair": "#fdfafe",
+    "vetement": "#281d3e",
+    "vetementOmbre": "#1c142b",
+    "accent": "#1e0c50",
+    "bas": "#fdf8f7",
+    "basOmbre": "#b1aead",
+    "chaussures": "#15161b"
+  },
+  "calder-veyne-veinburner": {
+    "peau": "#f9ca96",
+    "peauOmbre": "#c29e75",
+    "cheveux": "#1d1d24",
+    "cheveuxClair": "#65666a",
+    "vetement": "#84702e",
+    "vetementOmbre": "#5c4f20",
+    "accent": "#50504e",
+    "bas": "#373734",
+    "basOmbre": "#262624",
+    "chaussures": "#222222"
+  },
+  "carl-sinars-cardinal-sin": {
+    "peau": "#ecb47a",
+    "peauOmbre": "#b88c60",
+    "cheveux": "#2e2b2c",
+    "cheveuxClair": "#716f70",
+    "vetement": "#3e1414",
+    "vetementOmbre": "#2b0e0e",
+    "accent": "#504d50",
+    "bas": "#383333",
+    "basOmbre": "#272424",
+    "chaussures": "#221f21"
+  },
+  "edgar-marks-grincrusher": {
+    "peau": "#fce9d9",
+    "peauOmbre": "#c5b5a9",
+    "cheveux": "#1d1d24",
+    "cheveuxClair": "#65666a",
+    "vetement": "#672514",
+    "vetementOmbre": "#481a0e",
+    "accent": "#32333e",
+    "bas": "#202129",
+    "basOmbre": "#17171c",
+    "chaussures": "#15161b"
+  },
+  "he-melt": {
+    "peau": "#e8c799",
+    "peauOmbre": "#b59b78",
+    "cheveux": "#b9b8b6",
+    "cheveuxClair": "#cfcfce",
+    "vetement": "#3e271d",
+    "vetementOmbre": "#2b1b14",
+    "accent": "#3e3650",
+    "bas": "#261812",
+    "basOmbre": "#1b110d",
+    "chaussures": "#3a3939"
+  },
+  "v": {
+    "peau": "#fcd38c",
+    "peauOmbre": "#c4a46d",
+    "cheveux": "#343435",
+    "cheveuxClair": "#757575",
+    "vetement": "#16213e",
+    "vetementOmbre": "#0f172b",
+    "accent": "#32333e",
+    "bas": "#0e1426",
+    "basOmbre": "#0a0e1b",
+    "chaussures": "#2d0a06"
+  },
+  "a": {
+    "peau": "#f8cc96",
+    "peauOmbre": "#c19f75",
+    "cheveux": "#780707",
+    "cheveuxClair": "#a35656",
+    "vetement": "#3e0404",
+    "vetementOmbre": "#2c0303",
+    "accent": "#32333e",
+    "bas": "#333334",
+    "basOmbre": "#242424",
+    "chaussures": "#212122"
+  },
+  "h": {
+    "peau": "#fdd47d",
+    "peauOmbre": "#c5a661",
+    "cheveux": "#fcc63a",
+    "cheveuxClair": "#fdd879",
+    "vetement": "#1c3f15",
+    "vetementOmbre": "#132c0f",
+    "accent": "#32333e",
+    "bas": "#11270d",
+    "basOmbre": "#0c1b09",
+    "chaussures": "#2c1239"
+  },
+  "multinder": {
+    "peau": "#fbc888",
+    "peauOmbre": "#c49c6a",
+    "cheveux": "#fed748",
+    "cheveuxClair": "#fee483",
+    "vetement": "#fbfafb",
+    "vetementOmbre": "#b0afaf",
+    "accent": "#565a67",
+    "bas": "#d7e8f3",
+    "basOmbre": "#97a2aa",
+    "chaussures": "#525561"
+  },
+  "gart-kervelor-king-of-karsovia": {
+    "peau": "#fac587",
+    "peauOmbre": "#c39a69",
+    "cheveux": "#2e0200",
+    "cheveuxClair": "#715352",
+    "vetement": "#3e0201",
+    "vetementOmbre": "#2b0101",
+    "accent": "#504646",
+    "bas": "#341d1f",
+    "basOmbre": "#241416",
+    "chaussures": "#15161b"
+  },
+  "lefondateur": {
+    "peau": "#f7c577",
+    "peauOmbre": "#c1995d",
+    "cheveux": "#1d1d24",
+    "cheveuxClair": "#65666a",
+    "vetement": "#810400",
+    "vetementOmbre": "#5a0300",
+    "accent": "#32333e",
+    "bas": "#202129",
+    "basOmbre": "#17171c",
+    "chaussures": "#15161b"
+  }
+};

@@ -75,12 +75,24 @@
   ];
 
   // ---------- Les items ----------
+  // "acquis" dit a quelle condition l'item apparait dans l'inventaire.
+  // Le DinderTracker est fourni avec l'appareil ; la canne se ramasse sur
+  // la carte du mini-jeu de peche.
   var ITEMS = [
     { id: 'dindertracker', name: 'DinderTracker',
       sub: 'Traceur de signaux',
       img: 'assets/items/dindertracker.webp',
-      view: 'tracker' }
+      view: 'tracker', acquis: function () { return true; } },
+    { id: 'canne', name: 'Canne à Pêche',
+      sub: 'Ramassée au bord de l’eau',
+      img: 'assets/items/canne.webp',
+      view: 'peche-collection', acquis: function () { return aLaCanne(); } }
   ];
+
+  // Ce que le joueur possede vraiment, dans l'ordre du catalogue.
+  function items() {
+    return ITEMS.filter(function (it) { return it.acquis(); });
+  }
 
   // ---------- Les continents du DinderTracker ----------
   // Douze lieux par continent. Le tracker en designe un par heure et
@@ -261,8 +273,21 @@
       name: name,
       created: Date.now(),
       credits: { green: 0, blue: 0, gold: 0, pink: 0 },
-      owned: []
+      owned: [],
+      canne: false,
+      peche: {}
     };
+  }
+
+  // Les profils crees avant la peche n'ont ni canne ni carnet de prises :
+  // on les complete a la lecture plutot que de les migrer une bonne fois,
+  // ce qui evite d'avoir a versionner la sauvegarde.
+  function completer(p) {
+    if (typeof p.canne !== 'boolean') p.canne = false;
+    if (!p.peche || typeof p.peche !== 'object') p.peche = {};
+    if (!p.credits) p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
+    if (!Array.isArray(p.owned)) p.owned = [];
+    return p;
   }
 
   function read(key) {
@@ -303,7 +328,7 @@
 
   function me() {
     var d = load();
-    return byProfileId(d.current);
+    return completer(byProfileId(d.current));
   }
 
   // ---------- L'API des profils ----------
@@ -436,11 +461,40 @@
     return { ouvrable: true, raison: '', reste: reste, total: total };
   }
 
+  // ---------- La peche ----------
+
+  function aLaCanne()    { return !!me().canne; }
+
+  function prendreCanne() {
+    var p = me();
+    if (p.canne) return false;
+    p.canne = true;
+    save();
+    return true;
+  }
+
+  // Le carnet de prises : combien de fois chaque espece a mordu, et la
+  // plus belle taille sortie de l'eau.
+  function prises()      { return me().peche; }
+  function aPeche(id)    { return !!me().peche[id]; }
+
+  function noterPrise(id, cm) {
+    var p = me();
+    var e = p.peche[id] || { n: 0, max: 0 };
+    e.n++;
+    if (cm > e.max) e.max = cm;
+    p.peche[id] = e;
+    save();
+    return e;
+  }
+
   // Vide la progression du profil courant, sans supprimer le profil.
   function reset() {
     var p = me();
     p.owned = [];
     p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
+    p.canne = false;
+    p.peche = {};
     save();
   }
 
@@ -467,10 +521,11 @@
   // Le personnage en pied, pour sa fiche detaillee.
   function dinderFull(id) { return 'assets/dinders/full/' + id + '.webp'; }
 
-  // Les sprites 8 bits du mini-jeu : "walk" pour la foret, "duel" pour
-  // l'arene. Fabriques par tools/generate-sprites.js.
+  // Les sprites 8 bits du duel, fabriques par tools/generate-sprites.js.
+  // Ceux de la foret sont d'une autre nature : js/game-sprites.js les peint
+  // a la volee, en chibi, et ne passe donc pas par ici.
   function sprite(id, taille) {
-    return 'assets/games/sprites/' + (taille || 'walk') + '/' + id + '.png';
+    return 'assets/games/sprites/' + (taille || 'duel') + '/' + id + '.png';
   }
 
   window.DP = {
@@ -478,7 +533,9 @@
     SLOTS: SLOTS, UNLIMITED: UNLIMITED, RARITIES: RARITIES,
     DINDISES: DINDISES, ofRarity: ofRarity, missingOf: missingOf,
     dindiseEtat: dindiseEtat,
-    ITEMS: ITEMS, CONTINENTS: CONTINENTS,
+    ITEMS: ITEMS, items: items, CONTINENTS: CONTINENTS,
+    aLaCanne: aLaCanne, prendreCanne: prendreCanne,
+    prises: prises, aPeche: aPeche, noterPrise: noterPrise,
     spots: spots, prochainSaut: prochainSaut,
     heureLocale: heureLocale, dateLocale: dateLocale,
     rarityKey: rarityKey,

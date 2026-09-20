@@ -18,8 +18,9 @@ const IDS = [
   'he-melt', 'v', 'a', 'h', 'multinder', 'gart-kervelor-king-of-karsovia'
 ];
 
-// Deux tailles : la petite pour marcher en foret, la grande pour le duel.
-const TAILLES = { walk: [32, 40], duel: [64, 80] };
+// Une seule taille : celle du duel. Les sprites de balade de la foret ne
+// sont pas des images, ils sont peints par js/game-sprites.js.
+const TAILLES = { duel: [64, 80] };
 
 const OUTLINE = [14, 12, 26, 255];      // le cerne, presque noir mais bleute
 
@@ -81,16 +82,23 @@ async function sprite(entree, sortie, W, H, couleurs) {
     for (const [taille, [W, H]] of Object.entries(TAILLES)) {
       await sprite(ROOT + '/assets/dinders/full/' + id + '.webp',
                    path.join(OUT, taille, id + '.png'),
-                   W, H, taille === 'walk' ? 16 : 28);
+                   W, H, 28);
     }
     process.stdout.write('.');
   }
 
   // Le Fondateur est plus grand que les autres : il domine l'arene.
   await sprite(ROOT + '/assets/_source/LeFondateur.PNG',
-               path.join(OUT, 'walk', 'lefondateur.png'), 44, 52, 18);
-  await sprite(ROOT + '/assets/_source/LeFondateur.PNG',
                path.join(OUT, 'duel', 'lefondateur.png'), 104, 128, 30);
 
-  console.log('\n' + IDS.length + ' Dinders + Le Fondateur en sprites');
+  // Les objets ramassables de la carte : la canne a peche, en petit, pour
+  // qu'elle flotte sur la carte comme un sprite d'objet.
+  fs.mkdirSync(path.join(OUT, 'objets'), { recursive: true });
+  // Le leurre pend loin a droite de l'illustration : le garder ferait un
+  // point isole qui ressemble a un defaut. On ne prend que la canne.
+  const rod = await sharp(ROOT + '/assets/_source/FishingRod.PNG')
+    .extract({ left: 0, top: 0, width: 1340, height: 1024 }).png().toBuffer();
+  await sprite(rod, path.join(OUT, 'objets', 'canne.png'), 34, 24, 14);
+
+  console.log('\n' + IDS.length + ' Dinders + Le Fondateur + la canne en sprites');
 })();
