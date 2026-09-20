@@ -1736,6 +1736,11 @@ body[data-phase="welcome"] .lock-welcome {
   min-height: 0;
 }
 
+/* Dans cette ligne-ci, la colonne est l'axe principal : la largeur fixe
+   du libelle deviendrait une HAUTEUR fixe et creuserait un grand vide
+   entre "Description" et son texte. */
+.fiche-line--desc .fiche-label { flex: 0 0 auto; }
+
 .fiche-desc {
   margin: 0;
   font-size: calc(27 * var(--px));

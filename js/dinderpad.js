@@ -56,22 +56,27 @@
   // L'ordre fixe la place de chaque Dinder dans la collection : le premier
   // occupe toujours la case 01, meme s'il est obtenu en dernier.
   //
-  // Deux details voulus, a ne pas "corriger" :
+  // Trois details voulus, a ne pas "corriger" :
   //   - "SSt-03" s'ecrit bien avec un t, ce n'est pas une coquille de "SS-03" ;
-  //   - "???" n'est pas un univers manquant : V, A et H n'en ont pas.
+  //   - "???" n'est pas un univers manquant : V, A et H n'en ont pas ;
+  //   - He Melt "de son vrai nom Calder Veyne" : les deux entrees designent
+  //     bien la meme personne avant et apres la cuve d'acide, ce n'est pas
+  //     un doublon a fusionner.
+  //
+  // Les descriptions sont de l'auteur : on n'y touche pas sans son accord.
   var DINDERS = [
-    { id: 'dr-islas-human-form',               name: 'Dr.Islas',      form: 'Human form',       rarity: 'Universel',    universe: 'SS-03',  desc: '' },
-    { id: 'dr-islas-demicos-form',             name: 'Dr.Islas',      form: 'Demicos form',     rarity: 'Universel',    universe: 'SS-03',  desc: '' },
-    { id: 'dr-islas-final-form',               name: 'Dr.Islas',      form: 'Final Form',       rarity: 'Temporel',     universe: 'SS-03',  desc: '' },
-    { id: 'calder-veyne-veinburner',           name: 'Calder Veyne',  form: 'Veinburner',       rarity: 'Universel',    universe: 'SS-03',  desc: '' },
-    { id: 'carl-sinars-cardinal-sin',          name: 'Carl Sinars',   form: 'Cardinal Sin',     rarity: 'Universel',    universe: 'SS-03',  desc: '' },
-    { id: 'edgar-marks-grincrusher',           name: 'Edgar Marks',   form: 'Grincrusher',      rarity: 'Universel',    universe: 'SS-03',  desc: '' },
-    { id: 'he-melt',                           name: 'He Melt',       form: '',                 rarity: 'Multiversel',  universe: 'SSt-03', desc: '' },
-    { id: 'v',                                 name: 'V',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: '' },
-    { id: 'a',                                 name: 'A',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: '' },
-    { id: 'h',                                 name: 'H',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: '' },
-    { id: 'multinder',                         name: 'Multinder',     form: '',                 rarity: 'Universel',    universe: 'SS-03',  desc: '' },
-    { id: 'gart-kervelor-king-of-karsovia',    name: 'Gart Kervelor', form: 'King of Karsovia', rarity: 'Multiversel',  universe: 'SSt-03', desc: '' }
+    { id: 'dr-islas-human-form',               name: 'Dr.Islas',      form: 'Human form',       rarity: 'Universel',    universe: 'SS-03',  desc: 'Un scientifique reconnu aux quatre coins du monde, sain de corps et d’esprit.' },
+    { id: 'dr-islas-demicos-form',             name: 'Dr.Islas',      form: 'Demicos form',     rarity: 'Universel',    universe: 'SS-03',  desc: 'Après une expérience ayant mal tourné, le docteur dut transplanter son cerveau sur son épaule car l’intérieur de son crâne nécrosait.' },
+    { id: 'dr-islas-final-form',               name: 'Dr.Islas',      form: 'Final Form',       rarity: 'Temporel',     universe: 'SS-03',  desc: 'Après avoir créé un trou de ver entre le système solaire et stellaire, le docteur fusionna avec ce dernier et devint l’être cosmique le plus puissant de l’univers.' },
+    { id: 'calder-veyne-veinburner',           name: 'Calder Veyne',  form: 'Veinburner',       rarity: 'Universel',    universe: 'SS-03',  desc: 'Calder Veyne, enfant, fut arraché de son foyer pour vivre en maison d’Altérés, où il subit d’atroces expériences jusqu’à devenir Veinburner.' },
+    { id: 'carl-sinars-cardinal-sin',          name: 'Carl Sinars',   form: 'Cardinal Sin',     rarity: 'Universel',    universe: 'SS-03',  desc: 'Carl Sinars, un adulte addict aux jeux d’argent, rejoint la quête du Dr. Islas, lui ayant donné accès aux pouvoirs des cartes.' },
+    { id: 'edgar-marks-grincrusher',           name: 'Edgar Marks',   form: 'Grincrusher',      rarity: 'Universel',    universe: 'SS-03',  desc: 'Edgar Marks, enfant, fut arraché de son foyer pour vivre en maison d’Altérés, où il subit d’atroces expériences jusqu’à devenir Grincrusher.' },
+    { id: 'he-melt',                           name: 'He Melt',       form: '',                 rarity: 'Multiversel',  universe: 'SSt-03', desc: 'He Melt, de son vrai nom Calder Veyne, fut trahi par son patron, qui le poussa dans une cuve d’acide nécrophylactique, qui le transforma en cette visqueuse masse métamorphe.' },
+    { id: 'v',                                 name: 'V',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: 'Protecteur d’orbe.' },
+    { id: 'a',                                 name: 'A',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: 'Protecteur d’orbe.' },
+    { id: 'h',                                 name: 'H',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: 'Protecteur d’orbe.' },
+    { id: 'multinder',                         name: 'Multinder',     form: '',                 rarity: 'Universel',    universe: 'SS-03',  desc: 'Multinder est le gardien des 5 éléments fondamentaux de la planète Terre.' },
+    { id: 'gart-kervelor-king-of-karsovia',    name: 'Gart Kervelor', form: 'King of Karsovia', rarity: 'Multiversel',  universe: 'SSt-03', desc: 'Gart Kervelor est le monarque du royaume de Karsovie.' }
   ];
 
   // ---------- Les items ----------
