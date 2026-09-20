@@ -44,133 +44,173 @@
   function viewBoutique(view) {
     var box = el('div', 'bq');
     var onglet = 'canne';
+    var choix = null;                    // l'article selectionne dans la liste
 
-    // ---- L'en-tete : le poissonnier et sa replique ----
-    var tete = el('div', 'bq-tete');
+    function reduit() {
+      return !!(window.matchMedia &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    // ---- La colonne de gauche : le poissonnier, en grand ----
+    var gauche = el('div', 'bq-gauche');
     var portrait = el('img', 'bq-portrait');
     portrait.src = FISHERMAN;
     portrait.alt = '';
-    tete.appendChild(portrait);
+    gauche.appendChild(portrait);
 
-    var bulle = el('div', 'bq-bulle');
-    bulle.appendChild(el('p', 'bq-nom', 'Poissonnerie'));
-    var replique = el('p', 'bq-replique',
-      REPLIQUES[Math.floor(Math.random() * REPLIQUES.length)]);
-    bulle.appendChild(replique);
-    tete.appendChild(bulle);
-    box.appendChild(tete);
+    var bourse = el('div', 'bq-bourse');
+    gauche.appendChild(bourse);
+    box.appendChild(gauche);
 
-    function dire(txt) { replique.textContent = txt; }
+    // ---- La colonne de droite : l'enseigne, la liste, le pied ----
+    var droite = el('div', 'bq-droite');
 
-    // ---- Le troc : les doublons, rarete par rarete ----
-    var troc = el('div', 'bq-troc');
-    box.appendChild(troc);
-
-    function construireTroc() {
-      troc.textContent = '';
-      troc.appendChild(el('p', 'bq-section', 'Tes doublons'));
-      var ligne = el('div', 'bq-doublons');
-
-      M.ORDRE_PALIERS.forEach(function (cle) {
-        var p = M.PALIERS[cle];
-        var n = M.doublons(p.rarete);
-        var carte = el('div', 'bq-doublon');
-        carte.dataset.palier = cle;
-        carte.style.setProperty('--r', M.couleurPalier(cle));
-
-        carte.appendChild(el('span', 'bq-doublon-rarete', p.nom));
-        carte.appendChild(el('strong', 'bq-doublon-n', String(n)));
-
-        var vendre = el('button', 'bq-vendre');
-        vendre.type = 'button';
-        vendre.disabled = !M.peutVendre(p.rarete);
-        vendre.appendChild(el('span', null, 'Vendre ' + p.poissons));
-        var pastille = el('img', 'bq-credit');
-        pastille.src = DP.creditImg(p.credit);
-        pastille.alt = '';
-        vendre.appendChild(pastille);
-        vendre.appendChild(el('span', null, '× ' + DP.PRICE[p.credit]));
-
-        vendre.addEventListener('click', function () {
-          var r = M.vendre(p.rarete);
-          if (!r.ok) return dire('Il t’en faut ' + p.poissons + ' en double.');
-          dire(p.poissons + ' ' + p.nom.toLowerCase() + 's contre ' +
-               r.gagne + ' ' + DP.CREDITS[r.credit].name + '.');
-          tout();
-        });
-        carte.appendChild(vendre);
-        ligne.appendChild(carte);
-      });
-      troc.appendChild(ligne);
-    }
-
-    // ---- L'etal : cannes et flotteurs ----
-    var etal = el('div', 'bq-etal');
-    box.appendChild(etal);
-
-    function construireEtal() {
-      etal.textContent = '';
-
-      var tabs = el('div', 'bq-onglets');
-      [['canne', 'Cannes'], ['flotteur', 'Flotteurs']].forEach(function (o) {
+    var banniere = el('div', 'bq-banniere');
+    banniere.appendChild(el('span', 'bq-enseigne', 'Poissonnerie'));
+    var tabs = el('div', 'bq-onglets');
+    [['canne', 'Cannes'], ['flotteur', 'Flotteurs'], ['vendre', 'Vendre']]
+      .forEach(function (o) {
         var b = el('button', 'bq-onglet', o[1]);
         b.type = 'button';
         b.dataset.type = o[0];
-        b.classList.toggle('is-actif', onglet === o[0]);
-        b.addEventListener('click', function () { onglet = o[0]; tout(); });
+        b.addEventListener('click', function () {
+          onglet = o[0];
+          choix = null;
+          tout();
+        });
         tabs.appendChild(b);
       });
-      etal.appendChild(tabs);
+    banniere.appendChild(tabs);
+    droite.appendChild(banniere);
 
-      var grille = el('div', 'bq-grille');
+    var liste = el('div', 'bq-liste');
+    droite.appendChild(liste);
+
+    var pied = el('div', 'bq-pied');
+    droite.appendChild(pied);
+    box.appendChild(droite);
+
+    // ---- La barre de dialogue, en bas ----
+    var barre = el('p', 'bq-barre', 'Sélectionne un article.');
+    box.appendChild(barre);
+
+    function dire(txt) {
+      barre.textContent = txt;
+      barre.classList.remove('is-neuf');
+      void barre.offsetWidth;
+      barre.classList.add('is-neuf');
+    }
+
+    // ---- La bourse : les doublons, rarete par rarete ----
+    function construireBourse() {
+      bourse.textContent = '';
+      bourse.appendChild(el('p', 'bq-bourse-titre', 'Tes doublons'));
+      M.ORDRE_PALIERS.forEach(function (cle) {
+        var p = M.PALIERS[cle];
+        var chip = el('div', 'bq-chip');
+        chip.dataset.palier = cle;
+        chip.style.setProperty('--r', M.couleurPalier(cle));
+        chip.appendChild(el('span', 'bq-chip-nom', p.nom));
+        chip.appendChild(el('strong', 'bq-chip-n', String(M.doublons(p.rarete))));
+        bourse.appendChild(chip);
+      });
+    }
+
+    // ---- Une ligne de la liste ----
+    function ligne(opts) {
+      var n = el('button', 'bq-ligne');
+      n.type = 'button';
+      if (opts.id) n.dataset.item = opts.id;
+      if (opts.palier) n.dataset.palier = opts.palier;
+      n.style.setProperty('--r', opts.couleur);
+      n.classList.toggle('is-choisi', !!opts.choisi);
+      n.classList.toggle('is-possede', !!opts.possede);
+
+      var icone = el('span', 'bq-ligne-icone');
+      icone.appendChild(opts.vignette);
+      n.appendChild(icone);
+
+      var txt = el('span', 'bq-ligne-txt');
+      txt.appendChild(el('strong', 'bq-ligne-nom', opts.nom));
+      txt.appendChild(el('span', 'bq-ligne-sous', opts.sous));
+      n.appendChild(txt);
+
+      var prix = el('span', 'bq-ligne-prix');
+      opts.prix.forEach(function (p) {
+        var bloc = el('span', 'bq-tarif' + (p.ok ? '' : ' is-court'));
+        if (p.img) {
+          var im = el('img', 'bq-credit');
+          im.src = p.img;
+          im.alt = '';
+          bloc.appendChild(im);
+        }
+        bloc.appendChild(el('span', null, p.texte));
+        prix.appendChild(bloc);
+      });
+      n.appendChild(prix);
+
+      n.addEventListener('click', opts.clic);
+      return n;
+    }
+
+    // ---- La liste, selon l'onglet ----
+    function construireListe() {
+      liste.textContent = '';
+      var bs = tabs.querySelectorAll('.bq-onglet');
+      for (var i = 0; i < bs.length; i++) {
+        bs[i].classList.toggle('is-actif', bs[i].dataset.type === onglet);
+      }
+      if (onglet === 'vendre') return construireVente();
+
       M.liste(onglet).forEach(function (item) {
-        if (!item.palier) return;                 // l'origine ne se vend pas
+        if (!item.palier) return;               // l'origine ne se vend pas
         var e = M.etat(onglet, item);
         var p = e.prix || M.prix(item);
-
-        var n = el('div', 'bq-article');
-        n.dataset.item = item.id;
-        n.dataset.palier = item.palier;
-        n.style.setProperty('--r', p.couleur);
-        n.classList.toggle('is-possede', e.possede);
-
-        n.appendChild(vignette(onglet, item, 'bq-article-img'));
-
-        var txt = el('div', 'bq-article-txt');
-        txt.appendChild(el('strong', 'bq-article-nom', item.nom));
-        txt.appendChild(el('span', 'bq-article-palier', p.nom));
-        txt.appendChild(el('span', 'bq-article-effet', effetTexte(onglet, item)));
-        n.appendChild(txt);
-
-        if (e.possede) {
-          n.appendChild(el('span', 'bq-possede', 'DANS LE SAC'));
-        } else {
-          var achats = el('div', 'bq-achats');
-
-          var parPoisson = el('button', 'bq-achat');
-          parPoisson.type = 'button';
-          parPoisson.disabled = !e.poissons;
-          parPoisson.appendChild(el('span', 'bq-achat-n', p.poissons + ' ×'));
-          parPoisson.appendChild(el('span', 'bq-achat-quoi', p.nom.toLowerCase()));
-          parPoisson.addEventListener('click', function () { faire(item, 'poissons'); });
-          achats.appendChild(parPoisson);
-
-          var parCredit = el('button', 'bq-achat');
-          parCredit.type = 'button';
-          parCredit.disabled = !e.credits;
-          var im = el('img', 'bq-credit');
-          im.src = DP.creditImg(p.credit);
-          im.alt = '';
-          parCredit.appendChild(im);
-          parCredit.appendChild(el('span', 'bq-achat-n', '× ' + p.credits));
-          parCredit.addEventListener('click', function () { faire(item, 'credits'); });
-          achats.appendChild(parCredit);
-
-          n.appendChild(achats);
-        }
-        grille.appendChild(n);
+        liste.appendChild(ligne({
+          id: item.id, palier: item.palier, couleur: p.couleur,
+          vignette: vignette(onglet, item, 'bq-ligne-img'),
+          nom: item.nom,
+          sous: e.possede ? 'Déjà dans ton sac.' : effetTexte(onglet, item),
+          possede: e.possede,
+          choisi: choix === item.id,
+          prix: e.possede ? [{ texte: 'possédé', ok: true }] : [
+            { texte: p.poissons + ' × ' + p.nom.toLowerCase(), ok: e.poissons },
+            { texte: '× ' + p.credits, img: DP.creditImg(p.credit), ok: e.credits }
+          ],
+          clic: function () {
+            if (e.possede) return dire('Tu l’as déjà. Passe au vestiaire pour la monter.');
+            choix = item.id;
+            dire(item.nom + ' — ' + effetTexte(onglet, item));
+            tout();
+          }
+        }));
       });
-      etal.appendChild(grille);
+    }
+
+    function construireVente() {
+      M.ORDRE_PALIERS.forEach(function (cle) {
+        var p = M.PALIERS[cle];
+        var n = M.doublons(p.rarete);
+        var assez = n >= p.poissons;
+        var im = el('img', 'bq-ligne-img');
+        im.src = DP.creditImg(p.credit);
+        im.alt = '';
+        liste.appendChild(ligne({
+          id: 'vendre-' + cle, palier: cle, couleur: M.couleurPalier(cle),
+          vignette: im,
+          nom: 'Doublons ' + p.nom.toLowerCase() + 's',
+          sous: n + ' en double  ·  ' + p.poissons + ' contre ' +
+                DP.PRICE[p.credit] + ' ' + DP.CREDITS[p.credit].name,
+          choisi: choix === 'vendre-' + cle,
+          prix: [{ texte: '× ' + DP.PRICE[p.credit], img: DP.creditImg(p.credit), ok: assez }],
+          clic: function () {
+            if (!assez) return dire('Il t’en faut ' + p.poissons + ' en double.');
+            choix = 'vendre-' + cle;
+            dire(p.poissons + ' doublons ' + p.nom.toLowerCase() + 's, ça marche ?');
+            tout();
+          }
+        }));
+      });
     }
 
     function effetTexte(type, item) {
@@ -180,24 +220,62 @@
       return 'Chance de rareté  +' + Math.round(item.chance * 100) + ' %';
     }
 
+    // ---- Le pied : ce qu'on fait de l'article choisi ----
+    function construirePied() {
+      pied.textContent = '';
+
+      if (onglet === 'vendre') {
+        var cle = choix ? choix.slice(7) : null;
+        var pv = cle ? M.PALIERS[cle] : null;
+        var bv = el('button', 'bq-agir', 'VENDRE');
+        bv.type = 'button';
+        bv.disabled = !pv || !M.peutVendre(pv.rarete);
+        bv.addEventListener('click', function () {
+          var r = M.vendre(pv.rarete);
+          if (!r.ok) return dire('Impossible : ' + r.raison + '.');
+          dire('Vendu. +' + r.gagne + ' ' + DP.CREDITS[r.credit].name + '.');
+          choix = null;
+          tout();
+        });
+        pied.appendChild(bv);
+      } else {
+        var item = choix ? M.parId(onglet, choix) : null;
+        var e = item ? M.etat(onglet, item) : null;
+
+        var parPoisson = el('button', 'bq-agir', 'Acheter en poissons');
+        parPoisson.type = 'button';
+        parPoisson.disabled = !e || e.possede || !e.poissons;
+        parPoisson.addEventListener('click', function () { faire(item, 'poissons'); });
+        pied.appendChild(parPoisson);
+
+        var parCredit = el('button', 'bq-agir bq-agir--credit', 'Acheter en crédits');
+        parCredit.type = 'button';
+        parCredit.disabled = !e || e.possede || !e.credits;
+        parCredit.addEventListener('click', function () { faire(item, 'credits'); });
+        pied.appendChild(parCredit);
+      }
+
+      var sortir = el('button', 'bq-agir bq-agir--plat', 'Sortir');
+      sortir.type = 'button';
+      sortir.addEventListener('click', quitter);
+      pied.appendChild(sortir);
+    }
+
     function faire(item, mode) {
       var r = M.acheter(onglet, item.id, mode);
       if (!r.ok) return dire('Impossible : ' + r.raison + '.');
       dire(item.nom + ' est à toi. Passe au vestiaire pour la monter.');
+      choix = null;
       tout();
     }
 
-    // ---- Le pied ----
-    var pied = el('div', 'bq-pied');
-    var vest = el('a', 'bq-btn', 'Vestiaire');
-    vest.href = '#vestiaire';
-    pied.appendChild(vest);
-    var retour = el('a', 'bq-btn bq-btn--plat', 'Retour à la pêche');
-    retour.href = '#peche';
-    pied.appendChild(retour);
-    box.appendChild(pied);
+    // ---- Sortir : on referme la porte avant de repartir ----
+    function quitter() {
+      box.classList.add('is-sortie');
+      setTimeout(function () { location.hash = '#peche'; }, reduit() ? 0 : 380);
+    }
 
-    function tout() { construireTroc(); construireEtal(); }
+    function tout() { construireBourse(); construireListe(); construirePied(); }
     tout();
     view.appendChild(box);
   }

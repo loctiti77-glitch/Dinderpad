@@ -34,6 +34,20 @@
   // Une chance sur cent : le Credit Temporel.
   var CHANCE_CREDIT = 100;
 
+  // Ce qu'on retient le temps d'un aller-retour a la Poissonnerie : le
+  // pecheur et l'endroit exact ou il se tenait. Sans cela, ressortir du
+  // magasin relancait le jeu depuis l'ecran-titre.
+  var reprise = null;
+
+  // La reprise ne vaut que pour l'aller-retour vers les ecrans de peche.
+  // Passer par l'accueil ou un autre jeu la perime.
+  var ECRANS_PECHE = ['peche', 'poissonnerie', 'vestiaire', 'peche-collection', 'peche-hub'];
+
+  window.addEventListener('hashchange', function () {
+    var nom = (location.hash || '').replace(/^#/, '').split('/')[0];
+    if (ECRANS_PECHE.indexOf(nom) === -1) reprise = null;
+  });
+
   // ==========================================================
   //  La carte : beaucoup d'eau, et des berges ou se poster
   // ==========================================================
@@ -222,12 +236,14 @@
 
     // ---------- 2. La carte et la peche ----------
 
-    function ecranCarte() {
+    function ecranCarte(ou) {
       toutAnnuler();
       jeu.textContent = '';
       jeu.dataset.etape = 'carte';
 
       var scene = el('div', 'pe-scene');
+      // Sortir du magasin : le rideau se leve au lieu de tout recommencer.
+      if (ou) scene.classList.add('is-entree');
       var cv = el('canvas', 'pe-canvas');
       cv.width = 480; cv.height = 316;
       scene.appendChild(cv);
@@ -270,12 +286,41 @@
       var mordant = null, mordantCm = 0, lourd = false;
       var devantCabane = false;
 
+      // La mise en scene : le vol du bouchon a l'aller, celui du poisson
+      // au retour, et les ronds dans l'eau quand ca plouf.
+      var vol = null, gerbe = null;
+      var CAST = 460, SORTIE = 820;
+
+      function maintenant() {
+        return (window.performance && performance.now) ? performance.now() : Date.now();
+      }
+
       function dire(txt) { hudTxt.textContent = txt; }
 
+      function estEau(t) { return t === T.EAU || t === T.ROSEAU; }
+
+      // La case d'eau juste devant, s'il y en a une.
       function eauDevant() {
         var c = balade.caseDevant();
-        var t = balade.tuile(c[0], c[1]);
-        return (t === T.EAU || t === T.ROSEAU) ? c : null;
+        return estEau(balade.tuile(c[0], c[1])) ? c : null;
+      }
+
+      // Ou tombe le bouchon : on envoie la ligne aussi loin que l'eau le
+      // permet, jusqu'a trois cases. Sur une seule, le lancer ne se voyait
+      // pas — le bouchon retombait sur les pieds du pecheur.
+      function pointDeChute() {
+        var c = eauDevant();
+        if (!c) return null;
+        var d = balade.chef.dir;
+        var dx = d === balade.DIRS.gauche ? -1 : (d === balade.DIRS.droite ? 1 : 0);
+        var dy = d === balade.DIRS.haut ? -1 : (d === balade.DIRS.bas ? 1 : 0);
+        var loin = c;
+        for (var i = 1; i < 3; i++) {
+          var n = [c[0] + dx * i, c[1] + dy * i];
+          if (!estEau(balade.tuile(n[0], n[1]))) break;
+          loin = n;
+        }
+        return loin;
       }
 
       function pretALancer() { return DP.aLaCanne() && !!eauDevant(); }
@@ -283,12 +328,33 @@
       // --- Les actions ---
 
       function lancer() {
-        var c = eauDevant();
+        var c = pointDeChute();
         if (!c) return;
-        bouchon = { x: (c[0] + 0.5) * TS, y: (c[1] + 0.5) * TS };
-        etat = 'lancee';
-        depuis = performance.now();
-        dire('La ligne est à l’eau…');
+        var cible = { x: (c[0] + 0.5) * TS, y: (c[1] + 0.5) * TS };
+
+        // Le bouchon part de la main du pecheur et file vers l'eau.
+        etat = 'lancement';
+        bouchon = null;
+        vol = {
+          t0: maintenant(), duree: reduit ? 1 : CAST, sens: 'aller',
+          de: { x: balade.chef.x, y: balade.chef.y - 18 }, vers: cible
+        };
+        dire('Et hop…');
+        majAction();
+
+        plusTard(function () {
+          if (!vivant() || etat !== 'lancement') return;
+          vol = null;
+          gerbe = { t0: maintenant(), x: cible.x, y: cible.y };
+          bouchon = cible;
+          etat = 'lancee';
+          depuis = maintenant();
+          dire('La ligne est à l’eau…');
+          poserLigne();
+        }, reduit ? 0 : CAST);
+      }
+
+      function poserLigne() {
         majAction();
 
         // Parfois rien ne vient : il faut relancer.
@@ -328,26 +394,42 @@
 
       function ferrer() {
         if (etat !== 'mord') return;
-        etat = 'prise';
-        majAction();
 
         // Une chance sur cent : ce n'est pas un poisson.
-        if (Math.floor(Math.random() * CHANCE_CREDIT) === 0) {
-          DP.earn('pink', 1);
-          montrerCredit();
-          return;
-        }
-        var f = mordant || P.tirer(M2 ? M2.chanceRarete() : 0);
-        var cm = mordantCm || P.taille(f);
-        var kg = P.poids(f, cm);
-        var neuf = !DP.aPeche(f.id);
-        var e = DP.noterPrise(f.id, cm, kg);
-        montrerPoisson(f, cm, kg, neuf, e);
+        var credit = Math.floor(Math.random() * CHANCE_CREDIT) === 0;
+        var f = credit ? null : (mordant || P.tirer(M2 ? M2.chanceRarete() : 0));
+        var cm = f ? (mordantCm || P.taille(f)) : 0;
+        var kg = f ? P.poids(f, cm) : 0;
+
+        // La prise sort de l'eau et vole jusqu'au pecheur avant qu'on
+        // l'annonce : c'est le moment ou l'on voit ce qu'on a ferre.
+        etat = 'sortie';
+        dire(lourd ? 'Ferré ! Ça pèse…' : 'Ferré !');
+        majAction();
+        gerbe = { t0: maintenant(), x: bouchon.x, y: bouchon.y, fort: lourd };
+        vol = {
+          t0: maintenant(), duree: reduit ? 1 : SORTIE, sens: 'retour',
+          de: { x: bouchon.x, y: bouchon.y },
+          vers: { x: balade.chef.x, y: balade.chef.y - 30 },
+          poisson: f, credit: credit
+        };
+
+        plusTard(function () {
+          if (!vivant() || etat !== 'sortie') return;
+          vol = null;
+          bouchon = null;
+          etat = 'prise';
+          if (credit) { DP.earn('pink', 1); return montrerCredit(); }
+          var neuf = !DP.aPeche(f.id);
+          var e = DP.noterPrise(f.id, cm, kg);
+          montrerPoisson(f, cm, kg, neuf, e);
+        }, reduit ? 0 : SORTIE);
       }
 
       function ranger() {
         etat = 'repos';
         bouchon = null;
+        vol = null; gerbe = null;
         mordant = null; mordantCm = 0; lourd = false;
         prise.hidden = true;
         prise.textContent = '';
@@ -387,6 +469,21 @@
       function prochesDeLaCanne() {
         var dx = balade.chef.x - CANNE.x, dy = balade.chef.y - CANNE.y;
         return dx * dx + dy * dy < 40 * 40;
+      }
+
+      // On note ou l'on etait, on baisse le rideau, puis on pousse la porte.
+      function entrerBoutique() {
+        if (etat !== 'repos') return;
+        reprise = {
+          dinder: choisi,
+          x: balade.chef.x, y: balade.chef.y, dir: balade.chef.dir
+        };
+        action.hidden = true;
+        scene.classList.add('is-sortie');
+        plusTard(function () {
+          balade.arreter();
+          location.hash = '#poissonnerie';
+        }, reduit ? 0 : 420);
       }
 
       function ramasser() {
@@ -461,7 +558,7 @@
         if (r === 'lancer') lancer();
         else if (r === 'ferrer') ferrer();
         else if (r === 'ramasser') ramasser();
-        else if (r === 'entrer') { balade.arreter(); location.hash = '#poissonnerie'; }
+        else if (r === 'entrer') entrerBoutique();
       }
       action.addEventListener('click', agir);
 
@@ -474,7 +571,91 @@
 
       // --- Le decor mouvant : flotteur, ondes, canne au sol ---
 
+      // Un fil qui pend un peu entre la canne et le bouchon.
+      function fil(ctx, cam, ax, ay, bx, by, creux) {
+        ctx.strokeStyle = 'rgba(240,248,255,.55)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ax - cam.x, ay - cam.y);
+        ctx.quadraticCurveTo((ax + bx) / 2 - cam.x, (ay + by) / 2 - cam.y + (creux || 6),
+                             bx - cam.x, by - cam.y);
+        ctx.stroke();
+      }
+
+      // Les ronds dans l'eau, au plouf comme a la sortie.
+      function dessinerGerbe(ctx, cam, t) {
+        if (!gerbe) return;
+        var age = (t - gerbe.t0) / (gerbe.fort ? 620 : 480);
+        if (age >= 1) { gerbe = null; return; }
+        var gx = gerbe.x - cam.x, gy = gerbe.y - cam.y;
+        for (var i = 0; i < 3; i++) {
+          var ph = age + i * 0.22;
+          if (ph > 1) continue;
+          var r = 2 + ph * (gerbe.fort ? 24 : 16);
+          ctx.strokeStyle = 'rgba(224,244,255,' + (0.7 * (1 - ph)).toFixed(2) + ')';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.ellipse(gx, gy, r, r * 0.5, 0, 0, 6.3);
+          ctx.stroke();
+        }
+        // Quelques gouttes qui retombent.
+        var n = gerbe.fort ? 9 : 6;
+        for (var k = 0; k < n; k++) {
+          var a = (k / n) * 6.283 + 0.4;
+          var d = age * (gerbe.fort ? 22 : 15);
+          var hy = Math.sin(age * 3.14) * (gerbe.fort ? 14 : 9);
+          ctx.fillStyle = 'rgba(214,240,255,' + (0.85 * (1 - age)).toFixed(2) + ')';
+          ctx.fillRect(Math.round(gx + Math.cos(a) * d), Math.round(gy - hy + Math.sin(a) * d * 0.4), 2, 2);
+        }
+      }
+
+      // Le vol : le bouchon a l'aller, la prise au retour.
+      function dessinerVol(ctx, cam, t) {
+        if (!vol) return;
+        var k = Math.min(1, (t - vol.t0) / vol.duree);
+        var x = vol.de.x + (vol.vers.x - vol.de.x) * k;
+        var y = vol.de.y + (vol.vers.y - vol.de.y) * k;
+        var arc = Math.sin(k * Math.PI) * (vol.sens === 'aller' ? 34 : 46);
+        y -= arc;
+
+        var flot = M2 ? M2.equipee('flotteur').couleurs : ['#e8402f', '#f4f7fb'];
+        fil(ctx, cam, vol.sens === 'aller' ? balade.chef.x : balade.chef.x,
+            balade.chef.y - 18, x, y, vol.sens === 'aller' ? 10 : 2);
+
+        if (vol.sens === 'aller') {
+          ctx.fillStyle = flot[0];
+          ctx.fillRect(Math.round(x - cam.x) - 1, Math.round(y - cam.y) - 2, 3, 3);
+          ctx.fillStyle = flot[1];
+          ctx.fillRect(Math.round(x - cam.x) - 1, Math.round(y - cam.y) + 1, 3, 2);
+          return;
+        }
+
+        // Au retour : le Credit Temporel scintille, le poisson tournoie.
+        if (vol.credit) {
+          var lueur = 0.6 + 0.4 * Math.sin(t / 60);
+          ctx.fillStyle = 'rgba(255,92,157,' + lueur.toFixed(2) + ')';
+          ctx.beginPath();
+          ctx.ellipse(x - cam.x, y - cam.y, 9, 9, 0, 0, 6.3);
+          ctx.fill();
+          ctx.fillStyle = '#ffd6e8';
+          ctx.fillRect(Math.round(x - cam.x) - 4, Math.round(y - cam.y) - 3, 8, 6);
+          return;
+        }
+
+        var f = vol.poisson && window.POISSONS.feuille(vol.poisson.id);
+        if (!f) return;
+        ctx.save();
+        ctx.translate(x - cam.x, y - cam.y);
+        // Il se cabre en sortant, puis retombe a plat dans la main.
+        ctx.rotate(-1.1 + k * 1.5);
+        var e = 0.7 + 0.3 * (1 - k);
+        ctx.drawImage(f.canvas, -f.L * e / 2, -f.H * e / 2, f.L * e, f.H * e);
+        ctx.restore();
+      }
+
       function dessinerBouchon(ctx, cam, t) {
+        dessinerGerbe(ctx, cam, t);
+        dessinerVol(ctx, cam, t);
         if (!bouchon) return;
         var bx = bouchon.x - cam.x, by = bouchon.y - cam.y;
 
@@ -501,11 +682,7 @@
         ctx.fillRect(Math.round(bx) - 1, Math.round(by - 1 + plonge), 3, 2);
 
         // Le fil, du pecheur au flotteur.
-        ctx.strokeStyle = 'rgba(240,248,255,.5)';
-        ctx.beginPath();
-        ctx.moveTo(balade.chef.x - cam.x, balade.chef.y - cam.y - 16);
-        ctx.lineTo(bx, by - 3);
-        ctx.stroke();
+        fil(ctx, cam, balade.chef.x, balade.chef.y - 18, bouchon.x, bouchon.y - 3, 7);
       }
 
       var spriteCanne = new Image();
@@ -518,7 +695,8 @@
         canvas: cv,
         stick: stick, pomme: pomme,
         opts: { cabane: CABANE },
-        depart: DEPART,
+        depart: ou ? { x: ou.x, y: ou.y } : DEPART,
+        direction: ou ? ou.dir : undefined,
         troupe: [choisi],
         vitesse: 92,
         vivant: vivant,
@@ -571,6 +749,9 @@
           var casier = c[0] + ',' + c[1];
           if (jeu.dataset.tuile !== casier) jeu.dataset.tuile = casier;
           devantCabane = devantLaPorte();
+          // La phase en cours, inscrite sur le conteneur : elle sert de
+          // repere lisible, et rend la mise en scene verifiable.
+          if (jeu.dataset.phase !== etat) jeu.dataset.phase = etat;
           if (etat !== 'repos') return;
           majAction();
           // L'indication suit ce que le joueur a devant lui, a chaque pas.
@@ -593,6 +774,17 @@
 
       majAction();
     }
+
+    // De retour de la Poissonnerie : on reprend la partie ou elle en
+    // etait, sans repasser par l'ecran-titre ni par le choix du pecheur.
+    if (reprise && DP.has(reprise.dinder)) {
+      choisi = reprise.dinder;
+      var ou = reprise;
+      reprise = null;
+      ecranCarte(ou);
+      return;
+    }
+    reprise = null;
 
     // Le jeu s'ouvre sur sa jaquette.
     if (window.INTRO) {
@@ -700,6 +892,8 @@
     construireCarte: construireCarte,
     MW: MW, MH: MH, DEPART: DEPART, CANNE: CANNE,
     CABANE: CABANE, POISSONNIER: POISSONNIER,
+    reprise: function () { return reprise; },
+    poserReprise: function (r) { reprise = r; },
     LACS: LACS, CHANCE_CREDIT: CHANCE_CREDIT
   };
 })();

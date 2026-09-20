@@ -1456,10 +1456,10 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
 }
 
 /* ==========================================================
-   La Poissonnerie, le Vestiaire et le carrefour de la canne
+   Le Vestiaire et le carrefour de la canne
    ========================================================== */
 
-.bq, .vst, .hub {
+.vst, .hub {
   position: absolute;
   inset: 0;
   display: flex;
@@ -1469,208 +1469,6 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
   line-height: 1.25;
   background: radial-gradient(120% 90% at 50% 0%, #0d3550 0%, #061a2a 70%, #020a11 100%);
 }
-
-/* ---------- L'en-tete du poissonnier ---------- */
-
-.bq {
-  padding: calc(12 * var(--px)) calc(22 * var(--px)) calc(10 * var(--px));
-  gap: calc(7 * var(--px));
-}
-
-.bq-tete {
-  display: flex;
-  align-items: flex-end;
-  gap: calc(16 * var(--px));
-  flex: 0 0 auto;
-}
-
-.bq-portrait {
-  height: calc(86 * var(--px));
-  object-fit: contain;
-  filter: drop-shadow(0 calc(4 * var(--px)) calc(8 * var(--px)) rgba(0, 0, 0, .7));
-}
-
-.bq-bulle {
-  flex: 1;
-  padding: calc(10 * var(--px)) calc(18 * var(--px));
-  border: calc(3 * var(--px)) solid rgba(124, 224, 255, .65);
-  border-radius: calc(10 * var(--px));
-  background: rgba(4, 16, 26, .85);
-}
-
-.bq-nom {
-  margin: 0 0 calc(2 * var(--px));
-  font-size: calc(25 * var(--px));
-  letter-spacing: calc(3 * var(--px));
-  text-transform: uppercase;
-  color: #7ce0ff;
-}
-
-.bq-replique { margin: 0; font-size: calc(19 * var(--px)); color: #cfe6f5; }
-
-.bq-section {
-  margin: 0 0 calc(4 * var(--px));
-  font-size: calc(18 * var(--px));
-  letter-spacing: calc(2 * var(--px));
-  text-transform: uppercase;
-  color: #8fb6cc;
-}
-
-/* ---------- Les doublons ---------- */
-
-.bq-doublons {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: calc(10 * var(--px));
-}
-
-/* Deux lignes : la rarete et son compte en haut, le bouton dessous.
-   Sur une seule ligne, la quatrieme carte sortait de l'ecran. */
-.bq-doublon {
-  --r: #c7d3de;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: calc(3 * var(--px)) calc(8 * var(--px));
-  padding: calc(5 * var(--px)) calc(9 * var(--px));
-  border: calc(3 * var(--px)) solid var(--r);
-  border-radius: calc(9 * var(--px));
-  background: rgba(6, 22, 34, .9);
-  min-width: 0;
-}
-
-.bq-doublon-rarete { font-size: calc(15 * var(--px)); color: var(--r); }
-.bq-doublon-n {
-  font-size: calc(24 * var(--px));
-  color: #f2fbff;
-  text-align: right;
-}
-
-.bq-vendre {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: calc(5 * var(--px));
-  padding: calc(4 * var(--px)) calc(6 * var(--px));
-  border: calc(2 * var(--px)) solid var(--r);
-  border-radius: calc(7 * var(--px));
-  background: rgba(0, 0, 0, .45);
-  color: #dff2ff;
-  font-family: inherit;
-  font-size: calc(15 * var(--px));
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.bq-vendre:hover:not(:disabled) { background: rgba(124, 224, 255, .22); }
-.bq-vendre:disabled { opacity: .3; cursor: not-allowed; }
-
-.bq-credit {
-  height: calc(20 * var(--px));
-  border-radius: calc(3 * var(--px));
-}
-
-/* ---------- L'etal ---------- */
-
-.bq-etal {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: calc(8 * var(--px));
-  min-height: 0;
-}
-
-.bq-onglets { display: flex; gap: calc(10 * var(--px)); }
-
-.bq-onglet {
-  padding: calc(6 * var(--px)) calc(22 * var(--px));
-  border: calc(3 * var(--px)) solid #3b5f74;
-  border-radius: calc(8 * var(--px));
-  background: rgba(6, 22, 34, .8);
-  color: #9fc3dd;
-  font-family: inherit;
-  font-size: calc(20 * var(--px));
-  letter-spacing: calc(2 * var(--px));
-  cursor: pointer;
-}
-
-.bq-onglet.is-actif {
-  border-color: #7ce0ff;
-  background: rgba(124, 224, 255, .18);
-  color: #eaf7ff;
-}
-
-.bq-grille {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: calc(5 * var(--px));
-  overflow: auto;
-  scrollbar-width: none;
-  padding-right: calc(4 * var(--px));
-}
-
-.bq-grille::-webkit-scrollbar { width: 0; }
-
-.bq-article {
-  --r: #c7d3de;
-  display: flex;
-  align-items: center;
-  gap: calc(12 * var(--px));
-  padding: calc(3 * var(--px)) calc(12 * var(--px));
-  border: calc(3 * var(--px)) solid var(--r);
-  border-radius: calc(10 * var(--px));
-  background: rgba(6, 20, 32, .88);
-}
-
-.bq-article.is-possede { opacity: .55; }
-
-.bq-article-img {
-  flex: 0 0 auto;
-  width:  calc(76 * var(--px));
-  height: calc(50 * var(--px));
-  object-fit: contain;
-}
-
-.bq-article-txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.bq-article-nom { font-size: calc(20 * var(--px)); color: #eaf7ff; }
-.bq-article-palier { font-size: calc(15 * var(--px)); color: var(--r); letter-spacing: calc(1 * var(--px)); }
-.bq-article-effet { font-size: calc(15 * var(--px)); color: #9fc3dd; }
-
-.bq-achats { display: flex; gap: calc(8 * var(--px)); flex: 0 0 auto; }
-
-.bq-achat {
-  display: flex;
-  align-items: center;
-  gap: calc(5 * var(--px));
-  padding: calc(6 * var(--px)) calc(12 * var(--px));
-  border: calc(2 * var(--px)) solid var(--r);
-  border-radius: calc(7 * var(--px));
-  background: rgba(0, 0, 0, .45);
-  color: #dff2ff;
-  font-family: inherit;
-  font-size: calc(16 * var(--px));
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.bq-achat:hover:not(:disabled) { background: rgba(124, 224, 255, .2); }
-.bq-achat:disabled { opacity: .3; cursor: not-allowed; }
-.bq-achat-n { font-weight: 700; }
-.bq-achat-quoi { color: var(--r); }
-
-.bq-possede {
-  flex: 0 0 auto;
-  padding: calc(6 * var(--px)) calc(14 * var(--px));
-  border-radius: calc(7 * var(--px));
-  background: rgba(124, 224, 255, .18);
-  font-size: calc(15 * var(--px));
-  letter-spacing: calc(2 * var(--px));
-  color: #9fe0b5;
-}
-
-.bq-pied { display: flex; justify-content: center; gap: calc(12 * var(--px)); flex: 0 0 auto; }
 
 .bq-btn {
   padding: calc(8 * var(--px)) calc(24 * var(--px));
@@ -1873,3 +1671,330 @@ span.vst-img { width: calc(30 * var(--px)); height: calc(30 * var(--px)); }
 }
 
 .pe-fiche-n { font-size: calc(12 * var(--px)); color: #5f88a0; }
+
+/* ==========================================================
+   La Poissonnerie, seconde mouture
+   Le poissonnier en grand a gauche, l'etal en liste a droite,
+   et une barre de dialogue en bas.
+   ========================================================== */
+
+.bq {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: calc(292 * var(--px)) 1fr;
+  grid-template-rows: 1fr auto;
+  gap: calc(10 * var(--px));
+  padding: calc(10 * var(--px)) calc(14 * var(--px)) calc(10 * var(--px));
+  font-family: "Courier New", "Cutive Mono", monospace;
+  color: #d8f8ff;
+  line-height: 1.25;
+  background:
+    radial-gradient(90% 70% at 18% 40%, #14506f 0%, #08243a 55%, #04121f 100%);
+  animation: bq-entree .38s ease both;
+}
+
+.bq.is-sortie { animation: bq-sortie .38s ease both; }
+
+@keyframes bq-entree {
+  from { opacity: 0; transform: scale(.94); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes bq-sortie {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: scale(.94); }
+}
+
+/* ---------- Le poissonnier ---------- */
+
+.bq-gauche {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 0;
+}
+
+.bq-portrait {
+  position: absolute;
+  left: 50%;
+  bottom: calc(126 * var(--px));
+  transform: translateX(-50%);
+  height: calc(430 * var(--px));
+  object-fit: contain;
+  filter: drop-shadow(0 calc(10 * var(--px)) calc(16 * var(--px)) rgba(0, 0, 0, .75));
+  animation: bq-pecheur .5s .06s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+
+@keyframes bq-pecheur {
+  from { opacity: 0; transform: translate(calc(-50% - 40 * var(--px)), 0); }
+  to   { opacity: 1; transform: translateX(-50%); }
+}
+
+.bq-bourse {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(5 * var(--px));
+  padding: calc(8 * var(--px)) calc(10 * var(--px));
+  border: calc(3 * var(--px)) solid rgba(124, 224, 255, .5);
+  border-radius: calc(12 * var(--px));
+  background: rgba(3, 14, 24, .88);
+}
+
+.bq-bourse-titre {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: calc(16 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-transform: uppercase;
+  color: #8fb6cc;
+}
+
+.bq-chip {
+  --r: #c7d3de;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(6 * var(--px));
+  padding: calc(3 * var(--px)) calc(8 * var(--px));
+  border: calc(2 * var(--px)) solid var(--r);
+  border-radius: calc(7 * var(--px));
+  background: rgba(0, 0, 0, .35);
+}
+
+.bq-chip-nom { font-size: calc(13 * var(--px)); color: var(--r); }
+.bq-chip-n { font-size: calc(19 * var(--px)); color: #f2fbff; }
+
+/* ---------- L'etal ---------- */
+
+.bq-droite {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--px));
+  min-height: 0;
+  animation: bq-etal .45s .1s ease both;
+}
+
+@keyframes bq-etal {
+  from { opacity: 0; transform: translateX(calc(40 * var(--px))); }
+  to   { opacity: 1; transform: none; }
+}
+
+.bq-banniere {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--px));
+  padding: calc(6 * var(--px)) calc(14 * var(--px));
+  border: calc(4 * var(--px)) solid #0a1d2e;
+  border-radius: calc(14 * var(--px));
+  background: linear-gradient(180deg, #2fc4f0 0%, #1b8fc4 100%);
+  box-shadow: inset 0 calc(-4 * var(--px)) 0 rgba(0, 0, 0, .22);
+}
+
+.bq-enseigne {
+  font-size: calc(26 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(3 * var(--px));
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: calc(2 * var(--px)) calc(2 * var(--px)) 0 #0a3550;
+}
+
+.bq-onglets { display: flex; gap: calc(6 * var(--px)); }
+
+.bq-onglet {
+  padding: calc(4 * var(--px)) calc(16 * var(--px));
+  border: calc(3 * var(--px)) solid #0a1d2e;
+  border-radius: calc(9 * var(--px));
+  background: rgba(6, 30, 48, .5);
+  color: #cfeaff;
+  font-family: inherit;
+  font-size: calc(18 * var(--px));
+  letter-spacing: calc(1 * var(--px));
+  cursor: pointer;
+}
+
+.bq-onglet.is-actif {
+  background: #f8fbff;
+  color: #0c354f;
+  font-weight: 700;
+}
+
+.bq-liste {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(7 * var(--px));
+  overflow: auto;
+  scrollbar-width: none;
+  padding-right: calc(2 * var(--px));
+}
+
+.bq-liste::-webkit-scrollbar { width: 0; }
+
+/* Une ligne d'etal : icone, texte, tarifs — comme un bouton de boutique. */
+.bq-ligne {
+  --r: #c7d3de;
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--px));
+  flex: 0 0 auto;
+  padding: calc(6 * var(--px)) calc(14 * var(--px));
+  border: calc(4 * var(--px)) solid #0a1d2e;
+  border-radius: calc(14 * var(--px));
+  background: linear-gradient(180deg, #4fd0f6 0%, #2b9ad0 100%);
+  box-shadow: inset 0 calc(-4 * var(--px)) 0 rgba(0, 0, 0, .2);
+  color: #06263a;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .1s ease, box-shadow .1s ease;
+}
+
+.bq-ligne:hover { transform: translateX(calc(4 * var(--px))); }
+
+.bq-ligne.is-choisi {
+  border-color: var(--r);
+  box-shadow: inset 0 calc(-4 * var(--px)) 0 rgba(0, 0, 0, .2),
+              0 0 calc(18 * var(--px)) var(--r);
+}
+
+.bq-ligne.is-possede {
+  background: linear-gradient(180deg, #7f97a8 0%, #5c7287 100%);
+}
+
+.bq-ligne-icone {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width:  calc(76 * var(--px));
+  height: calc(52 * var(--px));
+  border-radius: calc(8 * var(--px));
+  background: rgba(4, 22, 36, .35);
+}
+
+.bq-ligne-img {
+  max-width: calc(70 * var(--px));
+  max-height: calc(46 * var(--px));
+  object-fit: contain;
+}
+
+span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
+
+.bq-ligne-txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.bq-ligne-nom {
+  font-size: calc(23 * var(--px));
+  color: #062639;
+  text-shadow: calc(1 * var(--px)) calc(1 * var(--px)) 0 rgba(255, 255, 255, .35);
+}
+
+.bq-ligne-sous { font-size: calc(16 * var(--px)); color: #0b3a55; }
+
+.bq-ligne-prix {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: calc(2 * var(--px));
+}
+
+.bq-tarif {
+  display: flex;
+  align-items: center;
+  gap: calc(5 * var(--px));
+  padding: calc(2 * var(--px)) calc(8 * var(--px));
+  border-radius: calc(6 * var(--px));
+  background: rgba(4, 22, 36, .35);
+  font-size: calc(15 * var(--px));
+  color: #f2fbff;
+  white-space: nowrap;
+}
+
+.bq-tarif.is-court { opacity: .4; }
+.bq-credit { height: calc(19 * var(--px)); border-radius: calc(3 * var(--px)); }
+
+/* ---------- Le pied et la barre ---------- */
+
+.bq-pied { display: flex; gap: calc(8 * var(--px)); flex: 0 0 auto; }
+
+.bq-agir {
+  flex: 1;
+  padding: calc(8 * var(--px)) calc(10 * var(--px));
+  border: calc(4 * var(--px)) solid #0a1d2e;
+  border-radius: calc(12 * var(--px));
+  background: linear-gradient(180deg, #e9f3fa 0%, #b9ccdb 100%);
+  box-shadow: inset 0 calc(-4 * var(--px)) 0 rgba(0, 0, 0, .18);
+  color: #06263a;
+  font-family: inherit;
+  font-size: calc(19 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(1 * var(--px));
+  cursor: pointer;
+}
+
+.bq-agir:hover:not(:disabled) { filter: brightness(1.08); }
+.bq-agir:disabled { opacity: .38; cursor: not-allowed; }
+
+.bq-agir--credit { background: linear-gradient(180deg, #a9f0b6 0%, #61bd78 100%); }
+
+.bq-agir--plat {
+  flex: 0 0 auto;
+  padding-left: calc(20 * var(--px));
+  padding-right: calc(20 * var(--px));
+  background: linear-gradient(180deg, #ff9d9d 0%, #d0564f 100%);
+  color: #2a0808;
+}
+
+.bq-barre {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: calc(7 * var(--px)) calc(18 * var(--px));
+  border: calc(4 * var(--px)) solid #0a1d2e;
+  border-radius: calc(12 * var(--px));
+  background: linear-gradient(180deg, #ffe4f1 0%, #f7c5dd 100%);
+  color: #45103a;
+  font-size: calc(21 * var(--px));
+  text-align: center;
+}
+
+.bq-barre.is-neuf { animation: bq-barre .3s ease; }
+
+@keyframes bq-barre {
+  from { transform: scale(.97); opacity: .4; }
+  to   { transform: none; opacity: 1; }
+}
+
+/* ---------- Entrer et sortir de la cabane ---------- */
+/* Un rideau sombre se ferme sur la carte quand on pousse la porte,
+   et se releve quand on ressort. */
+
+.pe-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #04070d;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.pe-scene.is-sortie::after { animation: pe-rideau .42s ease forwards; }
+.pe-scene.is-entree::after { animation: pe-rideau .42s ease reverse forwards; }
+
+@keyframes pe-rideau {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bq, .bq-portrait, .bq-droite, .bq-barre.is-neuf { animation: none; }
+  .bq-ligne { transition: none; }
+  .pe-scene.is-sortie::after, .pe-scene.is-entree::after { animation: none; }
+}
