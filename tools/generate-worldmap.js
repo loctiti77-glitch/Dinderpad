@@ -6,14 +6,16 @@
 // ce qui est bien plus sur que de dessiner 2048 cases a la main.
 const sharp = require('sharp');
 
-const COLS = 64, ROWS = 32, SCALE = 18;   // 1152 x 576 au final
+const COLS = 64, ROWS = 32, SCALE_X = 18, SCALE_Y = 24;   // 1152 x 768
+// L'ecran du pad fait 1065 x 701 : on dessine a son format plutot que
+// d'etirer l'image a l'affichage, pour garder des blocs nets.
 
 // Terres emergees, ligne par ligne (plages de colonnes, bornes incluses).
 const TERRE = {
    2: [[10,19],[22,26],[33,34],[44,60]],
-   3: [[3,7],[8,20],[22,27],[32,35],[37,61]],
-   4: [[2,7],[8,20],[23,27],[32,35],[37,61]],
-   5: [[3,6],[8,20],[24,26],[31,36],[38,61]],
+   3: [[3,7],[8,20],[22,27],[32,35],[37,63]],
+   4: [[2,7],[8,20],[23,27],[32,35],[37,63]],
+   5: [[3,6],[8,20],[24,26],[31,36],[38,63]],
    6: [[7,20],[30,30],[32,37],[38,61]],
    7: [[8,20],[30,37],[38,60]],
    8: [[9,20],[31,37],[38,58],[60,61]],   // Europe, au nord de la mer
@@ -43,6 +45,7 @@ const GLACE = {
    0: [[0,63]],
    1: [[0,63]],
    2: [[0,2],[20,21],[28,31],[62,63]],
+  27: [[20,24],[46,58]],
   28: [[8,22],[28,48]],
   29: [[3,58]],
   30: [[0,63]],
@@ -68,7 +71,7 @@ function build() {
 }
 
 function render(grid) {
-  const W = COLS * SCALE, H = ROWS * SCALE;
+  const W = COLS * SCALE_X, H = ROWS * SCALE_Y;
   const buf = Buffer.alloc(W * H * 3);
 
   const put = (px, py, c) => {
@@ -97,9 +100,9 @@ function render(grid) {
               : cote    ? COTE
               : (pair ? SOL : SOL2);
 
-      for (let py = 0; py < SCALE; py++)
-        for (let px = 0; px < SCALE; px++)
-          put(x * SCALE + px, y * SCALE + py, c);
+      for (let py = 0; py < SCALE_Y; py++)
+        for (let px = 0; px < SCALE_X; px++)
+          put(x * SCALE_X + px, y * SCALE_Y + py, c);
     }
   }
   return { buf, W, H };

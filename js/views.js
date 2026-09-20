@@ -157,7 +157,7 @@
 
       var txt = el('span', 'credit-text');
       txt.appendChild(el('strong', 'credit-name', c.name));
-      txt.appendChild(el('span', 'credit-units', c.units + ' unités'));
+      txt.appendChild(el('span', 'credit-units', c.label || (c.units + ' unités')));
       row.appendChild(txt);
       list.appendChild(row);
     });
@@ -169,7 +169,7 @@
   // ==========================================================
 
   function viewWinDinders(view) {
-    var SHAKE = 1100, CRACK = 700;
+    var CHARGE = 1500, CRACK = 900;          // doit suivre les animations CSS
     var reduce = window.matchMedia &&
                  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -179,111 +179,199 @@
     var status = el('p', 'shop-status', ' ');
     shop.appendChild(status);
 
-    var stage = el('div', 'capsule-stage');
-    var burst = el('div', 'burst');
+    // ---- La scene : capsule, rayons, eclats, lot ----
+    var stage = el('div', 'stage');
+
+    var halo = el('div', 'halo');       // lueur de fond, teintee par la rarete
+    halo.setAttribute('aria-hidden', 'true');
+    stage.appendChild(halo);
+
+    var burst = el('div', 'burst');     // rayons qui jaillissent
     burst.setAttribute('aria-hidden', 'true');
     stage.appendChild(burst);
 
+    var rings = el('div', 'rings');     // anneaux qui convergent pendant la charge
+    for (var r = 0; r < 3; r++) {
+      var ring = el('span', 'ring');
+      ring.style.setProperty('--i', r);
+      rings.appendChild(ring);
+    }
+    rings.setAttribute('aria-hidden', 'true');
+    stage.appendChild(rings);
+
     var capsule = el('div', 'capsule');
-    ['top', 'bottom'].forEach(function (half) {
-      var h = el('div', 'capsule-half capsule-half--' + half);
-      var img = el('img');
-      img.src = 'assets/dindise.webp';
-      img.alt = half === 'top' ? 'Dindise' : '';
-      h.appendChild(img);
-      capsule.appendChild(h);
-    });
+    var capTop = el('div', 'capsule-half capsule-half--top');
+    var capBot = el('div', 'capsule-half capsule-half--bottom');
+    var imgTop = el('img'), imgBot = el('img');
+    imgTop.alt = 'Dindise'; imgBot.alt = '';
+    capTop.appendChild(imgTop); capBot.appendChild(imgBot);
+    capsule.appendChild(capTop); capsule.appendChild(capBot);
     stage.appendChild(capsule);
+
+    var eclats = el('div', 'eclats');   // les morceaux qui volent a l'ouverture
+    eclats.setAttribute('aria-hidden', 'true');
+    stage.appendChild(eclats);
 
     var prize = el('img', 'prize');
     prize.alt = '';
     prize.width = 400; prize.height = 400;
     stage.appendChild(prize);
+
     shop.appendChild(stage);
 
+    // ---- Le nom du lot, frappe lettre par lettre ----
+    var nomWrap = el('div', 'prize-bloc');
     var prizeName = el('p', 'prize-name');
     prizeName.setAttribute('aria-live', 'polite');
-    shop.appendChild(prizeName);
+    var prizeTag = el('span', 'prize-rarete');
+    nomWrap.appendChild(prizeName);
+    nomWrap.appendChild(prizeTag);
+    shop.appendChild(nomWrap);
 
-    var pay = el('div', 'shop-pay');
-    shop.appendChild(pay);
+    // ---- Le choix des quatre Dindises ----
+    var choix = el('div', 'shop-choix');
+    shop.appendChild(choix);
 
     var after = el('div', 'shop-after');
-    var againBtn = el('button', 'shop-btn shop-btn--wide', 'Encore une');
+    var againBtn = el('button', 'shop-btn shop-btn--wide', 'Encore');
     againBtn.type = 'button';
-    after.appendChild(againBtn);
     var seeBtn = el('a', 'shop-btn shop-btn--wide', 'Ma collection');
     seeBtn.href = '#dinders';
+    after.appendChild(againBtn);
     after.appendChild(seeBtn);
     shop.appendChild(after);
 
     view.appendChild(shop);
 
+    // Une ouverture enchaine plusieurs minuteurs : on les garde pour
+    // pouvoir tout annuler si le joueur relance avant la fin.
+    var minuteur = [];
+    function plusTard(fn, ms) { minuteur.push(setTimeout(fn, ms)); }
+    function toutAnnuler() { minuteur.forEach(clearTimeout); minuteur = []; }
+
     function refreshStatus() {
       var got = DP.owned().length, all = DP.DINDERS.length;
-      status.textContent = (DP.complete() ? 'Collection complète — ' : 'Collection : ') +
-                           got + ' / ' + all;
+      status.textContent = (DP.complete() ? 'Collection complète — ' : 'Collection : ')
+                         + got + ' / ' + all;
       shop.classList.toggle('is-complete', DP.complete());
     }
 
-    function buildPay() {
-      pay.textContent = '';
-      DP.ORDER.forEach(function (key) {
-        var btn = el('button', 'shop-btn');
+    // ---- Les quatre capsules a choisir ----
+    function construireChoix() {
+      choix.textContent = '';
+      DP.DINDISES.forEach(function (d) {
+        var etat = DP.dindiseEtat(d);
+
+        var btn = el('button', 'dindise');
         btn.type = 'button';
-        btn.dataset.credit = key;
-        btn.disabled = !DP.canAfford(key) || DP.complete();
+        btn.dataset.dindise = d.id;                    // 'universel', 'temporel'...
+        btn.dataset.rarity = DP.rarityKey(d.rarete);   // la couleur associee
+        btn.disabled = !etat.ouvrable;
+        btn.setAttribute('aria-label', d.nom);
 
-        var img = el('img', 'shop-btn-card');
-        img.src = DP.creditImg(key);
-        img.alt = '';
-        btn.appendChild(img);
+        var bulle = el('span', 'dindise-bulle');
+        var img = el('img', 'dindise-img');
+        img.src = d.img; img.alt = '';
+        bulle.appendChild(img);
+        btn.appendChild(bulle);
 
-        var txt = el('span', 'shop-btn-text');
-        txt.appendChild(el('strong', 'shop-btn-price', '× ' + DP.PRICE[key]));
-        txt.appendChild(el('span', 'shop-btn-label',
-                           DP.CREDITS[key].name.replace(/^Crédit\s+/, '')));
-        btn.appendChild(txt);
+        btn.appendChild(el('span', 'dindise-nom', d.rarete));
 
-        btn.addEventListener('click', function () { buy(key); });
-        pay.appendChild(btn);
+        var prix = el('span', 'dindise-prix');
+        var carte = el('img', 'dindise-carte');
+        carte.src = DP.creditImg(d.credit); carte.alt = '';
+        prix.appendChild(carte);
+        prix.appendChild(el('strong', null, '× ' + DP.PRICE[d.credit]));
+        btn.appendChild(prix);
+
+        btn.appendChild(el('span', 'dindise-reste',
+          etat.ouvrable ? etat.reste + ' à trouver' : etat.raison));
+
+        btn.addEventListener('click', function () { ouvrir(d); });
+        choix.appendChild(btn);
       });
     }
 
-    function buy(key) {
-      if (shop.dataset.state !== 'idle' || DP.complete()) return;
-      if (!DP.spend(key)) return;
-      var won = DP.draw();
-      if (!won) return;
+    // ---- L'ouverture ----
 
-      status.textContent = 'Dindise en cours d’ouverture…';
-      shop.dataset.state = 'opening';
-
-      setTimeout(function () {
-        shop.dataset.state = 'cracking';
-        setTimeout(function () { reveal(won); }, reduce ? 0 : CRACK);
-      }, reduce ? 0 : SHAKE);
+    // Une gerbe d'eclats : chacun part dans sa direction, a sa vitesse.
+    function semerEclats() {
+      eclats.textContent = '';
+      for (var i = 0; i < 20; i++) {
+        var e = el('span', 'eclat');
+        e.style.setProperty('--a', (i * 18 + Math.random() * 12 - 6) + 'deg');
+        e.style.setProperty('--d', (120 + Math.random() * 150) + '%');
+        e.style.setProperty('--t', Math.round(Math.random() * 120) + 'ms');
+        e.style.setProperty('--s', (0.5 + Math.random()).toFixed(2));
+        eclats.appendChild(e);
+      }
     }
 
-    function reveal(d) {
+    function ouvrir(d) {
+      if (shop.dataset.state !== 'idle') return;
+      if (!DP.dindiseEtat(d).ouvrable) return;
+      if (!DP.spend(d.credit)) return;
+
+      var gagne = DP.draw(d.rarete);
+      if (!gagne) return;
+
+      imgTop.src = d.img;
+      imgBot.src = d.img;
+      shop.dataset.rarity = DP.rarityKey(d.rarete);
+      status.textContent = d.nom + '…';
+
+      shop.dataset.state = 'charge';
+      plusTard(function () {
+        semerEclats();
+        shop.dataset.state = 'crack';
+        plusTard(function () { reveler(gagne); }, reduce ? 0 : CRACK);
+      }, reduce ? 0 : CHARGE);
+    }
+
+    // Le nom s'inscrit lettre par lettre, comme sur une machine a ecrire.
+    function frapper(texte, cible, fini) {
+      cible.textContent = '';
+      if (reduce) { cible.textContent = texte; if (fini) fini(); return; }
+      var i = 0;
+      (function suite() {
+        cible.textContent = texte.slice(0, ++i);
+        if (i < texte.length) plusTard(suite, 45);
+        else if (fini) fini();
+      })();
+    }
+
+    function reveler(d) {
       prize.src = DP.dinderImg(d.id);
       prize.alt = d.name;
-      prizeName.textContent = d.form ? d.name + ' — ' + d.form : d.name;
       DP.collect(d.id);
       DP.markNew(d.id);
       shop.dataset.state = 'revealed';
       refreshStatus();
+
+      prizeTag.textContent = d.rarity;
+      prizeTag.dataset.rarity = DP.rarityKey(d.rarity);
+      prizeTag.classList.remove('is-in');
+
+      var texte = d.form ? d.name + ' — ' + d.form : d.name;
+      plusTard(function () {
+        frapper(texte, prizeName, function () { prizeTag.classList.add('is-in'); });
+      }, 420);
     }
 
     againBtn.addEventListener('click', function () {
+      toutAnnuler();
       prize.removeAttribute('src');
       prizeName.textContent = '';
+      prizeTag.textContent = '';
+      prizeTag.classList.remove('is-in');
+      eclats.textContent = '';
+      shop.removeAttribute('data-rarity');
       shop.dataset.state = 'idle';
-      buildPay();
+      construireChoix();
       refreshStatus();
     });
 
-    buildPay();
+    construireChoix();
     refreshStatus();
   }
 
@@ -479,36 +567,134 @@
   function viewTracker(view) {
     view.classList.add('view--tracker');
 
-    var wrap = el('div', 'tracker');
-
     var carte = el('div', 'tracker-map');
     var fond = el('img', 'tracker-img');
     fond.src = 'assets/items/worldmap.png';
     fond.alt = 'Carte du monde';
     carte.appendChild(fond);
 
-    DP.SPOTS.forEach(function (s) {
-      var pin = el('button', 'pin');
-      pin.type = 'button';
-      pin.dataset.spot = s.id;
-      pin.style.setProperty('--x', s.x + '%');
-      pin.style.setProperty('--y', s.y + '%');
-      pin.setAttribute('aria-label', s.nom);
-      // Les balises du bas afficheraient leur nom hors cadre.
-      if (s.y > 55) pin.classList.add('pin--haut');
+    // Le panneau d'information, cache tant qu'on n'a clique nulle part.
+    var fiche = el('div', 'spot-card');
+    fiche.hidden = true;
+    var fVille = el('strong', 'spot-ville');
+    var fPays  = el('span', 'spot-pays');
+    var fCont  = el('span', 'spot-cont');
+    var fHeure = el('span', 'spot-heure', '--:--:--');
+    var fDate  = el('span', 'spot-date');
+    var fermer = el('button', 'spot-fermer', '×');
+    fermer.type = 'button';
+    fermer.setAttribute('aria-label', 'Fermer');
+    fiche.appendChild(fCont);
+    fiche.appendChild(fVille);
+    fiche.appendChild(fPays);
+    fiche.appendChild(fHeure);
+    fiche.appendChild(fDate);
+    fiche.appendChild(fermer);
 
-      pin.appendChild(el('span', 'pin-onde'));
-      var chip = el('img', 'pin-chip');
-      chip.src = 'assets/items/propaitious.webp';
-      chip.alt = '';
-      pin.appendChild(chip);
-      pin.appendChild(el('span', 'pin-nom', s.nom));
+    // Le compte a rebours avant que les balises ne se deplacent.
+    var rebours = el('p', 'tracker-rebours');
 
-      carte.appendChild(pin);
-    });
+    var actif = null;          // le lieu ouvert dans le panneau
+    var horloge = null;        // l'intervalle qui fait avancer l'heure
 
-    wrap.appendChild(carte);
-    view.appendChild(wrap);
+    function stopHorloge() {
+      if (horloge) { clearInterval(horloge); horloge = null; }
+    }
+
+    function afficher(spot, pin) {
+      actif = spot;
+      carte.querySelectorAll('.pin').forEach(function (p) {
+        p.classList.toggle('is-actif', p === pin);
+      });
+      fCont.textContent  = spot.continent;
+      fVille.textContent = spot.ville;
+      fPays.textContent  = spot.pays;
+      fHeure.textContent = DP.heureLocale(spot.tz);
+      fDate.textContent  = DP.dateLocale(spot.tz);
+      fiche.hidden = false;
+
+      stopHorloge();
+      horloge = setInterval(function () {
+        if (!document.body.contains(fiche)) { stopHorloge(); return; }
+        fHeure.textContent = DP.heureLocale(spot.tz);
+      }, 1000);
+    }
+
+    function cacher() {
+      actif = null;
+      fiche.hidden = true;
+      stopHorloge();
+      carte.querySelectorAll('.pin').forEach(function (p) {
+        p.classList.remove('is-actif');
+      });
+    }
+
+    fermer.addEventListener('click', cacher);
+
+    // Pose les balises du moment. Rappelee a chaque heure pleine.
+    function poser() {
+      carte.querySelectorAll('.pin').forEach(function (p) { p.remove(); });
+
+      DP.spots().forEach(function (s) {
+        var pin = el('button', 'pin');
+        pin.type = 'button';
+        pin.dataset.spot = s.id;
+
+        // Anadyr ou Utqiagvik frolent le bord de la carte : on rentre la
+        // balise de quelques pixels pour qu'elle reste entiere.
+        var x = Math.min(95, Math.max(5, s.x));
+        var y = Math.min(95.5, Math.max(4.5, s.y));
+        pin.style.setProperty('--x', x + '%');
+        pin.style.setProperty('--y', y + '%');
+        pin.setAttribute('aria-label', s.continent + ' : ' + s.ville + ', ' + s.pays);
+
+        if (y > 55) pin.classList.add('pin--haut');          // nom au-dessus
+        if (x > 82) pin.classList.add('pin--nom-gauche');    // nom vers l'interieur
+        else if (x < 18) pin.classList.add('pin--nom-droite');
+
+        pin.appendChild(el('span', 'pin-onde'));
+        var chip = el('img', 'pin-chip');
+        chip.src = 'assets/items/propaitious.webp';
+        chip.alt = '';
+        pin.appendChild(chip);
+        pin.appendChild(el('span', 'pin-nom', s.ville));
+
+        pin.addEventListener('click', function () {
+          if (actif && actif.id === s.id) cacher(); else afficher(s, pin);
+        });
+        carte.appendChild(pin);
+      });
+
+      // Si le panneau etait ouvert, il suit le nouveau lieu du continent.
+      if (actif) {
+        var suite = DP.spots().filter(function (s) { return s.id === actif.id; })[0];
+        var pin = carte.querySelector('[data-spot="' + actif.id + '"]');
+        if (suite && pin) afficher(suite, pin); else cacher();
+      }
+    }
+
+    function tictac() {
+      var reste = DP.prochainSaut();
+      var m = Math.floor(reste / 60000), sec = Math.floor(reste % 60000 / 1000);
+      rebours.textContent = 'Prochain relevé dans ' + m + ' min ' +
+                            String(sec).padStart(2, '0') + ' s';
+      if (reste <= 1000) setTimeout(poser, 1100);
+    }
+
+    carte.appendChild(fiche);
+    view.appendChild(carte);
+    view.appendChild(rebours);
+
+    poser();
+    tictac();
+    var battement = setInterval(function () {
+      if (!document.body.contains(carte)) {
+        clearInterval(battement);
+        stopHorloge();
+        return;
+      }
+      tictac();
+    }, 1000);
   }
 
   // ==========================================================

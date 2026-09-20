@@ -5,11 +5,14 @@
 
   // ---------- Les quatre monnaies ----------
   // "units" = la valeur d'une carte, telle qu'affichee sur la page Credits.
+  // "label" prend le pas sur "units" a l'affichage, pour les cartes qui ne
+  // se comptent pas en unites.
   var CREDITS = {
-    green: { name: 'Crédit Universel',   units: 3,  img: 'green.webp' },
-    blue:  { name: 'Crédit Multiversel', units: 5,  img: 'blue.webp'  },
-    gold:  { name: 'Crédit Omniversel',  units: 10, img: 'gold.webp'  },
-    pink:  { name: 'Crédit Temporel',    units: 20, img: 'pink.webp'  }
+    green: { name: 'Crédit Universel',   units: 3,        img: 'green.webp' },
+    blue:  { name: 'Crédit Multiversel', units: 5,        img: 'blue.webp'  },
+    gold:  { name: 'Crédit Omniversel',  units: 10,       img: 'gold.webp'  },
+    pink:  { name: 'Crédit Temporel',    units: Infinity, img: 'pink.webp',
+             label: '∞ unités : 1 UTILISATION' }
   };
 
   var ORDER = ['green', 'blue', 'gold', 'pink'];
@@ -29,10 +32,22 @@
 
   function rarityKey(r) { return RARITY_KEY[r] || 'green'; }
 
-  // ---------- Le prix d'une Dindise ----------
-  // Exprime en nombre de cartes de chaque type. Les trois premiers font
-  // 30 unites ; le Temporel paie a lui seul, bien qu'il n'en vaille que 20.
+  // ---------- Les Dindises ----------
+  // Une Dindise par rarete. Elle se paie avec la monnaie du meme nom et ne
+  // peut rendre qu'un Dinder de cette rarete : un Dinder Temporel ne sort
+  // que d'une Dindise Temporelle.
   var PRICE = { green: 10, blue: 6, gold: 3, pink: 1 };
+
+  var DINDISES = [
+    { id: 'universel',   rarete: 'Universel',   credit: 'green',
+      nom: 'Dindise Universelle',   img: 'assets/dindises/universel.webp' },
+    { id: 'multiversel', rarete: 'Multiversel', credit: 'blue',
+      nom: 'Dindise Multiverselle', img: 'assets/dindises/multiversel.webp' },
+    { id: 'omniversel',  rarete: 'Omniversel',  credit: 'gold',
+      nom: 'Dindise Omniverselle',  img: 'assets/dindises/omniversel.webp' },
+    { id: 'temporel',    rarete: 'Temporel',    credit: 'pink',
+      nom: 'Dindise Temporelle',    img: 'assets/dindises/temporel.webp' }
+  ];
 
   // Tant que ce drapeau est vrai, les achats ne retirent aucun credit.
   var UNLIMITED = true;
@@ -67,22 +82,151 @@
       view: 'tracker' }
   ];
 
-  // ---------- Les points du DinderTracker ----------
-  // Position en pourcentage de la carte, calculee depuis les coordonnees
-  // reelles : x = (longitude + 180) / 360, y = (90 - latitude) / 180.
-  var SPOTS = [
-    { id: 'nord',        nom: 'Amérique du Nord', lon: -100, lat:  48 },
-    { id: 'sud',         nom: 'Amérique du Sud',  lon:  -58, lat: -12 },
-    { id: 'europe',      nom: 'Europe',                 lon:   14, lat:  50 },
-    { id: 'asie',        nom: 'Asie',                   lon:   95, lat:  42 },
-    { id: 'australie',   nom: 'Australie',              lon:  134, lat: -25 },
-    { id: 'arctique',    nom: 'Arctique',               lon:  -45, lat:  80 },
-    { id: 'antarctique', nom: 'Antarctique',            lon:   10, lat: -76 }
-  ].map(function (s) {
-    s.x = (s.lon + 180) / 360 * 100;
-    s.y = (90 - s.lat) / 180 * 100;
-    return s;
-  });
+  // ---------- Les continents du DinderTracker ----------
+  // Douze lieux par continent. Le tracker en designe un par heure et
+  // donne son heure locale. Chaque lieu a ete verifie : il tombe bien
+  // sur une terre dessinee de la carte.
+  var CONTINENTS = [
+    { id: "nord", nom: 'Am\u00e9rique du Nord', lieux: [
+      { ville: 'New York', pays: 'Etats-Unis', tz: "America/New_York", lon: -74.006, lat: 40.713 },
+      { ville: 'Mexico', pays: 'Mexique', tz: "America/Mexico_City", lon: -99.133, lat: 19.433 },
+      { ville: 'Toronto', pays: 'Canada', tz: "America/Toronto", lon: -79.383, lat: 43.653 },
+      { ville: 'Los Angeles', pays: 'Etats-Unis', tz: "America/Los_Angeles", lon: -118.243, lat: 34.052 },
+      { ville: 'Chicago', pays: 'Etats-Unis', tz: "America/Chicago", lon: -87.63, lat: 41.878 },
+      { ville: 'Vancouver', pays: 'Canada', tz: "America/Vancouver", lon: -123.121, lat: 49.283 },
+      { ville: 'La Havane', pays: 'Cuba', tz: "America/Havana", lon: -82.383, lat: 23.133 },
+      { ville: 'Panama', pays: 'Panama', tz: "America/Panama", lon: -79.517, lat: 8.983 },
+      { ville: 'Denver', pays: 'Etats-Unis', tz: "America/Denver", lon: -104.99, lat: 39.739 },
+      { ville: 'Guatemala', pays: 'Guatemala', tz: "America/Guatemala", lon: -90.513, lat: 14.634 },
+      { ville: 'Anchorage', pays: 'Etats-Unis', tz: "America/Anchorage", lon: -149.9, lat: 61.218 },
+      { ville: 'Montreal', pays: 'Canada', tz: "America/Toronto", lon: -73.567, lat: 45.501 }
+    ] },
+    { id: "sud", nom: 'Am\u00e9rique du Sud', lieux: [
+      { ville: 'Sao Paulo', pays: 'Bresil', tz: "America/Sao_Paulo", lon: -46.633, lat: -23.55 },
+      { ville: 'Buenos Aires', pays: 'Argentine', tz: "America/Argentina/Buenos_Aires", lon: -58.382, lat: -34.604 },
+      { ville: 'Lima', pays: 'Perou', tz: "America/Lima", lon: -77.043, lat: -12.046 },
+      { ville: 'Bogota', pays: 'Colombie', tz: "America/Bogota", lon: -74.072, lat: 4.711 },
+      { ville: 'Santiago', pays: 'Chili', tz: "America/Santiago", lon: -70.669, lat: -33.449 },
+      { ville: 'Caracas', pays: 'Venezuela', tz: "America/Caracas", lon: -66.904, lat: 10.481 },
+      { ville: 'Quito', pays: 'Equateur', tz: "America/Guayaquil", lon: -78.467, lat: -0.18 },
+      { ville: 'La Paz', pays: 'Bolivie', tz: "America/La_Paz", lon: -68.15, lat: -16.5 },
+      { ville: 'Montevideo', pays: 'Uruguay', tz: "America/Montevideo", lon: -56.165, lat: -34.902 },
+      { ville: 'Asuncion', pays: 'Paraguay', tz: "America/Asuncion", lon: -57.575, lat: -25.264 },
+      { ville: 'Manaus', pays: 'Bresil', tz: "America/Manaus", lon: -60.025, lat: -3.117 },
+      { ville: 'Brasilia', pays: 'Bresil', tz: "America/Sao_Paulo", lon: -47.883, lat: -15.794 }
+    ] },
+    { id: "europe", nom: 'Europe', lieux: [
+      { ville: 'Paris', pays: 'France', tz: "Europe/Paris", lon: 2.352, lat: 48.857 },
+      { ville: 'Londres', pays: 'Royaume-Uni', tz: "Europe/London", lon: -0.128, lat: 51.507 },
+      { ville: 'Berlin', pays: 'Allemagne', tz: "Europe/Berlin", lon: 13.405, lat: 52.52 },
+      { ville: 'Madrid', pays: 'Espagne', tz: "Europe/Madrid", lon: -3.703, lat: 40.417 },
+      { ville: 'Rome', pays: 'Italie', tz: "Europe/Rome", lon: 12.496, lat: 41.903 },
+      { ville: 'Athenes', pays: 'Grece', tz: "Europe/Athens", lon: 23.728, lat: 37.984 },
+      { ville: 'Stockholm', pays: 'Suede', tz: "Europe/Stockholm", lon: 18.069, lat: 59.329 },
+      { ville: 'Varsovie', pays: 'Pologne', tz: "Europe/Warsaw", lon: 21.012, lat: 52.23 },
+      { ville: 'Lisbonne', pays: 'Portugal', tz: "Europe/Lisbon", lon: -9.139, lat: 38.722 },
+      { ville: 'Moscou', pays: 'Russie', tz: "Europe/Moscow", lon: 37.618, lat: 55.756 },
+      { ville: 'Kiev', pays: 'Ukraine', tz: "Europe/Kyiv", lon: 30.524, lat: 50.45 },
+      { ville: 'Istanbul', pays: 'Turquie', tz: "Europe/Istanbul", lon: 28.979, lat: 41.008 }
+    ] },
+    { id: "asie", nom: 'Asie', lieux: [
+      { ville: 'Tokyo', pays: 'Japon', tz: "Asia/Tokyo", lon: 139.692, lat: 35.69 },
+      { ville: 'Pekin', pays: 'Chine', tz: "Asia/Shanghai", lon: 116.407, lat: 39.904 },
+      { ville: 'New Delhi', pays: 'Inde', tz: "Asia/Kolkata", lon: 77.209, lat: 28.614 },
+      { ville: 'Seoul', pays: 'Coree du Sud', tz: "Asia/Seoul", lon: 126.978, lat: 37.567 },
+      { ville: 'Bangkok', pays: 'Thailande', tz: "Asia/Bangkok", lon: 100.502, lat: 13.756 },
+      { ville: 'Singapour', pays: 'Singapour', tz: "Asia/Singapore", lon: 103.82, lat: 1.352 },
+      { ville: 'Dubai', pays: 'Emirats arabes unis', tz: "Asia/Dubai", lon: 55.271, lat: 25.205 },
+      { ville: 'Jakarta', pays: 'Indonesie', tz: "Asia/Jakarta", lon: 106.845, lat: -6.208 },
+      { ville: 'Manille', pays: 'Philippines', tz: "Asia/Manila", lon: 120.984, lat: 14.599 },
+      { ville: 'Oulan-Bator', pays: 'Mongolie', tz: "Asia/Ulaanbaatar", lon: 106.918, lat: 47.886 },
+      { ville: 'Katmandou', pays: 'Nepal', tz: "Asia/Kathmandu", lon: 85.324, lat: 27.717 },
+      { ville: 'Iakoutsk', pays: 'Russie', tz: "Asia/Yakutsk", lon: 129.733, lat: 62.028 }
+    ] },
+    { id: "australie", nom: 'Australie', lieux: [
+      { ville: 'Sydney', pays: 'Australie', tz: "Australia/Sydney", lon: 151.209, lat: -33.868 },
+      { ville: 'Melbourne', pays: 'Australie', tz: "Australia/Melbourne", lon: 144.963, lat: -37.814 },
+      { ville: 'Brisbane', pays: 'Australie', tz: "Australia/Brisbane", lon: 153.026, lat: -27.47 },
+      { ville: 'Perth', pays: 'Australie', tz: "Australia/Perth", lon: 115.857, lat: -31.953 },
+      { ville: 'Adelaide', pays: 'Australie', tz: "Australia/Adelaide", lon: 138.6, lat: -34.929 },
+      { ville: 'Darwin', pays: 'Australie', tz: "Australia/Darwin", lon: 130.845, lat: -12.463 },
+      { ville: 'Canberra', pays: 'Australie', tz: "Australia/Sydney", lon: 149.128, lat: -35.281 },
+      { ville: 'Cairns', pays: 'Australie', tz: "Australia/Brisbane", lon: 145.77, lat: -16.92 },
+      { ville: 'Alice Springs', pays: 'Australie', tz: "Australia/Darwin", lon: 133.881, lat: -23.698 },
+      { ville: 'Broome', pays: 'Australie', tz: "Australia/Perth", lon: 122.236, lat: -17.955 },
+      { ville: 'Townsville', pays: 'Australie', tz: "Australia/Brisbane", lon: 146.817, lat: -19.258 },
+      { ville: 'Kalgoorlie', pays: 'Australie', tz: "Australia/Perth", lon: 121.466, lat: -30.749 }
+    ] },
+    { id: "arctique", nom: 'Arctique', lieux: [
+      { ville: 'Longyearbyen', pays: 'Norvege', tz: "Arctic/Longyearbyen", lon: 15.633, lat: 78.217 },
+      { ville: 'Nuuk', pays: 'Groenland', tz: "America/Nuuk", lon: -51.721, lat: 64.181 },
+      { ville: 'Tromso', pays: 'Norvege', tz: "Europe/Oslo", lon: 18.956, lat: 69.649 },
+      { ville: 'Mourmansk', pays: 'Russie', tz: "Europe/Moscow", lon: 33.083, lat: 68.97 },
+      { ville: 'Iqaluit', pays: 'Canada', tz: "America/Iqaluit", lon: -68.517, lat: 63.749 },
+      { ville: 'Utqiagvik', pays: 'Etats-Unis', tz: "America/Anchorage", lon: -156.789, lat: 71.29 },
+      { ville: 'Norilsk', pays: 'Russie', tz: "Asia/Krasnoyarsk", lon: 88.203, lat: 69.35 },
+      { ville: 'Rovaniemi', pays: 'Finlande', tz: "Europe/Helsinki", lon: 25.73, lat: 66.503 },
+      { ville: 'Inuvik', pays: 'Canada', tz: "America/Inuvik", lon: -133.723, lat: 68.361 },
+      { ville: 'Akureyri', pays: 'Islande', tz: "Atlantic/Reykjavik", lon: -18.09, lat: 65.683 },
+      { ville: 'Yellowknife', pays: 'Canada', tz: "America/Yellowknife", lon: -114.371, lat: 62.454 },
+      { ville: 'Anadyr', pays: 'Russie', tz: "Asia/Anadyr", lon: 177.508, lat: 64.733 }
+    ] },
+    { id: "antarctique", nom: 'Antarctique', lieux: [
+      { ville: 'Base McMurdo', pays: 'Etats-Unis', tz: "Antarctica/McMurdo", lon: 166.668, lat: -77.846 },
+      { ville: 'Base Vostok', pays: 'Russie', tz: "Antarctica/Vostok", lon: 106.833, lat: -78.464 },
+      { ville: 'Base Rothera', pays: 'Royaume-Uni', tz: "Antarctica/Rothera", lon: -68.128, lat: -67.568 },
+      { ville: 'Base Casey', pays: 'Australie', tz: "Antarctica/Casey", lon: 110.527, lat: -66.283 },
+      { ville: 'Base Davis', pays: 'Australie', tz: "Antarctica/Davis", lon: 77.967, lat: -68.577 },
+      { ville: 'Base Mawson', pays: 'Australie', tz: "Antarctica/Mawson", lon: 62.873, lat: -67.603 },
+      { ville: 'Base Palmer', pays: 'Etats-Unis', tz: "Antarctica/Palmer", lon: -64.053, lat: -64.774 },
+      { ville: 'Dumont d Urville', pays: 'France', tz: "Antarctica/DumontDUrville", lon: 140.001, lat: -66.663 },
+      { ville: 'Base Syowa', pays: 'Japon', tz: "Antarctica/Syowa", lon: 39.59, lat: -69.006 },
+      { ville: 'Base Troll', pays: 'Norvege', tz: "Antarctica/Troll", lon: 2.535, lat: -72.012 },
+      { ville: 'Base Concordia', pays: 'France', tz: "Antarctica/DumontDUrville", lon: 123.35, lat: -75.1 },
+      { ville: 'Base Esperanza', pays: 'Argentine', tz: "Antarctica/Palmer", lon: -56.997, lat: -63.398 }
+    ] }
+  ];
+
+  // Le lieu designe change a chaque heure pleine, et reste le meme pour
+  // tout le monde : il ne depend que de l'heure, pas du hasard.
+  function spots(quand) {
+    var h = Math.floor((quand || Date.now()) / 3600000);
+    return CONTINENTS.map(function (c, k) {
+      var n = c.lieux.length;
+      var lieu = c.lieux[(((h + k * 5) % n) + n) % n];
+      return {
+        id: c.id, continent: c.nom,
+        ville: lieu.ville, pays: lieu.pays, tz: lieu.tz,
+        lon: lieu.lon, lat: lieu.lat,
+        x: (lieu.lon + 180) / 360 * 100,
+        y: (90 - lieu.lat) / 180 * 100
+      };
+    });
+  }
+
+  // Combien de millisecondes avant le prochain saut des balises.
+  function prochainSaut(quand) {
+    var t = quand || Date.now();
+    return 3600000 - (t % 3600000);
+  }
+
+  // L'heure locale d'un fuseau. Un moteur trop ancien peut refuser un
+  // fuseau exotique : on le dit plutot que d'afficher une heure fausse.
+  function heureLocale(tz, when) {
+    try {
+      return new Intl.DateTimeFormat('fr-FR', {
+        timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }).format(when || new Date());
+    } catch (e) { return '--:--:--'; }
+  }
+
+  function dateLocale(tz, when) {
+    try {
+      return new Intl.DateTimeFormat('fr-FR', {
+        timeZone: tz, weekday: 'long', day: 'numeric', month: 'long'
+      }).format(when || new Date());
+    } catch (e) { return ''; }
+  }
 
   var SLOTS   = 30;                  // le nombre de cases de la collection
   var KEY     = 'dinderpad.v2';      // la sauvegarde, profils compris
@@ -240,12 +384,27 @@
     if (p.owned.indexOf(id) === -1) { p.owned.push(id); save(); }
   }
 
-  // Tire un Dinder encore absent de la collection : une Dindise ne donne
-  // jamais de doublon tant qu'il reste quelque chose a decouvrir.
-  function draw() {
-    var pool = missing();
+  // Tout le roster d'une rarete donnee, et ce qu'il en reste a trouver.
+  function ofRarity(r)      { return DINDERS.filter(function (d) { return d.rarity === r; }); }
+  function missingOf(r)     { return missing().filter(function (d) { return d.rarity === r; }); }
+
+  // Tire un Dinder de la rarete demandee, encore absent de la collection :
+  // une Dindise ne donne jamais de doublon tant qu'il reste a decouvrir.
+  function draw(rarete) {
+    var pool = rarete ? missingOf(rarete) : missing();
     if (!pool.length) return null;
     return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  // Une Dindise est ouvrable si on peut la payer et si elle a de quoi
+  // rendre quelque chose.
+  function dindiseEtat(d) {
+    var reste = missingOf(d.rarete).length;
+    var total = ofRarity(d.rarete).length;
+    if (!total)             return { ouvrable: false, raison: 'aucun Dinder', reste: 0, total: 0 };
+    if (!reste)             return { ouvrable: false, raison: 'tout trouvé', reste: 0, total: total };
+    if (!canAfford(d.credit)) return { ouvrable: false, raison: 'crédits manquants', reste: reste, total: total };
+    return { ouvrable: true, raison: '', reste: reste, total: total };
   }
 
   // Vide la progression du profil courant, sans supprimer le profil.
@@ -282,7 +441,11 @@
   window.DP = {
     CREDITS: CREDITS, ORDER: ORDER, PRICE: PRICE, DINDERS: DINDERS,
     SLOTS: SLOTS, UNLIMITED: UNLIMITED, RARITIES: RARITIES,
-    ITEMS: ITEMS, SPOTS: SPOTS,
+    DINDISES: DINDISES, ofRarity: ofRarity, missingOf: missingOf,
+    dindiseEtat: dindiseEtat,
+    ITEMS: ITEMS, CONTINENTS: CONTINENTS,
+    spots: spots, prochainSaut: prochainSaut,
+    heureLocale: heureLocale, dateLocale: dateLocale,
     rarityKey: rarityKey,
 
     profiles: profiles, currentProfile: currentProfile,
