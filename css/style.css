@@ -1620,3 +1620,151 @@ body[data-phase="welcome"] .lock-welcome {
     0 calc(2 * var(--px)) calc(4 * var(--px)) rgba(0, 0, 0, .8),
     0 0 calc(16 * var(--px)) color-mix(in srgb, var(--r) 70%, transparent);
 }
+
+/* ==========================================================
+   Items
+   Meme presentation que la collection : vignette a gauche,
+   nom a droite, et un rappel que la case s'ouvre.
+   ========================================================== */
+
+.slot--item .slot-face { object-fit: contain; }
+
+.slot-open {
+  flex: 0 0 auto;
+  align-self: center;
+  padding: calc(12 * var(--px)) calc(22 * var(--px));
+  background: rgba(0, 8, 16, .55);
+  border: calc(4 * var(--px)) solid #00f1fd;
+  border-radius: calc(14 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(26 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(1 * var(--px));
+  line-height: 1;
+  white-space: nowrap;
+  color: #9ff6ff;
+  text-shadow: 0 0 calc(10 * var(--px)) rgba(0, 241, 253, .8);
+}
+
+/* ==========================================================
+   DinderTracker
+   Une carte du monde en 8 bits, avec une balise par continent.
+   ========================================================== */
+
+.view--tracker { display: flex; }
+
+.tracker {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(18 * var(--px));
+}
+
+/* La carte fait 2:1. On la loge en entier, sans jamais la deformer. */
+.tracker-map {
+  position: relative;
+  width: 100%;
+  max-width: calc(1029 * var(--px));
+  aspect-ratio: 2 / 1;
+  border: calc(5 * var(--px)) solid #000;
+  border-radius: calc(12 * var(--px));
+  box-shadow:
+    inset 0 0 0 calc(4 * var(--px)) #00f1fd,
+    0 0 calc(22 * var(--px)) rgba(0, 241, 253, .35);
+  overflow: hidden;
+}
+
+.tracker-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  image-rendering: pixelated;        /* on garde les gros pixels */
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* ---------- Une balise ---------- */
+
+.pin {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width:  calc(76 * var(--px));
+  height: calc(76 * var(--px));
+  margin: calc(-38 * var(--px)) 0 0 calc(-38 * var(--px));   /* centree sur le point */
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(0, 0, 0, .8) 40%, rgba(0, 0, 0, .35) 100%);
+  border: calc(4 * var(--px)) solid #4fd13a;
+  border-radius: 50%;
+  box-shadow:
+    0 0 calc(16 * var(--px)) rgba(79, 209, 58, .9),
+    inset 0 0 calc(12 * var(--px)) rgba(79, 209, 58, .5);
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.pin:hover,
+.pin:focus-visible {
+  transform: scale(1.18);
+  box-shadow:
+    0 0 calc(30 * var(--px)) rgba(79, 209, 58, 1),
+    inset 0 0 calc(14 * var(--px)) rgba(79, 209, 58, .7);
+  outline: none;
+  z-index: 3;
+}
+
+.pin-chip {
+  width:  calc(54 * var(--px));
+  height: calc(54 * var(--px));
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* L'onde qui s'echappe de la balise, comme un radar. */
+.pin-onde {
+  position: absolute;
+  inset: calc(-4 * var(--px));
+  border-radius: 50%;
+  border: calc(3 * var(--px)) solid rgba(79, 209, 58, .85);
+  animation: pin-onde 2.4s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pin-onde {
+  0%   { transform: scale(1);   opacity: .9; }
+  70%  { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Le nom, sous la balise. Les balises du bas l'affichent au-dessus,
+   sinon il sortirait de la carte. */
+.pin-nom {
+  position: absolute;
+  top: calc(100% + 6 * var(--px));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: calc(4 * var(--px)) calc(10 * var(--px));
+  background: rgba(0, 10, 4, .8);
+  border: calc(2 * var(--px)) solid rgba(79, 209, 58, .7);
+  border-radius: calc(8 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(20 * var(--px));
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  color: #b6ffa8;
+  pointer-events: none;
+}
+
+.pin--haut .pin-nom { top: auto; bottom: calc(100% + 6 * var(--px)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pin-onde { animation: none; opacity: .5; }
+  .pin { transition: none; }
+}

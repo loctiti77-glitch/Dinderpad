@@ -59,6 +59,31 @@
     { id: 'gart-kervelor-king-of-karsovia',    name: 'Gart Kervelor', form: 'King of Karsovia', rarity: 'Multiversel',  universe: 'SSt-03', desc: '' }
   ];
 
+  // ---------- Les items ----------
+  var ITEMS = [
+    { id: 'dindertracker', name: 'DinderTracker',
+      sub: 'Traceur de signaux',
+      img: 'assets/items/dindertracker.webp',
+      view: 'tracker' }
+  ];
+
+  // ---------- Les points du DinderTracker ----------
+  // Position en pourcentage de la carte, calculee depuis les coordonnees
+  // reelles : x = (longitude + 180) / 360, y = (90 - latitude) / 180.
+  var SPOTS = [
+    { id: 'nord',        nom: 'Amérique du Nord', lon: -100, lat:  48 },
+    { id: 'sud',         nom: 'Amérique du Sud',  lon:  -58, lat: -12 },
+    { id: 'europe',      nom: 'Europe',                 lon:   14, lat:  50 },
+    { id: 'asie',        nom: 'Asie',                   lon:   95, lat:  42 },
+    { id: 'australie',   nom: 'Australie',              lon:  134, lat: -25 },
+    { id: 'arctique',    nom: 'Arctique',               lon:  -45, lat:  80 },
+    { id: 'antarctique', nom: 'Antarctique',            lon:   10, lat: -76 }
+  ].map(function (s) {
+    s.x = (s.lon + 180) / 360 * 100;
+    s.y = (90 - s.lat) / 180 * 100;
+    return s;
+  });
+
   var SLOTS   = 30;                  // le nombre de cases de la collection
   var KEY     = 'dinderpad.v2';      // la sauvegarde, profils compris
   var OLD_KEY = 'dinderpad.save.v1'; // l'ancienne sauvegarde, sans profils
@@ -257,6 +282,7 @@
   window.DP = {
     CREDITS: CREDITS, ORDER: ORDER, PRICE: PRICE, DINDERS: DINDERS,
     SLOTS: SLOTS, UNLIMITED: UNLIMITED, RARITIES: RARITIES,
+    ITEMS: ITEMS, SPOTS: SPOTS,
     rarityKey: rarityKey,
 
     profiles: profiles, currentProfile: currentProfile,

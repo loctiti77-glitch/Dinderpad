@@ -431,6 +431,87 @@
   }
 
   // ==========================================================
+  //  Items : l'inventaire
+  // ==========================================================
+
+  function viewItems(view) {
+    var list = el('div', 'screen-scroll');
+
+    DP.ITEMS.forEach(function (it) {
+      var row = el('a', 'slot slot--item');
+      row.href = '#' + it.view;
+      row.dataset.item = it.id;
+
+      var img = el('img', 'slot-face');
+      img.src = it.img;
+      img.alt = '';
+      img.decoding = 'async';
+      row.appendChild(img);
+
+      var name = el('span', 'slot-name');
+      name.appendChild(el('span', 'slot-name-main', it.name));
+      name.appendChild(el('span', 'slot-name-sub', it.sub));
+      row.appendChild(name);
+
+      row.appendChild(el('span', 'slot-open', 'Ouvrir'));
+      list.appendChild(row);
+    });
+
+    // Les emplacements encore vides, pour montrer qu'il y a de la place.
+    for (var i = DP.ITEMS.length; i < 6; i++) {
+      var vide = el('div', 'slot slot--locked');
+      var mark = el('span', 'slot-face slot-face--locked', '?');
+      mark.setAttribute('aria-hidden', 'true');
+      vide.appendChild(mark);
+      var n = el('span', 'slot-name');
+      n.appendChild(el('span', 'slot-name-main', '???'));
+      vide.appendChild(n);
+      list.appendChild(vide);
+    }
+
+    view.appendChild(list);
+  }
+
+  // ==========================================================
+  //  DinderTracker : la carte du monde et ses balises
+  // ==========================================================
+
+  function viewTracker(view) {
+    view.classList.add('view--tracker');
+
+    var wrap = el('div', 'tracker');
+
+    var carte = el('div', 'tracker-map');
+    var fond = el('img', 'tracker-img');
+    fond.src = 'assets/items/worldmap.png';
+    fond.alt = 'Carte du monde';
+    carte.appendChild(fond);
+
+    DP.SPOTS.forEach(function (s) {
+      var pin = el('button', 'pin');
+      pin.type = 'button';
+      pin.dataset.spot = s.id;
+      pin.style.setProperty('--x', s.x + '%');
+      pin.style.setProperty('--y', s.y + '%');
+      pin.setAttribute('aria-label', s.nom);
+      // Les balises du bas afficheraient leur nom hors cadre.
+      if (s.y > 55) pin.classList.add('pin--haut');
+
+      pin.appendChild(el('span', 'pin-onde'));
+      var chip = el('img', 'pin-chip');
+      chip.src = 'assets/items/propaitious.webp';
+      chip.alt = '';
+      pin.appendChild(chip);
+      pin.appendChild(el('span', 'pin-nom', s.nom));
+
+      carte.appendChild(pin);
+    });
+
+    wrap.appendChild(carte);
+    view.appendChild(wrap);
+  }
+
+  // ==========================================================
   //  Les rubriques pas encore construites
   // ==========================================================
 
@@ -449,7 +530,8 @@
     'credits':     { title: 'Crédits', render: viewCredits },
     'win-dinders': { title: 'Win Dinders', render: viewWinDinders },
     'settings':    { title: 'Paramètres', render: viewSettings },
-    'items':       { title: 'Items',       render: soon('Items') },
+    'items':       { title: 'Items',       render: viewItems },
+    'tracker':     { title: 'DinderTracker', render: viewTracker },
     'codanex':     { title: 'Codanex',     render: soon('Codanex') },
     'quests':      { title: 'Quests',      render: soon('Quests') },
     'badges':      { title: 'Badges',      render: soon('Badges') }
