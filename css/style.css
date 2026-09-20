@@ -23,6 +23,9 @@ html, body {
   align-items: center;
   justify-content: center;
   padding: 16px;
+  /* La carte d'acces arrive de sous l'appareil : on evite qu'elle
+     fasse apparaitre une barre de defilement au passage. */
+  overflow: hidden;
 }
 
 .pad {
@@ -125,10 +128,10 @@ html, body {
 
 .screen {
   position: absolute;
-  left:   calc(292 * var(--px));
-  top:    calc(95  * var(--px));
-  width:  calc(1021 * var(--px));
-  height: calc(673 * var(--px));
+  left:   calc(272 * var(--px));
+  top:    calc(90  * var(--px));
+  width:  calc(1065 * var(--px));
+  height: calc(701 * var(--px));
   overflow: hidden;
   background: #000;
   border-radius: calc(10 * var(--px));
@@ -206,6 +209,7 @@ html, body {
 .slot-name {
   flex: 1 1 auto;
   min-width: 0;
+  margin-right: calc(12 * var(--px));
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -269,8 +273,8 @@ html, body {
    et suit --px (fourni par js/pad.js) pour rester calee au zoom. */
 .pad .pad-nav {
   position: absolute;
-  left: calc(78 * var(--px));
-  top:  calc(345 * var(--px));
+  left: calc(49 * var(--px));
+  top:  calc(350 * var(--px));
   gap: calc(20 * var(--px));
 }
 
@@ -456,7 +460,7 @@ html, body {
    104 pour le bandeau, le reste pour les cartes.
    ========================================================== */
 
-.screen.has-tally {
+.view--tally {
   display: flex;
   flex-direction: column;
 }
@@ -503,7 +507,7 @@ html, body {
 }
 
 /* Le bandeau prend 104 px : les cartes se resserrent pour tenir dessous. */
-.screen.has-tally .screen-scroll.is-static {
+.view--tally .screen-scroll.is-static {
   flex: 1 1 auto;
   height: auto;              /* sinon le 100% de .screen-scroll deborde */
   min-height: 0;
@@ -511,9 +515,9 @@ html, body {
   padding: calc(14 * var(--px)) calc(18 * var(--px)) calc(16 * var(--px));
 }
 
-.screen.has-tally .slot { margin-bottom: calc(13 * var(--px)); }
+.view--tally .slot { margin-bottom: calc(13 * var(--px)); }
 
-.screen.has-tally .credit-card {
+.view--tally .credit-card {
   width:  calc(140 * var(--px));
   height: calc(86 * var(--px));
 }
@@ -1129,123 +1133,113 @@ html, body {
 }
 
 /* ==========================================================
-   Ecran d'identification
-   Noir plein cadre, la carte d'acces s'insere dans le lecteur,
-   puis le code a 8 chiffres ouvre le DinderPad.
-   Les tailles sont en vmin : cet ecran ne depend pas du pad.
+   Identification
+   C'est le pad lui-meme qui demande le code : son ecran passe
+   au noir, la carte d'acces vient s'y inserer, puis les huit
+   cases apparaissent. Tout est en --px, donc cale sur l'ecran.
    ========================================================== */
 
-.is-locked .pad-wrap { visibility: hidden; }
+/* Tant qu'on n'est pas identifie, l'appareil montre sa face vide :
+   ni rubriques, ni navigation, ni engrenage. */
+body.is-locked .pad-img--menu   { opacity: 0; }
+body.is-locked .pad-img--screen { opacity: 1; }
+
+body.is-locked .menu,
+body.is-locked .pad-nav,
+body.is-locked .hotspot--gear { opacity: 0; pointer-events: none; }
+
+body.is-locked .screen { visibility: visible; opacity: 1; }
 
 .lock {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 9000;              /* sous le voile de transition (9999) */
+  z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3vmin;
-  padding: 5vmin 4vmin;
-  background: radial-gradient(circle at 50% 42%, #14060f 0%, #000 62%);
+  gap: calc(34 * var(--px));
+  overflow: hidden;
+  border-radius: calc(10 * var(--px));
+  background: radial-gradient(circle at 50% 45%, #170718 0%, #000 72%);
   font-family: "Courier New", Courier, monospace;
   color: #fff;
   text-align: center;
-  opacity: 1;
-  transition: opacity .6s ease;
+  transition: opacity .55s ease;
 }
 
-.lock.is-gone { opacity: 0; pointer-events: none; }
+body:not(.is-locked) .lock { opacity: 0; pointer-events: none; }
+
+/* L'eclair de lumiere quand la carte entre dans l'appareil */
+.lock::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 42%, rgba(0, 241, 253, .9), transparent 62%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+body[data-phase="card"] .lock::after { animation: lock-flash 2.1s ease-out; }
+
+@keyframes lock-flash {
+  0%, 58% { opacity: 0; }
+  72%     { opacity: .85; }
+  100%    { opacity: 0; }
+}
 
 /* ---------- Le titre ---------- */
 
 .lock-title {
   margin: 0;
-  font-size: clamp(1.4rem, 5vmin, 3rem);
+  font-size: calc(56 * var(--px));
   font-weight: 700;
-  letter-spacing: .35em;
+  letter-spacing: calc(12 * var(--px));
   text-transform: uppercase;
   color: #ff3fa4;
-  text-shadow: 0 0 3vmin rgba(255, 63, 164, .85);
+  text-shadow: 0 0 calc(24 * var(--px)) rgba(255, 63, 164, .9);
   opacity: 0;
-  animation: lock-title-in .8s ease-out forwards;
+  animation: lock-title-in .9s ease-out forwards;
 }
 
-.lock[data-phase="welcome"] .lock-title { display: none; }
+body[data-phase="welcome"] .lock-title { display: none; }
 
 @keyframes lock-title-in {
-  0%   { opacity: 0; letter-spacing: .8em; }
-  100% { opacity: 1; letter-spacing: .35em; }
+  0%   { opacity: 0; letter-spacing: calc(40 * var(--px)); }
+  100% { opacity: 1; letter-spacing: calc(12 * var(--px)); }
 }
 
-/* ---------- La carte et son lecteur ---------- */
-
-.lock-stage {
-  position: relative;
-  width: min(86vw, 70vmin);
-  height: 44vmin;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* La fente du lecteur : elle s'allume au passage de la carte. */
-.lock-slot {
-  position: absolute;
-  top: 12%;
-  width: 78%;
-  height: .9vmin;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, .18);
-  box-shadow: 0 0 2vmin rgba(0, 241, 253, .35);
-  opacity: 0;
-  transition: opacity .4s ease;
-}
-
-.lock[data-phase="card"] .lock-slot,
-.lock[data-phase="input"] .lock-slot { opacity: 1; }
-
-.lock[data-phase="card"] .lock-slot { animation: slot-read 1.9s ease-in-out; }
-
-@keyframes slot-read {
-  0%, 55% { background: rgba(255, 255, 255, .18); box-shadow: 0 0 2vmin rgba(0, 241, 253, .35); }
-  72%     { background: #00f1fd; box-shadow: 0 0 7vmin 1.4vmin rgba(0, 241, 253, .95); }
-  100%    { background: rgba(255, 255, 255, .18); box-shadow: 0 0 2vmin rgba(0, 241, 253, .35); }
-}
+/* ---------- La carte qui s'insere ---------- */
 
 .lock-card {
   position: absolute;
-  top: 12%;
-  width: 100%;
-  max-width: 70vmin;
-  border-radius: 2.2vmin;
-  box-shadow: 0 2vmin 5vmin rgba(0, 0, 0, .8);
-  transform: translateY(120vh) rotate(-9deg);
+  left: 19%;
+  top: 20%;
+  width: 62%;
+  z-index: 20;
+  border-radius: calc(18 * var(--px));
+  box-shadow: 0 calc(24 * var(--px)) calc(48 * var(--px)) rgba(0, 0, 0, .85);
   transform-origin: 50% 0;
   opacity: 0;
+  pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
 }
 
-/* La carte monte du bas, se redresse, puis s'enfonce dans la fente. */
-.lock[data-phase="card"] .lock-card {
-  animation: card-insert 2s cubic-bezier(.3, .8, .3, 1) forwards;
+body[data-phase="card"] .lock-card {
+  animation: card-insert 2.1s cubic-bezier(.3, .75, .3, 1) forwards;
 }
 
-.lock[data-phase="input"] .lock-card,
-.lock[data-phase="welcome"] .lock-card {
-  opacity: 0;
-  transform: translateY(-4vmin) scaleY(.02);
-}
-
+/* Elle monte du bas, se presente devant l'appareil, puis s'y enfonce. */
 @keyframes card-insert {
-  0%   { transform: translateY(120vh) rotate(-9deg) scale(1);      opacity: 0; }
-  28%  { transform: translateY(18vmin) rotate(2deg)  scale(1);     opacity: 1; }
-  45%  { transform: translateY(14vmin) rotate(0deg)  scale(1);     opacity: 1; }
-  100% { transform: translateY(-4vmin) rotate(0deg)  scaleY(.02);  opacity: 0; }
+  0%   { opacity: 0; transform: translateY(150%) rotate(-8deg) scale(1.06); }
+  22%  { opacity: 1; transform: translateY(30%)  rotate(3deg)  scale(1.06); }
+  44%  { opacity: 1; transform: translateY(14%)  rotate(0deg)  scale(1); }
+  66%  { opacity: 1; transform: translateY(0)    rotate(0deg)  scale(1); }
+  100% { opacity: 0; transform: translateY(-8%)  rotate(0deg)  scaleY(.03); }
 }
 
-/* ---------- Le code ---------- */
+/* ---------- Les huit cases ---------- */
 
 .lock-form {
   position: relative;
@@ -1254,54 +1248,51 @@ html, body {
   transition: opacity .5s ease;
 }
 
-.lock[data-phase="input"] .lock-form { opacity: 1; pointer-events: auto; }
-.lock[data-phase="welcome"] .lock-form { display: none; }
+body[data-phase="input"] .lock-form { opacity: 1; pointer-events: auto; }
+body[data-phase="welcome"] .lock-form { display: none; }
 
 .lock-boxes {
   display: flex;
-  gap: 1.2vmin;
+  gap: calc(13 * var(--px));
   justify-content: center;
 }
 
 .lock-box {
-  width:  clamp(26px, 6.2vmin, 62px);
-  height: clamp(36px, 8.6vmin, 86px);
+  width:  calc(94 * var(--px));
+  height: calc(126 * var(--px));
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 63, 164, .08);
-  border: .35vmin solid rgba(255, 63, 164, .55);
-  border-radius: 1.2vmin;
-  font-size: clamp(1.1rem, 4.4vmin, 2.6rem);
+  border: calc(5 * var(--px)) solid rgba(255, 63, 164, .55);
+  border-radius: calc(16 * var(--px));
+  font-size: calc(62 * var(--px));
   font-weight: 700;
   color: #fff;
   transition: border-color .15s ease, background-color .15s ease, transform .15s ease;
 }
 
-.lock-box.is-filled {
-  background: rgba(255, 63, 164, .22);
-  border-color: #ff3fa4;
+.lock-box.is-filled { background: rgba(255, 63, 164, .24); border-color: #ff3fa4; }
+
+.lock-box.is-active {
+  border-color: #fff;
+  box-shadow: 0 0 calc(26 * var(--px)) rgba(255, 63, 164, .95);
+  transform: translateY(calc(-6 * var(--px)));
 }
 
 /* Respiration entre les 6 chiffres de l'application et les 2 chiffres perso. */
-.lock-box.is-split { margin-left: 3.2vmin; position: relative; }
+.lock-box.is-split { margin-left: calc(34 * var(--px)); position: relative; }
 
 .lock-box.is-split::before {
   content: '';
   position: absolute;
-  left: -2vmin;
+  left: calc(-24 * var(--px));
   top: 50%;
-  width: .8vmin;
-  height: .35vmin;
+  width: calc(14 * var(--px));
+  height: calc(4 * var(--px));
   border-radius: 999px;
-  background: rgba(255, 255, 255, .45);
+  background: rgba(255, 255, 255, .5);
   transform: translateY(-50%);
-}
-
-.lock-box.is-active {
-  border-color: #fff;
-  box-shadow: 0 0 2.4vmin rgba(255, 63, 164, .9);
-  transform: translateY(-.5vmin);
 }
 
 /* Le champ reel : invisible, pose sur les cases, il porte le clavier. */
@@ -1309,7 +1300,7 @@ html, body {
   position: absolute;
   inset: 0;
   width: 100%;
-  height: clamp(36px, 8.6vmin, 86px);
+  height: calc(126 * var(--px));
   opacity: 0;
   border: 0;
   background: transparent;
@@ -1320,23 +1311,24 @@ html, body {
 }
 
 .lock-msg {
-  margin: 2vmin 0 0;
-  min-height: 3vmin;
-  font-size: clamp(.8rem, 2.4vmin, 1.1rem);
-  letter-spacing: .1em;
+  margin: calc(20 * var(--px)) 0 0;
+  min-height: calc(34 * var(--px));
+  font-size: calc(26 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  line-height: 1.2;
   color: #ff8b8b;
 }
 
 /* Code refuse : les cases tremblent et virent au rouge. */
-.lock.is-wrong .lock-boxes { animation: lock-shake .5s ease; }
-.lock.is-wrong .lock-box { border-color: #ff5a5a; background: rgba(255, 90, 90, .18); }
+body.is-wrong .lock-boxes { animation: lock-shake .5s ease; }
+body.is-wrong .lock-box { border-color: #ff5a5a; background: rgba(255, 90, 90, .2); }
 
 @keyframes lock-shake {
   0%, 100% { transform: translateX(0); }
-  20%      { transform: translateX(-2.2vmin); }
-  40%      { transform: translateX(2.2vmin); }
-  60%      { transform: translateX(-1.4vmin); }
-  80%      { transform: translateX(1.4vmin); }
+  20%      { transform: translateX(calc(-22 * var(--px))); }
+  40%      { transform: translateX(calc(22 * var(--px))); }
+  60%      { transform: translateX(calc(-13 * var(--px))); }
+  80%      { transform: translateX(calc(13 * var(--px))); }
 }
 
 /* ---------- L'accueil ---------- */
@@ -1344,32 +1336,287 @@ html, body {
 .lock-welcome {
   position: absolute;
   margin: 0;
-  font-size: clamp(1.6rem, 7vmin, 4.2rem);
+  font-size: calc(86 * var(--px));
   font-weight: 700;
-  letter-spacing: .12em;
+  letter-spacing: calc(5 * var(--px));
   color: #fff;
-  text-shadow: 0 0 4vmin rgba(0, 241, 253, .9);
+  text-shadow: 0 0 calc(34 * var(--px)) rgba(0, 241, 253, .95);
   opacity: 0;
   pointer-events: none;
 }
 
-.lock[data-phase="welcome"] .lock-welcome {
-  animation: welcome-in .8s cubic-bezier(.2, 1.4, .4, 1) forwards;
+body[data-phase="welcome"] .lock-welcome {
+  animation: welcome-in .9s cubic-bezier(.2, 1.4, .4, 1) forwards;
 }
 
 @keyframes welcome-in {
-  0%   { opacity: 0; transform: scale(.7); letter-spacing: .4em; }
+  0%   { opacity: 0; transform: scale(.7);  letter-spacing: calc(30 * var(--px)); }
   60%  { opacity: 1; transform: scale(1.06); }
-  100% { opacity: 1; transform: scale(1); letter-spacing: .12em; }
+  100% { opacity: 1; transform: scale(1);   letter-spacing: calc(5 * var(--px)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .lock-title,
-  .lock[data-phase="card"] .lock-card,
-  .lock[data-phase="card"] .lock-slot,
-  .lock.is-wrong .lock-boxes,
-  .lock[data-phase="welcome"] .lock-welcome { animation: none; }
+  body[data-phase="card"] .lock-card,
+  body[data-phase="card"] .lock::after,
+  body.is-wrong .lock-boxes,
+  body[data-phase="welcome"] .lock-welcome { animation: none; }
 
   .lock-title { opacity: 1; }
-  .lock[data-phase="welcome"] .lock-welcome { opacity: 1; }
+  body[data-phase="welcome"] .lock-welcome { opacity: 1; }
+}
+
+/* ==========================================================
+   Un seul pad
+   Le chassis ne change jamais. Ses deux faces sont superposees
+   au pixel pres : on fait fondre l'une dans l'autre, et seul
+   l'ecran semble basculer.
+   ========================================================== */
+
+.pad-img--screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pad-img--menu,
+.pad-img--screen { transition: opacity .32s ease; }
+
+.pad-img.is-hidden,
+.menu.is-hidden,
+.pad-nav.is-hidden,
+.screen.is-hidden { opacity: 0; pointer-events: none; }
+
+.menu,
+.pad-nav,
+.screen { transition: opacity .26s ease; }
+
+.screen.is-hidden { visibility: hidden; }
+
+/* Le contenu de l'ecran monte en douceur a chaque bascule. */
+.view {
+  height: 100%;
+  opacity: 0;
+  transform: translateY(calc(10 * var(--px)));
+  transition: opacity .3s ease, transform .3s ease;
+}
+
+.screen.is-live .view { opacity: 1; transform: translateY(0); }
+
+/* Les rubriques pas encore construites */
+.soon {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(16 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  color: #fff;
+  text-align: center;
+}
+
+.soon-title {
+  margin: 0;
+  font-size: calc(72 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(4 * var(--px));
+  text-transform: uppercase;
+  text-shadow: 0 0 calc(20 * var(--px)) rgba(0, 241, 253, .8);
+}
+
+.soon-text {
+  margin: 0;
+  font-size: calc(30 * var(--px));
+  color: rgba(255, 255, 255, .6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pad-img--menu, .pad-img--screen,
+  .menu, .pad-nav, .screen, .view { transition: none; }
+  .view { opacity: 1; transform: none; }
+}
+
+/* ==========================================================
+   Fiche d'un Dinder
+   Le personnage en pied a gauche, son etat civil a droite.
+   L'ecran fait 1065 x 701 px de l'image source.
+   ========================================================== */
+
+.fiche {
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  gap: calc(28 * var(--px));
+  padding: calc(22 * var(--px)) calc(26 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  color: #fff;
+}
+
+/* ---------- Le personnage ---------- */
+
+.fiche-art {
+  flex: 0 0 calc(392 * var(--px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: calc(5 * var(--px)) solid #000;
+  border-radius: calc(22 * var(--px));
+  background:
+    radial-gradient(circle at 50% 30%, rgba(0, 241, 253, .22), transparent 70%),
+    linear-gradient(180deg, #0a2f52 0%, #04182c 100%);
+  box-shadow:
+    inset 0 0 0 calc(6 * var(--px)) #00f1fd,
+    inset 0 0 calc(22 * var(--px)) calc(12 * var(--px)) rgba(0, 241, 253, .3);
+  overflow: hidden;
+}
+
+.fiche-full {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 calc(8 * var(--px)) calc(16 * var(--px)) rgba(0, 0, 0, .7));
+  animation: fiche-art-in .45s ease-out;
+}
+
+@keyframes fiche-art-in {
+  0%   { opacity: 0; transform: translateX(calc(-18 * var(--px))) scale(.96); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ---------- L'etat civil ---------- */
+
+.fiche-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(16 * var(--px));
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.fiche-info::-webkit-scrollbar { width: 0; }
+
+.fiche-head {
+  padding-bottom: calc(14 * var(--px));
+  border-bottom: calc(3 * var(--px)) solid rgba(0, 241, 253, .45);
+}
+
+.fiche-name {
+  margin: 0;
+  font-size: calc(58 * var(--px));
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: calc(1 * var(--px));
+  text-shadow:
+    0 calc(3 * var(--px)) calc(5 * var(--px)) rgba(0, 0, 0, .8),
+    0 0 calc(18 * var(--px)) rgba(0, 241, 253, .55);
+  word-break: break-word;
+}
+
+.fiche-form {
+  margin: calc(6 * var(--px)) 0 0;
+  font-size: calc(32 * var(--px));
+  line-height: 1.1;
+  color: rgba(255, 255, 255, .78);
+}
+
+.fiche-line {
+  display: flex;
+  align-items: baseline;
+  gap: calc(14 * var(--px));
+}
+
+.fiche-label {
+  flex: 0 0 calc(196 * var(--px));
+  font-size: calc(24 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .55);
+}
+
+.fiche-value {
+  font-size: calc(36 * var(--px));
+  font-weight: 700;
+  line-height: 1.15;
+  word-break: break-word;
+}
+
+/* La description occupe toute la largeur sous son intitule. */
+.fiche-line--desc {
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(8 * var(--px));
+  min-height: 0;
+}
+
+.fiche-desc {
+  margin: 0;
+  font-size: calc(27 * var(--px));
+  line-height: 1.45;
+  color: rgba(255, 255, 255, .88);
+}
+
+.fiche-desc.is-empty { color: rgba(255, 255, 255, .4); font-style: italic; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fiche-full { animation: none; }
+}
+
+/* ==========================================================
+   Rarete
+   Chaque palier reprend la couleur de la monnaie du meme nom.
+   Les teintes sont prelevees sur les cartes de credit, puis
+   avivees pour ressortir sur le bleu des cases.
+   ========================================================== */
+
+:root {
+  --r-green: #4fd13a;   /* Universel   */
+  --r-blue:  #45b0ff;   /* Multiversel */
+  --r-gold:  #f5c93a;   /* Omniversel  */
+  --r-pink:  #ff5c9d;   /* Temporel    */
+}
+
+[data-rarity="green"] { --r: var(--r-green); }
+[data-rarity="blue"]  { --r: var(--r-blue); }
+[data-rarity="gold"]  { --r: var(--r-gold); }
+[data-rarity="pink"]  { --r: var(--r-pink); }
+
+/* ---------- L'encadre dans la collection ---------- */
+
+.slot-rarity {
+  flex: 0 0 auto;
+  align-self: center;
+  padding: calc(12 * var(--px)) calc(20 * var(--px));
+  background: rgba(0, 8, 16, .62);
+  border: calc(4 * var(--px)) solid var(--r);
+  border-radius: calc(14 * var(--px));
+  box-shadow:
+    0 0 calc(14 * var(--px)) color-mix(in srgb, var(--r) 55%, transparent),
+    inset 0 0 calc(12 * var(--px)) color-mix(in srgb, var(--r) 22%, transparent);
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(26 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(1 * var(--px));
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--r);
+  text-shadow: 0 0 calc(10 * var(--px)) color-mix(in srgb, var(--r) 70%, transparent);
+}
+
+/* Navigateurs sans color-mix : on garde le contour et le texte colores,
+   on se passe simplement des halos. */
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+  .slot-rarity { box-shadow: none; text-shadow: 0 calc(2 * var(--px)) calc(3 * var(--px)) rgba(0, 0, 0, .8); }
+}
+
+/* ---------- La rarete sur la fiche ---------- */
+
+.fiche-line--rarity .fiche-value {
+  color: var(--r);
+  text-shadow:
+    0 calc(2 * var(--px)) calc(4 * var(--px)) rgba(0, 0, 0, .8),
+    0 0 calc(16 * var(--px)) color-mix(in srgb, var(--r) 70%, transparent);
 }

@@ -15,46 +15,84 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DinderPad">
 </head>
-<body class="home is-locked">
+<body class="app is-locked">
 
-  <!-- Ecran d'identification : il masque le pad jusqu'au bon code -->
-  <div class="lock" id="lock" data-phase="boot">
-    <p class="lock-title">Identifiez-vous</p>
-
-    <div class="lock-stage">
-      <div class="lock-slot" aria-hidden="true"></div>
-      <img class="lock-card" src="assets/accesscard.webp" alt="Carte d'acces DinderPad">
-    </div>
-
-    <div class="lock-form">
-      <div class="lock-boxes" id="lockBoxes" aria-hidden="true"></div>
-      <input class="lock-input" id="lockInput" type="text" inputmode="numeric"
-             pattern="[0-9]*" maxlength="8" autocomplete="one-time-code"
-             spellcheck="false" aria-label="Code d'acces a 8 chiffres">
-      <p class="lock-msg" id="lockMsg">&nbsp;</p>
-    </div>
-
-    <p class="lock-welcome">Bienvenue patron</p>
-  </div>
-
+  <!-- Le DinderPad. Le chassis ne bouge jamais : seul son ecran change. -->
   <main class="pad-wrap">
-    <div class="pad">
-      <img src="assets/dinderpad.webp" alt="DinderPad" class="pad-img">
+    <div class="pad" data-pad-width="1612">
 
-      <!-- Zones cliquables : coordonnees en % de l'image -->
-      <a class="hotspot" href="pages/dinders.html"      style="--x:20.0%;  --y:21.3%; --w:30.3%; --h:16.7%;" aria-label="Dinders"><span>Dinders</span></a>
-      <a class="hotspot" href="pages/items.html"        style="--x:51.7%;  --y:21.3%; --w:27.8%; --h:16.7%;" aria-label="Items"><span>Items</span></a>
-      <a class="hotspot" href="pages/credits.html"      style="--x:20.0%;  --y:39.8%; --w:37.0%; --h:16.6%;" aria-label="Credits"><span>Cr&eacute;dits</span></a>
-      <a class="hotspot" href="pages/win-dinders.html"  style="--x:58.0%;  --y:39.8%; --w:21.5%; --h:16.6%;" aria-label="Win Dinders"><span>Win Dinders</span></a>
-      <a class="hotspot" href="pages/codanex.html"      style="--x:20.0%;  --y:58.2%; --w:22.0%; --h:16.5%;" aria-label="Codanex"><span>Codanex</span></a>
-      <a class="hotspot" href="pages/quests.html"       style="--x:42.3%;  --y:58.2%; --w:12.2%; --h:16.5%;" aria-label="Quests"><span>Quests</span></a>
-      <a class="hotspot" href="pages/badges.html"       style="--x:55.0%;  --y:58.2%; --w:24.5%; --h:16.5%;" aria-label="Badges"><span>Badges</span></a>
+      <!-- Les deux faces de l'appareil, superposees au pixel pres -->
+      <img class="pad-img pad-img--menu"   id="padMenu"   src="assets/pad-menu.webp"   alt="DinderPad">
+      <img class="pad-img pad-img--screen" id="padScreen" src="assets/pad-screen.webp" alt="" aria-hidden="true">
 
-      <!-- L'engrenage du flanc droit : les parametres et le compte -->
-      <a class="hotspot hotspot--gear" href="pages/settings.html" style="--x:88.4%; --y:13.9%; --w:7.5%; --h:12.0%;" aria-label="Param&egrave;tres"><span>Param&egrave;tres</span></a>
+      <!-- La carte d'acces, qui vient s'inserer dans l'appareil -->
+      <img class="lock-card" id="lockCard" src="assets/accesscard.webp"
+           alt="Carte d'acces DinderPad">
+
+      <!-- Accueil : les rubriques dessinees sur l'ecran -->
+      <div class="menu" id="menu">
+        <a class="hotspot" href="#dinders"     style="--x:18.89%; --y:21.21%; --w:31.37%; --h:17.56%;" aria-label="Dinders"><span>Dinders</span></a>
+        <a class="hotspot" href="#items"       style="--x:51.71%; --y:21.21%; --w:28.78%; --h:17.56%;" aria-label="Items"><span>Items</span></a>
+        <a class="hotspot" href="#credits"     style="--x:18.89%; --y:40.67%; --w:38.31%; --h:17.46%;" aria-label="Credits"><span>Cr&eacute;dits</span></a>
+        <a class="hotspot" href="#win-dinders" style="--x:58.23%; --y:40.67%; --w:22.26%; --h:17.46%;" aria-label="Win Dinders"><span>Win Dinders</span></a>
+        <a class="hotspot" href="#codanex"     style="--x:18.89%; --y:60.02%; --w:22.78%; --h:17.35%;" aria-label="Codanex"><span>Codanex</span></a>
+        <a class="hotspot" href="#quests"      style="--x:41.98%; --y:60.02%; --w:12.63%; --h:17.35%;" aria-label="Quests"><span>Quests</span></a>
+        <a class="hotspot" href="#badges"      style="--x:55.13%; --y:60.02%; --w:25.37%; --h:17.35%;" aria-label="Badges"><span>Badges</span></a>
+      </div>
+
+      <!-- L'engrenage du flanc droit reste accessible en permanence -->
+      <a class="hotspot hotspot--gear" href="#settings"
+         style="--x:89.71%; --y:13.43%; --w:7.77%; --h:12.62%;"
+         aria-label="Param&egrave;tres"><span>Param&egrave;tres</span></a>
+
+      <!-- L'ecran des rubriques : son contenu est construit par js/views.js -->
+      <div class="screen" id="screen">
+        <div class="view" id="view"></div>
+
+        <!-- Identification : c'est le pad lui-meme qui demande le code -->
+        <div class="lock" id="lock">
+          <p class="lock-title">Identifiez-vous</p>
+          <div class="lock-form">
+            <div class="lock-boxes" id="lockBoxes" aria-hidden="true"></div>
+            <input class="lock-input" id="lockInput" type="text" inputmode="numeric"
+                   pattern="[0-9]*" maxlength="8" autocomplete="one-time-code"
+                   spellcheck="false" aria-label="Code d'acces a 8 chiffres">
+            <p class="lock-msg" id="lockMsg">&nbsp;</p>
+          </div>
+          <p class="lock-welcome">Bienvenue patron</p>
+        </div>
+      </div>
+
+      <nav class="pad-nav" id="padNav">
+        <button class="nav-btn" type="button" data-pad-back aria-label="Retour">
+          <span class="nav-btn-face">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 12H5"/><path d="M12 5l-7 7 7 7"/>
+            </svg>
+          </span>
+          <span class="nav-label">Retour</span>
+        </button>
+        <a class="nav-btn" href="#" data-pad-home aria-label="Accueil">
+          <span class="nav-btn-face">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <rect x="3"  y="3"  width="8" height="8" rx="2"/>
+              <rect x="13" y="3"  width="8" height="8" rx="2"/>
+              <rect x="3"  y="13" width="8" height="8" rx="2"/>
+              <rect x="13" y="13" width="8" height="8" rx="2"/>
+            </svg>
+          </span>
+          <span class="nav-label">Accueil</span>
+        </a>
+      </nav>
+
     </div>
   </main>
 
+  <script src="js/dinderpad.js"></script>
+  <script src="js/pad.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/router.js"></script>
   <script src="js/access.js"></script>
 </body>
 </html>

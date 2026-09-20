@@ -60,8 +60,7 @@
     <h2>Saisie manuelle, si ton app ne scanne pas</h2>
     <p class="mono">
       Secret&nbsp;: <b id="secret"></b><br>
-      Type&nbsp;: TOTP &nbsp;&middot;&nbsp; Algorithme&nbsp;: SHA1<br>
-      Chiffres&nbsp;: 6 &nbsp;&middot;&nbsp; P&eacute;riode&nbsp;: 30 s
+      R&eacute;glages&nbsp;: <b id="params">&hellip;</b>
     </p>
   </div>
 
@@ -75,12 +74,30 @@ Le code affich&eacute; en haut est <b>celui &agrave; taper en entier</b>&nbsp;: 
   </p>
 
 <script>
-  var SECRET = 'OZKBMLJHASEIMDWAOVPOMVHPG7PKXXKZ', DIGITS = 6, PERIOD = 30, PIN = '73';
+  // On lit la configuration directement dans js/access.js : cette page ne
+  // peut donc jamais afficher un code different de celui qu'attend le pad.
+  var SECRET = '', DIGITS = 6, PERIOD = 30, PIN = '';
 
-  document.getElementById('secret').textContent = SECRET;
-  var uri = 'otpauth://totp/DinderPad:patron?secret=' + SECRET +
-            '&issuer=DinderPad&algorithm=SHA1&digits=6&period=30';
-  document.getElementById('uri').textContent = uri;
+  fetch('../js/access.js')
+    .then(function (r) { return r.text(); })
+    .then(function (src) {
+      var a = src.indexOf('var CONFIG = {');
+      var b = src.indexOf('};', a);
+      var cfg = eval('(' + src.slice(a + 'var CONFIG = '.length, b + 1) + ')');
+      SECRET = cfg.secret; DIGITS = cfg.digits; PERIOD = cfg.period; PIN = cfg.pin;
+      document.getElementById('secret').textContent = SECRET;
+      document.getElementById('uri').textContent =
+        'otpauth://totp/DinderPad:patron?secret=' + SECRET +
+        '&issuer=DinderPad&algorithm=SHA1&digits=' + DIGITS + '&period=' + PERIOD;
+      document.getElementById('params').textContent =
+        DIGITS + ' chiffres · ' + PERIOD + ' s · SHA1';
+      shown = -1;
+      tick();
+    })
+    .catch(function () {
+      document.getElementById('code').textContent = 'config illisible';
+    });
+
 
   function base32ToBytes(s) {
     var A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', bits = '', out = [];
@@ -105,6 +122,7 @@ Le code affich&eacute; en haut est <b>celui &agrave; taper en entier</b>&nbsp;: 
 
   var shown = -1;
   function tick() {
+    if (!SECRET) return;
     var now = Date.now() / 1000;
     var counter = Math.floor(now / PERIOD);
     var left = PERIOD - Math.floor(now % PERIOD);

@@ -14,6 +14,21 @@
 
   var ORDER = ['green', 'blue', 'gold', 'pink'];
 
+  // Les raretes portent les memes noms que les monnaies, du plus commun
+  // au plus rare. Les Dindises par rarete s'appuieront la-dessus.
+  var RARITIES = ['Universel', 'Multiversel', 'Omniversel', 'Temporel'];
+
+  // Chaque rarete emprunte la couleur de la monnaie du meme nom : un
+  // Dinder Universel s'affiche en vert, comme le credit Universel.
+  var RARITY_KEY = {
+    'Universel':   'green',
+    'Multiversel': 'blue',
+    'Omniversel':  'gold',
+    'Temporel':    'pink'
+  };
+
+  function rarityKey(r) { return RARITY_KEY[r] || 'green'; }
+
   // ---------- Le prix d'une Dindise ----------
   // Exprime en nombre de cartes de chaque type. Les trois premiers font
   // 30 unites ; le Temporel paie a lui seul, bien qu'il n'en vaille que 20.
@@ -25,19 +40,23 @@
   // ---------- Le roster ----------
   // L'ordre fixe la place de chaque Dinder dans la collection : le premier
   // occupe toujours la case 01, meme s'il est obtenu en dernier.
+  //
+  // Deux details voulus, a ne pas "corriger" :
+  //   - "SSt-03" s'ecrit bien avec un t, ce n'est pas une coquille de "SS-03" ;
+  //   - "???" n'est pas un univers manquant : V, A et H n'en ont pas.
   var DINDERS = [
-    { id: 'dr-islas-human-form',            name: 'Dr.Islas',      form: 'Human form'       },
-    { id: 'dr-islas-demicos-form',          name: 'Dr.Islas',      form: 'Demicos form'     },
-    { id: 'dr-islas-final-form',            name: 'Dr.Islas',      form: 'Final Form'       },
-    { id: 'calder-veyne-veinburner',        name: 'Calder Veyne',  form: 'Veinburner'       },
-    { id: 'carl-sinars-cardinal-sin',       name: 'Carl Sinars',   form: 'Cardinal Sin'     },
-    { id: 'edgar-marks-grincrusher',        name: 'Edgar Marks',   form: 'Grincrusher'      },
-    { id: 'he-melt',                        name: 'He Melt',       form: ''                 },
-    { id: 'v',                              name: 'V',             form: ''                 },
-    { id: 'a',                              name: 'A',             form: ''                 },
-    { id: 'h',                              name: 'H',             form: ''                 },
-    { id: 'multinder',                      name: 'Multinder',     form: ''                 },
-    { id: 'gart-kervelor-king-of-karsovia', name: 'Gart Kervelor', form: 'King of Karsovia' }
+    { id: 'dr-islas-human-form',               name: 'Dr.Islas',      form: 'Human form',       rarity: 'Universel',    universe: 'SS-03',  desc: '' },
+    { id: 'dr-islas-demicos-form',             name: 'Dr.Islas',      form: 'Demicos form',     rarity: 'Universel',    universe: 'SS-03',  desc: '' },
+    { id: 'dr-islas-final-form',               name: 'Dr.Islas',      form: 'Final Form',       rarity: 'Temporel',     universe: 'SS-03',  desc: '' },
+    { id: 'calder-veyne-veinburner',           name: 'Calder Veyne',  form: 'Veinburner',       rarity: 'Universel',    universe: 'SS-03',  desc: '' },
+    { id: 'carl-sinars-cardinal-sin',          name: 'Carl Sinars',   form: 'Cardinal Sin',     rarity: 'Universel',    universe: 'SS-03',  desc: '' },
+    { id: 'edgar-marks-grincrusher',           name: 'Edgar Marks',   form: 'Grincrusher',      rarity: 'Universel',    universe: 'SS-03',  desc: '' },
+    { id: 'he-melt',                           name: 'He Melt',       form: '',                 rarity: 'Multiversel',  universe: 'SSt-03', desc: '' },
+    { id: 'v',                                 name: 'V',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: '' },
+    { id: 'a',                                 name: 'A',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: '' },
+    { id: 'h',                                 name: 'H',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: '' },
+    { id: 'multinder',                         name: 'Multinder',     form: '',                 rarity: 'Universel',    universe: 'SS-03',  desc: '' },
+    { id: 'gart-kervelor-king-of-karsovia',    name: 'Gart Kervelor', form: 'King of Karsovia', rarity: 'Multiversel',  universe: 'SSt-03', desc: '' }
   ];
 
   var SLOTS   = 30;                  // le nombre de cases de la collection
@@ -227,14 +246,18 @@
   }
 
   // ---------- Chemins ----------
-  // Les pages vivent dans /pages, donc les assets sont un cran au-dessus.
+  // Tout le site tient dans index.html, a la racine.
 
-  function dinderImg(id)  { return '../assets/dinders/' + id + '.webp'; }
-  function creditImg(key) { return '../assets/credits/' + CREDITS[key].img; }
+  function dinderImg(id)  { return 'assets/dinders/' + id + '.webp'; }
+  function creditImg(key) { return 'assets/credits/' + CREDITS[key].img; }
+
+  // Le personnage en pied, pour sa fiche detaillee.
+  function dinderFull(id) { return 'assets/dinders/full/' + id + '.webp'; }
 
   window.DP = {
     CREDITS: CREDITS, ORDER: ORDER, PRICE: PRICE, DINDERS: DINDERS,
-    SLOTS: SLOTS, UNLIMITED: UNLIMITED,
+    SLOTS: SLOTS, UNLIMITED: UNLIMITED, RARITIES: RARITIES,
+    rarityKey: rarityKey,
 
     profiles: profiles, currentProfile: currentProfile,
     createProfile: createProfile, switchProfile: switchProfile,
@@ -244,7 +267,7 @@
     owned: owned, has: has, missing: missing, complete: complete,
     collect: collect, draw: draw, reset: reset,
     markNew: markNew, takeNew: takeNew,
-    dinderImg: dinderImg, creditImg: creditImg,
+    dinderImg: dinderImg, dinderFull: dinderFull, creditImg: creditImg,
 
     byId: function (id) {
       for (var i = 0; i < DINDERS.length; i++) if (DINDERS[i].id === id) return DINDERS[i];

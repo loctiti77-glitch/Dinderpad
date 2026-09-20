@@ -2,5 +2,10 @@
 assets/credits/_source/
 assets/dinders/_source/
 tools/
+
+# Images d'origine : remplacees par pad-menu.webp et pad-screen.webp,
+# gardees pour pouvoir les regenerer.
+assets/dinderpad.webp
+assets/dinderspage.webp
 assets/icon-source.png
 serve.js

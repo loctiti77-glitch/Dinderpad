@@ -2,102 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Param&egrave;tres &ndash; DinderPad</title>
-<link rel="stylesheet" href="../css/style.css">
-<script src="../js/transition.js"></script>
-<link rel="icon" type="image/png" sizes="32x32" href="../assets/icon/favicon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="../assets/icon/favicon-16.png">
-<link rel="apple-touch-icon" href="../assets/icon/apple-touch-icon.png">
-<link rel="manifest" href="../site.webmanifest">
-<meta name="theme-color" content="#000000">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DinderPad">
+<title>DinderPad</title>
+<!-- Cette rubrique vit desormais sur le pad lui-meme, a la racine du site. -->
+<link rel="canonical" href="../index.html#settings">
+<script>location.replace('../index.html#settings');</script>
+<meta http-equiv="refresh" content="0; url=../index.html#settings">
 </head>
-<body class="home">
-
-  <main class="pad-wrap">
-    <div class="pad" data-pad-width="1612">
-      <img src="../assets/dinderspage.webp" alt="Ecran Parametres" class="pad-img">
-
-      <div class="screen">
-        <div class="settings" id="settings">
-
-          <!-- Premiere ligne : le compte -->
-          <section class="setting setting--account">
-            <span class="setting-label">Compte</span>
-            <strong class="setting-value" id="accountName">&nbsp;</strong>
-            <span class="setting-sub" id="accountSub">&nbsp;</span>
-            <span class="setting-actions">
-              <button class="set-btn" type="button" id="signInBtn">Se connecter</button>
-              <button class="set-btn set-btn--key" type="button" id="signUpBtn">Cr&eacute;er un compte</button>
-            </span>
-          </section>
-
-          <!-- Deuxieme ligne : ou en est la collection -->
-          <section class="setting">
-            <span class="setting-label">Progression</span>
-            <strong class="setting-value" id="progressValue">&nbsp;</strong>
-            <span class="setting-sub">Sauvegard&eacute;e sur ce compte</span>
-            <span class="setting-actions">
-              <a class="set-btn" href="dinders.html">Ma collection</a>
-            </span>
-          </section>
-
-          <!-- Troisieme ligne : remise a zero -->
-          <section class="setting">
-            <span class="setting-label">Recommencer</span>
-            <strong class="setting-value">Vider la collection</strong>
-            <span class="setting-sub">Le compte est conserv&eacute;</span>
-            <span class="setting-actions">
-              <button class="set-btn set-btn--danger" type="button" id="resetBtn">R&eacute;initialiser</button>
-            </span>
-          </section>
-
-        </div>
-
-        <!-- Le panneau qui se leve par-dessus l'ecran -->
-        <div class="sheet" id="sheet" hidden>
-          <div class="sheet-inner">
-            <h2 class="sheet-title" id="sheetTitle">Cr&eacute;er un compte</h2>
-            <div class="sheet-body" id="sheetBody"></div>
-            <p class="sheet-error" id="sheetError" role="alert">&nbsp;</p>
-            <div class="sheet-foot">
-              <button class="set-btn" type="button" id="sheetCancel">Annuler</button>
-              <button class="set-btn set-btn--key" type="button" id="sheetOk">Valider</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <nav class="pad-nav">
-        <button class="nav-btn" type="button" data-nav="back" aria-label="Retour">
-          <span class="nav-btn-face">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M20 12H5"/><path d="M12 5l-7 7 7 7"/>
-            </svg>
-          </span>
-          <span class="nav-label">Retour</span>
-        </button>
-        <a class="nav-btn" href="../index.html" aria-label="Accueil">
-          <span class="nav-btn-face">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <rect x="3"  y="3"  width="8" height="8" rx="2"/>
-              <rect x="13" y="3"  width="8" height="8" rx="2"/>
-              <rect x="3"  y="13" width="8" height="8" rx="2"/>
-              <rect x="13" y="13" width="8" height="8" rx="2"/>
-            </svg>
-          </span>
-          <span class="nav-label">Accueil</span>
-        </a>
-      </nav>
-    </div>
-  </main>
-
-  <script src="../js/dinderpad.js"></script>
-  <script src="../js/pad.js"></script>
-  <script src="../js/settings.js"></script>
-</body>
+<body style="background:#000"></body>
 </html>

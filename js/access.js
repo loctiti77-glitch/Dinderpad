@@ -1,4 +1,7 @@
-// Ecran d'identification du DinderPad.
+// Identification du DinderPad.
+// C'est l'ecran du pad qui demande le code : la carte d'acces vient s'y
+// inserer, puis les huit cases apparaissent. Les etapes sont portees par
+// l'attribut data-phase du <body>, le style fait le reste.
 //
 // Le code fait 8 chiffres, en deux morceaux :
 //   - les 6 premiers viennent de l'application d'authentification (TOTP
@@ -90,7 +93,7 @@
 
   var lock, input, boxes, msg, phase = 'boot', busy = false;
 
-  function setPhase(p) { phase = p; lock.dataset.phase = p; }
+  function setPhase(p) { phase = p; document.body.dataset.phase = p; }
 
   function paintBoxes() {
     var v = input.value;
@@ -104,25 +107,29 @@
 
   function unlock(animated) {
     try { sessionStorage.setItem(CONFIG.session, '1'); } catch (e) {}
-    if (!animated) {
-      lock.remove();
+
+    function open() {
+      setPhase('done');
       document.body.classList.remove('is-locked');
-      return;
+      // On laisse le fondu se terminer avant de retirer l'ecran du DOM.
+      setTimeout(function () {
+        lock.remove();
+        var card = document.getElementById('lockCard');
+        if (card) card.remove();
+      }, 700);
     }
+
+    if (!animated) { open(); return; }
     setPhase('welcome');
-    setTimeout(function () {
-      document.body.classList.remove('is-locked');
-      lock.classList.add('is-gone');
-      setTimeout(function () { lock.remove(); }, 700);
-    }, 1700);
+    setTimeout(open, 1800);
   }
 
   function refuse() {
     busy = false;
-    lock.classList.add('is-wrong');
+    document.body.classList.add('is-wrong');
     msg.textContent = 'Code refusé.';
     setTimeout(function () {
-      lock.classList.remove('is-wrong');
+      document.body.classList.remove('is-wrong');
       input.value = '';
       paintBoxes();
       input.focus();
