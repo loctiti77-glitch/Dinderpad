@@ -129,6 +129,20 @@
       { ville: 'Kiev', pays: 'Ukraine', tz: "Europe/Kyiv", lon: 30.524, lat: 50.45 },
       { ville: 'Istanbul', pays: 'Turquie', tz: "Europe/Istanbul", lon: 28.979, lat: 41.008 }
     ] },
+    { id: "afrique", nom: 'Afrique', lieux: [
+      { ville: 'Le Caire', pays: 'Egypte', tz: "Africa/Cairo", lon: 31.235, lat: 30.044 },
+      { ville: 'Lagos', pays: 'Nigeria', tz: "Africa/Lagos", lon: 3.379, lat: 6.524 },
+      { ville: 'Nairobi', pays: 'Kenya', tz: "Africa/Nairobi", lon: 36.817, lat: -1.286 },
+      { ville: 'Casablanca', pays: 'Maroc', tz: "Africa/Casablanca", lon: -7.589, lat: 33.573 },
+      { ville: 'Addis-Abeba', pays: 'Ethiopie', tz: "Africa/Addis_Ababa", lon: 38.746, lat: 9.005 },
+      { ville: 'Dakar', pays: 'Senegal', tz: "Africa/Dakar", lon: -17.467, lat: 14.693 },
+      { ville: 'Accra', pays: 'Ghana', tz: "Africa/Accra", lon: -0.187, lat: 5.603 },
+      { ville: 'Kinshasa', pays: 'Congo (RDC)', tz: "Africa/Kinshasa", lon: 15.266, lat: -4.325 },
+      { ville: 'Tripoli', pays: 'Libye', tz: "Africa/Tripoli", lon: 13.191, lat: 32.887 },
+      { ville: 'Khartoum', pays: 'Soudan', tz: "Africa/Khartoum", lon: 32.56, lat: 15.5 },
+      { ville: 'Johannesburg', pays: 'Afrique du Sud', tz: "Africa/Johannesburg", lon: 28.035, lat: -26.195 },
+      { ville: 'Luanda', pays: 'Angola', tz: "Africa/Luanda", lon: 13.234, lat: -8.838 }
+    ] },
     { id: "asie", nom: 'Asie', lieux: [
       { ville: 'Tokyo', pays: 'Japon', tz: "Asia/Tokyo", lon: 139.692, lat: 35.69 },
       { ville: 'Pekin', pays: 'Chine', tz: "Asia/Shanghai", lon: 116.407, lat: 39.904 },
@@ -372,6 +386,21 @@
     return true;
   }
 
+  // Un gain, par exemple la recompense d'un mini-jeu. Il est toujours
+  // inscrit au profil, meme quand les credits sont illimites : le jour ou
+  // UNLIMITED passera a false, la cagnotte sera deja la.
+  function earn(key, n) {
+    n = Math.max(0, Math.round(n || 0));
+    if (!CREDITS[key] || !n) return 0;
+    var p = me();
+    p.credits[key] = (p.credits[key] || 0) + n;
+    save();
+    return p.credits[key];
+  }
+
+  // Le total reellement engrange, sans le voile de UNLIMITED.
+  function creditPurse(key) { return me().credits[key] || 0; }
+
   // ---------- Collection ----------
 
   function owned()    { return me().owned.slice(); }
@@ -438,6 +467,12 @@
   // Le personnage en pied, pour sa fiche detaillee.
   function dinderFull(id) { return 'assets/dinders/full/' + id + '.webp'; }
 
+  // Les sprites 8 bits du mini-jeu : "walk" pour la foret, "duel" pour
+  // l'arene. Fabriques par tools/generate-sprites.js.
+  function sprite(id, taille) {
+    return 'assets/games/sprites/' + (taille || 'walk') + '/' + id + '.png';
+  }
+
   window.DP = {
     CREDITS: CREDITS, ORDER: ORDER, PRICE: PRICE, DINDERS: DINDERS,
     SLOTS: SLOTS, UNLIMITED: UNLIMITED, RARITIES: RARITIES,
@@ -453,10 +488,12 @@
     renameProfile: renameProfile, deleteProfile: deleteProfile,
 
     creditCount: creditCount, canAfford: canAfford, spend: spend,
+    earn: earn, creditPurse: creditPurse,
     owned: owned, has: has, missing: missing, complete: complete,
     collect: collect, draw: draw, reset: reset,
     markNew: markNew, takeNew: takeNew,
     dinderImg: dinderImg, dinderFull: dinderFull, creditImg: creditImg,
+    sprite: sprite,
 
     byId: function (id) {
       for (var i = 0; i < DINDERS.length; i++) if (DINDERS[i].id === id) return DINDERS[i];

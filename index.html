@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DinderPad</title>
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/game.css">
 <script src="js/transition.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/icon/favicon-16.png">
@@ -39,6 +40,25 @@
         <a class="hotspot" href="#quests"      style="--x:41.98%; --y:60.02%; --w:12.63%; --h:17.35%;" aria-label="Quests"><span>Quests</span></a>
         <a class="hotspot" href="#badges"      style="--x:55.13%; --y:60.02%; --w:25.37%; --h:17.35%;" aria-label="Badges"><span>Badges</span></a>
       </div>
+
+      <!-- Le flanc gauche, a l'accueil : la borne des mini-jeux -->
+      <a class="nav-btn pad-arcade" href="#minijeux" aria-label="Mini-jeux">
+        <span class="nav-btn-face">
+          <!-- Une borne d'arcade : ecran, manche a balai et deux boutons. -->
+          <svg class="nav-ico nav-ico--arcade" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"
+               stroke-linecap="round" aria-hidden="true">
+            <path d="M5 2.5h14a1.6 1.6 0 0 1 1.6 1.6v15.8A1.6 1.6 0 0 1 19 21.5H5a1.6 1.6 0 0 1-1.6-1.6V4.1A1.6 1.6 0 0 1 5 2.5z"/>
+            <rect x="6" y="5.2" width="12" height="7" rx="1"
+                  fill="currentColor" fill-opacity=".3"/>
+            <path d="M9 18.4v-2.6"/>
+            <circle cx="9" cy="15" r="1.5" fill="currentColor"/>
+            <circle cx="14.4" cy="16.2" r="1.05" fill="currentColor"/>
+            <circle cx="17" cy="18.2" r="1.05" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="nav-label">Mini-jeux</span>
+      </a>
 
       <!-- L'engrenage du flanc droit reste accessible en permanence -->
       <a class="hotspot hotspot--gear" href="#settings"
@@ -96,6 +116,7 @@
   <script src="js/dinderpad.js"></script>
   <script src="js/pad.js"></script>
   <script src="js/views.js"></script>
+  <script src="js/founder-war.js"></script>
   <script src="js/router.js"></script>
   <script src="js/access.js"></script>
 </body>
