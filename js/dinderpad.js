@@ -281,7 +281,8 @@
       owned: [],
       canne: false,
       peche: {},
-      exploits: {}
+      exploits: {},
+      vus: []
     };
   }
 
@@ -292,6 +293,7 @@
     if (typeof p.canne !== 'boolean') p.canne = false;
     if (!p.peche || typeof p.peche !== 'object') p.peche = {};
     if (!p.exploits || typeof p.exploits !== 'object') p.exploits = {};
+    if (!Array.isArray(p.vus)) p.vus = [];
     if (!p.credits) p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
     if (!Array.isArray(p.owned)) p.owned = [];
     return p;
@@ -323,8 +325,26 @@
     return db;
   }
 
+  var ecoutes = [];
+
+  // Prevenu apres chaque ecriture. Sert aux badges : ils se relisent tout
+  // seuls, quel que soit l'endroit du site qui a fait bouger l'etat.
+  function onChange(fn) {
+    if (typeof fn === 'function') ecoutes.push(fn);
+  }
+
+  var enCours = false;
+
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {}
+    // Un abonne qui ecrit a son tour ne doit pas relancer la boucle.
+    if (enCours) return;
+    enCours = true;
+    try {
+      for (var i = 0; i < ecoutes.length; i++) {
+        try { ecoutes[i](); } catch (e) {}
+      }
+    } finally { enCours = false; }
   }
 
   function byProfileId(id) {
@@ -523,6 +543,19 @@
     return p.exploits[cle];
   }
 
+  // ---------- Les badges deja annonces ----------
+
+  function badgesVus() { return me().vus.slice(); }
+
+  function marquerVus(ids) {
+    var p = me(), neuf = false;
+    ids.forEach(function (id) {
+      if (p.vus.indexOf(id) === -1) { p.vus.push(id); neuf = true; }
+    });
+    if (neuf) save();
+    return neuf;
+  }
+
   // Vide la progression du profil courant, sans supprimer le profil.
   function reset() {
     var p = me();
@@ -531,6 +564,7 @@
     p.canne = false;
     p.peche = {};
     p.exploits = {};
+    p.vus = [];
     save();
   }
 
@@ -574,6 +608,7 @@
     prises: prises, aPeche: aPeche, noterPrise: noterPrise,
     exploits: exploits, exploit: exploit,
     compterExploit: compterExploit, noterRecord: noterRecord,
+    badgesVus: badgesVus, marquerVus: marquerVus, onChange: onChange,
     spots: spots, prochainSaut: prochainSaut,
     heureLocale: heureLocale, dateLocale: dateLocale,
     rarityKey: rarityKey,

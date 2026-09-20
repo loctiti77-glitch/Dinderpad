@@ -1258,3 +1258,199 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
   white-space: normal;
   line-height: 1.2;
 }
+
+/* ==========================================================
+   L'annonce d'un badge
+   Elle se pose sur l'ecran du pad, par-dessus ce que le joueur
+   etait en train de faire, et s'efface toute seule.
+   ========================================================== */
+
+.bdg-pop {
+  --r: #f5c93a;
+  position: absolute;
+  left:   calc(272 * var(--px));
+  top:    calc(90  * var(--px));
+  width:  calc(1065 * var(--px));
+  height: calc(701 * var(--px));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: calc(10 * var(--px));
+  background: radial-gradient(60% 60% at 50% 50%, rgba(4, 6, 12, .7) 0%, rgba(2, 3, 7, .9) 100%);
+  font-family: "Courier New", "Cutive Mono", monospace;
+  /* .pad impose line-height: 0 pour caler ses images : sans ce rappel,
+     les paragraphes de l'annonce auraient une hauteur nulle et se
+     chevaucheraient. */
+  line-height: 1.3;
+  /* Le voile laisse passer les clics : une medaille ne doit pas bloquer la
+     partie en cours pendant trois secondes. Seule la carte se clique,
+     pour la renvoyer plus tot. */
+  pointer-events: none;
+  animation: bdg-voile .3s ease both;
+}
+
+.bdg-pop[data-palier="bois"]    { --r: #b5834a; }
+.bdg-pop[data-palier="bronze"]  { --r: #cf8442; }
+.bdg-pop[data-palier="argent"]  { --r: #cdd7e2; }
+.bdg-pop[data-palier="or"]      { --r: #f5c93a; }
+.bdg-pop[data-palier="diamant"] { --r: #c56bff; }
+
+.bdg-pop.is-sortie { animation: bdg-voile .34s ease reverse both; }
+
+@keyframes bdg-voile {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Les rayons qui tournent derriere la medaille. */
+.bdg-rayons {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width:  calc(900 * var(--px));
+  height: calc(900 * var(--px));
+  margin: calc(-450 * var(--px)) 0 0 calc(-450 * var(--px));
+  background: repeating-conic-gradient(from 0deg,
+    var(--r) 0deg 7deg, transparent 7deg 20deg);
+  opacity: 0;
+  animation: bdg-rayons 3.2s ease-out both;
+  pointer-events: none;
+}
+
+@keyframes bdg-rayons {
+  0%   { opacity: 0;    transform: rotate(0deg)   scale(.4); }
+  18%  { opacity: .20;  transform: rotate(24deg)  scale(1); }
+  70%  { opacity: .12;  transform: rotate(60deg)  scale(1.05); }
+  100% { opacity: 0;    transform: rotate(80deg)  scale(1.1); }
+}
+
+.bdg-carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(22 * var(--px)) calc(48 * var(--px)) calc(24 * var(--px));
+  border: calc(4 * var(--px)) solid var(--r);
+  border-radius: calc(18 * var(--px));
+  background: rgba(4, 8, 16, .93);
+  box-shadow: 0 0 calc(40 * var(--px)) var(--r);
+  text-align: center;
+  pointer-events: auto;
+  cursor: pointer;
+  animation: bdg-carte .5s cubic-bezier(.2, 1.5, .4, 1) both;
+}
+
+@keyframes bdg-carte {
+  from { opacity: 0; transform: scale(.7) translateY(calc(26 * var(--px))); }
+  to   { opacity: 1; transform: none; }
+}
+
+.bdg-sus {
+  margin: 0;
+  font-size: calc(24 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(6 * var(--px));
+  color: var(--r);
+  text-shadow: 0 0 calc(14 * var(--px)) var(--r);
+}
+
+/* La medaille tombe, rebondit, puis respire. */
+.bdg-medaille {
+  width:  calc(196 * var(--px));
+  height: calc(196 * var(--px));
+  object-fit: contain;
+  filter: drop-shadow(0 calc(8 * var(--px)) calc(14 * var(--px)) rgba(0, 0, 0, .8));
+  animation: bdg-chute .72s .12s cubic-bezier(.2, 1.6, .35, 1) both,
+             bdg-souffle 2.2s .84s ease-in-out infinite;
+}
+
+@keyframes bdg-chute {
+  0%   { opacity: 0; transform: translateY(calc(-150 * var(--px))) scale(.5) rotate(-24deg); }
+  60%  { opacity: 1; transform: translateY(calc(10 * var(--px)))   scale(1.08) rotate(6deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes bdg-souffle {
+  0%, 100% { filter: drop-shadow(0 0 calc(6 * var(--px)) var(--r)); }
+  50%      { filter: drop-shadow(0 0 calc(26 * var(--px)) var(--r)); }
+}
+
+.bdg-nom {
+  margin: 0;
+  font-size: calc(38 * var(--px));
+  font-weight: 700;
+  color: #f4fbff;
+  text-shadow: calc(2 * var(--px)) calc(2 * var(--px)) 0 rgba(0, 0, 0, .8);
+  animation: bdg-monte .35s .5s ease both;
+}
+
+.bdg-palier {
+  padding: calc(4 * var(--px)) calc(16 * var(--px));
+  border: calc(3 * var(--px)) solid var(--r);
+  border-radius: calc(8 * var(--px));
+  font-size: calc(20 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(2 * var(--px));
+  color: var(--r);
+  animation: bdg-monte .35s .62s ease both;
+}
+
+.bdg-cond {
+  margin: calc(4 * var(--px)) 0 0;
+  font-size: calc(20 * var(--px));
+  color: #a9c4d6;
+  animation: bdg-monte .35s .74s ease both;
+}
+
+@keyframes bdg-monte {
+  from { opacity: 0; transform: translateY(calc(12 * var(--px))); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Les etincelles partent du centre de la medaille. */
+.bdg-etincelles {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.bdg-etincelle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width:  calc(7 * var(--px));
+  height: calc(7 * var(--px));
+  margin: calc(-3.5 * var(--px)) 0 0 calc(-3.5 * var(--px));
+  border-radius: 50%;
+  background: var(--r);
+  box-shadow: 0 0 calc(10 * var(--px)) var(--r);
+  animation: bdg-etincelle .95s var(--t) ease-out both;
+}
+
+@keyframes bdg-etincelle {
+  from { opacity: 1; transform: rotate(var(--a)) translateX(0) scale(1); }
+  to   { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scale(.3); }
+}
+
+/* Sur les ecrans sans pad, l'annonce se cale simplement au milieu. */
+.page .bdg-pop {
+  position: fixed;
+  inset: 0;
+  left: 0; top: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bdg-pop, .bdg-carte, .bdg-medaille, .bdg-nom, .bdg-palier, .bdg-cond, .bdg-rayons {
+    animation: none;
+  }
+  .bdg-rayons { opacity: .12; }
+}
