@@ -100,5 +100,9 @@ async function sprite(entree, sortie, W, H, couleurs) {
     .extract({ left: 0, top: 0, width: 1340, height: 1024 }).png().toBuffer();
   await sprite(rod, path.join(OUT, 'objets', 'canne.png'), 34, 24, 14);
 
+  // Le poissonnier, devant sa cabane.
+  await sprite(ROOT + '/assets/_source/peche/fisherman.PNG',
+               path.join(OUT, 'objets', 'poissonnier.png'), 26, 38, 18);
+
   console.log('\n' + IDS.length + ' Dinders + Le Fondateur + la canne en sprites');
 })();

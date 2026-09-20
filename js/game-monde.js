@@ -10,12 +10,14 @@
 
   var T = {
     HERBE: 0, FLEUR: 1, CHEMIN: 2, ARBRE: 3, BUISSON: 4, ROCHER: 5,
-    EAU: 6, MUR: 7, DALLE: 8, PORTE: 9, SABLE: 10, PONTON: 11, ROSEAU: 12
+    EAU: 6, MUR: 7, DALLE: 8, PORTE: 9, SABLE: 10, PONTON: 11, ROSEAU: 12,
+    CABANE: 13, TOIT: 14, PORTE_BOIS: 15
   };
 
   // Ce qu'on ne traverse pas. L'eau se longe, elle ne se marche pas.
   var BLOQUANT = {};
-  [T.ARBRE, T.BUISSON, T.ROCHER, T.EAU, T.MUR, T.ROSEAU].forEach(function (k) {
+  [T.ARBRE, T.BUISSON, T.ROCHER, T.EAU, T.MUR, T.ROSEAU,
+   T.CABANE, T.TOIT].forEach(function (k) {
     BLOQUANT[k] = true;
   });
 
@@ -63,6 +65,24 @@
         n = bruit(tx, ty, 140 + i);
         x.fillRect(px + (n * 21 | 0), py + ((bruit(tx, ty, 150 + i) * 21) | 0), 2, 2);
       }
+      return;
+    }
+
+    if (t === T.CABANE || t === T.TOIT || t === T.PORTE_BOIS) {
+      // Les murs en planches verticales, le toit en bardeaux.
+      if (t === T.TOIT) {
+        x.fillStyle = '#7a3b2c'; x.fillRect(px, py, TS, TS);
+        x.fillStyle = '#8f4835';
+        for (i = 0; i < 3; i++) x.fillRect(px + 1, py + i * 8 + 1, TS - 2, 6);
+        x.fillStyle = '#5c2a1f';
+        for (i = 0; i < 3; i++) x.fillRect(px + ((ty + i) % 2 ? 4 : 14), py + i * 8, 2, 8);
+        return;
+      }
+      x.fillStyle = '#9b6b3c'; x.fillRect(px, py, TS, TS);
+      x.fillStyle = '#ac7a47';
+      for (i = 0; i < 4; i++) x.fillRect(px + i * 6 + 1, py, 4, TS);
+      x.fillStyle = '#7a5129';
+      for (i = 0; i < 4; i++) x.fillRect(px + i * 6, py, 1, TS);
       return;
     }
 
@@ -221,6 +241,43 @@
         x.fillStyle = '#4a3420'; x.fillRect(px + 10, py + 6, 3, 10);
         x.fillStyle = '#ff9b35'; x.fillRect(px + 9, py + 1, 5, 6);
         x.fillStyle = '#ffe27a'; x.fillRect(px + 10, py + 2, 3, 3);
+      }
+      return;
+    }
+
+    if (t === T.PORTE_BOIS) {
+      // La porte de la cabane : un rectangle sombre, un linteau, une poignee.
+      x.fillStyle = '#4a2c18'; x.fillRect(px + 2, py + 2, TS - 4, TS - 2);
+      x.fillStyle = '#5e3a20'; x.fillRect(px + 4, py + 5, TS - 8, TS - 6);
+      x.fillStyle = '#c9a227'; x.fillRect(px + TS - 8, py + 13, 2, 2);
+      x.fillStyle = '#7a5129'; x.fillRect(px, py, TS, 3);
+      x.fillStyle = 'rgba(255,225,120,.14)'; x.fillRect(px + 2, py + 3, TS - 4, TS - 4);
+      return;
+    }
+
+    if (t === T.CABANE && opts && opts.cabane) {
+      var C = opts.cabane;
+      // Une fenetre eclairee, et l'enseigne au poisson au-dessus de la porte.
+      if (ty === C.y1 && tx === C.x0 + 1) {
+        x.fillStyle = '#3a2414'; x.fillRect(px + 3, py + 4, TS - 6, TS - 10);
+        x.fillStyle = '#ffd98a'; x.fillRect(px + 5, py + 6, TS - 10, TS - 14);
+        x.fillStyle = '#3a2414'; x.fillRect(px + TS / 2 - 1, py + 4, 2, TS - 10);
+      }
+      if (ty === C.y1 && tx === C.porte + 2) {
+        x.fillStyle = '#2b1a0f'; x.fillRect(px + 1, py + 3, TS - 2, 13);
+        x.fillStyle = '#e8eef7'; x.fillRect(px + 4, py + 7, 10, 4);
+        x.fillRect(px + 13, py + 6, 4, 6);
+        x.fillStyle = '#2b1a0f'; x.fillRect(px + 6, py + 8, 1, 1);
+        x.fillStyle = '#c9a227'; x.fillRect(px + 1, py + 2, TS - 2, 1);
+      }
+      return;
+    }
+
+    if (t === T.TOIT && opts && opts.cabane) {
+      // Le debord du toit, qui mange un peu sur la case du dessus.
+      if (ty === opts.cabane.y0) {
+        x.fillStyle = '#5c2a1f';
+        x.fillRect(px - 2, py - 5, TS + 4, 5);
       }
       return;
     }

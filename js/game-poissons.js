@@ -100,16 +100,24 @@
     return RARETES[0];
   }
 
-  // Un tirage pondere par la rarete : les Legendaires restent des evenements.
-  function tirer() {
-    var total = 0, i;
-    for (i = 0; i < POISSONS.length; i++) total += rarete(POISSONS[i].rarete).poids;
+  // Le flotteur tire la chance vers le haut : a bonus egal a 1, le commun
+  // se rarefie et le legendaire devient courant.
+  var PENTE = { commun: -0.6, peu: 0.2, rare: 1.5, legende: 4 };
+
+  // Un tirage pondere par la rarete : les Legendaires restent des
+  // evenements, sauf a s'equiper d'un bon flotteur.
+  function tirer(bonus) {
+    var b = Math.max(0, Math.min(1, bonus || 0));
+    var poids = POISSONS.map(function (f) {
+      return rarete(f.rarete).poids * (1 + b * (PENTE[f.rarete] || 0));
+    });
+    var total = poids.reduce(function (a, v) { return a + v; }, 0);
     var d = Math.random() * total;
-    for (i = 0; i < POISSONS.length; i++) {
-      d -= rarete(POISSONS[i].rarete).poids;
+    for (var i = 0; i < POISSONS.length; i++) {
+      d -= poids[i];
       if (d <= 0) return POISSONS[i];
     }
-    return POISSONS[0];
+    return POISSONS[POISSONS.length - 1];
   }
 
   // La taille d'une prise, tiree dans la fourchette de l'espece. On
@@ -118,6 +126,43 @@
     var k = Math.random() * Math.random();
     return Math.round(p.cm[0] + (p.cm[1] - p.cm[0]) * (1 - k));
   }
+
+  // ---------- Le poids ----------
+  // La masse suit le cube de la longueur — c'est la loi des poissons — et
+  // un coefficient de carrure propre a chaque silhouette : une anguille
+  // de 80 cm ne pese pas ce que pese une carpe de 80 cm.
+  var CARRURE = {
+    classique: 1, long: 0.75, plat: 1.35, rond: 2.1, raie: 1.25,
+    meduse: 0.5, crabe: 0.7, ecrevisse: 0.45, anguille: 0.4, triton: 0.45
+  };
+
+  function poids(f, cm) {
+    var c = CARRURE[f.forme] || 1;
+    var kg = Math.max(0.005, 15 * Math.pow(cm / 100, 3) * c);
+    // Sous le kilo on garde le gramme : sans cela un vairon de 5 cm et un
+    // de 11 cm pesaient exactement pareil.
+    return kg < 1 ? Math.round(kg * 1000) / 1000 : Math.round(kg * 100) / 100;
+  }
+
+  // Ce qu'on affiche au joueur : des grammes tant qu'on est sous le kilo.
+  function poidsTexte(kg) {
+    if (kg < 1) return Math.round(kg * 1000) + ' g';
+    return (Math.round(kg * 100) / 100) + ' kg';
+  }
+
+  // Ce que ce poids represente comme resistance au bout de la ligne, de 0
+  // (rien du tout) a 1 (un monstre de 150 kg). L'echelle est
+  // logarithmique : en lineaire, vingt-quatre especes sur trente se
+  // valaient et la canne ne servait a rien.
+  var ECHELLE = Math.log10(1 + 160 / 0.05);
+
+  function charge(kg) {
+    var v = Math.log10(1 + Math.max(0, kg) / 0.05) / ECHELLE;
+    return Math.max(0, Math.min(1, v));
+  }
+
+  // Le poids maximal qu'une espece peut atteindre : sert aux fiches.
+  function poidsMax(f) { return poids(f, f.cm[1]); }
 
   // ==========================================================
   //  Le dessin
@@ -344,8 +389,9 @@
   }
 
   window.POISSONS = {
-    LISTE: POISSONS, RARETES: RARETES,
+    LISTE: POISSONS, RARETES: RARETES, CARRURE: CARRURE,
     parId: parId, rarete: rarete, tirer: tirer, taille: taille,
+    poids: poids, poidsMax: poidsMax, poidsTexte: poidsTexte, charge: charge,
     feuille: feuille, url: url, L: L, H: H,
     vider: function () { cache = {}; }
   };

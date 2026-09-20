@@ -91,7 +91,7 @@
     { id: 'canne', name: 'Canne à Pêche',
       sub: 'Ramassée au bord de l’eau',
       img: 'assets/items/canne.webp',
-      view: 'peche-collection', acquis: function () { return aLaCanne(); } }
+      view: 'peche-hub', acquis: function () { return aLaCanne(); } }
   ];
 
   // Ce que le joueur possede vraiment, dans l'ordre du catalogue.
@@ -282,7 +282,10 @@
       canne: false,
       peche: {},
       exploits: {},
-      vus: []
+      vus: [],
+      cannes: [],
+      flotteurs: [],
+      equip: { canne: 'base', flotteur: 'base' }
     };
   }
 
@@ -294,6 +297,21 @@
     if (!p.peche || typeof p.peche !== 'object') p.peche = {};
     if (!p.exploits || typeof p.exploits !== 'object') p.exploits = {};
     if (!Array.isArray(p.vus)) p.vus = [];
+    if (!Array.isArray(p.cannes)) p.cannes = [];
+    if (!Array.isArray(p.flotteurs)) p.flotteurs = [];
+    if (!p.equip || typeof p.equip !== 'object') p.equip = {};
+    // Ramasser la canne du bord de l'eau, c'est entrer en possession du
+    // materiel d'origine : les profils d'avant la boutique le recoivent ici.
+    if (p.canne) {
+      if (p.cannes.indexOf('base') === -1) p.cannes.push('base');
+      if (p.flotteurs.indexOf('base') === -1) p.flotteurs.push('base');
+    }
+    if (!p.equip.canne || p.cannes.indexOf(p.equip.canne) === -1) {
+      p.equip.canne = p.cannes[0] || 'base';
+    }
+    if (!p.equip.flotteur || p.flotteurs.indexOf(p.equip.flotteur) === -1) {
+      p.equip.flotteur = p.flotteurs[0] || 'base';
+    }
     if (!p.credits) p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
     if (!Array.isArray(p.owned)) p.owned = [];
     return p;
@@ -496,8 +514,50 @@
     var p = me();
     if (p.canne) return false;
     p.canne = true;
+    if (p.cannes.indexOf('base') === -1) p.cannes.push('base');
+    if (p.flotteurs.indexOf('base') === -1) p.flotteurs.push('base');
+    p.equip = { canne: 'base', flotteur: 'base' };
     save();
     return true;
+  }
+
+  // ---------- Le materiel de peche ----------
+  // Deux listes — cannes et flotteurs — et ce qui est monte au bout de
+  // la ligne. Les caracteristiques de chaque piece vivent dans
+  // js/peche-materiel.js ; ici on ne garde que ce qu'on possede.
+
+  function sac(type) {
+    var p = me();
+    return type === 'flotteur' ? p.flotteurs : p.cannes;
+  }
+
+  function materiel(type)        { return sac(type).slice(); }
+  function possede(type, id)     { return sac(type).indexOf(id) !== -1; }
+
+  function acquerir(type, id) {
+    if (possede(type, id)) return false;
+    sac(type).push(id);
+    save();
+    return true;
+  }
+
+  function equipe(type)          { return me().equip[type] || 'base'; }
+
+  function equiper(type, id) {
+    if (!possede(type, id)) return false;
+    me().equip[type] = id;
+    save();
+    return true;
+  }
+
+  // Un doublon depense : l'espece reste au carnet, seul son compteur baisse.
+  function retirerPrise(id, n) {
+    var p = me(), e = p.peche[id];
+    if (!e) return 0;
+    var pris = Math.max(0, Math.min(n, e.n - 1));
+    e.n -= pris;
+    if (pris) save();
+    return pris;
   }
 
   // Le carnet de prises : combien de fois chaque espece a mordu, et la
@@ -505,11 +565,13 @@
   function prises()      { return me().peche; }
   function aPeche(id)    { return !!me().peche[id]; }
 
-  function noterPrise(id, cm) {
+  function noterPrise(id, cm, kg) {
     var p = me();
-    var e = p.peche[id] || { n: 0, max: 0 };
+    var e = p.peche[id] || { n: 0, max: 0, kg: 0 };
+    if (typeof e.kg !== 'number') e.kg = 0;
     e.n++;
     if (cm > e.max) e.max = cm;
+    if (kg > e.kg) e.kg = kg;
     p.peche[id] = e;
     save();
     return e;
@@ -565,6 +627,9 @@
     p.peche = {};
     p.exploits = {};
     p.vus = [];
+    p.cannes = [];
+    p.flotteurs = [];
+    p.equip = { canne: 'base', flotteur: 'base' };
     save();
   }
 
@@ -606,6 +671,8 @@
     ITEMS: ITEMS, items: items, CONTINENTS: CONTINENTS,
     aLaCanne: aLaCanne, prendreCanne: prendreCanne,
     prises: prises, aPeche: aPeche, noterPrise: noterPrise,
+    materiel: materiel, possede: possede, acquerir: acquerir,
+    equipe: equipe, equiper: equiper, retirerPrise: retirerPrise,
     exploits: exploits, exploit: exploit,
     compterExploit: compterExploit, noterRecord: noterRecord,
     badgesVus: badgesVus, marquerVus: marquerVus, onChange: onChange,

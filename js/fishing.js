@@ -25,6 +25,12 @@
   var DEPART = { x: 7 * TS + 12, y: 26 * TS + 12 };
   var CANNE = { x: 8 * TS + 24, y: 26 * TS + 12 };    // elle flotte juste a cote
 
+  // La cabane du poissonnier, a quelques pas du depart : on la voit en
+  // arrivant. x0..x1 en cases, y0 = le faite du toit, y1 = la facade.
+  var CABANE = { x0: 14, x1: 19, y0: 22, y1: 25, porte: 16 };
+  // Un peu a l'ecart de la porte : plante devant, il masquait l'enseigne.
+  var POISSONNIER = { x: (CABANE.porte + 3.6) * TS, y: (CABANE.y1 + 1.5) * TS };
+
   // Une chance sur cent : le Credit Temporel.
   var CHANCE_CREDIT = 100;
 
@@ -102,15 +108,35 @@
       for (x = 0; x < MW; x++) {
         if (g[y][x] !== T.HERBE && g[y][x] !== T.FLEUR) continue;
         if (x < 2 || y < 2 || x >= MW - 2 || y >= MH - 2) { g[y][x] = T.ARBRE; continue; }
-        // On laisse degage autour du depart et de la canne.
+        // On laisse degage autour du depart, de la canne et de la cabane.
         var dc = Math.abs(x - 8) + Math.abs(y - 26);
         if (dc < 6) continue;
+        if (x >= CABANE.x0 - 2 && x <= CABANE.x1 + 2 &&
+            y >= CABANE.y0 - 2 && y <= CABANE.y1 + 3) continue;
         var n = bruit(x, y, 2);
         if (n < 0.15) g[y][x] = T.ARBRE;
         else if (n < 0.19) g[y][x] = T.BUISSON;
         else if (n < 0.215) g[y][x] = T.ROCHER;
       }
     }
+
+    // La cabane : deux rangees de toit, deux de facade, une porte au milieu.
+    for (y = CABANE.y0; y <= CABANE.y1; y++) {
+      for (x = CABANE.x0; x <= CABANE.x1; x++) {
+        if (!g[y] || g[y][x] === undefined) continue;
+        g[y][x] = (y <= CABANE.y0 + 1) ? T.TOIT : T.CABANE;
+      }
+    }
+    g[CABANE.y1][CABANE.porte] = T.PORTE_BOIS;
+    g[CABANE.y1][CABANE.porte + 1] = T.PORTE_BOIS;
+
+    // Le parvis devant la cabane, et le chemin qui y mene depuis le depart.
+    for (y = CABANE.y1 + 1; y <= CABANE.y1 + 2; y++)
+      for (x = CABANE.x0 - 1; x <= CABANE.x1 + 1; x++)
+        if (g[y] && g[y][x] !== undefined) g[y][x] = T.CHEMIN;
+    for (x = 7; x <= CABANE.x0; x++)
+      for (y = 26; y <= 27; y++)
+        if (g[y] && g[y][x] !== undefined) g[y][x] = T.CHEMIN;
 
     // Un ponton sur le plus grand lac : on y peche au-dessus de l'eau.
     var pl = LACS[1];
@@ -240,6 +266,9 @@
       var depuis = 0;              // date du dernier changement d'etat
       var balade = null;
       var canneAuSol = !DP.aLaCanne();
+      var M2 = window.MATERIEL;
+      var mordant = null, mordantCm = 0, lourd = false;
+      var devantCabane = false;
 
       function dire(txt) { hudTxt.textContent = txt; }
 
@@ -274,17 +303,26 @@
             plusTard(function () { if (etat === 'rien') ranger(); }, 1400);
             return;
           }
+
+          // La prise est decidee ici : c'est son poids qui fixe le temps
+          // dont on dispose pour ferrer, et la canne qui le rattrape.
+          mordant = P.tirer(M2 ? M2.chanceRarete() : 0);
+          mordantCm = P.taille(mordant);
+          var kg = P.poids(mordant, mordantCm);
+          lourd = P.charge(kg) > 0.55;
+          var fenetre = M2 ? M2.fenetreFerrage(kg) : 1600;
+
           etat = 'mord';
           depuis = performance.now();
-          dire('ÇA MORD ! Ferre !');
+          dire(lourd ? 'ÇA TIRE FORT ! Ferre !' : 'ÇA MORD ! Ferre !');
           majAction();
           plusTard(function () {
             if (!vivant() || etat !== 'mord') return;
             etat = 'rate';
-            dire('Il s’est décroché…');
+            dire(lourd ? 'Trop lourd, la ligne file…' : 'Il s’est décroché…');
             majAction();
             plusTard(function () { if (etat === 'rate') ranger(); }, 1400);
-          }, reduit ? 4000 : 1600);
+          }, reduit ? 4000 : fenetre);
         }, delai);
       }
 
@@ -299,20 +337,28 @@
           montrerCredit();
           return;
         }
-        var f = P.tirer();
-        var cm = P.taille(f);
+        var f = mordant || P.tirer(M2 ? M2.chanceRarete() : 0);
+        var cm = mordantCm || P.taille(f);
+        var kg = P.poids(f, cm);
         var neuf = !DP.aPeche(f.id);
-        var e = DP.noterPrise(f.id, cm);
-        montrerPoisson(f, cm, neuf, e);
+        var e = DP.noterPrise(f.id, cm, kg);
+        montrerPoisson(f, cm, kg, neuf, e);
       }
 
       function ranger() {
         etat = 'repos';
         bouchon = null;
+        mordant = null; mordantCm = 0; lourd = false;
         prise.hidden = true;
         prise.textContent = '';
         dire('');
         majAction();
+      }
+
+      function devantLaPorte() {
+        var c = balade.caseDuChef();
+        return c[1] >= CABANE.y1 && c[1] <= CABANE.y1 + 1 &&
+               c[0] >= CABANE.porte - 1 && c[0] <= CABANE.porte + 2;
       }
 
       function majAction() {
@@ -328,6 +374,10 @@
           action.hidden = false;
           action.textContent = 'RAMASSER LA CANNE';
           action.dataset.role = 'ramasser';
+        } else if (etat === 'repos' && devantCabane) {
+          action.hidden = false;
+          action.textContent = 'RENTRER';
+          action.dataset.role = 'entrer';
         } else {
           action.hidden = true;
           action.dataset.role = '';
@@ -361,7 +411,7 @@
 
       // --- Les panneaux de prise ---
 
-      function montrerPoisson(f, cm, neuf, e) {
+      function montrerPoisson(f, cm, kg, neuf, e) {
         var r = P.rarete(f.rarete);
         prise.hidden = false;
         prise.textContent = '';
@@ -378,11 +428,14 @@
         var det = el('p', 'pe-prise-det');
         det.appendChild(el('span', 'pe-prise-rarete', r.nom));
         det.appendChild(el('span', null, cm + ' cm'));
+        det.appendChild(el('span', 'pe-prise-kg', P.poidsTexte(kg)));
         if (e && e.n > 1) det.appendChild(el('span', 'pe-prise-n', '×' + e.n));
         box.appendChild(det);
+        if (lourd) box.appendChild(el('p', 'pe-prise-lourd', 'Belle bagarre !'));
         prise.appendChild(box);
 
-        dire(neuf ? f.nom + ' rejoint ton carnet.' : f.nom + ', ' + cm + ' cm.');
+        dire(neuf ? f.nom + ' rejoint ton carnet.'
+                  : f.nom + ', ' + cm + ' cm pour ' + P.poidsTexte(kg) + '.');
         plusTard(function () { if (vivant()) ranger(); }, reduit ? 800 : 2600);
       }
 
@@ -408,6 +461,7 @@
         if (r === 'lancer') lancer();
         else if (r === 'ferrer') ferrer();
         else if (r === 'ramasser') ramasser();
+        else if (r === 'entrer') { balade.arreter(); location.hash = '#poissonnerie'; }
       }
       action.addEventListener('click', agir);
 
@@ -437,11 +491,13 @@
           ctx.stroke();
         }
 
-        // Le flotteur : rouge et blanc, qui plonge quand ca mord.
-        var plonge = vif ? Math.abs(Math.sin((t - depuis) / 90)) * 3 : 0;
-        ctx.fillStyle = '#e8402f';
+        // Le flotteur, aux couleurs de celui qui est monte. Il plonge
+        // quand ca mord, et d'autant plus vite que la prise est lourde.
+        var plonge = vif ? Math.abs(Math.sin((t - depuis) / (lourd ? 60 : 90))) * (lourd ? 5 : 3) : 0;
+        var flot = M2 ? M2.equipee('flotteur').couleurs : ['#e8402f', '#f4f7fb'];
+        ctx.fillStyle = flot[0];
         ctx.fillRect(Math.round(bx) - 1, Math.round(by - 4 + plonge), 3, 3);
-        ctx.fillStyle = '#f4f7fb';
+        ctx.fillStyle = flot[1];
         ctx.fillRect(Math.round(bx) - 1, Math.round(by - 1 + plonge), 3, 2);
 
         // Le fil, du pecheur au flotteur.
@@ -454,11 +510,14 @@
 
       var spriteCanne = new Image();
       spriteCanne.src = 'assets/games/sprites/objets/canne.png';
+      var spritePoissonnier = new Image();
+      spritePoissonnier.src = 'assets/games/sprites/objets/poissonnier.png';
 
       balade = M.Balade({
         grille: g,
         canvas: cv,
         stick: stick, pomme: pomme,
+        opts: { cabane: CABANE },
         depart: DEPART,
         troupe: [choisi],
         vitesse: 92,
@@ -466,9 +525,27 @@
         fige: function () { return etat !== 'repos'; },
 
         extras: function (t) {
-          if (!canneAuSol) return [];
+          var sortie = [];
+
+          // Le poissonnier, planté devant sa cabane.
+          sortie.push({
+            x: POISSONNIER.x, y: POISSONNIER.y,
+            dessin: function (ctx, sx, sy) {
+              if (!spritePoissonnier.width) return;
+              var bob = reduit ? 0 : (Math.floor(t / 620) % 2 ? 1 : 0);
+              ctx.fillStyle = 'rgba(0,0,0,.3)';
+              ctx.beginPath();
+              ctx.ellipse(sx, sy + 2, 9, 3, 0, 0, 6.3);
+              ctx.fill();
+              ctx.drawImage(spritePoissonnier,
+                Math.round(sx - spritePoissonnier.width / 2),
+                Math.round(sy - spritePoissonnier.height + 3 + bob));
+            }
+          });
+
+          if (!canneAuSol) return sortie;
           // La canne flotte et scintille tant qu'on ne l'a pas prise.
-          return [{
+          sortie.push({
             x: CANNE.x, y: CANNE.y,
             dessin: function (ctx, sx, sy) {
               var bob = reduit ? 0 : Math.sin(t / 420) * 2.5;
@@ -483,7 +560,8 @@
                   Math.round(sy - spriteCanne.height + 2 + bob));
               }
             }
-          }];
+          });
+          return sortie;
         },
 
         apres: dessinerBouchon,
@@ -492,10 +570,12 @@
           var c = balade.caseDuChef();
           var casier = c[0] + ',' + c[1];
           if (jeu.dataset.tuile !== casier) jeu.dataset.tuile = casier;
+          devantCabane = devantLaPorte();
           if (etat !== 'repos') return;
           majAction();
           // L'indication suit ce que le joueur a devant lui, a chaque pas.
           var aide = canneAuSol ? 'Une canne à pêche flotte non loin.'
+                   : devantCabane ? 'La Poissonnerie est ouverte.'
                    : pretALancer() ? 'Face à l’eau : lance ta ligne.'
                    : 'Trouve une berge et fais face à l’eau.';
           if (hudTxt.textContent !== aide) hudTxt.textContent = aide;
@@ -546,7 +626,11 @@
     var prises = DP.prises();
     var trouves = Object.keys(prises).length;
 
-    var tete = el('div', 'pe-tete');
+    var tete = el('div', 'pe-tete pe-tete--carnet');
+    var livre = el('img', 'pe-livre');
+    livre.src = 'assets/items/fishbook.webp';
+    livre.alt = '';
+    tete.appendChild(livre);
     tete.appendChild(el('h2', 'pe-titre', 'Carnet de pêche'));
     tete.appendChild(el('p', 'pe-compte', trouves + ' / ' + P.LISTE.length + ' espèces'));
     box.appendChild(tete);
@@ -566,7 +650,9 @@
         im.alt = '';
         n.appendChild(im);
         n.appendChild(el('span', 'pe-fiche-nom', f.nom));
-        n.appendChild(el('span', 'pe-fiche-det', e.max + ' cm · ×' + e.n));
+        n.appendChild(el('span', 'pe-fiche-det',
+          e.max + ' cm · ' + P.poidsTexte(e.kg || P.poids(f, e.max))));
+        n.appendChild(el('span', 'pe-fiche-n', '×' + e.n));
       } else {
         n.appendChild(el('span', 'pe-fiche-vide', '?'));
         n.appendChild(el('span', 'pe-fiche-nom', '???'));
@@ -580,6 +666,11 @@
     var go = el('a', 'pe-btn', DP.aLaCanne() ? 'Aller pêcher' : 'Trouver la canne');
     go.href = '#peche';
     pied.appendChild(go);
+    if (DP.aLaCanne()) {
+      var vest = el('a', 'pe-btn pe-btn--plat', 'Vestiaire');
+      vest.href = '#vestiaire';
+      pied.appendChild(vest);
+    }
     box.appendChild(pied);
 
     view.appendChild(box);
@@ -608,6 +699,7 @@
   window.PECHE = {
     construireCarte: construireCarte,
     MW: MW, MH: MH, DEPART: DEPART, CANNE: CANNE,
+    CABANE: CABANE, POISSONNIER: POISSONNIER,
     LACS: LACS, CHANCE_CREDIT: CHANCE_CREDIT
   };
 })();
