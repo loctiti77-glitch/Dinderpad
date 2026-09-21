@@ -11,15 +11,18 @@
   var T = {
     HERBE: 0, FLEUR: 1, CHEMIN: 2, ARBRE: 3, BUISSON: 4, ROCHER: 5,
     EAU: 6, MUR: 7, DALLE: 8, PORTE: 9, SABLE: 10, PONTON: 11, ROSEAU: 12,
-    CABANE: 13, TOIT: 14, PORTE_BOIS: 15
+    CABANE: 13, TOIT: 14, PORTE_BOIS: 15, EAU_RAD: 16
   };
 
   // Ce qu'on ne traverse pas. L'eau se longe, elle ne se marche pas.
   var BLOQUANT = {};
-  [T.ARBRE, T.BUISSON, T.ROCHER, T.EAU, T.MUR, T.ROSEAU,
+  [T.ARBRE, T.BUISSON, T.ROCHER, T.EAU, T.EAU_RAD, T.MUR, T.ROSEAU,
    T.CABANE, T.TOIT].forEach(function (k) {
     BLOQUANT[k] = true;
   });
+
+  // Tout ce qui se peche : l'eau claire, les joncs, et l'eau irradiee.
+  function estEau(t) { return t === T.EAU || t === T.ROSEAU || t === T.EAU_RAD; }
 
   // Un bruit stable : la meme case est toujours dessinee pareil, d'une
   // partie a l'autre et d'un joueur a l'autre.
@@ -38,21 +41,32 @@
   function solTuile(x, g, tx, ty) {
     var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
 
-    if (t === T.EAU || t === T.ROSEAU) {
+    if (estEau(t)) {
       // Un fond plus sombre au large, plus clair pres du bord : ca donne
       // de la profondeur sans avoir a dessiner les hauts-fonds a la main.
       var bord = false;
       for (var k = 0; k < 4; k++) {
         var nx = tx + [1, -1, 0, 0][k], ny = ty + [0, 0, 1, -1][k];
         if (!g[ny] || g[ny][nx] === undefined) continue;
-        if (g[ny][nx] !== T.EAU && g[ny][nx] !== T.ROSEAU) bord = true;
+        if (!estEau(g[ny][nx])) bord = true;
       }
-      x.fillStyle = bord ? '#2a68c4' : '#1d4f9c';
+      var rad = t === T.EAU_RAD;
+      x.fillStyle = rad ? (bord ? '#9ad11e' : '#6fa814')
+                        : (bord ? '#2a68c4' : '#1d4f9c');
       x.fillRect(px, py, TS, TS);
-      x.fillStyle = bord ? '#3f82dd' : '#2a68c4';
+      x.fillStyle = rad ? (bord ? '#c8f02a' : '#9ad11e')
+                        : (bord ? '#3f82dd' : '#2a68c4');
       for (i = 0; i < 5; i++) {
         n = bruit(tx, ty, 10 + i);
         x.fillRect(px + (n * 18 | 0), py + i * 5 + 1, 6, 2);
+      }
+      // Quelques bulles remontent du fond irradie.
+      if (rad) {
+        x.fillStyle = '#e8ff8a';
+        for (i = 0; i < 3; i++) {
+          n = bruit(tx, ty, 190 + i);
+          x.fillRect(px + 3 + (n * 17 | 0), py + 3 + ((bruit(tx, ty, 195 + i) * 17) | 0), 2, 2);
+        }
       }
       return;
     }
@@ -211,6 +225,19 @@
       x.fillStyle = '#767c8c'; x.fillRect(px + 4, py + 6, TS - 10, 7);
       x.fillStyle = '#8f95a6'; x.fillRect(px + 6, py + 7, 5, 3);
       x.fillStyle = '#43485a'; x.fillRect(px + 10, py + 12, 7, 3);
+      return;
+    }
+
+    if (t === T.EAU_RAD) {
+      // Un fut rouille echoue de loin en loin : l'origine de tout ca.
+      if (bruit(tx, ty, 182) > 0.93) {
+        x.fillStyle = '#3f3a2a'; x.fillRect(px + 7, py + 6, 10, 13);
+        x.fillStyle = '#5c5436'; x.fillRect(px + 8, py + 7, 8, 11);
+        x.fillStyle = '#c8f02a'; x.fillRect(px + 10, py + 10, 4, 4);
+        x.fillStyle = '#1d2410'; x.fillRect(px + 11, py + 11, 2, 2);
+        x.fillStyle = '#3f3a2a'; x.fillRect(px + 7, py + 9, 10, 1);
+        x.fillRect(px + 7, py + 15, 10, 1);
+      }
       return;
     }
 
@@ -449,9 +476,16 @@
       var t0 = t / 320;
       for (var ty = Math.floor(cam.y / TS); ty <= (cam.y + VUE_H) / TS; ty++) {
         for (var tx = Math.floor(cam.x / TS); tx <= (cam.x + VUE_W) / TS; tx++) {
-          if (!g[ty] || (g[ty][tx] !== T.EAU && g[ty][tx] !== T.ROSEAU)) continue;
+          if (!g[ty] || !estEau(g[ty][tx])) continue;
           var px = tx * TS - cam.x, py = ty * TS - cam.y;
-          ctx.fillStyle = 'rgba(190,225,255,.5)';
+          var rad = g[ty][tx] === T.EAU_RAD;
+          // L'eau irradiee respire : sa lueur monte et descend.
+          if (rad) {
+            var pulse = 0.12 + 0.1 * Math.sin(t / 420 + tx * 0.5 + ty * 0.3);
+            ctx.fillStyle = 'rgba(232,255,138,' + pulse.toFixed(2) + ')';
+            ctx.fillRect(px, py, TS, TS);
+          }
+          ctx.fillStyle = rad ? 'rgba(240,255,170,.55)' : 'rgba(190,225,255,.5)';
           var o = ((Math.sin(t0 + tx * 0.7 + ty) * 7) | 0) + 8;
           ctx.fillRect(px + o, py + 6, 7, 2);
           ctx.fillRect(px + (TS - o - 6), py + 15, 5, 2);
@@ -528,7 +562,7 @@
   }
 
   window.MONDE = {
-    TS: TS, T: T, BLOQUANT: BLOQUANT,
+    TS: TS, T: T, BLOQUANT: BLOQUANT, estEau: estEau,
     bruit: bruit, borne: borne,
     peindre: peindre, Balade: Balade
   };

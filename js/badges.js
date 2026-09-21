@@ -39,7 +39,15 @@
     }).length;
   }
 
-  function especesPechees() { return Object.keys(DP.prises()).length; }
+  // Les badges de peche portent sur les trente especes d'eau claire. Les
+  // Speciaux des lacs irradies sont venus apres : les compter ici
+  // rendrait ces badges plus faciles qu'annonce.
+  function especesPechees() {
+    var P = window.POISSONS;
+    var prises = DP.prises();
+    if (!P) return Object.keys(prises).length;
+    return P.vivier(false).filter(function (f) { return prises[f.id]; }).length;
+  }
 
   // "gagne" se relit a chaque affichage : un badge n'est jamais "donne",
   // il decoule de l'etat du profil.

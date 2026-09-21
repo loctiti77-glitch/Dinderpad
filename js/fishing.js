@@ -71,14 +71,16 @@
   // ==========================================================
 
   // Les plans d'eau, decrits en cases : centre, demi-largeur, demi-hauteur.
+  // "radio" marque les eaux irradiees : elles ne rendent que des especes
+  // Speciales, et se voient de loin a leur jaune fluo.
   var LACS = [
     { x: 13, y: 8,  rx: 7,   ry: 4.4 },
     { x: 33, y: 7,  rx: 8.5, ry: 4 },
-    { x: 40, y: 19, rx: 5.5, ry: 4.5 },
+    { x: 40, y: 19, rx: 5.5, ry: 4.5, radio: true },
     { x: 21, y: 21, rx: 6.5, ry: 5 },
     { x: 8,  y: 17, rx: 3.6, ry: 3 },
     { x: 31, y: 27, rx: 5,   ry: 3.2 },
-    { x: 44, y: 28, rx: 3,   ry: 2.4 }
+    { x: 44, y: 28, rx: 3,   ry: 2.4, radio: true }
   ];
 
   // La riviere relie les deux grands lacs du nord : elle donne de la
@@ -92,16 +94,16 @@
       for (x = 0; x < MW; x++) g[y].push(bruit(x, y, 1) < 0.09 ? T.FLEUR : T.HERBE);
     }
 
-    function eau(cx, cy, rx, ry) {
+    function eau(cx, cy, rx, ry, radio) {
       for (y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
         for (x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
           if (x < 2 || y < 2 || x >= MW - 2 || y >= MH - 2) continue;
           var dx = (x - cx) / rx, dy = (y - cy) / ry;
-          if (dx * dx + dy * dy <= 1) g[y][x] = T.EAU;
+          if (dx * dx + dy * dy <= 1) g[y][x] = radio ? T.EAU_RAD : T.EAU;
         }
       }
     }
-    LACS.forEach(function (l) { eau(l.x, l.y, l.rx, l.ry); });
+    LACS.forEach(function (l) { eau(l.x, l.y, l.rx, l.ry, l.radio); });
 
     for (var k = 0; k < RIVIERE.length - 1; k++) {
       var a = RIVIERE[k], b = RIVIERE[k + 1];
@@ -115,11 +117,11 @@
     var sable = [];
     for (y = 0; y < MH; y++) {
       for (x = 0; x < MW; x++) {
-        if (g[y][x] === T.EAU) continue;
+        if (M.estEau(g[y][x])) continue;
         var pres = false;
         for (var j = -1; j <= 1; j++)
           for (var i = -1; i <= 1; i++)
-            if (g[y + j] && g[y + j][x + i] === T.EAU) pres = true;
+            if (g[y + j] && M.estEau(g[y + j][x + i])) pres = true;
         if (pres) sable.push([x, y]);
       }
     }
@@ -316,6 +318,7 @@
       var canneAuSol = !DP.aLaCanne();
       var M2 = window.MATERIEL;
       var mordant = null, mordantCm = 0, lourd = false;
+      var irradie = false;            // la ligne est-elle en eau fluo ?
       var devantCabane = false;
 
       // La mise en scene : le vol du bouchon a l'aller, celui du poisson
@@ -329,7 +332,7 @@
 
       function dire(txt) { hudTxt.textContent = txt; }
 
-      function estEau(t) { return t === T.EAU || t === T.ROSEAU; }
+      var estEau = M.estEau;
 
       // La case d'eau juste devant, s'il y en a une.
       function eauDevant() {
@@ -362,6 +365,7 @@
       function lancer() {
         var c = pointDeChute();
         if (!c) return;
+        irradie = balade.tuile(c[0], c[1]) === T.EAU_RAD;
         var cible = { x: (c[0] + 0.5) * TS, y: (c[1] + 0.5) * TS };
 
         // Le bouchon part de la main du pecheur et file vers l'eau.
@@ -404,7 +408,7 @@
 
           // La prise est decidee ici : c'est son poids qui fixe le temps
           // dont on dispose pour ferrer, et la canne qui le rattrape.
-          mordant = P.tirer(M2 ? M2.chanceRarete() : 0);
+          mordant = P.tirer(M2 ? M2.chanceRarete() : 0, irradie);
           mordantCm = P.taille(mordant);
           var kg = P.poids(mordant, mordantCm);
           lourd = P.charge(kg) > 0.55;
@@ -429,7 +433,7 @@
 
         // Une chance sur cent : ce n'est pas un poisson.
         var credit = Math.floor(Math.random() * CHANCE_CREDIT) === 0;
-        var f = credit ? null : (mordant || P.tirer(M2 ? M2.chanceRarete() : 0));
+        var f = credit ? null : (mordant || P.tirer(M2 ? M2.chanceRarete() : 0, irradie));
         var cm = f ? (mordantCm || P.taille(f)) : 0;
         var kg = f ? P.poids(f, cm) : 0;
 
@@ -462,7 +466,7 @@
         etat = 'repos';
         bouchon = null;
         vol = null; gerbe = null;
-        mordant = null; mordantCm = 0; lourd = false;
+        mordant = null; mordantCm = 0; lourd = false; irradie = false;
         prise.hidden = true;
         prise.textContent = '';
         dire('');
@@ -819,8 +823,13 @@
           if (etat !== 'repos') return;
           majAction();
           // L'indication suit ce que le joueur a devant lui, a chaque pas.
+          var devantRad = (function () {
+            var c = balade.caseDevant();
+            return balade.tuile(c[0], c[1]) === T.EAU_RAD;
+          })();
           var aide = canneAuSol ? 'Une canne à pêche flotte non loin.'
                    : devantCabane ? 'La Poissonnerie est ouverte.'
+                   : devantRad ? 'Eau irradiée : ici ne mordent que des Spéciaux.'
                    : pretALancer() ? 'Face à l’eau : lance ta ligne.'
                    : 'Trouve une berge et fais face à l’eau.';
           if (hudTxt.textContent !== aide) hudTxt.textContent = aide;
@@ -891,12 +900,16 @@
     tete.appendChild(el('p', 'pe-compte', trouves + ' / ' + P.LISTE.length + ' espèces'));
     box.appendChild(tete);
 
+    // Deux sections : les especes d'eau claire, puis les Speciaux des
+    // lacs irradies. Une case vide ne dit jamais ce qu'elle cache.
     var grille = el('div', 'pe-carnet-grille');
-    P.LISTE.forEach(function (f) {
+
+    function fiche(f) {
       var e = prises[f.id];
       var r = P.rarete(f.rarete);
       var n = el('div', 'pe-fiche');
       n.dataset.rarete = f.rarete;
+      n.dataset.poisson = f.id;
       n.style.setProperty('--r', r.couleur);
       n.classList.toggle('is-vide', !e);
 
@@ -914,8 +927,21 @@
         n.appendChild(el('span', 'pe-fiche-nom', '???'));
         n.appendChild(el('span', 'pe-fiche-det', f.cm[0] + '–' + f.cm[1] + ' cm'));
       }
-      grille.appendChild(n);
-    });
+      return n;
+    }
+
+    function section(titre, liste, cls) {
+      var faits = liste.filter(function (f) { return prises[f.id]; }).length;
+      var tete = el('p', 'pe-section' + (cls ? ' ' + cls : ''));
+      tete.appendChild(el('span', 'pe-section-nom', titre));
+      tete.appendChild(el('span', 'pe-section-n', faits + ' / ' + liste.length));
+      grille.appendChild(tete);
+      liste.forEach(function (f) { grille.appendChild(fiche(f)); });
+    }
+
+    section('Eaux claires', P.vivier(false));
+    section('Spéciaux — eaux irradiées', P.vivier(true), 'pe-section--rad');
+
     box.appendChild(grille);
 
     var pied = el('div', 'pe-pied');

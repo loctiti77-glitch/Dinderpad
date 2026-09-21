@@ -21,10 +21,13 @@
     commun:  { nom: 'Commun',     rarete: 'commun',  poissons: 5, credit: 'green' },
     peu:     { nom: 'Peu commun', rarete: 'peu',     poissons: 3, credit: 'blue'  },
     rare:    { nom: 'Rare',       rarete: 'rare',    poissons: 2, credit: 'gold'  },
-    legende: { nom: 'Légendaire', rarete: 'legende', poissons: 1, credit: 'pink'  }
+    legende: { nom: 'Légendaire', rarete: 'legende', poissons: 1, credit: 'pink'  },
+    // Le materiel irradie se paie en prises irradiees : deux doublons
+    // Speciaux, ou un Credit Temporel pour ceux qui sont presses.
+    special: { nom: 'Spécial',    rarete: 'special', poissons: 2, credit: 'pink'  }
   };
 
-  var ORDRE_PALIERS = ['commun', 'peu', 'rare', 'legende'];
+  var ORDRE_PALIERS = ['commun', 'peu', 'rare', 'legende', 'special'];
 
   function couleurPalier(cle) {
     var P = window.POISSONS;
@@ -53,7 +56,10 @@
       texte: 'De quoi ramener ce qui vit au fond des lacs.' },
     { id: 'doree', nom: 'Canne Dorée', palier: 'legende', puissance: 0.85,
       img: 'assets/peche/cannes/doree.webp',
-      texte: 'Rien de ce qui nage ne lui résiste vraiment.' }
+      texte: 'Rien de ce qui nage ne lui résiste vraiment.' },
+    { id: 'radioactive', nom: 'Canne Radioactive', palier: 'special', puissance: 0.92,
+      img: 'assets/peche/cannes/radioactive.webp',
+      texte: 'Taillée pour ce qui remonte des eaux fluo.' }
   ];
 
   // ---------- Les flotteurs ----------
@@ -77,7 +83,10 @@
       texte: 'Les raretés se pressent autour de la ligne.' },
     { id: 'doree', nom: 'Flotteur Doré', palier: 'legende', chance: 1,
       img: 'assets/peche/flotteurs/doree.webp', couleurs: ['#f5c93a', '#fff3c8'],
-      texte: 'Les légendes elles-mêmes finissent par mordre.' }
+      texte: 'Les légendes elles-mêmes finissent par mordre.' },
+    { id: 'radioactif', nom: 'Flotteur Radioactif', palier: 'special', chance: 1,
+      img: 'assets/peche/flotteurs/radioactif.webp', couleurs: ['#c8f02a', '#1d2410'],
+      texte: 'Dans les eaux fluo, il fait monter le fond du lac.' }
   ];
 
   function liste(type) { return type === 'flotteur' ? FLOTTEURS : CANNES; }

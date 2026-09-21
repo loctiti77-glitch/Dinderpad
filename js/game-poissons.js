@@ -16,7 +16,10 @@
     { nom: 'Commun',      cle: 'commun',  poids: 56, couleur: '#c7d3de' },
     { nom: 'Peu commun',  cle: 'peu',     poids: 27, couleur: '#4fd13a' },
     { nom: 'Rare',        cle: 'rare',    poids: 13, couleur: '#45b0ff' },
-    { nom: 'Légendaire',  cle: 'legende', poids: 4,  couleur: '#f5c93a' }
+    { nom: 'Légendaire',  cle: 'legende', poids: 4,  couleur: '#f5c93a' },
+    // Les Speciaux ne mordent que dans les lacs irradies : ils ne pesent
+    // rien dans le tirage ordinaire, d'ou leur poids nul.
+    { nom: 'Spécial',     cle: 'special', poids: 0,  couleur: '#c8f02a' }
   ];
 
   // corps / ventre / nageoire, puis la forme et le motif.
@@ -87,8 +90,41 @@
     { id: 'carpe-chromee', nom: 'Carpe Chromée', rarete: 'legende', forme: 'plat',   motif: 'metal',
       cm: [40, 95],  c: ['#c9d2dc', '#f4f8fb', '#8d99a8'] },
     { id: 'silure-abysses', nom: 'Silure des Abysses', rarete: 'legende', forme: 'long', motif: 'lueur',
-      cm: [90, 240], c: ['#241d3a', '#5a4d86', '#7cf0e0'] }
+      cm: [90, 240], c: ['#241d3a', '#5a4d86', '#7cf0e0'] },
+
+    // ---- Speciaux : les eaux irradiees ----
+    // Ils ne remontent que des lacs fluo. "poids" pese leur tirage dans ce
+    // vivier-la, "pente" dit a quel point un bon flotteur les favorise.
+    { id: 'gardon-luisant', nom: 'Gardon Luisant', rarete: 'special', radioactif: true,
+      forme: 'classique', motif: 'lueur', poids: 28, pente: -0.5,
+      cm: [12, 30],  c: ['#7cbf2a', '#dcf58a', '#3f6b12'] },
+    { id: 'carpe-fluo', nom: 'Carpe Fluo', rarete: 'special', radioactif: true,
+      forme: 'plat', motif: 'ecailles', poids: 24, pente: -0.3,
+      cm: [30, 80],  c: ['#a8e02a', '#e8fbb0', '#5c7a14'] },
+    { id: 'sandre-irradie', nom: 'Sandre Irradié', rarete: 'special', radioactif: true,
+      forme: 'long', motif: 'rayures', poids: 19, pente: 0.2,
+      cm: [35, 85],  c: ['#6fa81e', '#cdf07a', '#2f4a0c'] },
+    { id: 'anguille-photonique', nom: 'Anguille Photonique', rarete: 'special', radioactif: true,
+      forme: 'anguille', motif: 'lueur', poids: 13, pente: 0.8,
+      cm: [40, 110], c: ['#4a8a1e', '#b4e85c', '#d8ff4a'] },
+    { id: 'silure-mutant', nom: 'Silure Mutant', rarete: 'special', radioactif: true,
+      forme: 'long', motif: 'moustache', poids: 9, pente: 1.4,
+      cm: [70, 200], c: ['#546b2a', '#a8c46e', '#c8f02a'] },
+    { id: 'meduse-atomique', nom: 'Méduse Atomique', rarete: 'special', radioactif: true,
+      forme: 'meduse', motif: 'aucun', poids: 5, pente: 2.2,
+      cm: [20, 55],  c: ['#c8f02a', '#f2ffc0', '#8ab81e'] },
+    { id: 'axolotl-cesium', nom: 'Axolotl Césium', rarete: 'special', radioactif: true,
+      forme: 'triton', motif: 'points', poids: 3, pente: 3,
+      cm: [14, 34],  c: ['#e0ff4a', '#f8ffd0', '#7ca81e'] },
+    { id: 'coeur-de-pile', nom: 'Cœur de Pile', rarete: 'special', radioactif: true,
+      forme: 'rond', motif: 'lueur', poids: 1.5, pente: 4.5,
+      cm: [20, 60],  c: ['#1d2410', '#c8f02a', '#f4ff8a'] }
   ];
+
+  // Les deux viviers : l'eau claire et l'eau irradiee.
+  function vivier(radioactif) {
+    return POISSONS.filter(function (f) { return !!f.radioactif === !!radioactif; });
+  }
 
   function parId(id) {
     for (var i = 0; i < POISSONS.length; i++) if (POISSONS[i].id === id) return POISSONS[i];
@@ -106,18 +142,21 @@
 
   // Un tirage pondere par la rarete : les Legendaires restent des
   // evenements, sauf a s'equiper d'un bon flotteur.
-  function tirer(bonus) {
+  function tirer(bonus, radioactif) {
     var b = Math.max(0, Math.min(1, bonus || 0));
-    var poids = POISSONS.map(function (f) {
-      return rarete(f.rarete).poids * (1 + b * (PENTE[f.rarete] || 0));
+    var pool = vivier(radioactif);
+    var poids = pool.map(function (f) {
+      var base = f.poids != null ? f.poids : rarete(f.rarete).poids;
+      var pente = f.pente != null ? f.pente : (PENTE[f.rarete] || 0);
+      return Math.max(0.0001, base * (1 + b * pente));
     });
     var total = poids.reduce(function (a, v) { return a + v; }, 0);
     var d = Math.random() * total;
-    for (var i = 0; i < POISSONS.length; i++) {
+    for (var i = 0; i < pool.length; i++) {
       d -= poids[i];
-      if (d <= 0) return POISSONS[i];
+      if (d <= 0) return pool[i];
     }
-    return POISSONS[POISSONS.length - 1];
+    return pool[pool.length - 1];
   }
 
   // La taille d'une prise, tiree dans la fourchette de l'espece. On
@@ -390,6 +429,7 @@
 
   window.POISSONS = {
     LISTE: POISSONS, RARETES: RARETES, CARRURE: CARRURE,
+    vivier: vivier,
     parId: parId, rarete: rarete, tirer: tirer, taille: taille,
     poids: poids, poidsMax: poidsMax, poidsTexte: poidsTexte, charge: charge,
     feuille: feuille, url: url, L: L, H: H,

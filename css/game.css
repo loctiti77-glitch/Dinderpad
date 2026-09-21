@@ -2088,3 +2088,50 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
   .bq-ligne { transition: none; }
   .pe-scene.is-sortie::after, .pe-scene.is-entree::after { animation: none; }
 }
+
+/* ==========================================================
+   Les Speciaux : eaux irradiees et materiel assorti
+   ========================================================== */
+
+/* La cinquieme rarete a son jaune fluo. */
+[data-rarete="special"], [data-palier="special"] { --r: #c8f02a; }
+
+/* Les sections du carnet, dont celle des Speciaux. */
+.pe-section {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--px));
+  margin: calc(6 * var(--px)) 0 calc(2 * var(--px));
+  padding-bottom: calc(3 * var(--px));
+  border-bottom: calc(2 * var(--px)) solid rgba(124, 224, 255, .3);
+  font-size: calc(18 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-transform: uppercase;
+  color: #8fb6cc;
+}
+
+.pe-section:first-child { margin-top: 0; }
+.pe-section-n { font-size: calc(16 * var(--px)); color: #6f90a4; }
+
+.pe-section--rad {
+  border-bottom-color: rgba(200, 240, 42, .45);
+  color: #c8f02a;
+  text-shadow: 0 0 calc(10 * var(--px)) rgba(200, 240, 42, .5);
+}
+
+.pe-section--rad .pe-section-n { color: #8fae38; }
+
+/* Une prise irradiee luit dans le carnet. */
+.pe-fiche[data-rarete="special"]:not(.is-vide) {
+  background: rgba(24, 30, 10, .92);
+  box-shadow: 0 0 calc(12 * var(--px)) rgba(200, 240, 42, .35);
+}
+
+.pe-fiche[data-rarete="special"] .pe-fiche-det { color: #a8c44a; }
+
+/* Le panneau de prise, quand elle sort d'une eau fluo. */
+.pe-prise-box[data-rarete="special"] {
+  background: rgba(16, 22, 6, .95);
+}
