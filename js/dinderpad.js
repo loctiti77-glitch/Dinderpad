@@ -91,6 +91,18 @@
     { id: 'canne', name: 'Canne à Pêche',
       sub: 'Ramassée au bord de l’eau',
       img: 'assets/items/canne.webp',
+      // L'inventaire montre la canne reellement montee, pas l'objet
+      // generique : c'est le materiel du joueur qu'on lui presente. Les
+      // deux fonctions sont relues a chaque affichage, et retombent sur
+      // l'image d'origine tant que la Poissonnerie n'est pas chargee.
+      visuel: function () {
+        var M = window.MATERIEL;
+        return (M && M.equipee('canne').img) || 'assets/items/canne.webp';
+      },
+      detail: function () {
+        var M = window.MATERIEL;
+        return M ? M.equipee('canne').nom : 'Ramassée au bord de l’eau';
+      },
       view: 'peche-hub', acquis: function () { return aLaCanne(); } }
   ];
 

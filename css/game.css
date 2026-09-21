@@ -1018,7 +1018,12 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
   background: rgba(4, 16, 26, .94);
   box-shadow: 0 0 calc(30 * var(--px)) var(--r);
   animation: pe-prise-in .35s ease;
+  /* Le panneau sert de scene aux trois prises hors du commun : il porte
+     des calques en ::before et ::after, que son contenu recouvre. */
+  position: relative;
 }
+
+.pe-prise-box > * { position: relative; z-index: 1; }
 
 @keyframes pe-prise-in {
   from { opacity: 0; transform: translateY(calc(22 * var(--px))) scale(.85); }
@@ -2131,10 +2136,6 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 
 .pe-fiche[data-rarete="special"] .pe-fiche-det { color: #a8c44a; }
 
-/* Le panneau de prise, quand elle sort d'une eau fluo. */
-.pe-prise-box[data-rarete="special"] {
-  background: rgba(16, 22, 6, .95);
-}
 
 /* ==========================================================
    Brillants, evolutions et especes secretes
@@ -2170,12 +2171,23 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
   text-shadow: 0 0 calc(10 * var(--px)) #ffd166;
 }
 
-/* Le panneau de prise, quand la livree est la seconde. */
+/* ==========================================================
+   Trois prises hors du commun, trois animations
+   Le brillant scintille, l'irradie rayonne, la secrete se
+   revele. On doit pouvoir les distinguer sans lire le titre.
+   ========================================================== */
+
+/* ---------- Le brillant : un reflet qui balaie l'or ---------- */
+
 .pe-prise-box.is-shiny {
   background: rgba(30, 22, 4, .95);
   /* La rarete garde sa couleur dans le detail — c'est une information.
      Le cadre et le titre, eux, passent a l'or : c'est la nouvelle. */
   border-color: #ffd166;
+  /* Seul le brillant se referme sur ses calques : le reflet doit
+     s'arreter au bord du panneau, la ou les ondes des deux autres
+     doivent au contraire en deborder. */
+  overflow: hidden;
   animation: pe-prise-in .35s ease, pe-shiny 1.1s ease-in-out infinite alternate;
 }
 
@@ -2186,6 +2198,55 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
   to   { box-shadow: 0 0 calc(52 * var(--px)) rgba(255, 233, 168, .95); }
 }
 
+/* Le reflet : une bande claire en diagonale qui traverse le panneau.
+   Elle voyage en pourcentage de fond, donc quelle que soit sa largeur. */
+.pe-prise-box.is-shiny::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(104deg,
+    transparent 42%, rgba(255, 252, 232, .55) 50%, transparent 58%);
+  background-size: 320% 100%;
+  animation: pe-gleam 2.2s ease-in-out infinite;
+}
+
+@keyframes pe-gleam {
+  0%        { background-position: 160% 0; }
+  60%, 100% { background-position: -60% 0; }
+}
+
+/* Quatre etincelles qui battent, posees aux coins du panneau. Des
+   losanges plutot que des ronds : un rond ressemble a une poussiere. */
+.pe-prise-box.is-shiny::after {
+  content: '';
+  position: absolute;
+  top: calc(22 * var(--px));
+  left: calc(24 * var(--px));
+  z-index: 2;
+  width:  calc(7 * var(--px));
+  height: calc(7 * var(--px));
+  background: #fff6cf;
+  pointer-events: none;
+  /* Le losange est obtenu par rotation, une fois pour toutes : animer la
+     transformation deplacerait aussi les trois copies en box-shadow, qui
+     se rassembleraient dans le coin. Seule l'opacite bat. */
+  transform: rotate(45deg);
+  /* Les quatre positions tiennent dans les marges du panneau : le texte
+     est centre, les gouttieres de gauche et de droite sont libres. */
+  box-shadow:
+    calc(340 * var(--px)) calc(2 * var(--px))   0 calc(-1 * var(--px)) #ffe9a8,
+    calc(-14 * var(--px)) calc(200 * var(--px)) 0 calc(-1 * var(--px)) #fff6cf,
+    calc(344 * var(--px)) calc(188 * var(--px)) 0 0 #ffe9a8;
+  animation: pe-twinkle 1.15s ease-in-out infinite alternate;
+}
+
+@keyframes pe-twinkle {
+  from { opacity: .08; }
+  to   { opacity: 1; }
+}
+
 .pe-prise-box.is-shiny .pe-prise-img {
   animation: pe-shiny-img 1.1s ease-in-out infinite alternate;
 }
@@ -2193,6 +2254,59 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 @keyframes pe-shiny-img {
   from { filter: none; }
   to   { filter: drop-shadow(0 0 calc(12 * var(--px)) #ffe9a8); }
+}
+
+/* ---------- L'irradie : des ondes, et un cadre qui gresille ---------- */
+
+.pe-prise-box[data-rarete="special"] {
+  background: rgba(16, 22, 6, .95);
+  animation: pe-prise-in .35s ease, pe-rad-cadre 2.3s steps(1, end) infinite;
+}
+
+/* Le compteur Geiger : le cadre faiblit par a-coups, a intervalles
+   inegaux, puis se rallume d'un coup. */
+@keyframes pe-rad-cadre {
+  0%, 38%, 46%, 58%, 72%, 100% {
+    border-color: #c8f02a;
+    box-shadow: 0 0 calc(34 * var(--px)) rgba(200, 240, 42, .6);
+  }
+  40%, 52%, 66% {
+    border-color: #5c7a14;
+    box-shadow: 0 0 calc(8 * var(--px)) rgba(200, 240, 42, .2);
+  }
+}
+
+/* Deux anneaux fluo partent du poisson et s'ouvrent au-dela du cadre. */
+.pe-prise-box[data-rarete="special"]::before,
+.pe-prise-box[data-rarete="special"]::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  width:  calc(70 * var(--px));
+  height: calc(70 * var(--px));
+  margin: calc(-35 * var(--px)) 0 0 calc(-35 * var(--px));
+  border-radius: 50%;
+  border: calc(3 * var(--px)) solid rgba(200, 240, 42, .75);
+  pointer-events: none;
+  animation: pe-rad-onde 2s ease-out infinite;
+}
+
+.pe-prise-box[data-rarete="special"]::after { animation-delay: 1s; }
+
+@keyframes pe-rad-onde {
+  from { transform: scale(.25); opacity: .95; }
+  to   { transform: scale(6.5); opacity: 0; }
+}
+
+.pe-prise-box[data-rarete="special"] .pe-prise-img {
+  animation: pe-rad-img 1.05s steps(2, end) infinite alternate;
+}
+
+@keyframes pe-rad-img {
+  from { filter: drop-shadow(0 0 calc(4 * var(--px)) #c8f02a); }
+  to   { filter: drop-shadow(0 0 calc(18 * var(--px)) #e8ff6a) brightness(1.18); }
 }
 
 /* Une case brillante se repere d'un coup d'oeil dans la grille. */
@@ -2254,10 +2368,73 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
   color: #7ce0ff;
 }
 
-/* ---------- Les especes secretes ---------- */
+/* ---------- La secrete : une apparition ---------- */
+/* Ce bloc suit celui des irradies a dessein : le Noyau Vivant est les
+   deux a la fois, et c'est le secret qui doit l'emporter — c'est la
+   nouvelle la plus rare des deux. */
 
 .pe-prise-box.is-secret {
   background: rgba(20, 10, 34, .95);
+  border-color: #c49bff;
+  animation: pe-secret-in .85s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+@keyframes pe-secret-in {
+  0%   { opacity: 0; transform: scale(.68) rotate(-2.5deg);
+         box-shadow: 0 0 0 rgba(196, 155, 255, 0); }
+  42%  { opacity: 1; transform: scale(1.07) rotate(.7deg);
+         box-shadow: 0 0 calc(80 * var(--px)) rgba(224, 204, 255, .95); }
+  100% { opacity: 1; transform: none;
+         box-shadow: 0 0 calc(34 * var(--px)) rgba(196, 155, 255, .7); }
+}
+
+/* Le titre se resserre, comme un nom qui se forme. */
+.pe-prise-box.is-secret .pe-prise-titre {
+  color: #e0ccff;
+  animation: pe-secret-titre 1s ease both;
+}
+
+@keyframes pe-secret-titre {
+  from { letter-spacing: calc(18 * var(--px)); opacity: 0; }
+  to   { letter-spacing: calc(2 * var(--px)); opacity: 1; }
+}
+
+/* Le poisson arrive en ombre chinoise, puis prend ses couleurs. */
+.pe-prise-box.is-secret .pe-prise-img {
+  animation: pe-secret-reveal 1.4s .1s ease both;
+}
+
+@keyframes pe-secret-reveal {
+  0%   { transform: scale(.72);
+         filter: brightness(0) drop-shadow(0 0 calc(16 * var(--px)) #c49bff); }
+  50%  { transform: scale(1.12);
+         filter: brightness(0) drop-shadow(0 0 calc(26 * var(--px)) #f0e4ff); }
+  100% { transform: none; filter: none; }
+}
+
+/* Deux cercles violets s'ouvrent lentement, bien au-dela du cadre. */
+.pe-prise-box.is-secret::before,
+.pe-prise-box.is-secret::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  width:  calc(50 * var(--px));
+  height: calc(50 * var(--px));
+  margin: calc(-25 * var(--px)) 0 0 calc(-25 * var(--px));
+  border-radius: 50%;
+  border: calc(2 * var(--px)) solid rgba(214, 186, 255, .8);
+  pointer-events: none;
+  animation: pe-secret-onde 2.6s ease-out infinite;
+}
+
+.pe-prise-box.is-secret::after { animation-delay: 1.3s; }
+
+@keyframes pe-secret-onde {
+  from { transform: scale(.2) ; opacity: 0; }
+  15%  { opacity: .95; }
+  to   { transform: scale(8); opacity: 0; }
 }
 
 .pe-section--secret {
@@ -2277,8 +2454,29 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 
 @media (prefers-reduced-motion: reduce) {
   .pe-prise-box.is-shiny,
+  .pe-prise-box.is-shiny::before,
+  .pe-prise-box.is-shiny::after,
   .pe-prise-box.is-shiny .pe-prise-img,
+  .pe-prise-box[data-rarete="special"],
+  .pe-prise-box[data-rarete="special"]::before,
+  .pe-prise-box[data-rarete="special"]::after,
+  .pe-prise-box[data-rarete="special"] .pe-prise-img,
+  .pe-prise-box.is-secret,
+  .pe-prise-box.is-secret::before,
+  .pe-prise-box.is-secret::after,
+  .pe-prise-box.is-secret .pe-prise-titre,
+  .pe-prise-box.is-secret .pe-prise-img,
   .pe-evo.is-fini { animation: none; }
+  /* Sans mouvement, les anneaux ne servent plus a rien : on les retire
+     plutot que de les laisser figes en travers du panneau. */
+  .pe-prise-box.is-shiny::before,
+  .pe-prise-box.is-shiny::after,
+  .pe-prise-box[data-rarete="special"]::before,
+  .pe-prise-box[data-rarete="special"]::after,
+  .pe-prise-box.is-secret::before,
+  .pe-prise-box.is-secret::after { display: none; }
+  .pe-prise-box.is-secret .pe-prise-img,
+  .pe-prise-box[data-rarete="special"] .pe-prise-img { filter: none; }
   .pe-evo .pe-prise-img { transition: none; }
 }
 

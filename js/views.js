@@ -531,15 +531,17 @@
       row.href = '#' + it.view;
       row.dataset.item = it.id;
 
+      // Un item peut se montrer sous l'etat ou il est : la canne affiche
+      // celle qui est montee, et le sous-titre la nomme.
       var img = el('img', 'slot-face');
-      img.src = it.img;
+      img.src = it.visuel ? it.visuel() : it.img;
       img.alt = '';
       img.decoding = 'async';
       row.appendChild(img);
 
       var name = el('span', 'slot-name');
       name.appendChild(el('span', 'slot-name-main', it.name));
-      name.appendChild(el('span', 'slot-name-sub', it.sub));
+      name.appendChild(el('span', 'slot-name-sub', it.detail ? it.detail() : it.sub));
       row.appendChild(name);
 
       row.appendChild(el('span', 'slot-open', 'Ouvrir'));

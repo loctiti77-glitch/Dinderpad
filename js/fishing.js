@@ -607,9 +607,12 @@
         if (brillant) box.classList.add('is-shiny');
         if (f.secret) box.classList.add('is-secret');
 
+        // Chacune des trois prises hors du commun a son titre, pour qu'on
+        // sache ce qu'on regarde avant meme de lire le nom.
         var titre = brillant ? 'BRILLANT !'
-                  : f.secret && neuf ? 'ESPÈCE SECRÈTE !'
+                  : f.secret ? 'ESPÈCE SECRÈTE !'
                   : neuf ? 'NOUVELLE ESPÈCE !'
+                  : f.rarete === 'special' ? 'PRISE IRRADIÉE !'
                   : 'Belle prise !';
         box.appendChild(el('p', 'pe-prise-titre', titre));
         var im = el('img', 'pe-prise-img');
@@ -617,7 +620,7 @@
         im.alt = '';
         box.appendChild(im);
         var nom = el('p', 'pe-prise-nom', f.nom);
-        if (brillant) nom.appendChild(el('span', 'pe-etoile', '\u2726'));
+        if (brillant) nom.appendChild(el('span', 'pe-etoile', '✦'));
         box.appendChild(nom);
         var det = el('p', 'pe-prise-det');
         det.appendChild(el('span', 'pe-prise-rarete', f.secret ? 'Secret' : r.nom));
@@ -633,12 +636,19 @@
         }
         prise.appendChild(box);
 
-        dire(brillant ? f.nom + ' — dans une couleur qu\u2019on ne revoit pas de sit\u00f4t.'
+        dire(brillant ? f.nom + ' — dans une couleur qu’on ne revoit pas de sitôt.'
            : f.secret && neuf ? f.nom + ' existait donc vraiment.'
+           : f.secret ? f.nom + ' est revenu au bout de la ligne.'
+           : f.rarete === 'special'
+             ? f.nom + ' remonte des eaux irradiées' +
+               (neuf ? ' et rejoint ton carnet.' : '.')
            : neuf ? f.nom + ' rejoint ton carnet.'
            : f.nom + ', ' + cm + ' cm pour ' + P.poidsTexte(kg) + '.');
 
-        var attente = reduit ? 800 : (brillant || (f.secret && neuf) ? 3200 : 2600);
+        // Une prise hors du commun a droit a son temps d'ecran : ses
+        // animations durent plus longtemps qu'un panneau ordinaire.
+        var remarquable = brillant || f.secret || f.rarete === 'special';
+        var attente = reduit ? 800 : (remarquable ? 3200 : 2600);
         plusTard(function () {
           if (!vivant()) return;
           if (ensuite) return ensuite();
@@ -672,7 +682,7 @@
         var det = el('p', 'pe-prise-det pe-evo-det');
         box.appendChild(det);
         prise.appendChild(box);
-        dire(base.nom + ' change de forme\u2026');
+        dire(base.nom + ' change de forme…');
 
         // Trois allers-retours entre les deux silhouettes, de plus en plus
         // serres, puis la bascule definitive.
@@ -694,13 +704,13 @@
           if (!vivant()) return;
           box.classList.add('is-fini');
           im.src = P.url(evo.id);
-          titre.textContent = '\u00C9VOLUTION !';
+          titre.textContent = 'ÉVOLUTION !';
           nom.textContent = evo.nom;
           det.appendChild(el('span', 'pe-prise-rarete', r.nom));
           det.appendChild(el('span', null, cm + ' cm'));
           det.appendChild(el('span', 'pe-prise-kg', P.poidsTexte(kg)));
           DP.noterPrise(evo.id, cm, kg);
-          dire(base.nom + ' a \u00e9volu\u00e9 en ' + evo.nom + ' !');
+          dire(base.nom + ' a évolué en ' + evo.nom + ' !');
           plusTard(function () { if (vivant()) ranger(); }, reduit ? 700 : 3000);
         }, reduit ? 420 : 1800);
       }
@@ -1026,7 +1036,7 @@
     var cotes = el('p', 'pe-cotes');
     var nShiny = DP.shinys();
     var shiny = el('span', 'pe-cote pe-cote--shiny',
-      '\u2726 ' + nShiny + ' / ' + P.especesShiny().length + ' brillants');
+      '✦ ' + nShiny + ' / ' + P.especesShiny().length + ' brillants');
     cotes.appendChild(shiny);
     var nSecrets = P.secrets().filter(function (f) { return prises[f.id]; }).length;
     if (nSecrets) {
@@ -1059,7 +1069,7 @@
         im.alt = '';
         n.appendChild(im);
         var nom = el('span', 'pe-fiche-nom', f.nom);
-        if (brillant) nom.appendChild(el('span', 'pe-etoile', '\u2726'));
+        if (brillant) nom.appendChild(el('span', 'pe-etoile', '✦'));
         n.appendChild(nom);
         n.appendChild(el('span', 'pe-fiche-det',
           e.max + ' cm · ' + P.poidsTexte(e.kg || P.poids(f, e.max))));
@@ -1076,9 +1086,9 @@
         var eb = prises[f.evolueDe];
         var fait = eb ? Math.min(eb.n, f.seuil) : 0;
         n.classList.add('pe-fiche--evo');
-        n.appendChild(el('span', 'pe-fiche-vide', '\u25B2'));
+        n.appendChild(el('span', 'pe-fiche-vide', '▲'));
         n.appendChild(el('span', 'pe-fiche-nom',
-          '\u00c9volution de ' + (base ? base.nom : '?')));
+          'Évolution de ' + (base ? base.nom : '?')));
         n.appendChild(el('span', 'pe-fiche-det', fait + ' / ' + f.seuil + ' prises'));
         return n;
       }
