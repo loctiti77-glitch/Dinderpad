@@ -369,30 +369,48 @@
   //  Le carrefour, depuis les Items
   // ==========================================================
 
+  // Deux moities plein ecran : le materiel a gauche, le carnet a droite.
   function viewHub(view) {
     var box = el('div', 'hub');
-    box.appendChild(el('h2', 'hub-titre', 'Canne à Pêche'));
 
-    var choix = el('div', 'hub-choix');
+    var canne = M.equipee('canne');
+    var flotteur = M.equipee('flotteur');
 
-    function carte(href, img, titre, sous, cls) {
-      var n = el('a', 'hub-carte' + (cls ? ' ' + cls : ''));
-      n.href = href;
-      var im = el('img', 'hub-img');
-      im.src = img;
-      im.alt = '';
-      n.appendChild(im);
-      n.appendChild(el('strong', 'hub-nom', titre));
-      n.appendChild(el('span', 'hub-sous', sous));
-      return n;
-    }
+    // ---- A gauche : le vestiaire, avec ce qui est monte ----
+    var gauche = el('a', 'hub-carte hub-carte--vestiaire');
+    gauche.href = '#vestiaire';
 
-    choix.appendChild(carte('#vestiaire', M.equipee('canne').img || M.CANNES[1].img,
-      'Vestiaire', 'Choisir sa canne et son flotteur'));
-    choix.appendChild(carte('#peche-collection', CARNET_IMG,
-      'Carnet de pêche', 'Les espèces déjà remontées', 'hub-carte--carnet'));
+    var pile = el('span', 'hub-pile');
+    var imCanne = el('img', 'hub-img hub-img--canne');
+    imCanne.src = canne.img || M.CANNES[1].img;
+    imCanne.alt = '';
+    pile.appendChild(imCanne);
+    pile.appendChild(vignette('flotteur', flotteur, 'hub-img hub-img--flotteur'));
+    gauche.appendChild(pile);
 
-    box.appendChild(choix);
+    var txtG = el('span', 'hub-txt');
+    txtG.appendChild(el('strong', 'hub-nom', 'Vestiaire'));
+    txtG.appendChild(el('span', 'hub-sous', canne.nom + '  ·  ' + flotteur.nom));
+    gauche.appendChild(txtG);
+    box.appendChild(gauche);
+
+    // ---- A droite : le carnet, en grand ----
+    var droite = el('a', 'hub-carte hub-carte--carnet');
+    droite.href = '#peche-collection';
+
+    var livre = el('img', 'hub-img hub-img--livre');
+    livre.src = CARNET_IMG;
+    livre.alt = '';
+    droite.appendChild(livre);
+
+    var prises = Object.keys(DP.prises()).length;
+    var total = window.POISSONS ? window.POISSONS.LISTE.length : 30;
+    var txtD = el('span', 'hub-txt');
+    txtD.appendChild(el('strong', 'hub-nom', 'Carnet de pêche'));
+    txtD.appendChild(el('span', 'hub-sous', prises + ' / ' + total + ' espèces'));
+    droite.appendChild(txtD);
+    box.appendChild(droite);
+
     view.appendChild(box);
   }
 
