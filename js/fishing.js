@@ -304,6 +304,17 @@
       action.hidden = true;
       scene.appendChild(action);
 
+      // La minicarte : la carte entiere en un coup d'oeil, avec les
+      // eaux, la cabane, la souche et le point ou l'on se tient. Elle est
+      // peinte une fois pour le decor, et rafraichie a chaque pas pour ce
+      // qui bouge.
+      var mini = el('div', 'pe-mini');
+      var miniCv = el('canvas', 'pe-mini-cv');
+      miniCv.width = MW * 3;
+      miniCv.height = MH * 3;
+      mini.appendChild(miniCv);
+      scene.appendChild(mini);
+
       var carnetBtn = el('a', 'pe-carnet');
       carnetBtn.href = '#peche-collection';
       carnetBtn.setAttribute('aria-label', 'Carnet de pêche');
@@ -444,8 +455,16 @@
         var delai = reduit ? 300 : 1200 + Math.random() * 2800;
 
         // Avant toute chose : le requin. Il ne se montre qu'a qui porte le
-        // Pistolet Lumithique, et rarement.
+        // Pistolet Lumithique, et rarement — sauf si un leurre est a la
+        // ligne, auquel cas la bete appelee vient a coup sur.
         var R = window.REQUIN;
+        var appat = DP.leurreMonte();
+        if (R && DP.aLArme() && appat) {
+          DP.consommerLeurre(appat);
+          return plusTard(function () {
+            if (vivant() && etat === 'lancee') rencontre(appat);
+          }, Math.min(delai, reduit ? 300 : 1100));
+        }
         if (R && DP.aLArme() &&
             Math.floor(Math.random() * R.CHANCE_RENCONTRE) === 0) {
           return plusTard(function () {
@@ -466,7 +485,7 @@
           // La prise est decidee ici : c'est son poids qui fixe le temps
           // dont on dispose pour ferrer, et la canne qui le rattrape.
           mordant = choisirPrise();
-          mordantShiny = P.estShiny(mordant.id);
+          mordantShiny = P.estShiny(mordant.id, M2 ? M2.chanceShiny() : 1);
           mordantCm = P.taille(mordant);
           var kg = P.poids(mordant, mordantCm);
           lourd = P.charge(kg) > 0.55;
@@ -518,6 +537,18 @@
           var neuf = !DP.aPeche(f.id);
           var e = DP.noterPrise(f.id, cm, kg, brillant);
 
+          // Le Double-Hameçon ramene une seconde prise de la meme espece,
+          // tiree a part : c'est bien deux poissons, pas un compte gonfle.
+          var second = null;
+          if (M2 && M2.doublePrise()) {
+            var cm2 = P.taille(f);
+            var kg2 = P.poids(f, cm2);
+            var brillant2 = P.estShiny(f.id, M2.chanceShiny());
+            DP.noterPrise(f.id, cm2, kg2, brillant2);
+            second = { cm: cm2, kg: kg2, brillant: brillant2 };
+            e = DP.prises()[f.id];
+          }
+
           // L'evolution se declenche au moment ou la prise sort de l'eau :
           // c'est la enieme fois qu'on la prend, et elle change de forme
           // dans les mains du pecheur.
@@ -525,9 +556,9 @@
           if (evo && !DP.aPeche(evo.id) && e.n >= evo.seuil) {
             return montrerPoisson(f, cm, kg, neuf, e, brillant, function () {
               evoluer(f, evo);
-            });
+            }, second);
           }
-          montrerPoisson(f, cm, kg, neuf, e, brillant);
+          montrerPoisson(f, cm, kg, neuf, e, brillant, null, second);
         }, reduit ? 0 : SORTIE);
       }
 
@@ -674,14 +705,17 @@
       var SURGIT = { ombre: 900, aileron: 800, saut: 900 };
       var SURGIT_TOTAL = SURGIT.ombre + SURGIT.aileron + SURGIT.saut;
 
-      function rencontre() {
+      // "appele" est la forme qu'un leurre a fait venir : le tirage
+      // ordinaire est alors court-circuite, variante comprise.
+      function rencontre(appele) {
         var R = window.REQUIN;
         if (!R) return ranger();
         etat = 'requin';
         vol = null; gerbe = null;
         majAction();
 
-        var bete = R.tirer(DP.armeNiveau(), irradie);
+        var bete = appele ? R.appeler(appele, irradie)
+                          : R.tirer(DP.armeNiveau(), irradie);
         // La bete sort a l'endroit exact ou le bouchon flottait : c'est
         // la ligne du pecheur qui l'a fait monter.
         var ou = bouchon || { x: balade.chef.x, y: balade.chef.y - 40 };
@@ -861,7 +895,7 @@
 
       // --- Les panneaux de prise ---
 
-      function montrerPoisson(f, cm, kg, neuf, e, brillant, ensuite) {
+      function montrerPoisson(f, cm, kg, neuf, e, brillant, ensuite, second) {
         var r = P.rarete(f.rarete);
         prise.hidden = false;
         prise.textContent = '';
@@ -892,6 +926,16 @@
         det.appendChild(el('span', 'pe-prise-kg', P.poidsTexte(kg)));
         if (e && e.n > 1) det.appendChild(el('span', 'pe-prise-n', '×' + e.n));
         box.appendChild(det);
+        // La seconde prise du Double-Hameçon, en dessous de la premiere.
+        if (second) {
+          box.classList.add('is-double');
+          var deux = el('p', 'pe-prise-double');
+          deux.appendChild(el('span', 'pe-prise-double-nom', 'Et un second !'));
+          deux.appendChild(el('span', null, second.cm + ' cm'));
+          deux.appendChild(el('span', 'pe-prise-kg', P.poidsTexte(second.kg)));
+          if (second.brillant) deux.appendChild(el('span', 'pe-etoile', '✦'));
+          box.appendChild(deux);
+        }
         if (lourd) box.appendChild(el('p', 'pe-prise-lourd', 'Belle bagarre !'));
         // Une secrete qu'on decouvre dit enfin ce qui l'a fait venir : le
         // joueur a devine sans le savoir, autant qu'il sache pourquoi.
@@ -992,6 +1036,92 @@
         prise.appendChild(box);
         dire('Un Crédit Temporel est remonté au bout de la ligne.');
         plusTard(function () { if (vivant()) ranger(); }, reduit ? 900 : 3200);
+      }
+
+      // --- La minicarte ---
+      // Trois pixels par case : assez pour lire la forme des lacs, assez
+      // petit pour ne rien voler a la vue du jeu.
+      var MINI_T = 3;
+      var MINI_FOND = {};
+      MINI_FOND[T.EAU] = '#2a68c4';
+      MINI_FOND[T.ROSEAU] = '#2f6e2c';
+      MINI_FOND[T.EAU_RAD] = '#9ad11e';
+      MINI_FOND[T.SABLE] = '#dcc98c';
+      MINI_FOND[T.CHEMIN] = '#a5794a';
+      MINI_FOND[T.ARBRE] = '#2c6329';
+      MINI_FOND[T.BUISSON] = '#357a31';
+      MINI_FOND[T.ROCHER] = '#7d8490';
+      MINI_FOND[T.CABANE] = '#8a5a30';
+      MINI_FOND[T.TOIT] = '#b2452f';
+      MINI_FOND[T.PORTE_BOIS] = '#e8c46a';
+      MINI_FOND[T.SOUCHE] = '#7a5c33';
+
+      var miniFond = null;
+
+      function peindreMiniFond() {
+        var c = document.createElement('canvas');
+        c.width = MW * MINI_T;
+        c.height = MH * MINI_T;
+        var x = c.getContext('2d');
+        if (!x) return null;
+        for (var ty = 0; ty < MH; ty++) {
+          for (var tx = 0; tx < MW; tx++) {
+            x.fillStyle = MINI_FOND[g[ty][tx]] || '#3d8b38';
+            x.fillRect(tx * MINI_T, ty * MINI_T, MINI_T, MINI_T);
+          }
+        }
+        return c;
+      }
+
+      function dessinerMini(t) {
+        var x = miniCv.getContext('2d');
+        if (!x) return;
+        if (!miniFond) miniFond = peindreMiniFond();
+        if (!miniFond) return;
+        x.clearRect(0, 0, miniCv.width, miniCv.height);
+        x.drawImage(miniFond, 0, 0);
+
+        function pastille(tx, ty, couleur, r) {
+          x.fillStyle = couleur;
+          x.beginPath();
+          x.arc(tx * MINI_T + MINI_T / 2, ty * MINI_T + MINI_T / 2, r, 0, 6.3);
+          x.fill();
+        }
+
+        // La Poissonnerie, toujours reperable.
+        pastille(CABANE.porte, CABANE.y1, '#ffd166', 3);
+
+        // La souche ne se signale que tant qu'on n'a pas l'arme : une
+        // fois trouvee, elle n'a plus rien a dire.
+        if (armeAuSol) {
+          var battement = reduit ? 3 : 2.4 + Math.sin(t / 320) * 1.2;
+          pastille(SOUCHE.x, SOUCHE.y, 'rgba(124,240,255,.9)', battement);
+        }
+
+        // La canne au sol, tant qu'elle y est.
+        if (canneAuSol) {
+          pastille(Math.floor(CANNE.x / TS), Math.floor(CANNE.y / TS), '#00f1fd', 2.5);
+        }
+
+        // Le bouchon, quand la ligne est a l'eau.
+        if (bouchon) {
+          pastille(Math.floor(bouchon.x / TS), Math.floor(bouchon.y / TS), '#f4f7fb', 2);
+        }
+
+        // Le pecheur, en dernier : il passe par-dessus tout le reste.
+        var c = balade.caseDuChef();
+        // Quand il marche dans le coin qu'occupe la minicarte, elle
+        // s'efface : on ne cache jamais au joueur le personnage qu'il
+        // dirige. Le coin est donne en pixels de canevas, ou la scene
+        // fait 480 de large pour 1612 unites de pad.
+        var dedans = ecranChef.x < 74 && ecranChef.y < 66;
+        if (dedans !== mini.classList.contains('is-efface')) {
+          mini.classList.toggle('is-efface', dedans);
+        }
+        x.fillStyle = '#0a1420';
+        x.fillRect(c[0] * MINI_T - 1, c[1] * MINI_T - 1, MINI_T + 2, MINI_T + 2);
+        x.fillStyle = '#ff5c9d';
+        x.fillRect(c[0] * MINI_T, c[1] * MINI_T, MINI_T, MINI_T);
       }
 
       // --- Le bouton et le clavier ---
@@ -1097,7 +1227,13 @@
         ctx.restore();
       }
 
+      // Ou se tient le pecheur sur l'ecran, et non dans le monde : la
+      // minicarte s'en sert pour savoir si elle le masque.
+      var ecranChef = { x: 240, y: 158 };
+
       function dessinerBouchon(ctx, cam, t) {
+        ecranChef.x = balade.chef.x - cam.x;
+        ecranChef.y = balade.chef.y - cam.y;
         dessinerGerbe(ctx, cam, t);
         dessinerVol(ctx, cam, t);
         if (surgi) return dessinerSurgissement(ctx, cam, t);
@@ -1233,7 +1369,8 @@
 
         apres: dessinerBouchon,
 
-        chaqueImage: function () {
+        chaqueImage: function (t) {
+          dessinerMini(t);
           var c = balade.caseDuChef();
           var casier = c[0] + ',' + c[1];
           if (jeu.dataset.tuile !== casier) jeu.dataset.tuile = casier;
@@ -1263,6 +1400,8 @@
                    : canneAuSol ? 'Une canne à pêche flotte non loin.'
                    : devantCabane ? 'La Poissonnerie est ouverte.'
                    : devantRad ? 'Eau irradiée : ici ne mordent que des Spéciaux.'
+                   : pretALancer() && DP.leurreMonte()
+                     ? 'Leurre à la ligne : ce que tu lances va répondre.'
                    : pretALancer() ? 'Face à l’eau : lance ta ligne.'
                    : 'Trouve une berge et fais face à l’eau.';
           if (hudTxt.textContent !== aide) hudTxt.textContent = aide;

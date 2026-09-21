@@ -343,8 +343,11 @@
     return POISSONS.filter(function (f) { return !!SHINYS[f.id]; });
   }
 
-  function estShiny(id) {
-    return aShiny(id) && Math.floor(Math.random() * CHANCE_SHINY) === 0;
+  // "bonus" est le facteur de l'hamecon monte : a 4, la chance passe
+  // d'une sur cent vingt a une sur trente.
+  function estShiny(id, bonus) {
+    var sur = Math.max(1, Math.round(CHANCE_SHINY / Math.max(1, bonus || 1)));
+    return aShiny(id) && Math.floor(Math.random() * sur) === 0;
   }
 
   // La taille d'une prise, tiree dans la fourchette de l'espece. On

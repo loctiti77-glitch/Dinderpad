@@ -1564,15 +1564,37 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
   text-shadow: 0 0 calc(14 * var(--px)) rgba(60, 190, 255, .6);
 }
 
-.vst-resume { margin: 0; font-size: calc(20 * var(--px)); color: #9fe0b5; }
+.vst-resume {
+  margin: 0;
+  flex: 1;
+  text-align: right;
+  font-size: calc(18 * var(--px));
+  line-height: 1.2;
+  color: #9fe0b5;
+}
 
 .vst-colonnes {
   flex: 1;
   display: grid;
+  /* Quatre rayons depuis les hamecons et les leurres : deux par ligne,
+     pour que chaque piece garde de quoi se lire. */
   grid-template-columns: 1fr 1fr;
-  gap: calc(14 * var(--px));
+  /* Les rangees prennent la hauteur de leur contenu : avec quatre rayons
+     de tailles tres inegales, les forcer a la meme hauteur coupait le
+     dernier hameçon. C'est la colonne entiere qui defile. */
+  grid-auto-rows: min-content;
+  align-content: start;
+  gap: calc(12 * var(--px)) calc(14 * var(--px));
   min-height: 0;
+  overflow: auto;
+  scrollbar-width: none;
 }
+
+.vst-colonnes::-webkit-scrollbar { width: 0; }
+
+/* Un leurre se consomme : son cadre le dit. */
+.vst-piece--leurre { border-style: dashed; }
+.vst-piece--leurre.is-monte { border-style: solid; }
 
 .vst-col { display: flex; flex-direction: column; gap: calc(6 * var(--px)); min-height: 0; }
 
@@ -1585,12 +1607,10 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
 }
 
 .vst-liste {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: calc(6 * var(--px));
-  overflow: auto;
-  scrollbar-width: none;
 }
 
 .vst-liste::-webkit-scrollbar { width: 0; }
@@ -1777,7 +1797,10 @@ span.hub-img--flotteur { border-radius: 50%; }
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: calc(292 * var(--px)) 1fr;
+  /* "minmax(0, 1fr)" et non "1fr" : une piste 1fr ne descend pas sous la
+     largeur minimale de son contenu, et l'etal debordait de l'ecran des
+     que la banniere portait cinq onglets. */
+  grid-template-columns: calc(292 * var(--px)) minmax(0, 1fr);
   grid-template-rows: 1fr auto;
   gap: calc(10 * var(--px));
   padding: calc(10 * var(--px)) calc(14 * var(--px)) calc(10 * var(--px));
@@ -1883,7 +1906,8 @@ span.hub-img--flotteur { border-radius: 50%; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: calc(12 * var(--px));
+  flex-wrap: wrap;
+  gap: calc(6 * var(--px)) calc(12 * var(--px));
   padding: calc(6 * var(--px)) calc(14 * var(--px));
   border: calc(4 * var(--px)) solid #0a1d2e;
   border-radius: calc(14 * var(--px));
@@ -1900,16 +1924,16 @@ span.hub-img--flotteur { border-radius: 50%; }
   text-shadow: calc(2 * var(--px)) calc(2 * var(--px)) 0 #0a3550;
 }
 
-.bq-onglets { display: flex; gap: calc(6 * var(--px)); }
+.bq-onglets { display: flex; flex-wrap: wrap; gap: calc(5 * var(--px)); }
 
 .bq-onglet {
-  padding: calc(4 * var(--px)) calc(16 * var(--px));
+  padding: calc(4 * var(--px)) calc(12 * var(--px));
   border: calc(3 * var(--px)) solid #0a1d2e;
   border-radius: calc(9 * var(--px));
   background: rgba(6, 30, 48, .5);
   color: #cfeaff;
   font-family: inherit;
-  font-size: calc(18 * var(--px));
+  font-size: calc(17 * var(--px));
   letter-spacing: calc(1 * var(--px));
   cursor: pointer;
 }
@@ -1982,7 +2006,9 @@ span.hub-img--flotteur { border-radius: 50%; }
 
 span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 
-.bq-ligne-txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.bq-ligne-txt { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+
+.bq-ligne-nom, .bq-ligne-sous { overflow-wrap: anywhere; }
 
 .bq-ligne-nom {
   font-size: calc(23 * var(--px));
@@ -3298,4 +3324,65 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 
 @media (prefers-reduced-motion: reduce) {
   .pe-scene.is-secousse { animation: none; }
+}
+
+/* ==========================================================
+   La minicarte du mini-jeu de peche
+   ========================================================== */
+
+.pe-mini {
+  position: absolute;
+  top: calc(52 * var(--px));
+  left: calc(14 * var(--px));
+  padding: calc(4 * var(--px));
+  border: calc(3 * var(--px)) solid rgba(124, 224, 255, .55);
+  border-radius: calc(8 * var(--px));
+  background: rgba(3, 14, 24, .74);
+  box-shadow: 0 0 calc(14 * var(--px)) rgba(0, 0, 0, .55);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.pe-mini-cv {
+  display: block;
+  width: calc(196 * var(--px));
+  height: auto;
+  image-rendering: pixelated;
+  border-radius: calc(3 * var(--px));
+}
+
+/* ==========================================================
+   La seconde prise du Double-Hameçon
+   ========================================================== */
+
+.pe-prise-double {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: calc(10 * var(--px));
+  padding: calc(3 * var(--px)) calc(14 * var(--px));
+  border-radius: calc(8 * var(--px));
+  background: rgba(201, 162, 39, .18);
+  font-size: calc(18 * var(--px));
+  color: #f0dfa8;
+  animation: pe-double-in .3s .12s ease both;
+}
+
+@keyframes pe-double-in {
+  from { opacity: 0; transform: translateY(calc(-8 * var(--px))); }
+  to   { opacity: 1; transform: none; }
+}
+
+.pe-prise-double-nom { color: #ffd166; font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pe-prise-double { animation: none; }
+}
+
+/* La minicarte s'efface quand le pecheur passe dessous. */
+.pe-mini { transition: opacity .25s ease; }
+.pe-mini.is-efface { opacity: .22; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pe-mini { transition: none; }
 }

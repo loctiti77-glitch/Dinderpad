@@ -68,7 +68,8 @@
     var banniere = el('div', 'bq-banniere');
     banniere.appendChild(el('span', 'bq-enseigne', 'Poissonnerie'));
     var tabs = el('div', 'bq-onglets');
-    [['canne', 'Cannes'], ['flotteur', 'Flotteurs'], ['vendre', 'Vendre']]
+    [['canne', 'Cannes'], ['flotteur', 'Flotteurs'], ['hamecon', 'Hameçons'],
+     ['leurre', 'Leurres'], ['vendre', 'Vendre']]
       .forEach(function (o) {
         var b = el('button', 'bq-onglet', o[1]);
         b.type = 'button';
@@ -167,6 +168,8 @@
         bs[i].classList.toggle('is-actif', bs[i].dataset.type === onglet);
       }
       if (onglet === 'vendre') return construireVente();
+      if (onglet === 'hamecon') return construireHamecons();
+      if (onglet === 'leurre') return construireLeurres();
 
       M.liste(onglet).forEach(function (item) {
         if (!item.palier) return;               // l'origine ne se vend pas
@@ -187,6 +190,71 @@
             if (e.possede) return dire('Tu l’as déjà. Passe au vestiaire pour la monter.');
             choix = item.id;
             dire(item.nom + ' — ' + effetTexte(onglet, item));
+            tout();
+          }
+        }));
+      });
+    }
+
+    // Les hamecons ne se paient pas au bareme : chacun demande d'abord
+    // qu'on ait fait quelque chose, puis un nombre de credits ecrit sur
+    // l'article. La ligne montre donc la condition et sa progression.
+    function construireHamecons() {
+      M.liste('hamecon').forEach(function (item) {
+        if (!item.palier) return;                 // l'origine ne se vend pas
+        var e = M.etatHamecon(item);
+        var ex = e.exigence;
+        var prixs;
+        if (e.possede) {
+          prixs = [{ texte: 'possédé', ok: true }];
+        } else {
+          prixs = [
+            { texte: ex.fait + ' / ' + ex.seuil, ok: ex.remplie },
+            { texte: '× ' + item.credits, img: DP.creditImg(item.credit),
+              ok: e.credits }
+          ];
+        }
+        liste.appendChild(ligne({
+          id: item.id, palier: item.palier, couleur: M.couleurPalier(item.palier),
+          vignette: vignette('hamecon', item, 'bq-ligne-img'),
+          nom: item.nom,
+          sous: e.possede ? 'Déjà dans ton sac.' : item.exigeTexte,
+          possede: e.possede,
+          choisi: choix === item.id,
+          prix: prixs,
+          clic: function () {
+            if (e.possede) return dire('Tu l’as déjà. Passe au vestiaire pour le monter.');
+            choix = item.id;
+            dire(!ex.remplie
+              ? item.exigeTexte + ' — tu en es à ' + ex.fait + ' sur ' + ex.seuil + '.'
+              : item.nom + ' — ' + item.texte);
+            tout();
+          }
+        }));
+      });
+    }
+
+    // Les leurres, eux, suivent le bareme ordinaire. On en achete un a la
+    // fois, et le compte de ceux qu'on a deja est affiche.
+    function construireLeurres() {
+      M.liste('leurre').forEach(function (item) {
+        var p = M.prix(item);
+        var n = DP.leurre(item.id);
+        var assezP = M.doublons(p.rarete) >= p.poissons;
+        var assezC = DP.canAfford(p.credit);
+        liste.appendChild(ligne({
+          id: 'leurre-' + item.id, palier: item.palier, couleur: p.couleur,
+          vignette: vignette('leurre', item, 'bq-ligne-img'),
+          nom: item.nom,
+          sous: n ? item.texte + '  ·  ' + n + ' en réserve' : item.texte,
+          choisi: choix === 'leurre-' + item.id,
+          prix: [
+            { texte: p.poissons + ' × ' + p.nom.toLowerCase(), ok: assezP },
+            { texte: '× ' + p.credits, img: DP.creditImg(p.credit), ok: assezC }
+          ],
+          clic: function () {
+            choix = 'leurre-' + item.id;
+            dire(item.nom + ' — la bête viendra, qu’elle soit à ta portée ou non.');
             tout();
           }
         }));
@@ -244,6 +312,36 @@
           tout();
         });
         pied.appendChild(bv);
+      } else if (onglet === 'hamecon') {
+        var h = choix ? M.trouver('hamecon', choix) : null;
+        var eh = h ? M.etatHamecon(h) : null;
+        var bh = el('button', 'bq-agir bq-agir--credit', 'Acheter en crédits');
+        bh.type = 'button';
+        bh.disabled = !eh || !eh.payable;
+        bh.addEventListener('click', function () {
+          var r = M.acheterHamecon(h.id);
+          if (!r.ok) return dire('Impossible : ' + r.raison + '.');
+          dire(h.nom + ' est à toi. Passe au vestiaire pour le monter.');
+          choix = null;
+          tout();
+        });
+        pied.appendChild(bh);
+      } else if (onglet === 'leurre') {
+        var lid = choix && choix.indexOf('leurre-') === 0 ? choix.slice(7) : null;
+        var lu = lid ? M.trouver('leurre', lid) : null;
+        var pl = lu ? M.prix(lu) : null;
+
+        var lp = el('button', 'bq-agir', 'Acheter en poissons');
+        lp.type = 'button';
+        lp.disabled = !pl || M.doublons(pl.rarete) < pl.poissons;
+        lp.addEventListener('click', function () { prendreLeurre(lu, 'poissons'); });
+        pied.appendChild(lp);
+
+        var lc = el('button', 'bq-agir bq-agir--credit', 'Acheter en crédits');
+        lc.type = 'button';
+        lc.disabled = !pl || !DP.canAfford(pl.credit);
+        lc.addEventListener('click', function () { prendreLeurre(lu, 'credits'); });
+        pied.appendChild(lc);
       } else {
         var item = choix ? M.parId(onglet, choix) : null;
         var e = item ? M.etat(onglet, item) : null;
@@ -265,6 +363,14 @@
       sortir.type = 'button';
       sortir.addEventListener('click', quitter);
       pied.appendChild(sortir);
+    }
+
+    function prendreLeurre(item, mode) {
+      var r = M.acheterLeurre(item.id, mode);
+      if (!r.ok) return dire('Impossible : ' + r.raison + '.');
+      dire(item.nom + ' dans la boîte — tu en as ' + r.total + '. ' +
+           'Monte-le au vestiaire, et la prochaine ligne l’emportera.');
+      tout();
     }
 
     function faire(item, mode) {
@@ -303,8 +409,14 @@
     box.appendChild(colonnes);
 
     function majResume() {
-      var c = M.equipee('canne'), f = M.equipee('flotteur');
-      resume.textContent = c.nom + '  ·  ' + f.nom;
+      var c = M.equipee('canne'), f = M.equipee('flotteur'), h = M.equipee('hamecon');
+      var l = DP.leurreMonte();
+      var txt = c.nom + '  ·  ' + f.nom + '  ·  ' + h.nom;
+      if (l) {
+        var lu = M.trouver('leurre', l);
+        txt += '  ·  ' + (lu ? lu.nom : l) + ' (' + DP.leurre(l) + ')';
+      }
+      resume.textContent = txt;
     }
 
     function colonne(type, titre) {
@@ -332,10 +444,7 @@
         n.appendChild(vignette(type, item, 'vst-img'));
         var txt = el('span', 'vst-txt');
         txt.appendChild(el('strong', null, item.nom));
-        txt.appendChild(el('span', 'vst-effet',
-          type === 'canne'
-            ? 'Tenue  +' + Math.round(item.puissance * 100) + ' %'
-            : 'Rareté  +' + Math.round(item.chance * 100) + ' %'));
+        txt.appendChild(el('span', 'vst-effet', effetPiece(type, item)));
         txt.appendChild(el('span', 'vst-note', item.texte));
         n.appendChild(txt);
         if (actif) n.appendChild(el('span', 'vst-monte', 'MONTÉ'));
@@ -350,10 +459,75 @@
       return col;
     }
 
+    // Ce qu'une piece change, dit en une ligne.
+    function effetPiece(type, item) {
+      if (type === 'canne') {
+        return 'Tenue  +' + Math.round(item.puissance * 100) + ' %';
+      }
+      if (type === 'flotteur') {
+        return 'Rareté  +' + Math.round(item.chance * 100) + ' %';
+      }
+      // L'hameçon.
+      var bouts = [];
+      if (item.shiny > 1) bouts.push('Brillants  ×' + item.shiny);
+      if (item.double) bouts.push('Deux prises par ferrage');
+      return bouts.length ? bouts.join('  ·  ') : 'Aucun effet particulier';
+    }
+
+    // La boite a leurres : elle ne se monte pas comme le reste, elle se
+    // vide. Chaque ligne dit combien il en reste, et un clic la pose au
+    // bout de la ligne — ou la retire.
+    function colonneLeurres() {
+      var col = el('div', 'vst-col');
+      col.appendChild(el('p', 'vst-section', 'Leurres'));
+      var liste = el('div', 'vst-liste');
+
+      var boite = DP.leurres();
+      var ids = M.liste('leurre').map(function (l) { return l.id; })
+        .filter(function (id) { return boite[id] > 0; });
+
+      if (!ids.length) {
+        liste.appendChild(el('p', 'vst-vide',
+          'Aucun leurre. Le poissonnier en vend un par forme de requin.'));
+      }
+
+      ids.forEach(function (id) {
+        var item = M.trouver('leurre', id);
+        var actif = DP.leurreMonte() === id;
+        var n = el('button', 'vst-piece vst-piece--leurre');
+        n.type = 'button';
+        n.dataset.piece = id;
+        n.dataset.type = 'leurre';
+        n.classList.toggle('is-monte', actif);
+        n.setAttribute('aria-pressed', actif ? 'true' : 'false');
+        n.style.setProperty('--r', M.couleurPalier(item.palier));
+
+        n.appendChild(vignette('leurre', item, 'vst-img'));
+        var txt = el('span', 'vst-txt');
+        txt.appendChild(el('strong', null, item.nom));
+        txt.appendChild(el('span', 'vst-effet',
+          'Rencontre garantie  ·  ' + boite[id] + ' en réserve'));
+        txt.appendChild(el('span', 'vst-note', item.texte));
+        n.appendChild(txt);
+        if (actif) n.appendChild(el('span', 'vst-monte', 'À LA LIGNE'));
+
+        n.addEventListener('click', function () {
+          DP.monterLeurre(actif ? '' : id);
+          rebatir();
+        });
+        liste.appendChild(n);
+      });
+
+      col.appendChild(liste);
+      return col;
+    }
+
     function rebatir() {
       colonnes.textContent = '';
       colonnes.appendChild(colonne('canne', 'Cannes'));
       colonnes.appendChild(colonne('flotteur', 'Flotteurs'));
+      colonnes.appendChild(colonne('hamecon', 'Hameçons'));
+      colonnes.appendChild(colonneLeurres());
       majResume();
     }
 

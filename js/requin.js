@@ -99,11 +99,14 @@
     return 'normal';
   }
 
-  // La bete telle qu'elle se presente : forme, variante, et ce que ca
-  // donne une fois multiplie.
-  function tirer(niveauArme, irradieLac) {
-    var f = tirerForme(niveauArme);
-    var v = tirerVariante(irradieLac);
+  // La bete que reclame un leurre : la forme est imposee, la variante
+  // reste au hasard — un leurre appelle une espece, pas une livree.
+  function appeler(id, irradieLac) {
+    var f = parId(id) || REQUINS[0];
+    return composer(f, tirerVariante(irradieLac));
+  }
+
+  function composer(f, v) {
     var m = VARIANTES[v];
     return {
       forme: f, variante: v,
@@ -113,6 +116,12 @@
       duree: f.duree,
       couleurs: m.couleurs || f.couleurs
     };
+  }
+
+  // La bete telle qu'elle se presente : forme, variante, et ce que ca
+  // donne une fois multiplie.
+  function tirer(niveauArme, irradieLac) {
+    return composer(tirerForme(niveauArme), tirerVariante(irradieLac));
   }
 
   // ==========================================================
@@ -853,7 +862,8 @@
     LISTE: REQUINS, VARIANTES: VARIANTES, ANCRES: ANCRES,
     CHANCE_RENCONTRE: CHANCE_RENCONTRE,
     CHANCE_BRILLANT: CHANCE_BRILLANT, CHANCE_IRRADIE: CHANCE_IRRADIE,
-    parId: parId, tirer: tirer, tirerForme: tirerForme, tirerVariante: tirerVariante,
+    parId: parId, tirer: tirer, appeler: appeler, composer: composer,
+    tirerForme: tirerForme, tirerVariante: tirerVariante,
     feuille: feuille, url: url, Duel: Duel, L: L, H: H,
     vider: function () { cache = {}; }
   };

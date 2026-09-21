@@ -307,7 +307,11 @@
       vus: [],
       cannes: [],
       flotteurs: [],
-      equip: { canne: 'base', flotteur: 'base' },
+      hamecons: [],
+      // Les leurres ne se montent pas : ils se consomment. On en garde le
+      // compte, forme de requin par forme de requin.
+      leurres: {},
+      equip: { canne: 'base', flotteur: 'base', hamecon: 'base', leurre: '' },
       // Le Pistolet Lumithique et ce qui va avec : son niveau, les
       // Noyaux qui le font monter, ses revetements, et les requins
       // abattus.
@@ -330,12 +334,15 @@
     if (!Array.isArray(p.vus)) p.vus = [];
     if (!Array.isArray(p.cannes)) p.cannes = [];
     if (!Array.isArray(p.flotteurs)) p.flotteurs = [];
+    if (!Array.isArray(p.hamecons)) p.hamecons = [];
+    if (!p.leurres || typeof p.leurres !== 'object') p.leurres = {};
     if (!p.equip || typeof p.equip !== 'object') p.equip = {};
     // Ramasser la canne du bord de l'eau, c'est entrer en possession du
     // materiel d'origine : les profils d'avant la boutique le recoivent ici.
     if (p.canne) {
       if (p.cannes.indexOf('base') === -1) p.cannes.push('base');
       if (p.flotteurs.indexOf('base') === -1) p.flotteurs.push('base');
+      if (p.hamecons.indexOf('base') === -1) p.hamecons.push('base');
     }
     if (!p.equip.canne || p.cannes.indexOf(p.equip.canne) === -1) {
       p.equip.canne = p.cannes[0] || 'base';
@@ -343,6 +350,11 @@
     if (!p.equip.flotteur || p.flotteurs.indexOf(p.equip.flotteur) === -1) {
       p.equip.flotteur = p.flotteurs[0] || 'base';
     }
+    if (!p.equip.hamecon || p.hamecons.indexOf(p.equip.hamecon) === -1) {
+      p.equip.hamecon = p.hamecons[0] || 'base';
+    }
+    // Un leurre monte dont on n'a plus d'exemplaire ne vaut rien.
+    if (p.equip.leurre && !(p.leurres[p.equip.leurre] > 0)) p.equip.leurre = '';
     if (typeof p.arme !== 'boolean') p.arme = false;
     if (typeof p.armeNiveau !== 'number') p.armeNiveau = 1;
     p.armeNiveau = Math.max(1, Math.min(5, p.armeNiveau));
@@ -558,7 +570,10 @@
     p.canne = true;
     if (p.cannes.indexOf('base') === -1) p.cannes.push('base');
     if (p.flotteurs.indexOf('base') === -1) p.flotteurs.push('base');
-    p.equip = { canne: 'base', flotteur: 'base' };
+    if (p.hamecons.indexOf('base') === -1) p.hamecons.push('base');
+    p.equip.canne = p.equip.canne || 'base';
+    p.equip.flotteur = p.equip.flotteur || 'base';
+    p.equip.hamecon = p.equip.hamecon || 'base';
     save();
     return true;
   }
@@ -570,7 +585,9 @@
 
   function sac(type) {
     var p = me();
-    return type === 'flotteur' ? p.flotteurs : p.cannes;
+    if (type === 'flotteur') return p.flotteurs;
+    if (type === 'hamecon') return p.hamecons;
+    return p.cannes;
   }
 
   function materiel(type)        { return sac(type).slice(); }
@@ -588,6 +605,53 @@
   function equiper(type, id) {
     if (!possede(type, id)) return false;
     me().equip[type] = id;
+    save();
+    return true;
+  }
+
+  // ---------- Les leurres ----------
+  // Un leurre ne se monte pas comme une canne : il se pose a la ligne, et
+  // la bete qu'il appelle l'emporte avec elle. On garde donc un compte,
+  // et non une simple possession.
+
+  function leurres() { return me().leurres; }
+
+  function leurre(id) { return me().leurres[id] || 0; }
+
+  function ajouterLeurre(id, n) {
+    var p = me();
+    p.leurres[id] = (p.leurres[id] || 0) + (n || 1);
+    // Le premier leurre d'une sorte se monte de lui-meme : on vient de
+    // l'acheter, c'est qu'on veut s'en servir.
+    if (!p.equip.leurre) p.equip.leurre = id;
+    save();
+    return p.leurres[id];
+  }
+
+  function consommerLeurre(id) {
+    var p = me();
+    if (!(p.leurres[id] > 0)) return false;
+    p.leurres[id]--;
+    if (!p.leurres[id]) {
+      delete p.leurres[id];
+      if (p.equip.leurre === id) {
+        // On remonte automatiquement ce qu'il reste dans la boite.
+        p.equip.leurre = Object.keys(p.leurres)[0] || '';
+      }
+    }
+    save();
+    return true;
+  }
+
+  function leurreMonte() {
+    var p = me();
+    return p.equip.leurre && p.leurres[p.equip.leurre] > 0 ? p.equip.leurre : '';
+  }
+
+  function monterLeurre(id) {
+    var p = me();
+    if (id && !(p.leurres[id] > 0)) return false;
+    p.equip.leurre = id || '';
     save();
     return true;
   }
@@ -765,7 +829,9 @@
     p.vus = [];
     p.cannes = [];
     p.flotteurs = [];
-    p.equip = { canne: 'base', flotteur: 'base' };
+    p.hamecons = [];
+    p.leurres = {};
+    p.equip = { canne: 'base', flotteur: 'base', hamecon: 'base', leurre: '' };
     p.arme = false;
     p.armeNiveau = 1;
     p.noyaux = 0;
@@ -823,6 +889,9 @@
     requins: requins, noterRequin: noterRequin,
     materiel: materiel, possede: possede, acquerir: acquerir,
     equipe: equipe, equiper: equiper, retirerPrise: retirerPrise,
+    leurres: leurres, leurre: leurre, ajouterLeurre: ajouterLeurre,
+    consommerLeurre: consommerLeurre, leurreMonte: leurreMonte,
+    monterLeurre: monterLeurre,
     exploits: exploits, exploit: exploit,
     compterExploit: compterExploit, noterRecord: noterRecord,
     badgesVus: badgesVus, marquerVus: marquerVus, onChange: onChange,

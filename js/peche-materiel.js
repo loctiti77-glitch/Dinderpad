@@ -89,12 +89,78 @@
       texte: 'Dans les eaux fluo, il fait monter le fond du lac.' }
   ];
 
-  function liste(type) { return type === 'flotteur' ? FLOTTEURS : CANNES; }
+  // ---------- Les hamecons ----------
+  // Troisieme axe, et le seul qui ne se paie pas comme les autres : ces
+  // deux-la ne s'achetent pas avec des doublons mais se meritent — il
+  // faut d'abord avoir fait quelque chose — puis se paient en credits.
+  //
+  // "exige" dit la condition prealable, "credit"/"credits" le tarif.
+  var HAMECONS = [
+    { id: 'base', nom: 'Hameçon d’Origine', palier: null,
+      shiny: 1, double: false,
+      img: null, couleurs: ['#8c97a5', '#d6dee8'],
+      texte: 'Une simple pointe courbe. Elle tient le poisson, c’est tout.' },
+    { id: 'rose', nom: 'Hameçon Rose', palier: 'rare',
+      shiny: 4, double: false,
+      img: null, couleurs: ['#e0629a', '#ffd6e8'],
+      credit: 'gold', credits: 3,
+      exige: { shinys: 1 },
+      exigeTexte: 'Avoir déjà sorti un poisson brillant',
+      texte: 'Quatre fois plus de chances de voir une seconde livrée.' },
+    { id: 'double', nom: 'Double-Hameçon', palier: 'legende',
+      shiny: 1, double: true,
+      img: null, couleurs: ['#c9a227', '#f6e7a8'],
+      credit: 'blue', credits: 5,
+      exige: { doublons: 30 },
+      exigeTexte: 'Avoir 30 poissons en double',
+      texte: 'Deux pointes, deux prises à chaque ferrage.' }
+  ];
+
+  // ---------- Les leurres ----------
+  // Ils ne se montent pas : ils se posent, et la bete les emporte. Un
+  // leurre garantit la rencontre — y compris avec un requin trop gros
+  // pour l'arme du moment, ce que le poissonnier ne manque pas de dire.
+  //
+  // Le tarif suit le palier du requin appele : le bareme est celui du
+  // reste de la boutique, doublons ou credits au choix.
+  var LEURRES = [
+    { id: 'recif', requin: 'recif', nom: 'Leurre de Récif', palier: 'commun',
+      couleurs: ['#8fa3b6', '#e4ebf2'],
+      texte: 'Un petit poisson de fer-blanc. Les jeunes requins s’y trompent.' },
+    { id: 'mako', requin: 'mako', nom: 'Leurre à Mako', palier: 'peu',
+      couleurs: ['#3f82c8', '#eef4fb'],
+      texte: 'Il file vite sous la surface. Seul un Mako le rattrape.' },
+    { id: 'tigre', requin: 'tigre', nom: 'Leurre à Tigre', palier: 'rare',
+      couleurs: ['#8f9455', '#e8e8cf'],
+      texte: 'Rayé, et sentant la charogne. Personne d’autre n’en veut.' },
+    { id: 'blanc', requin: 'blanc', nom: 'Leurre à Grand Blanc', palier: 'legende',
+      couleurs: ['#a8b4c0', '#fbfdff'],
+      texte: 'Une silhouette de phoque. Il n’en faut pas plus.' },
+    { id: 'megalodon', requin: 'megalodon', nom: 'Leurre à Mégalodon', palier: 'special',
+      couleurs: ['#63627e', '#cfcde0'],
+      texte: 'Un os. Très vieux. Ce qui répond n’aurait pas dû survivre.' }
+  ];
+
+  function liste(type) {
+    if (type === 'flotteur') return FLOTTEURS;
+    if (type === 'hamecon') return HAMECONS;
+    if (type === 'leurre') return LEURRES;
+    return CANNES;
+  }
 
   function parId(type, id) {
     var l = liste(type);
     for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
     return l[0];
+  }
+
+  // La meme recherche, mais qui ne se rabat sur rien : les leurres n'ont
+  // pas d'article "par defaut", et vendre un Leurre de Recif a qui en
+  // demandait un autre serait pire qu'un refus.
+  function trouver(type, id) {
+    var l = liste(type);
+    for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
+    return null;
   }
 
   function equipee(type) { return parId(type, DP.equipe(type)); }
@@ -115,10 +181,19 @@
 
   function chanceRarete() { return equipee('flotteur').chance; }
 
+  // Le facteur qui divise la chance d'une seconde livree : a 4, un
+  // brillant sort une fois sur trente au lieu d'une fois sur cent vingt.
+  function chanceShiny() { return equipee('hamecon').shiny || 1; }
+
+  // Le Double-Hameçon ramene deux prises a chaque ferrage.
+  function doublePrise() { return !!equipee('hamecon').double; }
+
   // ---------- Les doublons ----------
   // Un doublon, c'est une prise au-dela de la premiere : le carnet garde
   // toujours l'espece, on ne monnaie que le surplus.
 
+  // Sans rarete, le compte porte sur tout le carnet : c'est ce total-la
+  // que le Double-Hameçon exige.
   function doublons(rareteCle) {
     var P = window.POISSONS;
     if (!P) return 0;
@@ -148,6 +223,87 @@
       reste -= DP.retirerPrise(dispo[i].id, reste);
     }
     return n - reste;
+  }
+
+  // ---------- Ce qu'un hamecon exige avant de se vendre ----------
+
+  function exigence(item) {
+    var e = item.exige;
+    if (!e) return { requise: false, remplie: true, texte: '', fait: 0, seuil: 0 };
+    if (e.shinys !== undefined) {
+      var n = DP.shinys();
+      return { requise: true, remplie: n >= e.shinys, texte: item.exigeTexte,
+               fait: n, seuil: e.shinys };
+    }
+    if (e.doublons !== undefined) {
+      var d = doublons(null);
+      return { requise: true, remplie: d >= e.doublons, texte: item.exigeTexte,
+               fait: d, seuil: e.doublons };
+    }
+    return { requise: false, remplie: true, texte: '', fait: 0, seuil: 0 };
+  }
+
+  // Un tarif libre, hors du bareme des paliers : le nombre est ecrit sur
+  // l'article et non deduit de sa rarete.
+  function peutPayer(item) {
+    return DP.creditCount(item.credit) >= item.credits;
+  }
+
+  function payer(item) {
+    if (!peutPayer(item)) return false;
+    if (!DP.UNLIMITED) {
+      // On passe par "spend" autant de fois qu'il faut : lui seul sait
+      // retirer une carte du solde.
+      for (var i = 0; i < item.credits; i++) DP.spend(item.credit);
+    }
+    return true;
+  }
+
+  // Acheter un hamecon : la condition d'abord, le prix ensuite.
+  function acheterHamecon(id) {
+    var item = trouver('hamecon', id);
+    if (!item || !item.palier) return { ok: false, raison: 'pas à vendre' };
+    if (DP.possede('hamecon', id)) return { ok: false, raison: 'déjà possédé' };
+    var ex = exigence(item);
+    if (!ex.remplie) return { ok: false, raison: ex.texte.toLowerCase() };
+    if (!peutPayer(item)) return { ok: false, raison: 'crédits manquants' };
+    payer(item);
+    DP.acquerir('hamecon', id);
+    return { ok: true, item: item };
+  }
+
+  function etatHamecon(item) {
+    if (DP.possede('hamecon', item.id)) {
+      return { possede: true, exigence: exigence(item), payable: false };
+    }
+    var ex = exigence(item);
+    return {
+      possede: false, exigence: ex,
+      payable: ex.remplie && peutPayer(item),
+      credits: peutPayer(item)
+    };
+  }
+
+  // ---------- Les leurres ----------
+  // Ils suivent le bareme ordinaire : doublons de la rarete du palier, ou
+  // credits. On en achete un a la fois.
+
+  function acheterLeurre(id, mode) {
+    var item = trouver('leurre', id);
+    if (!item) return { ok: false, raison: 'introuvable' };
+    var p = prix(item);
+    if (!p) return { ok: false, raison: 'pas à vendre' };
+
+    if (mode === 'poissons') {
+      if (doublons(p.rarete) < p.poissons) {
+        return { ok: false, raison: 'pas assez de doublons' };
+      }
+      depenserDoublons(p.rarete, p.poissons);
+    } else {
+      if (!DP.spend(p.credit)) return { ok: false, raison: 'crédits manquants' };
+    }
+    var n = DP.ajouterLeurre(id, 1);
+    return { ok: true, item: item, prix: p, total: n };
   }
 
   // ---------- Acheter ----------
@@ -220,8 +376,13 @@
 
   window.MATERIEL = {
     CANNES: CANNES, FLOTTEURS: FLOTTEURS,
+    HAMECONS: HAMECONS, LEURRES: LEURRES,
     PALIERS: PALIERS, ORDRE_PALIERS: ORDRE_PALIERS,
-    liste: liste, parId: parId, equipee: equipee,
+    chanceShiny: chanceShiny, doublePrise: doublePrise,
+    exigence: exigence, peutPayer: peutPayer,
+    acheterHamecon: acheterHamecon, etatHamecon: etatHamecon,
+    acheterLeurre: acheterLeurre,
+    liste: liste, parId: parId, trouver: trouver, equipee: equipee,
     prix: prix, etat: etat, acheter: acheter,
     doublons: doublons, depenserDoublons: depenserDoublons,
     peutVendre: peutVendre, vendre: vendre, palierDeRarete: palierDeRarete,
