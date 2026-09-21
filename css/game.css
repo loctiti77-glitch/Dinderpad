@@ -3386,3 +3386,37 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 @media (prefers-reduced-motion: reduce) {
   .pe-mini { transition: none; }
 }
+
+/* ==========================================================
+   La charge du requin
+   ========================================================== */
+
+.rq.is-charge .rq-cv { animation: rq-secousse .5s ease-in-out; }
+
+@keyframes rq-secousse {
+  0%, 100% { transform: none; }
+  14% { transform: translate(calc(-7 * var(--px)), calc(4 * var(--px))); }
+  30% { transform: translate(calc(6 * var(--px)), calc(-5 * var(--px))); }
+  48% { transform: translate(calc(-5 * var(--px)), calc(-3 * var(--px))); }
+  66% { transform: translate(calc(4 * var(--px)), calc(4 * var(--px))); }
+  84% { transform: translate(calc(-2 * var(--px)), calc(-2 * var(--px))); }
+}
+
+.rq.is-charge .rq-nom {
+  color: #ff6a5a;
+  text-shadow: 0 0 calc(16 * var(--px)) rgba(216, 40, 28, .9);
+}
+
+.rq.is-charge .rq-aide {
+  color: #ff5a4a;
+  font-weight: 700;
+  letter-spacing: calc(2 * var(--px));
+  animation: rq-alerte .25s steps(2, end) infinite;
+}
+
+@keyframes rq-alerte { from { opacity: 1; } to { opacity: .35; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rq.is-charge .rq-cv,
+  .rq.is-charge .rq-aide { animation: none; }
+}

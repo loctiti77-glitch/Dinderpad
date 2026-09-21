@@ -763,7 +763,8 @@
         // monde est vu de haut, et une case ne fait que vingt-quatre
         // pixels.
         var ech = 0.4 * f.echelle;
-        var feuille = R.feuille(f.id, surgi.bete.variante);
+        // Elle jaillit gueule ouverte : c'est l'image qu'on garde.
+        var feuille = R.feuille(f.id, surgi.bete.variante, 'charge');
         var lg = R.L * ech, ht = R.H * ech;
         var i, a;
 

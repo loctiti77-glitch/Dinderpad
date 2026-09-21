@@ -27,27 +27,27 @@
   var REQUINS = [
     { id: 'recif', nom: 'Requin de Récif', palier: 1,
       pv: 360, vitesse: 34, echelle: 1.05, duree: 40000, plonge: 9000,
-      couleurs: ['#5f7386', '#8fa3b6', '#e4ebf2'],
+      couleurs: ['#5f7386', '#8fa3b6', '#e4ebf2'], oeil: '#e0a83a',
       credit: 'green', credits: 10, noyaux: 2, poissons: 1,
       texte: 'Petit, nerveux, et déjà trop curieux.' },
     { id: 'mako', nom: 'Mako', palier: 2,
       pv: 680, vitesse: 54, echelle: 1.32, duree: 40000, plonge: 7200,
-      couleurs: ['#23538f', '#3f82c8', '#eef4fb'],
+      couleurs: ['#23538f', '#3f82c8', '#eef4fb'], oeil: '#e8d24a',
       credit: 'blue', credits: 6, noyaux: 3, poissons: 2,
       texte: 'Le plus rapide de tous. Il ne tient jamais en place.' },
     { id: 'tigre', nom: 'Requin-Tigre', palier: 3,
       pv: 1380, vitesse: 46, echelle: 1.6, duree: 42000, plonge: 7800,
-      couleurs: ['#5d6238', '#8f9455', '#e8e8cf'],
+      couleurs: ['#5d6238', '#8f9455', '#e8e8cf'], oeil: '#e07a2a',
       credit: 'gold', credits: 3, noyaux: 5, poissons: 3,
       texte: 'Rayé comme son nom, et aussi peu regardant sur ce qu’il avale.' },
     { id: 'blanc', nom: 'Grand Blanc', palier: 4,
       pv: 2750, vitesse: 42, echelle: 1.92, duree: 44000, plonge: 8600,
-      couleurs: ['#6d7885', '#a8b4c0', '#fbfdff'],
+      couleurs: ['#6d7885', '#a8b4c0', '#fbfdff'], oeil: '#d8452c',
       credit: 'pink', credits: 1, noyaux: 8, poissons: 4,
       texte: 'Celui dont on parle. Il est plus gros que ce qu’on raconte.' },
     { id: 'megalodon', nom: 'Mégalodon', palier: 5,
       pv: 5600, vitesse: 34, echelle: 2.3, duree: 48000, plonge: 9400,
-      couleurs: ['#3b3a4e', '#63627e', '#cfcde0'],
+      couleurs: ['#3b3a4e', '#63627e', '#cfcde0'], oeil: '#ff2a1e',
       credit: 'pink', credits: 2, noyaux: 12, poissons: 6,
       texte: 'Il n’aurait pas dû rester un seul de ces lacs assez profond pour lui.' }
   ];
@@ -57,9 +57,9 @@
   var VARIANTES = {
     normal:    { nom: '',          pv: 1,    vitesse: 1,   gain: 1, noyaux: 0 },
     brillant:  { nom: 'Brillant',  pv: 1.4,  vitesse: 1.1, gain: 2, noyaux: 3,
-                 couleurs: ['#a8842a', '#f0c85a', '#fff6cf'] },
+                 couleurs: ['#a8842a', '#f0c85a', '#fff6cf'], oeil: '#ffffff' },
     irradie:   { nom: 'Irradié',   pv: 1.25, vitesse: 1.2, gain: 1, noyaux: 4,
-                 couleurs: ['#4a6b16', '#8fbf1e', '#e8ff6a'] }
+                 couleurs: ['#4a6b16', '#8fbf1e', '#e8ff6a'], oeil: '#eaff3a' }
   };
 
   var CHANCE_BRILLANT = 32;     // une rencontre sur trente-deux
@@ -147,6 +147,16 @@
     };
   }
 
+  // Assombrir ou eclaircir un ton, pour tailler les ombres sans avoir a
+  // ecrire trois nuances de plus dans chaque palette.
+  function melange(hex, vers, k) {
+    var a = parseInt(hex.slice(1), 16), b = parseInt(vers.slice(1), 16);
+    var r = Math.round(((a >> 16) & 255) * (1 - k) + ((b >> 16) & 255) * k);
+    var v = Math.round(((a >> 8) & 255) * (1 - k) + ((b >> 8) & 255) * k);
+    var u = Math.round((a & 255) * (1 - k) + (b & 255) * k);
+    return 'rgb(' + r + ',' + v + ',' + u + ')';
+  }
+
   // Un triangle de nageoire : elle monte vite, retombe lentement — c'est
   // ce qui lui donne son air de fendre l'eau vers l'arriere.
   function aileron(p, x0, largeur, hauteur, versLeHaut, couleur, pointe) {
@@ -161,50 +171,138 @@
     }
   }
 
-  // Une silhouette de profil, museau a gauche.
-  function dessiner(p, q) {
+  // ---------- La gueule ----------
+  // C'est elle qui fait peur, pas la silhouette. Le maxillaire suit le
+  // galbe, la mandibule tombe, et entre les deux s'ouvre un gosier sombre
+  // herisse de dents. "ouv" dit de combien elle beance : une bete qui
+  // croise en montre deja, une bete qui charge en montre le double.
+  var GUEULE_X0 = 17, GUEULE_X1 = 48;
+  var GORGE = '#2e0a0f', GORGE_CLAIR = '#5e141c';
+  var DENT = '#fbf7ec', DENT_OMBRE = '#c9c2ac';
+
+  function bordsGueule(x, ouv) {
+    var u = (GUEULE_X1 - x) / (GUEULE_X1 - GUEULE_X0);   // 1 au museau
+    var g = galbe(x) || { haut: 2, bas: 1 };
+    return {
+      u: u,
+      haut: CY - Math.round(g.haut * 0.20) - Math.round(ouv * 0.30 * u),
+      bas:  CY + Math.round(g.bas * 0.40) + Math.round(ouv * u)
+    };
+  }
+
+  function machoire(p, q, ouv) {
+    var dos = q.couleurs[0], ventre = q.couleurs[2];
+    var sombre = melange(dos, '#000000', 0.45);
+    var x, i;
+
+    for (x = GUEULE_X0; x <= GUEULE_X1; x++) {
+      var b = bordsGueule(x, ouv);
+      if (b.bas <= b.haut) continue;
+      // Le fond de la gorge s'assombrit a mesure qu'on s'enfonce.
+      p(x, b.haut, 1, b.bas - b.haut + 1,
+        b.u > 0.62 ? GORGE_CLAIR : GORGE);
+      // La mandibule, sous la gueule : elle a de l'epaisseur.
+      p(x, b.bas + 1, 1, 3, ventre);
+      p(x, b.bas + 4, 1, 1, sombre);
+    }
+
+    // Le liset des gencives, le long des deux machoires : c'est lui qui
+    // detache les dents du fond sombre.
+    for (x = GUEULE_X0 + 1; x <= GUEULE_X1 - 1; x++) {
+      var l = bordsGueule(x, ouv);
+      if (l.bas <= l.haut + 2) continue;
+      p(x, l.haut + 1, 1, 1, DENT_OMBRE);
+      p(x, l.bas - 1, 1, 1, DENT_OMBRE);
+    }
+
+    // Les crocs : espaces, isoles, et plus longs a l'avant. Serres, ils
+    // ne faisaient qu'une barre blanche.
+    for (i = 0; i < 10; i++) {
+      var tx = GUEULE_X0 + 3 + i * 4;
+      if (tx > GUEULE_X1 - 3) break;
+      var t = bordsGueule(tx, ouv);
+      var jour = t.bas - t.haut - 3;
+      if (jour < 2) continue;
+      var h = Math.min(1 + Math.round(2.8 * t.u), Math.floor(jour / 2));
+      if (h < 1) continue;
+      // En haut, pointe vers le bas.
+      p(tx - 1, t.haut + 1, 2, 1, DENT);
+      p(tx, t.haut + 2, 1, h, DENT);
+      // En bas, pointe vers le haut.
+      p(tx - 1, t.bas - 1, 2, 1, DENT);
+      p(tx, t.bas - 1 - h, 1, h, DENT);
+    }
+  }
+
+  // Une silhouette de profil, museau a gauche. "ouv" est la beance de la
+  // gueule, en pixels a la pointe du museau.
+  function dessiner(p, q, ouv) {
     var dos = q.couleurs[0], flanc = q.couleurs[1], ventre = q.couleurs[2];
+    var creux = melange(dos, '#000000', 0.42);
+    var arete = melange(dos, '#000000', 0.62);
+    var clair = melange(flanc, '#ffffff', 0.35);
+    var oeil = q.oeil || '#d8452c';
     var x, i, g;
 
-    // Le corps, en tranches verticales : dos, flanc, ventre.
+    // Le corps, en tranches verticales : l'arete du dos, le dos, le
+    // flanc clair, le ventre. Le passage dos/flanc est net : c'est ce
+    // contraste-la qui donne la masse.
     for (x = 10; x <= 126; x++) {
       g = galbe(x);
       p(x, CY - g.haut, 1, g.haut, dos);
-      p(x, CY, 1, g.bas, ventre);
-      // Le flanc mord sur le bas du dos : c'est la ligne claire des
-      // requins, qui court du museau a la queue.
-      var f = Math.round(g.haut * 0.42);
+      p(x, CY - g.haut, 1, Math.max(1, Math.round(g.haut * 0.34)), arete);
+      var f = Math.round(g.haut * 0.34);
       p(x, CY - f, 1, f + 1, flanc);
+      p(x, CY, 1, g.bas, ventre);
+      // L'ombre portee sous le ventre.
+      p(x, CY + g.bas - 1, 1, 1, melange(ventre, '#000000', 0.3));
     }
 
-    // La gueule : une entaille qui remonte vers l'arriere, et les dents.
-    for (i = 0; i < 26; i++) {
-      var mx = 13 + i;
-      var my = CY + 1 + Math.round(Math.pow(i / 25, 1.6) * 5);
-      p(mx, my, 1, 2, '#2a1f24');
-      if (i % 2 === 0) p(mx, my, 1, 1, '#f6f2e8');
-      if (i % 2 === 1 && i > 3) p(mx, my + 2, 1, 1, '#f6f2e8');
-    }
+    // Trois balafres en travers du flanc : cette bete a deja vecu.
+    [[64, -5, 6], [82, 3, 8], [100, -2, 5]].forEach(function (b) {
+      for (var k = 0; k < b[2]; k++) {
+        p(b[0] + k, CY + b[1] - Math.round(k * 0.7), 1, 1, clair);
+      }
+    });
 
-    // L'oeil, juste au-dessus de la commissure.
-    p(24, CY - 7, 4, 4, '#101219');
-    p(25, CY - 6, 2, 1, '#f2f6ff');
-    // Et la narine, deux pixels devant.
-    p(17, CY - 3, 2, 1, 'rgba(0,0,0,.4)');
-
-    // Les cinq fentes branchiales, penchees vers l'arriere.
+    // Les cinq fentes branchiales : courtes, dans le haut du flanc, et
+    // penchees vers l'arriere. Descendues jusqu'au ventre, elles
+    // faisaient des cotes de squelette.
+    var fente = melange(flanc, '#000000', 0.38);
     for (i = 0; i < 5; i++) {
-      var bx = 44 + i * 4;
+      var bx = 53 + i * 3;
       g = galbe(bx);
-      p(bx, CY - g.haut + 3, 1, g.haut - 1, 'rgba(0,0,0,.34)');
+      p(bx, CY - Math.round(g.haut * 0.46) + i, 1, Math.round(g.haut * 0.42), fente);
     }
 
-    // L'aileron dorsal : le signe distinctif.
+    // La gueule, avant l'oeil : les dents doivent mordre sur le corps.
+    machoire(p, q, ouv === undefined ? 5 : ouv);
+
+    // L'arcade sourciliere, lourde, et l'oeil dessous : c'est elle qui
+    // fait le regard mauvais. Sans arcade, l'oeil n'est qu'un point.
+    p(26, CY - 13, 12, 3, arete);
+    p(27, CY - 11, 10, 2, creux);
+    p(29, CY - 10, 6, 5, '#07090f');
+    p(30, CY - 9, 4, 3, oeil);
+    p(31, CY - 8, 2, 1, melange(oeil, '#000000', 0.55));
+    p(30, CY - 9, 1, 1, '#ffffff');
+    // Une ride qui part de l'oeil vers l'arriere.
+    for (i = 0; i < 7; i++) p(38 + i, CY - 11 + Math.round(i * 0.4), 1, 1, creux);
+
+    // Les narines, deux fentes devant l'arcade.
+    p(19, CY - 6, 3, 1, creux);
+    p(23, CY - 8, 2, 1, creux);
+
+    // L'aileron dorsal : le signe distinctif, cerne d'une arete sombre.
     aileron(p, 58, 28, 23, true, dos, 0.42);
+    aileron(p, 58, 28, 23, true, arete, 0.42);
+    aileron(p, 59, 26, 20, true, dos, 0.42);
     // Le second dorsal, bien plus bas.
     aileron(p, 104, 12, 7, true, dos, 0.5);
-    // Les pectorales, longues et jetees vers l'arriere.
-    aileron(p, 50, 34, 17, false, dos, 0.32);
+    // Les pectorales, longues et jetees vers l'arriere. Un lisere clair
+    // sur l'avant, sans quoi elles se perdent dans le ventre.
+    aileron(p, 54, 34, 18, false, arete, 0.32);
+    aileron(p, 56, 30, 15, false, melange(dos, '#ffffff', 0.18), 0.32);
     // La pelvienne et l'anale.
     aileron(p, 92, 13, 7, false, dos, 0.5);
     aileron(p, 110, 11, 6, false, dos, 0.5);
@@ -215,9 +313,10 @@
       var u = i / 40;
       var haut = Math.round(4 + u * 26);
       var bas = Math.round(2 + u * 16);
-      var creux = Math.round(Math.pow(u, 2) * 14);
-      if (haut - creux >= 0) p(126 + i, CY - haut, 1, haut - creux + 1, dos);
-      if (bas - creux >= 0) p(126 + i, CY + creux, 1, bas - creux + 1, dos);
+      var trou = Math.round(Math.pow(u, 2) * 14);
+      if (haut - trou >= 0) p(126 + i, CY - haut, 1, haut - trou + 1, dos);
+      if (bas - trou >= 0) p(126 + i, CY + trou, 1, bas - trou + 1, dos);
+      if (i % 3 === 0 && haut - trou >= 2) p(126 + i, CY - haut, 1, 2, arete);
     }
   }
 
@@ -246,11 +345,16 @@
 
   var cache = {};
 
-  function feuille(id, variante) {
+  // Deux beances : celle de la bete qui croise, et celle de la bete qui
+  // charge. C'est la seule pose qui change.
+  var BEANCE = { calme: 10, charge: 22 };
+
+  function feuille(id, variante, pose) {
     var f = parId(id);
     if (!f) return null;
     var m = VARIANTES[variante] || VARIANTES.normal;
-    var cle = id + '|' + (variante || 'normal');
+    pose = pose === 'charge' ? 'charge' : 'calme';
+    var cle = id + '|' + (variante || 'normal') + '|' + pose;
     if (cache[cle]) return cache[cle];
     var cv = document.createElement('canvas');
     cv.width = L; cv.height = H;
@@ -260,14 +364,14 @@
     dessiner(function (px, py, w, h, col) {
       x.fillStyle = col;
       x.fillRect(px, py, w, h);
-    }, { couleurs: m.couleurs || f.couleurs });
+    }, { couleurs: m.couleurs || f.couleurs, oeil: m.oeil || f.oeil }, BEANCE[pose]);
     cerner(x);
     cache[cle] = { canvas: cv, L: L, H: H };
     return cache[cle];
   }
 
-  function url(id, variante) {
-    var f = feuille(id, variante);
+  function url(id, variante, pose) {
+    var f = feuille(id, variante, pose);
     return f ? f.canvas.toDataURL('image/png') : '';
   }
 
@@ -337,6 +441,7 @@
     var elPv = hote.querySelector('.rq-pv');
     var elTemps = hote.querySelector('.rq-temps-plein');
     var elArme = hote.querySelector('.rq-arme');
+    var elAide = hote.querySelector('.rq-aide');
 
     elNom.textContent = bete.nom;
     elPalier.textContent = 'Palier ' + bete.forme.palier;
@@ -355,6 +460,10 @@
     var ech = bete.forme.echelle;
     var largeur = L * ech, hauteur = H * ech;
     var pos = { x: CV_L * 0.62, y: CV_H * 0.56 };
+    // Au sommet de sa charge, elle occupe presque tout le cadre : d'ou un
+    // grossissement plus fort pour les petites formes que pour le
+    // Megalodon, qui le remplit deja.
+    var MAX_CHARGE = Math.min(CV_L * 1.15, largeur * 1.8) / largeur;
     var sens = -1;                // -1 : museau a gauche
     var opacite = 1;
     var roulis = 0;               // l'inclinaison, quand elle se retourne
@@ -362,7 +471,8 @@
 
     // Le viseur.
     var viseur = { x: CV_L / 2, y: CV_H / 2 };
-    var tirs = [], chiffres = [], eclats = [];
+    var tirs = [], chiffres = [], eclats = [], sang = [];
+    var echelleCharge = 1;
 
     // --- Les points faibles, en coordonnees du canevas ---
     function pointsFaibles(t) {
@@ -422,6 +532,15 @@
       pv = Math.max(0, pv - degats);
       chiffres.push({ t0: t, x: x, y: y, txt: '-' + degats, faible: faible });
       eclats.push({ t0: t, x: x, y: y, faible: faible });
+      // Le sang : quelques nuages, plus nombreux sur un point faible.
+      for (var ns = 0; ns < (faible ? 5 : 2); ns++) {
+        sang.push({
+          t0: t, x: x + (Math.random() - 0.5) * 14,
+          y: y + (Math.random() - 0.5) * 10,
+          r: 3 + Math.random() * (faible ? 7 : 4),
+          dx: (Math.random() - 0.5) * 2, faible: faible
+        });
+      }
       majJauges();
       if (pv <= 0) terminer(true);
     }
@@ -452,9 +571,17 @@
       brut = requestAnimationFrame(image);
       avancer(t);
       peindre(t);
+
+      var mot = etat === 'charge' ? 'ELLE CHARGE !'
+              : 'Vise les points orange : ils encaissent le triple.';
+      if (elAide.textContent !== mot) elAide.textContent = mot;
     }
 
     var MORT = 1100, FUITE = 900;
+    // La charge, puis le plongeon et le retour : 520 + 440 + 440 font les
+    // mille quatre cents millisecondes qui servaient deja au calcul du
+    // temps perdu. Ajouter la charge n'enleve donc rien au joueur.
+    var CHARGE = 520, PLONGE = 440;
 
     function avancer(t) {
       var dt = 1 / 60;
@@ -486,14 +613,36 @@
         if (pos.x < marge) { pos.x = marge; sens = 1; }
         if (pos.x > CV_L - marge) { pos.x = CV_L - marge; sens = -1; }
         opacite = 1;
+        echelleCharge = 1;
         if (t > prochainePlongee) {
+          etat = 'charge'; etatDepuis = t;
+          hote.classList.add('is-charge');
+        }
+        return;
+      }
+
+      // La charge : elle fonce sur la vitre, gueule ouverte, grossit, et
+      // s'en va. Le temps qu'elle prend est celui qu'elle prenait avant a
+      // plonger : l'equilibre du duel ne bouge pas.
+      if (etat === 'charge') {
+        var kc = Math.min(1, (t - etatDepuis) / CHARGE);
+        var bosse = Math.sin(kc * Math.PI);
+        echelleCharge = 1 + (MAX_CHARGE - 1) * bosse;
+        // Elle vient se planter au milieu de la vitre, et repart : une
+        // bete qui continuerait sa route en travers ne chargerait rien.
+        pos.x += (CV_L / 2 - pos.x) * 0.10;
+        pos.y = CV_H * 0.56 + 14 * bosse;
+        opacite = 1;
+        if (kc >= 1) {
           etat = 'plonge'; etatDepuis = t;
+          hote.classList.remove('is-charge');
         }
         return;
       }
 
       if (etat === 'plonge') {
-        var k = Math.min(1, (t - etatDepuis) / 700);
+        var k = Math.min(1, (t - etatDepuis) / PLONGE);
+        echelleCharge = 1;
         opacite = 1 - k;
         pos.y += 60 * (1 / 60);
         if (k >= 1) {
@@ -509,7 +658,7 @@
       }
 
       // remonte
-      var k2 = Math.min(1, (t - etatDepuis) / 700);
+      var k2 = Math.min(1, (t - etatDepuis) / PLONGE);
       opacite = k2;
       if (k2 >= 1) {
         etat = 'nage'; etatDepuis = t;
@@ -565,9 +714,24 @@
         ctx.fillRect(bxx, byy, 2 + (b % 3), 2 + (b % 3));
       }
 
-      // La bete.
-      var f = feuille(bete.forme.id, bete.variante);
+      // Le sang, sous la bete : il monte et se dilue.
+      for (var sg = sang.length - 1; sg >= 0; sg--) {
+        var nu = sang[sg], ans = (t - nu.t0) / 1500;
+        if (ans >= 1) { sang.splice(sg, 1); continue; }
+        ctx.fillStyle = 'rgba(' + (nu.faible ? '150,14,18' : '116,20,24') +
+                        ',' + (0.5 * (1 - ans)).toFixed(2) + ')';
+        ctx.beginPath();
+        ctx.arc(nu.x + nu.dx * ans * 26, nu.y - ans * 30,
+                nu.r * (1 + ans * 2.4), 0, 6.3);
+        ctx.fill();
+      }
+
+      // La bete. Gueule beante quand elle charge, et plus grosse : c'est
+      // la seule fois ou elle vient vraiment vers le joueur.
+      var pose = etat === 'charge' ? 'charge' : 'calme';
+      var f = feuille(bete.forme.id, bete.variante, pose);
       if (f) {
+        var lg = largeur * echelleCharge, ht = hauteur * echelleCharge;
         ctx.save();
         ctx.globalAlpha = opacite;
         ctx.translate(pos.x, pos.y);
@@ -575,8 +739,29 @@
         // Un leger roulis de nage — ou le demi-tour de l'agonie.
         ctx.rotate(roulis || (reduit ? 0 : Math.sin(t / 620) * 0.05));
         ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(f.canvas, -largeur / 2, -hauteur / 2, largeur, hauteur);
+        ctx.drawImage(f.canvas, -lg / 2, -ht / 2, lg, ht);
         ctx.restore();
+      }
+
+      // Le voile rouge de la charge, en bordure d'ecran.
+      if (etat === 'charge') {
+        var kk = Math.min(1, (t - etatDepuis) / CHARGE);
+        // Le voile monte vite et ne redescend qu'a la toute fin : pris au
+        // sinus, il n'etait visible qu'un instant au milieu.
+        var kv = Math.min(1, kk * 5) * Math.min(1, (1 - kk) * 5);
+        var v = ctx.createRadialGradient(CV_L / 2, CV_H / 2, CV_H * 0.12,
+                                         CV_L / 2, CV_H / 2, CV_H * 0.88);
+        v.addColorStop(0, 'rgba(150,10,14,0)');
+        v.addColorStop(0.55, 'rgba(150,10,14,' + (0.30 * kv).toFixed(2) + ')');
+        v.addColorStop(1, 'rgba(120,6,10,' + (0.85 * kv).toFixed(2) + ')');
+        ctx.fillStyle = v;
+        ctx.fillRect(0, 0, CV_L, CV_H);
+        // Le coup de blanc du depart : c'est lui qui fait sursauter.
+        if (kk < 0.14) {
+          ctx.fillStyle = 'rgba(255,236,232,' +
+            (0.55 * (1 - kk / 0.14)).toFixed(2) + ')';
+          ctx.fillRect(0, 0, CV_L, CV_H);
+        }
       }
 
       // La position de la bete et de ses points faibles, inscrites sur le
@@ -707,6 +892,8 @@
       // La bete coule, ou plonge, avant que la carte ne tombe : sans ce
       // temps-la, elle disparaitrait d'un coup en pleine nage.
       etat = vaincu ? 'mort' : 'fuite';
+      echelleCharge = 1;
+      hote.classList.remove('is-charge');
       finDepuis = maintenant();
       hote.dataset.phase = vaincu ? 'victoire' : 'echec';
       var recompenses = vaincu ? recompenser() : null;
@@ -844,6 +1031,7 @@
 
     function arreter() {
       fini = true;
+      hote.classList.remove('is-charge');
       if (brut) cancelAnimationFrame(brut);
       cv.removeEventListener('mousemove', surPointeur);
       cv.removeEventListener('mousedown', surClic);
@@ -865,6 +1053,7 @@
     parId: parId, tirer: tirer, appeler: appeler, composer: composer,
     tirerForme: tirerForme, tirerVariante: tirerVariante,
     feuille: feuille, url: url, Duel: Duel, L: L, H: H,
+    BEANCE: BEANCE, melange: melange,
     vider: function () { cache = {}; }
   };
 })();
