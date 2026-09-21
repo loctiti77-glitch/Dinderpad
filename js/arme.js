@@ -282,9 +282,23 @@
     }
     gauche.appendChild(monte);
 
-    var retour = el('a', 'ar-retour', 'Retour aux Items');
-    retour.href = '#items';
-    gauche.appendChild(retour);
+    // Si une partie de peche est en cours, on y retourne plutot que de
+    // repasser par l'accueil : l'armurerie est alors une annexe du jeu.
+    var partie = window.PECHE && window.PECHE.reprise();
+    var retours = el('div', 'ar-retours');
+    if (partie) {
+      var aLaPeche = el('a', 'ar-retour ar-retour--jeu', 'Retour à la pêche');
+      aLaPeche.href = '#peche';
+      retours.appendChild(aLaPeche);
+      var auCarnet = el('a', 'ar-retour', 'Carnet');
+      auCarnet.href = '#peche-collection';
+      retours.appendChild(auCarnet);
+    } else {
+      var retour = el('a', 'ar-retour', 'Retour aux Items');
+      retour.href = '#items';
+      retours.appendChild(retour);
+    }
+    gauche.appendChild(retours);
     box.appendChild(gauche);
 
     // ---------- La colonne de droite : trophees et revetements ----------

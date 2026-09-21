@@ -65,7 +65,8 @@
 
   // La reprise ne vaut que pour l'aller-retour vers les ecrans de peche.
   // Passer par l'accueil ou un autre jeu la perime.
-  var ECRANS_PECHE = ['peche', 'poissonnerie', 'vestiaire', 'peche-collection', 'peche-hub'];
+  var ECRANS_PECHE = ['peche', 'poissonnerie', 'vestiaire', 'peche-collection',
+                      'peche-hub', 'armurerie'];
 
   window.addEventListener('hashchange', function () {
     var nom = (location.hash || '').replace(/^#/, '').split('/')[0];
@@ -339,6 +340,7 @@
       var armeAuSol = !DP.aLArme();
       var devantLaSouche = false;
       var duel = null;             // le duel en cours contre un requin
+      var surgi = null;            // la bete en train de sortir de l'eau
       var M2 = window.MATERIEL;
       var mordant = null, mordantCm = 0, lourd = false;
       var mordantShiny = false;       // la prise est-elle dans sa seconde livree ?
@@ -535,6 +537,8 @@
         vol = null; gerbe = null;
         mordant = null; mordantCm = 0; lourd = false; irradie = false;
         mordantShiny = false;
+        surgi = null;
+        scene.classList.remove('is-secousse');
         if (duel) { duel.arreter(); duel = null; }
         prise.hidden = true;
         prise.textContent = '';
@@ -665,20 +669,194 @@
       // --- La rencontre ---
       // Une ligne sur seize, arme au poing : ce n'est pas un poisson qui
       // monte. Le duel gele la balade tant qu'il dure.
+      // Les trois temps de l'apparition, en millisecondes : l'ombre qui
+      // approche sous la surface, l'aileron qui fend l'eau, puis le saut.
+      var SURGIT = { ombre: 900, aileron: 800, saut: 900 };
+      var SURGIT_TOTAL = SURGIT.ombre + SURGIT.aileron + SURGIT.saut;
+
       function rencontre() {
         var R = window.REQUIN;
         if (!R) return ranger();
         etat = 'requin';
-        bouchon = null; vol = null; gerbe = null;
+        vol = null; gerbe = null;
         majAction();
-        dire('Quelque chose de gros remonte…');
+
         var bete = R.tirer(DP.armeNiveau(), irradie);
+        // La bete sort a l'endroit exact ou le bouchon flottait : c'est
+        // la ligne du pecheur qui l'a fait monter.
+        var ou = bouchon || { x: balade.chef.x, y: balade.chef.y - 40 };
+        surgi = { t0: maintenant(), bete: bete, x: ou.x, y: ou.y };
+        dire('L’eau se creuse… quelque chose de gros remonte.');
+
+        if (reduit) return ouvrirDuel(bete);
+
+        // La secousse au moment du saut, puis le duel.
+        plusTard(function () {
+          if (!vivant() || etat !== 'requin') return;
+          scene.classList.add('is-secousse');
+        }, SURGIT.ombre + SURGIT.aileron);
+
+        plusTard(function () {
+          if (!vivant() || etat !== 'requin') return;
+          scene.classList.remove('is-secousse');
+          ouvrirDuel(bete);
+        }, SURGIT_TOTAL);
+      }
+
+      function ouvrirDuel(bete) {
+        var R = window.REQUIN;
+        surgi = null;
+        bouchon = null;
         duel = R.Duel({
           parent: scene,
           bete: bete,
           irradie: irradie,
           surSortie: function () { duel = null; if (vivant()) ranger(); }
         });
+      }
+
+      // --- La sortie de l'eau ---
+      // Tout se joue sur la carte, avant l'ecran de combat : l'ombre
+      // tourne sous la surface, l'aileron la fend, puis la bete jaillit.
+      function dessinerSurgissement(ctx, cam, t) {
+        if (!surgi) return;
+        var R = window.REQUIN;
+        if (!R) return;
+        var age = t - surgi.t0;
+        var sx = surgi.x - cam.x, sy = surgi.y - cam.y;
+        var f = surgi.bete.forme;
+        // Sur la carte, la bete se montre plus petite qu'en duel : le
+        // monde est vu de haut, et une case ne fait que vingt-quatre
+        // pixels.
+        var ech = 0.4 * f.echelle;
+        var feuille = R.feuille(f.id, surgi.bete.variante);
+        var lg = R.L * ech, ht = R.H * ech;
+        var i, a;
+
+        // 1. L'ombre qui tourne, et l'eau qui se creuse.
+        if (age < SURGIT.ombre) {
+          var k = age / SURGIT.ombre;
+          var ang = k * 7 - 1.2;
+          var ray = 34 * (1 - k) + 6;
+          var ox = sx + Math.cos(ang) * ray;
+          var oy = sy + Math.sin(ang) * ray * 0.45;
+          ctx.fillStyle = 'rgba(2, 10, 20,' + (0.16 + 0.34 * k).toFixed(2) + ')';
+          ctx.beginPath();
+          ctx.ellipse(ox, oy, lg * 0.42, ht * 0.3, 0, 0, 6.3);
+          ctx.fill();
+          // Les ondes s'elargissent de plus en plus vite.
+          for (i = 0; i < 3; i++) {
+            var ph = ((age / (760 - k * 420)) + i / 3) % 1;
+            ctx.strokeStyle = 'rgba(224,244,255,' + (0.6 * (1 - ph)).toFixed(2) + ')';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(sx, sy, 4 + ph * (16 + k * 22), (4 + ph * (16 + k * 22)) * 0.5,
+                        0, 0, 6.3);
+            ctx.stroke();
+          }
+          return;
+        }
+
+        // 2. L'aileron fend la surface, droit sur le bouchon.
+        if (age < SURGIT.ombre + SURGIT.aileron) {
+          var k2 = (age - SURGIT.ombre) / SURGIT.aileron;
+          var dx = -46 * (1 - k2);
+          var fx = sx + dx, fy = sy + 6 * (1 - k2);
+          // La masse sous la surface reste discrete : c'est l'aileron
+          // qu'on doit voir, pas l'ombre qui le porte.
+          ctx.fillStyle = 'rgba(2, 10, 20,.26)';
+          ctx.beginPath();
+          ctx.ellipse(fx, fy + 4, lg * 0.4, ht * 0.26, 0, 0, 6.3);
+          ctx.fill();
+          // L'aileron : un triangle sombre, taille sur la bete, cerne
+          // d'ecume. Il grandit a mesure qu'elle remonte.
+          var h = (11 + 10 * k2) * (0.7 + f.echelle * 0.25);
+          var lgA = h * 0.7;
+          // L'aileron porte la livree de la bete : un brillant se voit
+          // avant meme qu'elle ne sorte de l'eau.
+          var teinte = surgi.bete.couleurs || f.couleurs;
+          ctx.fillStyle = teinte ? teinte[0] : '#5f7386';
+          ctx.beginPath();
+          ctx.moveTo(fx - lgA, fy + 1);
+          ctx.lineTo(fx + lgA * 0.45, fy - h);
+          ctx.lineTo(fx + lgA, fy + 1);
+          ctx.closePath();
+          ctx.fill();
+          // Un liset clair sur l'arete : sans lui, l'aileron se perd dans
+          // l'ombre de la bete.
+          ctx.strokeStyle = 'rgba(234,247,255,.8)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          // L'ecume au pied de l'aileron.
+          ctx.fillStyle = 'rgba(244,252,255,.85)';
+          ctx.fillRect(Math.round(fx - lgA), Math.round(fy), Math.round(lgA * 2), 2);
+          // Le sillage, en V, qui s'ouvre derriere elle.
+          ctx.strokeStyle = 'rgba(234,247,255,.75)';
+          ctx.lineWidth = 2;
+          var long = 26 + 34 * k2;
+          ctx.beginPath();
+          ctx.moveTo(fx - lgA, fy + 1);
+          ctx.lineTo(fx - lgA - long, fy + 9);
+          ctx.moveTo(fx - lgA, fy + 1);
+          ctx.lineTo(fx - lgA - long, fy - 7);
+          ctx.stroke();
+          return;
+        }
+
+        // 3. Le saut : elle jaillit, se cabre, et l'ecume retombe.
+        var k3 = Math.min(1, (age - SURGIT.ombre - SURGIT.aileron) / SURGIT.saut);
+        var haut = Math.sin(Math.min(1, k3 * 1.25) * 1.55) * (44 + ht * 0.55);
+
+        // La colonne d'ecume que la bete arrache au lac en sortant.
+        var colonne = Math.max(0, 1 - k3 * 1.35);
+        if (colonne > 0) {
+          ctx.fillStyle = 'rgba(244,252,255,' + (0.85 * colonne).toFixed(2) + ')';
+          var lc = lg * 0.34 * colonne + 6;
+          ctx.beginPath();
+          ctx.moveTo(sx - lc, sy + 4);
+          ctx.lineTo(sx - lc * 0.45, sy - haut * 0.9);
+          ctx.lineTo(sx + lc * 0.45, sy - haut * 0.9);
+          ctx.lineTo(sx + lc, sy + 4);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // La gerbe, a la base du saut.
+        for (i = 0; i < 3; i++) {
+          var pg = Math.min(1, k3 * 1.6 + i * 0.18);
+          if (pg >= 1) continue;
+          ctx.strokeStyle = 'rgba(234,247,255,' + (0.8 * (1 - pg)).toFixed(2) + ')';
+          ctx.lineWidth = 2 - pg;
+          ctx.beginPath();
+          ctx.ellipse(sx, sy, 5 + pg * 40, (5 + pg * 40) * 0.42, 0, 0, 6.3);
+          ctx.stroke();
+        }
+        // Les gouttes projetees.
+        for (i = 0; i < 26; i++) {
+          a = (i / 26) * 6.283 + (i % 2 ? 0.2 : 0);
+          var d = k3 * (46 + (i % 3) * 16);
+          var hy = Math.sin(Math.min(1, k3 * 1.4) * 3.14) * 28;
+          ctx.fillStyle = 'rgba(214,240,255,' + (0.9 * (1 - k3)).toFixed(2) + ')';
+          ctx.fillRect(Math.round(sx + Math.cos(a) * d),
+                       Math.round(sy - hy + Math.sin(a) * d * 0.4), 2, 2);
+        }
+
+        if (!feuille) return;
+        ctx.save();
+        ctx.translate(sx, sy - haut);
+        // Elle sort museau en l'air, puis se couche a l'apogee.
+        ctx.rotate(-1.15 + k3 * 0.85);
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalAlpha = Math.min(1, k3 * 3);
+        ctx.drawImage(feuille.canvas, -lg / 2, -ht / 2, lg, ht);
+        ctx.restore();
+
+        // Le voile blanc de la bascule, tout a la fin.
+        if (k3 > 0.72) {
+          var v = (k3 - 0.72) / 0.28;
+          ctx.fillStyle = 'rgba(234,247,255,' + (v * v).toFixed(2) + ')';
+          ctx.fillRect(0, 0, 480, 316);
+        }
       }
 
       // --- Les panneaux de prise ---
@@ -922,6 +1100,7 @@
       function dessinerBouchon(ctx, cam, t) {
         dessinerGerbe(ctx, cam, t);
         dessinerVol(ctx, cam, t);
+        if (surgi) return dessinerSurgissement(ctx, cam, t);
         if (!bouchon) return;
         var bx = bouchon.x - cam.x, by = bouchon.y - cam.y;
 
@@ -1186,6 +1365,17 @@
       if (e) {
         var brillant = !!e.shiny;
         if (brillant) n.classList.add('is-shiny');
+        // Une espece connue s'ouvre : sa fiche dit tout ce que le carnet
+        // ne tient pas dans une vignette.
+        n.classList.add('is-ouvrable');
+        n.setAttribute('role', 'button');
+        n.tabIndex = 0;
+        n.addEventListener('click', function () { ouvrirFiche(f, e); });
+        n.addEventListener('keydown', function (ev) {
+          if (ev.key !== 'Enter' && ev.key !== ' ') return;
+          ev.preventDefault();
+          ouvrirFiche(f, e);
+        });
         var im = el('img', 'pe-fiche-img');
         im.src = P.url(f.id, brillant);
         im.alt = '';
@@ -1234,6 +1424,163 @@
       liste.forEach(function (f) { grille.appendChild(fiche(f)); });
     }
 
+    // ---------- La fiche d'une espece ----------
+    // Tout est deduit de l'espece et du carnet : aucune donnee nouvelle a
+    // tenir a jour, et une fiche existe donc pour les cinquante-quatre.
+
+    var voile = el('div', 'pe-detail');
+    voile.hidden = true;
+    voile.addEventListener('click', function (ev) {
+      if (ev.target === voile) fermerFiche();
+    });
+
+    function fermerFiche() {
+      voile.hidden = true;
+      voile.textContent = '';
+      window.removeEventListener('keydown', auClavierFiche);
+    }
+
+    function auClavierFiche(ev) {
+      if (ev.key === 'Escape') { ev.preventDefault(); fermerFiche(); }
+    }
+
+    // Ce que le poids maximal de l'espece annonce au bout de la ligne.
+    var COMBAT = [
+      [0.18, 'Paisible'], [0.36, 'Nerveux'], [0.55, 'Costaud'],
+      [0.74, 'Brutal'], [1.01, 'Monstrueux']
+    ];
+
+    function combativite(f) {
+      var c = P.charge(P.poidsMax(f));
+      for (var i = 0; i < COMBAT.length; i++) if (c <= COMBAT[i][0]) {
+        return { nom: COMBAT[i][1], part: c };
+      }
+      return { nom: 'Monstrueux', part: 1 };
+    }
+
+    var SILHOUETTES = {
+      classique: 'Fuselée', long: 'Allongée', plat: 'Haute et plate',
+      rond: 'Sphérique', raie: 'En losange', meduse: 'En ombrelle',
+      crabe: 'Carapacée', ecrevisse: 'Carapacée', anguille: 'Serpentiforme',
+      triton: 'Amphibie'
+    };
+
+    function eaux(f) {
+      if (f.secret) return 'Inconnues — elle ne vient qu’à certaines conditions';
+      return f.radioactif ? 'Lacs irradiés, au nord-est et au sud-est'
+                          : 'Lacs et rivière d’eau claire';
+    }
+
+    function ouvrirFiche(f, e) {
+      var r = P.rarete(f.rarete);
+      var brillant = !!e.shiny;
+      voile.hidden = false;
+      voile.textContent = '';
+
+      var carte = el('div', 'pe-detail-carte');
+      carte.dataset.rarete = f.rarete;
+      carte.dataset.poisson = f.id;
+      // Le cadre dit ce que la prise a de remarquable — brillante, ou
+      // secrete — et la pastille garde la couleur de la rarete. Poser
+      // "--r" en ligne l'emporte sur toute classe : c'est donc ici qu'on
+      // tranche, pas dans la feuille de style.
+      carte.style.setProperty('--rarete', r.couleur);
+      carte.style.setProperty('--r',
+        brillant ? '#ffd166' : (f.secret ? '#c49bff' : r.couleur));
+      if (brillant) carte.classList.add('is-shiny');
+      if (f.secret) carte.classList.add('is-secret');
+
+      // L'entete : la bete en grand, son nom, sa rarete.
+      var tete = el('div', 'pe-detail-tete');
+      var im = el('img', 'pe-detail-img');
+      im.src = P.url(f.id, brillant);
+      im.alt = '';
+      tete.appendChild(im);
+      var titres = el('div', 'pe-detail-titres');
+      var nom = el('h3', 'pe-detail-nom', f.nom);
+      if (brillant) nom.appendChild(el('span', 'pe-etoile', '✦'));
+      titres.appendChild(nom);
+      var chips = el('p', 'pe-detail-chips');
+      chips.appendChild(el('span', 'pe-detail-chip pe-detail-chip--rarete',
+        f.secret ? 'Secret' : r.nom));
+      if (f.evolueDe) {
+        var base = P.parId(f.evolueDe);
+        chips.appendChild(el('span', 'pe-detail-chip pe-detail-chip--evo',
+          'Évolution de ' + (base ? base.nom : '?')));
+      }
+      if (f.radioactif) {
+        chips.appendChild(el('span', 'pe-detail-chip pe-detail-chip--rad', 'Irradié'));
+      }
+      titres.appendChild(chips);
+      tete.appendChild(titres);
+      carte.appendChild(tete);
+
+      // Les records du carnet.
+      var recs = el('div', 'pe-detail-recs');
+      [['Prises', e.n],
+       ['Plus belle taille', e.max + ' cm'],
+       ['Plus beau poids', P.poidsTexte(e.kg || P.poids(f, e.max))]
+      ].forEach(function (l) {
+        var b = el('div', 'pe-detail-rec');
+        b.appendChild(el('span', 'pe-detail-rec-nom', l[0]));
+        b.appendChild(el('strong', 'pe-detail-rec-val', String(l[1])));
+        recs.appendChild(b);
+      });
+      carte.appendChild(recs);
+
+      // Ce que l'espece est, en dehors de nos prises.
+      var c = combativite(f);
+      var lignes = el('div', 'pe-detail-lignes');
+      function ligne(nom, val) {
+        var l = el('div', 'pe-detail-ligne');
+        l.appendChild(el('span', 'pe-detail-label', nom));
+        l.appendChild(el('span', 'pe-detail-val', val));
+        lignes.appendChild(l);
+        return l;
+      }
+      ligne('Taille', f.cm[0] + ' à ' + f.cm[1] + ' cm');
+      ligne('Poids maximal', P.poidsTexte(P.poidsMax(f)));
+      ligne('Silhouette', SILHOUETTES[f.forme] || 'Indéterminée');
+      ligne('Eaux', eaux(f));
+
+      // La combativite, avec sa jauge : c'est elle qui dit le temps dont
+      // on dispose pour ferrer.
+      var lc = ligne('Combativité', c.nom);
+      var jauge = el('span', 'pe-detail-jauge');
+      var plein = el('span', 'pe-detail-jauge-plein');
+      plein.style.width = Math.round(c.part * 100) + '%';
+      jauge.appendChild(plein);
+      lc.appendChild(jauge);
+
+      if (brillant) {
+        ligne('Livrée', e.shiny + (e.shiny > 1 ? ' brillants sortis' : ' brillant sorti'));
+      }
+      carte.appendChild(lignes);
+
+      if (f.secret && f.indice) {
+        carte.appendChild(el('p', 'pe-detail-indice', f.indice));
+      }
+
+      var evo = P.evolutionDe(f.id);
+      if (evo) {
+        var fait = Math.min(e.n, evo.seuil);
+        carte.appendChild(el('p', 'pe-detail-evo',
+          DP.aPeche(evo.id)
+            ? 'A déjà évolué en ' + evo.nom + '.'
+            : 'Évolue en ' + evo.nom + ' à la ' + evo.seuil + 'e prise  ·  ' +
+              fait + ' / ' + evo.seuil));
+      }
+
+      var fermer = el('button', 'pe-detail-fermer', 'Fermer');
+      fermer.type = 'button';
+      fermer.addEventListener('click', fermerFiche);
+      carte.appendChild(fermer);
+
+      voile.appendChild(carte);
+      window.addEventListener('keydown', auClavierFiche);
+      fermer.focus();
+    }
+
     section('Eaux claires', P.vivier(false));
     section('Spéciaux — eaux irradiées', P.vivier(true), 'pe-section--rad');
     section('Évolutions', P.evolutions(), 'pe-section--evo');
@@ -1241,6 +1588,7 @@
             'pe-section--secret', true);
 
     box.appendChild(grille);
+    box.appendChild(voile);
 
     var pied = el('div', 'pe-pied');
     var go = el('a', 'pe-btn', DP.aLaCanne() ? 'Aller pêcher' : 'Trouver la canne');
@@ -1250,6 +1598,13 @@
       var vest = el('a', 'pe-btn pe-btn--plat', 'Vestiaire');
       vest.href = '#vestiaire';
       pied.appendChild(vest);
+    }
+    // Le carnet est le carrefour du mini-jeu : c'est par lui qu'on
+    // rejoint l'armurerie sans quitter la partie en cours.
+    if (DP.aLArme()) {
+      var arm = el('a', 'pe-btn pe-btn--plat', 'Armurerie');
+      arm.href = '#armurerie';
+      pied.appendChild(arm);
     }
     box.appendChild(pied);
 

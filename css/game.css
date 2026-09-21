@@ -2902,8 +2902,10 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 .ar-monter:hover:not(:disabled) { filter: brightness(1.08); }
 .ar-monter:disabled { opacity: .38; cursor: not-allowed; }
 
+.ar-retours { display: flex; gap: calc(6 * var(--px)); width: 100%; }
+
 .ar-retour {
-  width: 100%;
+  flex: 1;
   padding: calc(6 * var(--px));
   border: calc(2 * var(--px)) solid rgba(124, 240, 255, .5);
   border-radius: calc(9 * var(--px));
@@ -2914,6 +2916,12 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 }
 
 .ar-retour:hover { background: rgba(124, 240, 255, .12); }
+
+.ar-retour--jeu {
+  flex: 2;
+  border-color: #7cf0ff;
+  color: #d8f8ff;
+}
 
 /* ---------- Le tableau de chasse ---------- */
 
@@ -3072,4 +3080,222 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
   .rq-jauge-plein[data-bas="1"],
   .rq-temps-plein[data-court="1"] { animation: none; }
   .rq-jauge-plein, .rq-temps-plein { transition: none; }
+}
+
+/* ==========================================================
+   La fiche d'une espece du carnet
+   ========================================================== */
+
+.pe-fiche.is-ouvrable {
+  cursor: pointer;
+  transition: transform .1s ease, box-shadow .1s ease;
+}
+
+.pe-fiche.is-ouvrable:hover,
+.pe-fiche.is-ouvrable:focus-visible {
+  transform: translateY(calc(-2 * var(--px)));
+  box-shadow: 0 0 calc(14 * var(--px)) var(--r);
+  outline: none;
+}
+
+.pe-detail[hidden] { display: none; }
+
+.pe-detail {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16 * var(--px));
+  background: rgba(2, 8, 14, .78);
+}
+
+.pe-detail-carte {
+  --r: #c7d3de;
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--px));
+  width: calc(660 * var(--px));
+  max-height: 100%;
+  overflow: auto;
+  scrollbar-width: none;
+  padding: calc(14 * var(--px)) calc(20 * var(--px));
+  border: calc(4 * var(--px)) solid var(--r);
+  border-radius: calc(14 * var(--px));
+  background: rgba(4, 16, 26, .97);
+  box-shadow: 0 0 calc(40 * var(--px)) var(--r);
+  animation: pe-detail-in .32s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+
+.pe-detail-carte::-webkit-scrollbar { width: 0; }
+
+@keyframes pe-detail-in {
+  from { opacity: 0; transform: translateY(calc(20 * var(--px))) scale(.9); }
+  to   { opacity: 1; transform: none; }
+}
+
+.pe-detail-carte.is-shiny  { --r: #ffd166; background: rgba(28, 21, 5, .97); }
+.pe-detail-carte.is-secret { --r: #c49bff; background: rgba(20, 10, 34, .97); }
+
+/* ---------- L'entete ---------- */
+
+.pe-detail-tete {
+  display: flex;
+  align-items: center;
+  gap: calc(16 * var(--px));
+}
+
+.pe-detail-img {
+  flex: 0 0 auto;
+  width: calc(190 * var(--px));
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 calc(12 * var(--px)) var(--r));
+}
+
+.pe-detail-titres { flex: 1; min-width: 0; }
+
+.pe-detail-nom {
+  margin: 0;
+  font-size: calc(34 * var(--px));
+  color: #eaf7ff;
+  text-shadow: calc(2 * var(--px)) calc(2 * var(--px)) 0 #041018;
+}
+
+.pe-detail-chips {
+  margin: calc(4 * var(--px)) 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(6 * var(--px));
+}
+
+.pe-detail-chip {
+  padding: calc(2 * var(--px)) calc(10 * var(--px));
+  border: calc(2 * var(--px)) solid currentColor;
+  border-radius: calc(7 * var(--px));
+  font-size: calc(15 * var(--px));
+  white-space: nowrap;
+}
+
+.pe-detail-chip--rarete { color: var(--rarete, var(--r)); font-weight: 700; }
+.pe-detail-chip--evo    { color: #7ce0ff; }
+.pe-detail-chip--rad    { color: #c8f02a; }
+
+/* ---------- Les records ---------- */
+
+.pe-detail-recs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(7 * var(--px));
+}
+
+.pe-detail-rec {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(1 * var(--px));
+  padding: calc(6 * var(--px)) calc(4 * var(--px));
+  border-radius: calc(9 * var(--px));
+  background: rgba(0, 0, 0, .34);
+}
+
+.pe-detail-rec-nom {
+  font-size: calc(13 * var(--px));
+  letter-spacing: calc(1 * var(--px));
+  text-transform: uppercase;
+  color: #8fb6cc;
+}
+
+.pe-detail-rec-val { font-size: calc(24 * var(--px)); color: #eaf7ff; }
+
+/* ---------- Les caracteristiques ---------- */
+
+.pe-detail-lignes {
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--px));
+}
+
+.pe-detail-ligne {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--px));
+  padding: calc(3 * var(--px)) calc(10 * var(--px));
+  border-radius: calc(6 * var(--px));
+  background: rgba(0, 0, 0, .26);
+  font-size: calc(17 * var(--px));
+}
+
+.pe-detail-label {
+  flex: 0 0 calc(150 * var(--px));
+  letter-spacing: calc(1 * var(--px));
+  text-transform: uppercase;
+  font-size: calc(14 * var(--px));
+  color: #8fb6cc;
+}
+
+.pe-detail-val { flex: 1; color: #d8f8ff; }
+
+.pe-detail-jauge {
+  flex: 0 0 calc(150 * var(--px));
+  height: calc(9 * var(--px));
+  border-radius: calc(5 * var(--px));
+  background: rgba(0, 0, 0, .5);
+  overflow: hidden;
+}
+
+.pe-detail-jauge-plein {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #6fd1a0 0%, #ffd166 55%, #e8483a 100%);
+}
+
+/* ---------- Les mentions particulieres ---------- */
+
+.pe-detail-indice,
+.pe-detail-evo {
+  margin: 0;
+  padding: calc(5 * var(--px)) calc(12 * var(--px));
+  border-radius: calc(8 * var(--px));
+  font-size: calc(17 * var(--px));
+  text-align: center;
+}
+
+.pe-detail-indice { background: rgba(196, 155, 255, .16); color: #d9c2ff; }
+.pe-detail-evo    { background: rgba(124, 224, 255, .14); color: #a8e4ff; }
+
+.pe-detail-fermer {
+  align-self: center;
+  margin-top: calc(2 * var(--px));
+  padding: calc(6 * var(--px)) calc(28 * var(--px));
+  border: calc(3 * var(--px)) solid var(--r);
+  border-radius: calc(10 * var(--px));
+  background: rgba(255, 255, 255, .08);
+  color: #eaf7ff;
+  font-family: inherit;
+  font-size: calc(19 * var(--px));
+  cursor: pointer;
+}
+
+.pe-detail-fermer:hover { background: rgba(255, 255, 255, .18); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pe-detail-carte { animation: none; }
+  .pe-fiche.is-ouvrable { transition: none; }
+}
+
+/* La carte tremble quand la bête jaillit du lac. */
+.pe-scene.is-secousse { animation: pe-secousse .62s ease-in-out; }
+
+@keyframes pe-secousse {
+  0%, 100% { transform: none; }
+  12% { transform: translate(calc(-5 * var(--px)), calc(3 * var(--px))); }
+  26% { transform: translate(calc(5 * var(--px)), calc(-4 * var(--px))); }
+  42% { transform: translate(calc(-4 * var(--px)), calc(-2 * var(--px))); }
+  60% { transform: translate(calc(3 * var(--px)), calc(3 * var(--px))); }
+  80% { transform: translate(calc(-2 * var(--px)), calc(-1 * var(--px))); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pe-scene.is-secousse { animation: none; }
 }
