@@ -565,16 +565,32 @@
   function prises()      { return me().peche; }
   function aPeche(id)    { return !!me().peche[id]; }
 
-  function noterPrise(id, cm, kg) {
+  function noterPrise(id, cm, kg, brillant) {
     var p = me();
     var e = p.peche[id] || { n: 0, max: 0, kg: 0 };
     if (typeof e.kg !== 'number') e.kg = 0;
     e.n++;
     if (cm > e.max) e.max = cm;
     if (kg > e.kg) e.kg = kg;
+    // Un brillant se compte a part : vendre des doublons ne peut pas le
+    // faire disparaitre du carnet.
+    if (brillant) e.shiny = (e.shiny || 0) + 1;
     p.peche[id] = e;
     save();
     return e;
+  }
+
+  // A-t-on deja sorti cette espece dans sa seconde livree ?
+  function aShiny(id) {
+    var e = me().peche[id];
+    return !!(e && e.shiny);
+  }
+
+  // Le nombre d'especes dont on tient le brillant.
+  function shinys() {
+    var p = me().peche, n = 0;
+    for (var id in p) if (p[id] && p[id].shiny) n++;
+    return n;
   }
 
   // ---------- Les exploits ----------
@@ -671,6 +687,7 @@
     ITEMS: ITEMS, items: items, CONTINENTS: CONTINENTS,
     aLaCanne: aLaCanne, prendreCanne: prendreCanne,
     prises: prises, aPeche: aPeche, noterPrise: noterPrise,
+    aShiny: aShiny, shinys: shinys,
     materiel: materiel, possede: possede, acquerir: acquerir,
     equipe: equipe, equiper: equiper, retirerPrise: retirerPrise,
     exploits: exploits, exploit: exploit,

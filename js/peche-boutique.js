@@ -403,11 +403,17 @@
     livre.alt = '';
     droite.appendChild(livre);
 
-    var prises = Object.keys(DP.prises()).length;
-    var total = window.POISSONS ? window.POISSONS.LISTE.length : 30;
+    // Le compte annonce ne porte que sur les especes du carnet : les
+    // secretes n'y figurent pas, et le faire savoir les trahirait.
+    var P = window.POISSONS;
+    var prises = DP.prises();
+    var pub = P ? P.publiques() : [];
+    var faits = P ? pub.filter(function (f) { return prises[f.id]; }).length
+                  : Object.keys(prises).length;
     var txtD = el('span', 'hub-txt');
     txtD.appendChild(el('strong', 'hub-nom', 'Carnet de pêche'));
-    txtD.appendChild(el('span', 'hub-sous', prises + ' / ' + total + ' espèces'));
+    txtD.appendChild(el('span', 'hub-sous',
+      faits + ' / ' + (P ? pub.length : 30) + ' espèces'));
     droite.appendChild(txtD);
     box.appendChild(droite);
 

@@ -118,13 +118,128 @@
       cm: [14, 34],  c: ['#e0ff4a', '#f8ffd0', '#7ca81e'] },
     { id: 'coeur-de-pile', nom: 'Cœur de Pile', rarete: 'special', radioactif: true,
       forme: 'rond', motif: 'lueur', poids: 1.5, pente: 4.5,
-      cm: [20, 60],  c: ['#1d2410', '#c8f02a', '#f4ff8a'] }
+      cm: [20, 60],  c: ['#1d2410', '#c8f02a', '#f4ff8a'] },
+
+    // ---- Les evolutions ----
+    // Elles ne mordent pas tant qu'on ne les a pas vues eclore : c'est la
+    // meme espece, repetee assez souvent, qui finit par changer de forme
+    // au bout de la ligne. "evolueDe" dit laquelle, "seuil" combien de
+    // prises il faut. Une fois eclose, l'evolution nage comme les autres.
+    { id: 'gardon-argent', nom: 'Gardon d’Argent', rarete: 'rare',
+      evolueDe: 'gardon', seuil: 8, poids: 5,
+      forme: 'classique', motif: 'metal',
+      cm: [22, 48],  c: ['#b6c6d6', '#f2f7fc', '#7e90a4'] },
+    { id: 'perche-royale', nom: 'Perche Royale', rarete: 'rare',
+      evolueDe: 'perche', seuil: 8, poids: 5,
+      forme: 'classique', motif: 'rayures',
+      cm: [30, 62],  c: ['#3f7a34', '#e4f0c4', '#e8a32c'] },
+    { id: 'carpe-ancestrale', nom: 'Carpe Ancestrale', rarete: 'rare',
+      evolueDe: 'carpe', seuil: 10, poids: 5,
+      forme: 'plat', motif: 'ecailles',
+      cm: [60, 120], c: ['#7a5a26', '#d9bf84', '#e0b44a'] },
+    { id: 'sandre-lame', nom: 'Sandre Lame', rarete: 'rare',
+      evolueDe: 'sandre', seuil: 8, poids: 5,
+      forme: 'long', motif: 'rayures',
+      cm: [55, 120], c: ['#5d6a48', '#ccd4b0', '#9fc0d8'] },
+    { id: 'truite-cristal', nom: 'Truite de Cristal', rarete: 'rare',
+      evolueDe: 'truite', seuil: 8, poids: 5,
+      forme: 'classique', motif: 'irise',
+      cm: [35, 80],  c: ['#9fd8e8', '#f4fcff', '#d9a8e8'] },
+    { id: 'brochet-sabre', nom: 'Brochet Sabre', rarete: 'rare',
+      evolueDe: 'brochet', seuil: 8, poids: 5,
+      forme: 'long', motif: 'rayures',
+      cm: [70, 170], c: ['#46613a', '#c6d49e', '#d8d2a0'] },
+    { id: 'anguille-spirale', nom: 'Anguille Spirale', rarete: 'rare',
+      evolueDe: 'anguille', seuil: 6, poids: 5,
+      forme: 'anguille', motif: 'lueur',
+      cm: [55, 140], c: ['#33413a', '#94a58f', '#6ee8c0'] },
+    { id: 'silure-colosse', nom: 'Silure Colosse', rarete: 'legende',
+      evolueDe: 'silure', seuil: 10, poids: 2,
+      forme: 'long', motif: 'moustache',
+      cm: [140, 300], c: ['#3a352f', '#9c907c', '#d8c46a'] },
+    { id: 'gardon-plutonium', nom: 'Gardon Plutonium', rarete: 'special',
+      radioactif: true, evolueDe: 'gardon-luisant', seuil: 8,
+      poids: 6, pente: 0.6, forme: 'classique', motif: 'lueur',
+      cm: [26, 58],  c: ['#9ce02a', '#f0ffb4', '#2c5008'] },
+    { id: 'meduse-critique', nom: 'Méduse Critique', rarete: 'special',
+      radioactif: true, evolueDe: 'meduse-atomique', seuil: 3,
+      poids: 2, pente: 2.5, forme: 'meduse', motif: 'aucun',
+      cm: [40, 95],  c: ['#e8ff6a', '#ffffd8', '#a8d81e'] },
+
+    // ---- Les especes secretes ----
+    // Elles ne figurent nulle part : ni case grisee, ni silhouette, ni
+    // compteur. Chacune demande sa propre condition — une eau, un
+    // materiel, une patience — et ne se montre qu'une fois pechee.
+    // "indice" est ce qu'on lit dans le carnet apres l'avoir sortie.
+    { id: 'ombre-du-lac', nom: 'Ombre du Lac', rarete: 'rare', secret: true,
+      forme: 'plat', motif: 'aucun',
+      cm: [40, 90],  c: ['#26303c', '#4a5a6e', '#8fa8c4'],
+      condition: { eau: 'claire', lancers: 12, chance: 0.010 },
+      indice: 'Elle ne remonte qu’après une longue séance au bord d’une eau claire.' },
+    { id: 'roi-des-vairons', nom: 'Roi des Vairons', rarete: 'rare', secret: true,
+      forme: 'classique', motif: 'irise',
+      cm: [14, 26],  c: ['#6f8f7a', '#f0f4e0', '#f5c93a'],
+      condition: { eau: 'claire', prise: { vairon: 15 }, chance: 0.030 },
+      indice: 'Il ne sort que pour qui a déjà pris quinze vairons.' },
+    { id: 'poisson-horloge', nom: 'Poisson-Horloge', rarete: 'legende', secret: true,
+      forme: 'rond', motif: 'metal',
+      cm: [18, 42],  c: ['#c9a24a', '#f2e2b0', '#3a2f18'],
+      condition: { eau: 'claire', canne: 'doree', chance: 0.008 },
+      indice: 'Seule la Canne Dorée le décide à mordre.' },
+    { id: 'poisson-miroir', nom: 'Poisson-Miroir', rarete: 'legende', secret: true,
+      forme: 'plat', motif: 'metal',
+      cm: [30, 70],  c: ['#dfe8f2', '#ffffff', '#a8b8c8'],
+      condition: { eau: 'claire', flotteur: 'doree', chance: 0.008 },
+      indice: 'Il ne monte que vers le Flotteur Doré, où il se reconnaît.' },
+    { id: 'noyau-vivant', nom: 'Noyau Vivant', rarete: 'special', secret: true,
+      radioactif: true, forme: 'rond', motif: 'lueur',
+      cm: [30, 80],  c: ['#1a2208', '#d8ff3a', '#ffffc0'],
+      condition: { eau: 'radio', canne: 'radioactive', chance: 0.012 },
+      indice: 'Il dort au fond des eaux fluo, et seule la Canne Radioactive va l’y chercher.' },
+    { id: 'leviathan', nom: 'Léviathan d’Eau Douce', rarete: 'legende', secret: true,
+      forme: 'long', motif: 'ecailles',
+      cm: [200, 420], c: ['#1f2a3a', '#43586e', '#7ce0ff'],
+      condition: { eau: 'toute', lancers: 40, chance: 0.004 },
+      indice: 'On ne le croise qu’en restant pêcher bien au-delà du raisonnable.' }
   ];
 
-  // Les deux viviers : l'eau claire et l'eau irradiee.
+  // Trois familles cohabitent dans la meme liste :
+  //   - les especes de base, qui peuplent le carnet des le depart ;
+  //   - les evolutions, annoncees au carnet mais muettes tant qu'on ne
+  //     les a pas fait eclore ;
+  //   - les secretes, qui n'existent nulle part avant d'avoir mordu.
+
+  function estBase(f) { return !f.evolueDe && !f.secret; }
+
+  // Les deux viviers de base : l'eau claire et l'eau irradiee.
   function vivier(radioactif) {
-    return POISSONS.filter(function (f) { return !!f.radioactif === !!radioactif; });
+    return POISSONS.filter(function (f) {
+      return estBase(f) && !!f.radioactif === !!radioactif;
+    });
   }
+
+  // Les evolutions de cette eau-la. Sans argument, toutes.
+  function evolutions(radioactif) {
+    return POISSONS.filter(function (f) {
+      if (!f.evolueDe) return false;
+      if (radioactif === undefined) return true;
+      return !!f.radioactif === !!radioactif;
+    });
+  }
+
+  function secrets() { return POISSONS.filter(function (f) { return !!f.secret; }); }
+
+  // L'evolution d'une espece, s'il y en a une.
+  function evolutionDe(id) {
+    for (var i = 0; i < POISSONS.length; i++) {
+      if (POISSONS[i].evolueDe === id) return POISSONS[i];
+    }
+    return null;
+  }
+
+  // Ce que le carnet affiche d'office : tout sauf les secretes. C'est ce
+  // total-la qu'on montre au joueur, pour ne pas trahir le reste.
+  function publiques() { return POISSONS.filter(function (f) { return !f.secret; }); }
 
   function parId(id) {
     for (var i = 0; i < POISSONS.length; i++) if (POISSONS[i].id === id) return POISSONS[i];
@@ -141,10 +256,16 @@
   var PENTE = { commun: -0.6, peu: 0.2, rare: 1.5, legende: 4 };
 
   // Un tirage pondere par la rarete : les Legendaires restent des
-  // evenements, sauf a s'equiper d'un bon flotteur.
-  function tirer(bonus, radioactif) {
+  // evenements, sauf a s'equiper d'un bon flotteur. "debloque" dit si une
+  // evolution a deja eclos : tant que non, elle ne nage pas.
+  function tirer(bonus, radioactif, debloque) {
     var b = Math.max(0, Math.min(1, bonus || 0));
     var pool = vivier(radioactif);
+    if (debloque) {
+      evolutions(radioactif).forEach(function (f) {
+        if (debloque(f.id)) pool.push(f);
+      });
+    }
     var poids = pool.map(function (f) {
       var base = f.poids != null ? f.poids : rarete(f.rarete).poids;
       var pente = f.pente != null ? f.pente : (PENTE[f.rarete] || 0);
@@ -157,6 +278,73 @@
       if (d <= 0) return pool[i];
     }
     return pool[pool.length - 1];
+  }
+
+  // ---------- Les especes secretes ----------
+  // Elles ne passent pas par le tirage ordinaire : on les propose avant
+  // lui, chacune avec sa condition et sa chance propre. Rater leur tirage
+  // ne coute rien — le poisson ordinaire suit derriere.
+
+  function secretPossible(f, ctx) {
+    var c = f.condition || {};
+    if (c.eau && c.eau !== 'toute') {
+      if (c.eau !== (ctx.irradie ? 'radio' : 'claire')) return false;
+    }
+    if (c.canne && ctx.canne !== c.canne) return false;
+    if (c.flotteur && ctx.flotteur !== c.flotteur) return false;
+    if (c.lancers && (ctx.lancers || 0) < c.lancers) return false;
+    if (c.prise) {
+      for (var id in c.prise) {
+        var e = ctx.prises && ctx.prises[id];
+        if (!e || e.n < c.prise[id]) return false;
+      }
+    }
+    return true;
+  }
+
+  // Rend l'espece secrete qui mord, ou null la plupart du temps.
+  function tirerSecret(ctx) {
+    ctx = ctx || {};
+    var poss = secrets().filter(function (f) { return secretPossible(f, ctx); });
+    for (var i = 0; i < poss.length; i++) {
+      if (Math.random() < (poss[i].condition.chance || 0)) return poss[i];
+    }
+    return null;
+  }
+
+  // Celles qui pourraient mordre ici et maintenant : de quoi souffler un
+  // mot au joueur sans rien lui reveler.
+  function secretsPossibles(ctx) {
+    return secrets().filter(function (f) { return secretPossible(f, ctx || {}); });
+  }
+
+  // ---------- Les brillants ----------
+  // Dix especes ont une seconde livree. Elle ne change rien au poids ni a
+  // la rarete : c'est une couleur qu'on ne revoit pas de sitot.
+
+  var CHANCE_SHINY = 120;
+
+  var SHINYS = {
+    'ablette':      ['#f2d9a0', '#fff8e4', '#c9a85e'],
+    'gardon':       ['#c2a8e0', '#f4ecff', '#4fd13a'],
+    'perche':       ['#c94a7a', '#f8dce8', '#f5c93a'],
+    'carpe':        ['#4a6f8a', '#c8dde8', '#2f4a5c'],
+    'truite':       ['#5a9ed8', '#e0f0ff', '#7ce0c0'],
+    'brochet':      ['#8a5ac0', '#e4d4f8', '#5c3a88'],
+    'silure':       ['#d8cfc0', '#fdf8ee', '#a08a6a'],
+    'axolotl':      ['#8ae0d0', '#e0fff8', '#3aa890'],
+    'poisson-lune': ['#b48ae0', '#efe4ff', '#7cc8ff'],
+    'prisme':       ['#ffd166', '#fff8e0', '#8bf58b']
+  };
+
+  function aShiny(id) { return !!SHINYS[id]; }
+
+  function especesShiny() {
+    return POISSONS.filter(function (f) { return !!SHINYS[f.id]; });
+  }
+
+  function estShiny(id) {
+    return aShiny(id) && Math.floor(Math.random() * CHANCE_SHINY) === 0;
   }
 
   // La taille d'une prise, tiree dans la fourchette de l'espece. On
@@ -401,12 +589,28 @@
     ctx.putImageData(img, 0, 0);
   }
 
+  // Trois eclats blancs, pour qu'un brillant se voie au premier coup
+  // d'oeil meme reduit a la taille d'une vignette.
+  function eclat(x, cx, cy, t) {
+    x.fillStyle = 'rgba(255,255,255,.95)';
+    x.fillRect(cx - t, cy, t * 2 + 1, 1);
+    x.fillRect(cx, cy - t, 1, t * 2 + 1);
+  }
+
   var cache = {};
 
-  function feuille(id) {
-    if (cache[id]) return cache[id];
+  function feuille(id, shiny) {
+    var brillant = !!(shiny && SHINYS[id]);
+    var cle = brillant ? id + '|s' : id;
+    if (cache[cle]) return cache[cle];
     var f = parId(id);
     if (!f) return null;
+    if (brillant) {
+      var copie = {};
+      for (var k in f) copie[k] = f[k];
+      copie.c = SHINYS[id];
+      f = copie;
+    }
     var cv = document.createElement('canvas');
     cv.width = L; cv.height = H;
     var x = cv.getContext('2d');
@@ -417,19 +621,24 @@
       x.fillRect(px, py, w, h);
     }, f);
     cerner(x);
-    cache[id] = { canvas: cv, L: L, H: H };
-    return cache[id];
+    if (brillant) { eclat(x, 9, 5, 2); eclat(x, 24, 7, 1); eclat(x, 29, 16, 2); }
+    cache[cle] = { canvas: cv, L: L, H: H };
+    return cache[cle];
   }
 
   // Une image utilisable dans une balise <img>, pour les listes en HTML.
-  function url(id) {
-    var f = feuille(id);
+  function url(id, shiny) {
+    var f = feuille(id, shiny);
     return f ? f.canvas.toDataURL('image/png') : '';
   }
 
   window.POISSONS = {
     LISTE: POISSONS, RARETES: RARETES, CARRURE: CARRURE,
-    vivier: vivier,
+    SHINYS: SHINYS, CHANCE_SHINY: CHANCE_SHINY,
+    vivier: vivier, evolutions: evolutions, secrets: secrets,
+    evolutionDe: evolutionDe, publiques: publiques, estBase: estBase,
+    tirerSecret: tirerSecret, secretsPossibles: secretsPossibles,
+    aShiny: aShiny, especesShiny: especesShiny, estShiny: estShiny,
     parId: parId, rarete: rarete, tirer: tirer, taille: taille,
     poids: poids, poidsMax: poidsMax, poidsTexte: poidsTexte, charge: charge,
     feuille: feuille, url: url, L: L, H: H,

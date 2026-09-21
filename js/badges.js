@@ -29,12 +29,15 @@
     diamant: { nom: 'Diamant', couleur: '#c56bff' }
   };
 
-  // Combien d'especes de poissons legendaires sont au carnet.
+  // Combien d'especes de poissons legendaires sont au carnet. Comme pour
+  // les Speciaux, on s'en tient aux trois legendes d'eau claire des
+  // origines : les evolutions et les secretes en ont ajoute d'autres, les
+  // compter ici rendrait le badge plus facile que son intitule.
   function legendairesPeches() {
     var P = window.POISSONS;
     if (!P) return 0;
     var prises = DP.prises();
-    return P.LISTE.filter(function (f) {
+    return P.vivier(false).filter(function (f) {
       return f.rarete === 'legende' && prises[f.id];
     }).length;
   }

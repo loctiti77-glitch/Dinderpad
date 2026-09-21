@@ -2135,3 +2135,163 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 .pe-prise-box[data-rarete="special"] {
   background: rgba(16, 22, 6, .95);
 }
+
+/* ==========================================================
+   Brillants, evolutions et especes secretes
+   Trois facons pour une prise de sortir de l'ordinaire, et
+   trois signes distincts pour qu'on ne les confonde pas.
+   ========================================================== */
+
+/* ---------- Les compteurs de cote, en tete du carnet ---------- */
+
+.pe-cotes {
+  margin: 0;
+  display: flex;
+  gap: calc(10 * var(--px));
+  align-items: baseline;
+}
+
+.pe-cote {
+  padding: calc(2 * var(--px)) calc(10 * var(--px));
+  border: calc(2 * var(--px)) solid currentColor;
+  border-radius: calc(7 * var(--px));
+  font-size: calc(16 * var(--px));
+  white-space: nowrap;
+}
+
+.pe-cote--shiny  { color: #ffd166; }
+.pe-cote--secret { color: #c49bff; }
+
+/* ---------- L'etoile des brillants ---------- */
+
+.pe-etoile {
+  margin-left: calc(6 * var(--px));
+  color: #ffe9a8;
+  text-shadow: 0 0 calc(10 * var(--px)) #ffd166;
+}
+
+/* Le panneau de prise, quand la livree est la seconde. */
+.pe-prise-box.is-shiny {
+  background: rgba(30, 22, 4, .95);
+  /* La rarete garde sa couleur dans le detail — c'est une information.
+     Le cadre et le titre, eux, passent a l'or : c'est la nouvelle. */
+  border-color: #ffd166;
+  animation: pe-prise-in .35s ease, pe-shiny 1.1s ease-in-out infinite alternate;
+}
+
+.pe-prise-box.is-shiny .pe-prise-titre { color: #ffe9a8; }
+
+@keyframes pe-shiny {
+  from { box-shadow: 0 0 calc(24 * var(--px)) rgba(255, 209, 102, .5); }
+  to   { box-shadow: 0 0 calc(52 * var(--px)) rgba(255, 233, 168, .95); }
+}
+
+.pe-prise-box.is-shiny .pe-prise-img {
+  animation: pe-shiny-img 1.1s ease-in-out infinite alternate;
+}
+
+@keyframes pe-shiny-img {
+  from { filter: none; }
+  to   { filter: drop-shadow(0 0 calc(12 * var(--px)) #ffe9a8); }
+}
+
+/* Une case brillante se repere d'un coup d'oeil dans la grille. */
+.pe-fiche.is-shiny {
+  border-color: #ffd166;
+  background: rgba(34, 26, 6, .92);
+  box-shadow: 0 0 calc(12 * var(--px)) rgba(255, 209, 102, .45);
+}
+
+.pe-fiche.is-shiny .pe-fiche-det { color: #d8b86a; }
+
+/* ---------- L'evolution ---------- */
+/* Le poisson reste en place, blanchit, et change de silhouette. */
+
+.pe-evo { --r: #eaf7ff; }
+
+.pe-evo .pe-prise-img {
+  transition: transform .18s ease;
+}
+
+.pe-evo.is-flash {
+  background: rgba(240, 250, 255, .96);
+  box-shadow: 0 0 calc(60 * var(--px)) #ffffff;
+}
+
+.pe-evo.is-flash .pe-prise-titre,
+.pe-evo.is-flash .pe-prise-nom { color: #0a2030; }
+
+.pe-evo.is-flash .pe-prise-img {
+  filter: brightness(0) invert(1);
+  transform: scale(1.14);
+}
+
+.pe-evo.is-fini {
+  animation: pe-evo-fin .45s cubic-bezier(.2, 1.4, .4, 1);
+}
+
+@keyframes pe-evo-fin {
+  from { transform: scale(1.18); box-shadow: 0 0 calc(70 * var(--px)) #ffffff; }
+  to   { transform: none; }
+}
+
+.pe-evo-det { min-height: calc(24 * var(--px)); }
+
+/* La case d'une evolution qui n'a pas encore eclos : ce n'est pas un
+   secret, c'est un objectif — on montre d'ou elle vient et ce qu'il
+   reste a faire. */
+.pe-fiche--evo.is-vide {
+  border-color: #4a6a8c;
+  border-style: dashed;
+}
+
+.pe-fiche--evo.is-vide .pe-fiche-vide { color: #7ce0ff; font-size: calc(22 * var(--px)); }
+.pe-fiche--evo.is-vide .pe-fiche-nom { color: #86a8c0; }
+.pe-fiche--evo.is-vide .pe-fiche-det { color: #7ce0ff; }
+
+.pe-section--evo {
+  border-bottom-color: rgba(124, 224, 255, .45);
+  color: #7ce0ff;
+}
+
+/* ---------- Les especes secretes ---------- */
+
+.pe-prise-box.is-secret {
+  background: rgba(20, 10, 34, .95);
+}
+
+.pe-section--secret {
+  border-bottom-color: rgba(196, 155, 255, .45);
+  color: #c49bff;
+  text-shadow: 0 0 calc(10 * var(--px)) rgba(196, 155, 255, .45);
+}
+
+.pe-section--secret .pe-section-n { color: #9a78cc; }
+
+.pe-fiche--secret:not(.is-vide) {
+  background: rgba(24, 14, 38, .92);
+  box-shadow: 0 0 calc(12 * var(--px)) rgba(196, 155, 255, .35);
+}
+
+.pe-fiche--secret .pe-fiche-det { color: #b795e0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pe-prise-box.is-shiny,
+  .pe-prise-box.is-shiny .pe-prise-img,
+  .pe-evo.is-fini { animation: none; }
+  .pe-evo .pe-prise-img { transition: none; }
+}
+
+/* Ce qui a fait venir une secrete : on ne le dit qu'apres coup. */
+.pe-prise-indice {
+  max-width: calc(380 * var(--px));
+  text-align: center;
+  color: #c49bff;
+}
+
+.pe-fiche-indice {
+  font-size: calc(11 * var(--px));
+  line-height: 1.15;
+  text-align: center;
+  color: #9a78cc;
+}

@@ -181,6 +181,16 @@
     return g;
   }
 
+  // Ce qu'on annonce au joueur : les especes du carnet, secretes exclues.
+  // Sans quoi le compteur trahirait leur existence, et pire, depasserait
+  // son propre total des qu'une secrete aurait mordu.
+  function comptePublic() {
+    var prises = DP.prises();
+    var pub = P.publiques();
+    var faits = pub.filter(function (f) { return prises[f.id]; }).length;
+    return faits + ' / ' + pub.length + ' espèces';
+  }
+
   // ==========================================================
   //  L'ecran du mini-jeu
   // ==========================================================
@@ -205,8 +215,7 @@
 
       var tete = el('div', 'pe-tete');
       tete.appendChild(el('h2', 'pe-titre', 'Fish n’Der'));
-      var prises = Object.keys(DP.prises()).length;
-      tete.appendChild(el('p', 'pe-compte', prises + ' / ' + P.LISTE.length + ' espèces'));
+      tete.appendChild(el('p', 'pe-compte', comptePublic()));
       jeu.appendChild(tete);
 
       var owned = DP.owned();
@@ -318,7 +327,12 @@
       var canneAuSol = !DP.aLaCanne();
       var M2 = window.MATERIEL;
       var mordant = null, mordantCm = 0, lourd = false;
+      var mordantShiny = false;       // la prise est-elle dans sa seconde livree ?
       var irradie = false;            // la ligne est-elle en eau fluo ?
+      // Les especes secretes se meritent : certaines ne se montrent qu'au
+      // pecheur qui est reste longtemps. On compte donc les lancers de la
+      // partie en cours, et ils repartent de zero au prochain passage.
+      var lancers = 0;
       var devantCabane = false;
 
       // La mise en scene : le vol du bouchon a l'aller, celui du poisson
@@ -365,6 +379,7 @@
       function lancer() {
         var c = pointDeChute();
         if (!c) return;
+        lancers++;
         irradie = balade.tuile(c[0], c[1]) === T.EAU_RAD;
         var cible = { x: (c[0] + 0.5) * TS, y: (c[1] + 0.5) * TS };
 
@@ -390,6 +405,21 @@
         }, reduit ? 0 : CAST);
       }
 
+      // Ce qui vient mordre. Les secretes passent en premier, avec leur
+      // condition et leur chance propre ; a defaut, le tirage ordinaire,
+      // auquel s'ajoutent les evolutions deja ecloses.
+      function choisirPrise() {
+        var secret = P.tirerSecret({
+          irradie: irradie,
+          canne: DP.equipe('canne'),
+          flotteur: DP.equipe('flotteur'),
+          lancers: lancers,
+          prises: DP.prises()
+        });
+        if (secret) return secret;
+        return P.tirer(M2 ? M2.chanceRarete() : 0, irradie, DP.aPeche);
+      }
+
       function poserLigne() {
         majAction();
 
@@ -408,7 +438,8 @@
 
           // La prise est decidee ici : c'est son poids qui fixe le temps
           // dont on dispose pour ferrer, et la canne qui le rattrape.
-          mordant = P.tirer(M2 ? M2.chanceRarete() : 0, irradie);
+          mordant = choisirPrise();
+          mordantShiny = P.estShiny(mordant.id);
           mordantCm = P.taille(mordant);
           var kg = P.poids(mordant, mordantCm);
           lourd = P.charge(kg) > 0.55;
@@ -433,7 +464,8 @@
 
         // Une chance sur cent : ce n'est pas un poisson.
         var credit = Math.floor(Math.random() * CHANCE_CREDIT) === 0;
-        var f = credit ? null : (mordant || P.tirer(M2 ? M2.chanceRarete() : 0, irradie));
+        var f = credit ? null : (mordant || choisirPrise());
+        var brillant = !credit && mordantShiny;
         var cm = f ? (mordantCm || P.taille(f)) : 0;
         var kg = f ? P.poids(f, cm) : 0;
 
@@ -447,7 +479,7 @@
           t0: maintenant(), duree: reduit ? 1 : SORTIE, sens: 'retour',
           de: { x: bouchon.x, y: bouchon.y },
           vers: { x: balade.chef.x, y: balade.chef.y - 30 },
-          poisson: f, credit: credit
+          poisson: f, credit: credit, shiny: brillant
         };
 
         plusTard(function () {
@@ -457,8 +489,18 @@
           etat = 'prise';
           if (credit) { DP.earn('pink', 1); return montrerCredit(); }
           var neuf = !DP.aPeche(f.id);
-          var e = DP.noterPrise(f.id, cm, kg);
-          montrerPoisson(f, cm, kg, neuf, e);
+          var e = DP.noterPrise(f.id, cm, kg, brillant);
+
+          // L'evolution se declenche au moment ou la prise sort de l'eau :
+          // c'est la enieme fois qu'on la prend, et elle change de forme
+          // dans les mains du pecheur.
+          var evo = P.evolutionDe(f.id);
+          if (evo && !DP.aPeche(evo.id) && e.n >= evo.seuil) {
+            return montrerPoisson(f, cm, kg, neuf, e, brillant, function () {
+              evoluer(f, evo);
+            });
+          }
+          montrerPoisson(f, cm, kg, neuf, e, brillant);
         }, reduit ? 0 : SORTIE);
       }
 
@@ -467,6 +509,7 @@
         bouchon = null;
         vol = null; gerbe = null;
         mordant = null; mordantCm = 0; lourd = false; irradie = false;
+        mordantShiny = false;
         prise.hidden = true;
         prise.textContent = '';
         dire('');
@@ -554,32 +597,112 @@
 
       // --- Les panneaux de prise ---
 
-      function montrerPoisson(f, cm, kg, neuf, e) {
+      function montrerPoisson(f, cm, kg, neuf, e, brillant, ensuite) {
         var r = P.rarete(f.rarete);
         prise.hidden = false;
         prise.textContent = '';
         var box = el('div', 'pe-prise-box');
         box.dataset.rarete = f.rarete;
         box.style.setProperty('--r', r.couleur);
+        if (brillant) box.classList.add('is-shiny');
+        if (f.secret) box.classList.add('is-secret');
 
-        box.appendChild(el('p', 'pe-prise-titre', neuf ? 'NOUVELLE ESPÈCE !' : 'Belle prise !'));
+        var titre = brillant ? 'BRILLANT !'
+                  : f.secret && neuf ? 'ESPÈCE SECRÈTE !'
+                  : neuf ? 'NOUVELLE ESPÈCE !'
+                  : 'Belle prise !';
+        box.appendChild(el('p', 'pe-prise-titre', titre));
         var im = el('img', 'pe-prise-img');
-        im.src = P.url(f.id);
+        im.src = P.url(f.id, brillant);
         im.alt = '';
         box.appendChild(im);
-        box.appendChild(el('p', 'pe-prise-nom', f.nom));
+        var nom = el('p', 'pe-prise-nom', f.nom);
+        if (brillant) nom.appendChild(el('span', 'pe-etoile', '\u2726'));
+        box.appendChild(nom);
         var det = el('p', 'pe-prise-det');
-        det.appendChild(el('span', 'pe-prise-rarete', r.nom));
+        det.appendChild(el('span', 'pe-prise-rarete', f.secret ? 'Secret' : r.nom));
         det.appendChild(el('span', null, cm + ' cm'));
         det.appendChild(el('span', 'pe-prise-kg', P.poidsTexte(kg)));
         if (e && e.n > 1) det.appendChild(el('span', 'pe-prise-n', '×' + e.n));
         box.appendChild(det);
         if (lourd) box.appendChild(el('p', 'pe-prise-lourd', 'Belle bagarre !'));
+        // Une secrete qu'on decouvre dit enfin ce qui l'a fait venir : le
+        // joueur a devine sans le savoir, autant qu'il sache pourquoi.
+        if (f.secret && neuf && f.indice) {
+          box.appendChild(el('p', 'pe-prise-txt pe-prise-indice', f.indice));
+        }
         prise.appendChild(box);
 
-        dire(neuf ? f.nom + ' rejoint ton carnet.'
-                  : f.nom + ', ' + cm + ' cm pour ' + P.poidsTexte(kg) + '.');
-        plusTard(function () { if (vivant()) ranger(); }, reduit ? 800 : 2600);
+        dire(brillant ? f.nom + ' — dans une couleur qu\u2019on ne revoit pas de sit\u00f4t.'
+           : f.secret && neuf ? f.nom + ' existait donc vraiment.'
+           : neuf ? f.nom + ' rejoint ton carnet.'
+           : f.nom + ', ' + cm + ' cm pour ' + P.poidsTexte(kg) + '.');
+
+        var attente = reduit ? 800 : (brillant || (f.secret && neuf) ? 3200 : 2600);
+        plusTard(function () {
+          if (!vivant()) return;
+          if (ensuite) return ensuite();
+          ranger();
+        }, attente);
+      }
+
+      // --- L'evolution ---
+      // Le poisson reste a l'ecran, blanchit, change de silhouette, puis
+      // se presente sous son nouveau nom. C'est le seul moment du jeu ou
+      // une espece en rejoint une autre sans repasser par la ligne.
+      function evoluer(base, evo) {
+        var cm = P.taille(evo);
+        var kg = P.poids(evo, cm);
+        var r = P.rarete(evo.rarete);
+
+        prise.hidden = false;
+        prise.textContent = '';
+        var box = el('div', 'pe-prise-box pe-evo');
+        box.dataset.rarete = evo.rarete;
+        box.style.setProperty('--r', r.couleur);
+
+        var titre = el('p', 'pe-prise-titre', 'Quoi ?!');
+        box.appendChild(titre);
+        var im = el('img', 'pe-prise-img pe-evo-img');
+        im.src = P.url(base.id);
+        im.alt = '';
+        box.appendChild(im);
+        var nom = el('p', 'pe-prise-nom', base.nom);
+        box.appendChild(nom);
+        var det = el('p', 'pe-prise-det pe-evo-det');
+        box.appendChild(det);
+        prise.appendChild(box);
+        dire(base.nom + ' change de forme\u2026');
+
+        // Trois allers-retours entre les deux silhouettes, de plus en plus
+        // serres, puis la bascule definitive.
+        var pas = [0, 420, 760, 1040, 1280, 1470, 1620];
+        if (reduit) pas = [0, 60, 120, 180, 240, 300, 360];
+        pas.forEach(function (t, i) {
+          plusTard(function () {
+            if (!vivant()) return;
+            box.classList.add('is-flash');
+            im.src = P.url(i % 2 ? evo.id : base.id);
+          }, t);
+          plusTard(function () {
+            if (!vivant()) return;
+            box.classList.remove('is-flash');
+          }, t + 120);
+        });
+
+        plusTard(function () {
+          if (!vivant()) return;
+          box.classList.add('is-fini');
+          im.src = P.url(evo.id);
+          titre.textContent = '\u00C9VOLUTION !';
+          nom.textContent = evo.nom;
+          det.appendChild(el('span', 'pe-prise-rarete', r.nom));
+          det.appendChild(el('span', null, cm + ' cm'));
+          det.appendChild(el('span', 'pe-prise-kg', P.poidsTexte(kg)));
+          DP.noterPrise(evo.id, cm, kg);
+          dire(base.nom + ' a \u00e9volu\u00e9 en ' + evo.nom + ' !');
+          plusTard(function () { if (vivant()) ranger(); }, reduit ? 700 : 3000);
+        }, reduit ? 420 : 1800);
       }
 
       function montrerCredit() {
@@ -688,7 +811,7 @@
           return;
         }
 
-        var f = vol.poisson && window.POISSONS.feuille(vol.poisson.id);
+        var f = vol.poisson && window.POISSONS.feuille(vol.poisson.id, vol.shiny);
         if (!f) return;
         ctx.save();
         ctx.translate(x - cam.x, y - cam.y);
@@ -871,7 +994,7 @@
           'Sept lacs et une rivière, à perte de vue.',
           'Une canne flotte au bord de l’eau : ramasse-la,',
           'elle rejoindra tes Items pour de bon.',
-          'Trente espèces à remonter — et parfois un Crédit Temporel.'
+          'Des dizaines d’espèces à remonter — et parfois un Crédit Temporel.'
         ],
         commencer: ecranChoix
       }));
@@ -889,7 +1012,6 @@
     box.dataset.etape = 'carnet';
 
     var prises = DP.prises();
-    var trouves = Object.keys(prises).length;
 
     var tete = el('div', 'pe-tete pe-tete--carnet');
     var livre = el('img', 'pe-livre');
@@ -897,11 +1019,26 @@
     livre.alt = '';
     tete.appendChild(livre);
     tete.appendChild(el('h2', 'pe-titre', 'Carnet de pêche'));
-    tete.appendChild(el('p', 'pe-compte', trouves + ' / ' + P.LISTE.length + ' espèces'));
+    tete.appendChild(el('p', 'pe-compte', comptePublic()));
+
+    // Deux compteurs de cote : les brillants, dont on sait combien il en
+    // existe, et les secretes, dont on ne dit jamais le nombre.
+    var cotes = el('p', 'pe-cotes');
+    var nShiny = DP.shinys();
+    var shiny = el('span', 'pe-cote pe-cote--shiny',
+      '\u2726 ' + nShiny + ' / ' + P.especesShiny().length + ' brillants');
+    cotes.appendChild(shiny);
+    var nSecrets = P.secrets().filter(function (f) { return prises[f.id]; }).length;
+    if (nSecrets) {
+      cotes.appendChild(el('span', 'pe-cote pe-cote--secret',
+        nSecrets + (nSecrets > 1 ? ' secrets découverts' : ' secret découvert')));
+    }
+    tete.appendChild(cotes);
     box.appendChild(tete);
 
-    // Deux sections : les especes d'eau claire, puis les Speciaux des
-    // lacs irradies. Une case vide ne dit jamais ce qu'elle cache.
+    // Les sections. Une case vide ne dit jamais ce qu'elle cache — sauf
+    // pour une evolution, ou l'on montre de qui elle vient et ce qu'il
+    // reste a pecher : c'est un objectif, pas une surprise.
     var grille = el('div', 'pe-carnet-grille');
 
     function fiche(f) {
@@ -912,35 +1049,64 @@
       n.dataset.poisson = f.id;
       n.style.setProperty('--r', r.couleur);
       n.classList.toggle('is-vide', !e);
+      if (f.secret) n.classList.add('pe-fiche--secret');
 
       if (e) {
+        var brillant = !!e.shiny;
+        if (brillant) n.classList.add('is-shiny');
         var im = el('img', 'pe-fiche-img');
-        im.src = P.url(f.id);
+        im.src = P.url(f.id, brillant);
         im.alt = '';
         n.appendChild(im);
-        n.appendChild(el('span', 'pe-fiche-nom', f.nom));
+        var nom = el('span', 'pe-fiche-nom', f.nom);
+        if (brillant) nom.appendChild(el('span', 'pe-etoile', '\u2726'));
+        n.appendChild(nom);
         n.appendChild(el('span', 'pe-fiche-det',
           e.max + ' cm · ' + P.poidsTexte(e.kg || P.poids(f, e.max))));
+        if (f.secret && f.indice) {
+          n.title = f.indice;
+          n.appendChild(el('span', 'pe-fiche-indice', f.indice));
+        }
         n.appendChild(el('span', 'pe-fiche-n', '×' + e.n));
-      } else {
-        n.appendChild(el('span', 'pe-fiche-vide', '?'));
-        n.appendChild(el('span', 'pe-fiche-nom', '???'));
-        n.appendChild(el('span', 'pe-fiche-det', f.cm[0] + '–' + f.cm[1] + ' cm'));
+        return n;
       }
+
+      if (f.evolueDe) {
+        var base = P.parId(f.evolueDe);
+        var eb = prises[f.evolueDe];
+        var fait = eb ? Math.min(eb.n, f.seuil) : 0;
+        n.classList.add('pe-fiche--evo');
+        n.appendChild(el('span', 'pe-fiche-vide', '\u25B2'));
+        n.appendChild(el('span', 'pe-fiche-nom',
+          '\u00c9volution de ' + (base ? base.nom : '?')));
+        n.appendChild(el('span', 'pe-fiche-det', fait + ' / ' + f.seuil + ' prises'));
+        return n;
+      }
+
+      n.appendChild(el('span', 'pe-fiche-vide', '?'));
+      n.appendChild(el('span', 'pe-fiche-nom', '???'));
+      n.appendChild(el('span', 'pe-fiche-det', f.cm[0] + '–' + f.cm[1] + ' cm'));
       return n;
     }
 
-    function section(titre, liste, cls) {
+    function section(titre, liste, cls, muet) {
+      if (!liste.length) return;
+      var t = el('p', 'pe-section' + (cls ? ' ' + cls : ''));
+      t.appendChild(el('span', 'pe-section-nom', titre));
       var faits = liste.filter(function (f) { return prises[f.id]; }).length;
-      var tete = el('p', 'pe-section' + (cls ? ' ' + cls : ''));
-      tete.appendChild(el('span', 'pe-section-nom', titre));
-      tete.appendChild(el('span', 'pe-section-n', faits + ' / ' + liste.length));
-      grille.appendChild(tete);
+      // Les secretes ne disent pas combien elles sont : on n'affiche que
+      // ce qui a deja mordu.
+      t.appendChild(el('span', 'pe-section-n',
+        muet ? String(faits) : faits + ' / ' + liste.length));
+      grille.appendChild(t);
       liste.forEach(function (f) { grille.appendChild(fiche(f)); });
     }
 
     section('Eaux claires', P.vivier(false));
     section('Spéciaux — eaux irradiées', P.vivier(true), 'pe-section--rad');
+    section('Évolutions', P.evolutions(), 'pe-section--evo');
+    section('Secrets', P.secrets().filter(function (f) { return prises[f.id]; }),
+            'pe-section--secret', true);
 
     box.appendChild(grille);
 
@@ -968,7 +1134,7 @@
     ? window.MINIJEUX.findIndex(function (j) { return j.id === 'libre-2'; })
     : -1;
   var entree = {
-    id: 'peche', nom: 'Fish n’Der', sous: 'Trente espèces à remonter',
+    id: 'peche', nom: 'Fish n’Der', sous: 'Des dizaines d’espèces à remonter',
     vue: 'peche', pret: true,
     img: 'assets/games/icones/fish-n-der.webp'
   };
