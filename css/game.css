@@ -2493,3 +2493,583 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
   text-align: center;
   color: #9a78cc;
 }
+
+/* ==========================================================
+   Le Pistolet Lumithique : le duel, et l'armurerie
+   ========================================================== */
+
+/* ---------- Le panneau de decouverte de l'arme ---------- */
+
+.pe-prise-box--arme { --r: #7cf0ff; }
+
+.pe-prise-arme {
+  height: calc(104 * var(--px));
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 calc(14 * var(--px)) rgba(124, 240, 255, .8));
+}
+
+.pe-prise-txt--sous { color: #7fa8bd; font-size: calc(17 * var(--px)); }
+
+/* ---------- Le duel ---------- */
+
+.rq {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #04070d;
+  font-family: "Courier New", "Cutive Mono", monospace;
+  line-height: 1.25;
+  animation: rq-ouvre .5s ease both;
+}
+
+@keyframes rq-ouvre {
+  from { opacity: 0; transform: scale(1.06); }
+  to   { opacity: 1; transform: none; }
+}
+
+.rq-cv {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* ---------- Le bandeau du haut ---------- */
+
+.rq-hud {
+  position: absolute;
+  top: calc(10 * var(--px));
+  left: calc(14 * var(--px));
+  right: calc(14 * var(--px));
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--px));
+  pointer-events: none;
+}
+
+.rq-titre {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--px));
+}
+
+.rq-nom {
+  font-size: calc(30 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  color: #eaf7ff;
+  text-shadow: calc(2 * var(--px)) calc(2 * var(--px)) 0 #04121f;
+}
+
+.rq-palier {
+  font-size: calc(17 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-transform: uppercase;
+  color: #9fc4d8;
+}
+
+.rq-jauge {
+  position: relative;
+  height: calc(22 * var(--px));
+  border: calc(3 * var(--px)) solid #0a1d2e;
+  border-radius: calc(6 * var(--px));
+  background: rgba(4, 16, 26, .8);
+  overflow: hidden;
+}
+
+.rq-jauge-plein {
+  height: 100%;
+  background: linear-gradient(180deg, #ff8f6a 0%, #d6392c 100%);
+  transition: width .16s ease;
+}
+
+.rq-jauge-plein[data-bas="1"] {
+  background: linear-gradient(180deg, #ffd166 0%, #e8483a 100%);
+  animation: rq-bas .5s ease-in-out infinite alternate;
+}
+
+@keyframes rq-bas { from { filter: none; } to { filter: brightness(1.4); } }
+
+.rq-pv {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(15 * var(--px));
+  color: #fff;
+  text-shadow: calc(1 * var(--px)) calc(1 * var(--px)) 0 #3a0c08;
+}
+
+.rq-temps {
+  height: calc(8 * var(--px));
+  border-radius: calc(4 * var(--px));
+  background: rgba(4, 16, 26, .8);
+  overflow: hidden;
+}
+
+.rq-temps-plein {
+  height: 100%;
+  background: #7cf0ff;
+  transition: width .1s linear;
+}
+
+.rq-temps-plein[data-court="1"] {
+  background: #ffb02e;
+  animation: rq-court .4s steps(2, end) infinite;
+}
+
+@keyframes rq-court { from { opacity: 1; } to { opacity: .45; } }
+
+/* ---------- Le pied ---------- */
+
+.rq-pied {
+  position: absolute;
+  bottom: calc(10 * var(--px));
+  left: calc(14 * var(--px));
+  right: calc(14 * var(--px));
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(14 * var(--px));
+  font-size: calc(16 * var(--px));
+  color: #9fc4d8;
+  pointer-events: none;
+}
+
+.rq-arme { color: #7cf0ff; }
+.rq-aide { color: #ffb02e; }
+
+/* ---------- La carte de fin ---------- */
+
+/* "display: flex" l'emporterait sur le display:none de [hidden] : sans
+   cette ligne, le voile de fin reste en travers du canevas et avale tous
+   les tirs. */
+.rq-fin[hidden] { display: none; }
+
+.rq-fin {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 8, 14, .74);
+}
+
+.rq-carte {
+  --r: #7cf0ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(7 * var(--px));
+  max-width: calc(620 * var(--px));
+  padding: calc(18 * var(--px)) calc(34 * var(--px));
+  border: calc(4 * var(--px)) solid var(--r);
+  border-radius: calc(14 * var(--px));
+  background: rgba(4, 16, 26, .96);
+  box-shadow: 0 0 calc(40 * var(--px)) var(--r);
+  animation: rq-carte-in .45s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+
+@keyframes rq-carte-in {
+  from { opacity: 0; transform: translateY(calc(26 * var(--px))) scale(.86); }
+  to   { opacity: 1; transform: none; }
+}
+
+.rq-carte.is-victoire { --r: #ffb02e; }
+.rq-carte.is-echec    { --r: #6f90a4; background: rgba(8, 12, 18, .96); }
+
+.rq-carte-titre {
+  margin: 0;
+  font-size: calc(30 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: var(--r);
+}
+
+.rq-carte-img {
+  height: calc(92 * var(--px));
+  image-rendering: pixelated;
+}
+
+.rq-carte.is-echec .rq-carte-img { filter: brightness(.45) saturate(.4); }
+
+.rq-carte-nom { margin: 0; font-size: calc(28 * var(--px)); color: #eaf7ff; }
+
+.rq-carte-txt {
+  margin: 0;
+  max-width: calc(520 * var(--px));
+  text-align: center;
+  font-size: calc(18 * var(--px));
+  color: #b8dcef;
+}
+
+.rq-butin {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(10 * var(--px));
+  margin: calc(2 * var(--px)) 0;
+}
+
+.rq-gain {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(3 * var(--px)) calc(11 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(124, 240, 255, .5);
+  border-radius: calc(8 * var(--px));
+  background: rgba(0, 0, 0, .35);
+  font-size: calc(19 * var(--px));
+  color: #eaf7ff;
+  white-space: nowrap;
+}
+
+.rq-gain-img { height: calc(22 * var(--px)); border-radius: calc(3 * var(--px)); }
+.rq-gain--noyau { border-color: rgba(124, 240, 255, .9); color: #7cf0ff; }
+.rq-gain--poissons { border-color: rgba(159, 224, 181, .6); color: #9fe0b5; }
+
+.rq-revetement {
+  margin: 0;
+  padding: calc(4 * var(--px)) calc(14 * var(--px));
+  border-radius: calc(8 * var(--px));
+  background: rgba(255, 176, 46, .16);
+  font-size: calc(19 * var(--px));
+  color: #ffd166;
+}
+
+.rq-btn {
+  margin-top: calc(4 * var(--px));
+  padding: calc(8 * var(--px)) calc(26 * var(--px));
+  border: calc(3 * var(--px)) solid var(--r);
+  border-radius: calc(10 * var(--px));
+  background: rgba(124, 240, 255, .12);
+  color: #eaf7ff;
+  font-family: inherit;
+  font-size: calc(20 * var(--px));
+  letter-spacing: calc(1 * var(--px));
+  cursor: pointer;
+}
+
+.rq-btn:hover { background: rgba(124, 240, 255, .25); }
+
+/* ==========================================================
+   L'armurerie : l'arme a gauche, les trophees a droite
+   ========================================================== */
+
+.ar {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: calc(360 * var(--px)) 1fr;
+  gap: calc(12 * var(--px));
+  padding: calc(12 * var(--px)) calc(16 * var(--px));
+  font-family: "Courier New", "Cutive Mono", monospace;
+  color: #d8f8ff;
+  line-height: 1.25;
+  background: radial-gradient(90% 70% at 20% 30%, #123a52 0%, #071c2c 55%, #03101a 100%);
+  animation: rq-ouvre .35s ease both;
+}
+
+.ar-gauche {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(10 * var(--px));
+  border: calc(3 * var(--px)) solid rgba(124, 240, 255, .4);
+  border-radius: calc(14 * var(--px));
+  background: rgba(3, 14, 24, .7);
+  min-height: 0;
+}
+
+.ar-vitrine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: calc(10 * var(--px)) 0;
+  border-radius: calc(10 * var(--px));
+  background: radial-gradient(60% 80% at 50% 50%, rgba(124, 240, 255, .18), transparent 70%);
+}
+
+.ar-arme {
+  width: calc(290 * var(--px));
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 calc(16 * var(--px)) rgba(124, 240, 255, .55));
+  animation: ar-flotte 3.2s ease-in-out infinite alternate;
+}
+
+@keyframes ar-flotte {
+  from { transform: translateY(calc(-3 * var(--px))); }
+  to   { transform: translateY(calc(3 * var(--px))); }
+}
+
+.ar-nom {
+  margin: 0;
+  font-size: calc(26 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-transform: uppercase;
+  color: #7ce0ff;
+  text-shadow: 0 0 calc(14 * var(--px)) rgba(60, 190, 255, .6);
+}
+
+.ar-niveau { margin: 0; font-size: calc(21 * var(--px)); color: #ffd166; }
+
+.ar-texte {
+  margin: 0;
+  text-align: center;
+  font-size: calc(16 * var(--px));
+  color: #9fc4d8;
+}
+
+.ar-stats {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--px));
+  margin-top: calc(4 * var(--px));
+}
+
+.ar-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: calc(3 * var(--px)) calc(10 * var(--px));
+  border-radius: calc(6 * var(--px));
+  background: rgba(0, 0, 0, .3);
+  font-size: calc(16 * var(--px));
+}
+
+.ar-stat-nom { color: #8fb6cc; }
+.ar-stat-val { color: #eaf7ff; }
+
+.ar-echelle {
+  display: flex;
+  gap: calc(4 * var(--px));
+  width: 100%;
+  margin-top: calc(6 * var(--px));
+}
+
+.ar-cran {
+  flex: 1;
+  padding: calc(4 * var(--px)) 0;
+  border: calc(2 * var(--px)) solid #2a3c48;
+  border-radius: calc(6 * var(--px));
+  background: rgba(0, 0, 0, .3);
+  font-size: calc(14 * var(--px));
+  text-align: center;
+  color: #4d6470;
+}
+
+.ar-cran.is-atteint {
+  border-color: #7cf0ff;
+  background: rgba(124, 240, 255, .16);
+  color: #d8f8ff;
+}
+
+.ar-noyaux {
+  display: flex;
+  align-items: baseline;
+  gap: calc(6 * var(--px));
+  margin: calc(4 * var(--px)) 0 0;
+  font-size: calc(19 * var(--px));
+  color: #7cf0ff;
+}
+
+.ar-noyau-pastille {
+  font-size: calc(22 * var(--px));
+  text-shadow: 0 0 calc(10 * var(--px)) #7cf0ff;
+}
+
+.ar-monter {
+  width: 100%;
+  margin-top: auto;
+  padding: calc(8 * var(--px)) calc(10 * var(--px));
+  border: calc(3 * var(--px)) solid #0a1d2e;
+  border-radius: calc(10 * var(--px));
+  background: linear-gradient(180deg, #a9f0b6 0%, #61bd78 100%);
+  color: #06263a;
+  font-family: inherit;
+  font-size: calc(18 * var(--px));
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ar-monter:hover:not(:disabled) { filter: brightness(1.08); }
+.ar-monter:disabled { opacity: .38; cursor: not-allowed; }
+
+.ar-retour {
+  width: 100%;
+  padding: calc(6 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(124, 240, 255, .5);
+  border-radius: calc(9 * var(--px));
+  color: #b8dcef;
+  font-size: calc(17 * var(--px));
+  text-align: center;
+  text-decoration: none;
+}
+
+.ar-retour:hover { background: rgba(124, 240, 255, .12); }
+
+/* ---------- Le tableau de chasse ---------- */
+
+.ar-droite {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--px));
+  min-height: 0;
+}
+
+.ar-banniere {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--px));
+  padding: calc(5 * var(--px)) calc(14 * var(--px));
+  border: calc(3 * var(--px)) solid #0a1d2e;
+  border-radius: calc(12 * var(--px));
+  background: linear-gradient(180deg, #2fc4f0 0%, #1b8fc4 100%);
+}
+
+.ar-enseigne {
+  font-size: calc(24 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(3 * var(--px));
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: calc(2 * var(--px)) calc(2 * var(--px)) 0 #0a3550;
+}
+
+.ar-total { font-size: calc(17 * var(--px)); color: #06304a; }
+
+.ar-trophees {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: calc(8 * var(--px));
+}
+
+.ar-trophee {
+  --r: #c7d3de;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2 * var(--px));
+  padding: calc(6 * var(--px)) calc(4 * var(--px));
+  border: calc(3 * var(--px)) solid var(--r);
+  border-radius: calc(10 * var(--px));
+  background: rgba(6, 22, 34, .9);
+}
+
+.ar-trophee.is-vide {
+  border-color: #2a3c48;
+  background: rgba(6, 14, 20, .8);
+  color: #5f7a8a;
+}
+
+.ar-trophee-img {
+  width: 100%;
+  height: calc(56 * var(--px));
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.ar-trophee-vide {
+  height: calc(56 * var(--px));
+  font-size: calc(34 * var(--px));
+  line-height: calc(56 * var(--px));
+}
+
+.ar-trophee-nom {
+  font-size: calc(15 * var(--px));
+  text-align: center;
+  line-height: 1.05;
+}
+
+.ar-trophee-det { font-size: calc(12 * var(--px)); color: #7fa8bd; }
+.ar-trophee.is-vide .ar-trophee-det { color: #4d6470; }
+
+.ar-marques { display: flex; gap: calc(5 * var(--px)); align-items: baseline; }
+.ar-trophee-n { font-size: calc(14 * var(--px)); color: #eaf7ff; }
+.ar-marque { font-size: calc(12 * var(--px)); }
+.ar-marque--brillant { color: #ffd166; }
+.ar-marque--irradie  { color: #c8f02a; }
+
+/* ---------- Les revetements ---------- */
+
+.ar-sous-titre {
+  margin: calc(4 * var(--px)) 0 0;
+  padding-bottom: calc(3 * var(--px));
+  border-bottom: calc(2 * var(--px)) solid rgba(124, 224, 255, .3);
+  font-size: calc(18 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-transform: uppercase;
+  color: #8fb6cc;
+}
+
+.ar-peaux {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(7 * var(--px));
+  overflow: auto;
+  align-content: start;
+  scrollbar-width: none;
+}
+
+.ar-peaux::-webkit-scrollbar { width: 0; }
+
+.ar-peau {
+  --r: #c7d3de;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2 * var(--px));
+  padding: calc(5 * var(--px)) calc(6 * var(--px));
+  border: calc(3 * var(--px)) solid var(--r);
+  border-radius: calc(9 * var(--px));
+  background: rgba(6, 22, 34, .9);
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.ar-peau.is-vide {
+  border-color: #2a3c48;
+  background: rgba(6, 14, 20, .8);
+  color: #5f7a8a;
+  cursor: default;
+}
+
+.ar-peau.is-vide .ar-peau-img { filter: brightness(0) invert(.22); }
+
+.ar-peau.is-monte {
+  box-shadow: 0 0 calc(16 * var(--px)) var(--r);
+  background: rgba(20, 44, 62, .95);
+}
+
+.ar-peau-img {
+  width: 100%;
+  height: calc(34 * var(--px));
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.ar-peau-nom { font-size: calc(14 * var(--px)); text-align: center; }
+
+.ar-peau-cond {
+  font-size: calc(11 * var(--px));
+  line-height: 1.1;
+  text-align: center;
+  color: #4d6470;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rq, .rq-carte, .ar, .ar-arme,
+  .rq-jauge-plein[data-bas="1"],
+  .rq-temps-plein[data-court="1"] { animation: none; }
+  .rq-jauge-plein, .rq-temps-plein { transition: none; }
+}

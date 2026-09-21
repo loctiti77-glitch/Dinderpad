@@ -534,7 +534,10 @@
       // Un item peut se montrer sous l'etat ou il est : la canne affiche
       // celle qui est montee, et le sous-titre la nomme.
       var img = el('img', 'slot-face');
-      img.src = it.visuel ? it.visuel() : it.img;
+      // Un item peint a la volee peut n'avoir encore aucune image : on
+      // laisse alors la case vide plutot que de demander une adresse nulle.
+      var face = it.visuel ? it.visuel() : it.img;
+      if (face) img.src = face;
       img.alt = '';
       img.decoding = 'async';
       row.appendChild(img);

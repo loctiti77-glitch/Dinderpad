@@ -103,7 +103,17 @@
         var M = window.MATERIEL;
         return M ? M.equipee('canne').nom : 'Ramassée au bord de l’eau';
       },
-      view: 'peche-hub', acquis: function () { return aLaCanne(); } }
+      view: 'peche-hub', acquis: function () { return aLaCanne(); } },
+    { id: 'arme', name: 'Pistolet Lumithique',
+      sub: 'Trouvé au creux d’une souche',
+      img: null,
+      // Le pistolet n'a pas de fichier : il est peint a la volee, dans le
+      // revetement monte et au niveau atteint.
+      visuel: function () { return window.ARME ? window.ARME.url() : null; },
+      detail: function () {
+        return window.ARME ? window.ARME.niveau().nom : 'Arme lumithique';
+      },
+      view: 'armurerie', acquis: function () { return aLArme(); } }
   ];
 
   // Ce que le joueur possede vraiment, dans l'ordre du catalogue.
@@ -297,7 +307,16 @@
       vus: [],
       cannes: [],
       flotteurs: [],
-      equip: { canne: 'base', flotteur: 'base' }
+      equip: { canne: 'base', flotteur: 'base' },
+      // Le Pistolet Lumithique et ce qui va avec : son niveau, les
+      // Noyaux qui le font monter, ses revetements, et les requins
+      // abattus.
+      arme: false,
+      armeNiveau: 1,
+      noyaux: 0,
+      revetements: [],
+      revetement: 'origine',
+      requins: {}
     };
   }
 
@@ -324,6 +343,17 @@
     if (!p.equip.flotteur || p.flotteurs.indexOf(p.equip.flotteur) === -1) {
       p.equip.flotteur = p.flotteurs[0] || 'base';
     }
+    if (typeof p.arme !== 'boolean') p.arme = false;
+    if (typeof p.armeNiveau !== 'number') p.armeNiveau = 1;
+    p.armeNiveau = Math.max(1, Math.min(5, p.armeNiveau));
+    if (typeof p.noyaux !== 'number') p.noyaux = 0;
+    if (!Array.isArray(p.revetements)) p.revetements = [];
+    // Porter l'arme, c'est porter au moins son acier d'origine.
+    if (p.arme && p.revetements.indexOf('origine') === -1) p.revetements.push('origine');
+    if (!p.revetement || p.revetements.indexOf(p.revetement) === -1) {
+      p.revetement = p.revetements[0] || 'origine';
+    }
+    if (!p.requins || typeof p.requins !== 'object') p.requins = {};
     if (!p.credits) p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
     if (!Array.isArray(p.owned)) p.owned = [];
     return p;
@@ -605,6 +635,84 @@
     return n;
   }
 
+  // ---------- Le Pistolet Lumithique ----------
+  // Il ne s'achete pas : il se trouve, au creux d'une souche, quelque
+  // part dans le bois du mini-jeu de peche.
+
+  function aLArme() { return !!me().arme; }
+
+  function prendreArme() {
+    var p = me();
+    if (p.arme) return false;
+    p.arme = true;
+    if (p.revetements.indexOf('origine') === -1) p.revetements.push('origine');
+    p.revetement = p.revetement || 'origine';
+    save();
+    return true;
+  }
+
+  function armeNiveau() { return me().armeNiveau || 1; }
+
+  function monterArme() {
+    var p = me();
+    if (p.armeNiveau >= 5) return false;
+    p.armeNiveau++;
+    save();
+    return p.armeNiveau;
+  }
+
+  // Les Noyaux Lumithiques : la monnaie des requins, et rien d'autre.
+  function noyaux() { return me().noyaux || 0; }
+
+  function gagnerNoyaux(n) {
+    var p = me();
+    p.noyaux = (p.noyaux || 0) + n;
+    save();
+    return p.noyaux;
+  }
+
+  function depenserNoyaux(n) {
+    var p = me();
+    if ((p.noyaux || 0) < n) return false;
+    p.noyaux -= n;
+    save();
+    return true;
+  }
+
+  function revetements()      { return me().revetements.slice(); }
+  function aRevetement(id)    { return me().revetements.indexOf(id) !== -1; }
+  function revetement()       { return me().revetement || 'origine'; }
+
+  function acquerirRevetement(id) {
+    var p = me();
+    if (p.revetements.indexOf(id) !== -1) return false;
+    p.revetements.push(id);
+    save();
+    return true;
+  }
+
+  function equiperRevetement(id) {
+    if (!aRevetement(id)) return false;
+    me().revetement = id;
+    save();
+    return true;
+  }
+
+  // Le tableau de chasse : combien de chaque forme, et combien de
+  // brillants et d'irradies parmi elles.
+  function requins() { return me().requins; }
+
+  function noterRequin(id, opts) {
+    var p = me();
+    var e = p.requins[id] || { n: 0, brillants: 0, irradies: 0 };
+    e.n++;
+    if (opts && opts.brillant) e.brillants++;
+    if (opts && opts.irradie) e.irradies++;
+    p.requins[id] = e;
+    save();
+    return e;
+  }
+
   // ---------- Les exploits ----------
   // Ce que la seule collection ne dit pas : une victoire, un chrono. Les
   // badges s'en servent pour savoir ce qui est acquis.
@@ -658,6 +766,12 @@
     p.cannes = [];
     p.flotteurs = [];
     p.equip = { canne: 'base', flotteur: 'base' };
+    p.arme = false;
+    p.armeNiveau = 1;
+    p.noyaux = 0;
+    p.revetements = [];
+    p.revetement = 'origine';
+    p.requins = {};
     save();
   }
 
@@ -700,6 +814,13 @@
     aLaCanne: aLaCanne, prendreCanne: prendreCanne,
     prises: prises, aPeche: aPeche, noterPrise: noterPrise,
     aShiny: aShiny, shinys: shinys,
+    aLArme: aLArme, prendreArme: prendreArme,
+    armeNiveau: armeNiveau, monterArme: monterArme,
+    noyaux: noyaux, gagnerNoyaux: gagnerNoyaux, depenserNoyaux: depenserNoyaux,
+    revetements: revetements, aRevetement: aRevetement,
+    revetement: revetement, acquerirRevetement: acquerirRevetement,
+    equiperRevetement: equiperRevetement,
+    requins: requins, noterRequin: noterRequin,
     materiel: materiel, possede: possede, acquerir: acquerir,
     equipe: equipe, equiper: equiper, retirerPrise: retirerPrise,
     exploits: exploits, exploit: exploit,

@@ -11,13 +11,13 @@
   var T = {
     HERBE: 0, FLEUR: 1, CHEMIN: 2, ARBRE: 3, BUISSON: 4, ROCHER: 5,
     EAU: 6, MUR: 7, DALLE: 8, PORTE: 9, SABLE: 10, PONTON: 11, ROSEAU: 12,
-    CABANE: 13, TOIT: 14, PORTE_BOIS: 15, EAU_RAD: 16
+    CABANE: 13, TOIT: 14, PORTE_BOIS: 15, EAU_RAD: 16, SOUCHE: 17
   };
 
   // Ce qu'on ne traverse pas. L'eau se longe, elle ne se marche pas.
   var BLOQUANT = {};
   [T.ARBRE, T.BUISSON, T.ROCHER, T.EAU, T.EAU_RAD, T.MUR, T.ROSEAU,
-   T.CABANE, T.TOIT].forEach(function (k) {
+   T.CABANE, T.TOIT, T.SOUCHE].forEach(function (k) {
     BLOQUANT[k] = true;
   });
 
@@ -176,6 +176,31 @@
         x.fillStyle = '#7c5a2c';
         x.fillRect(rx, py + TS - rh - 3, 2, 3);
         x.fillStyle = '#2f6e2c';
+      }
+      return;
+    }
+
+    if (t === T.SOUCHE) {
+      // Une vieille souche creuse, au fond du bois. Rien ne la distingue
+      // d'un tronc mort tant qu'on ne s'en approche pas : c'est le jeu
+      // qui allume sa lueur, par "opts.souche", quand le joueur est la.
+      x.fillStyle = 'rgba(0,0,0,.28)';
+      x.fillRect(px + 2, py + TS - 5, TS - 4, 4);
+      x.fillStyle = '#4e3a22'; x.fillRect(px + 3, py + 9, TS - 6, TS - 11);
+      x.fillStyle = '#5f4729'; x.fillRect(px + 3, py + 9, 5, TS - 11);
+      // Les anneaux du bois, sur la tranche.
+      x.fillStyle = '#7a5c33'; x.fillRect(px + 3, py + 7, TS - 6, 4);
+      x.fillStyle = '#8d6c3d'; x.fillRect(px + 5, py + 8, TS - 10, 2);
+      x.fillStyle = '#2b1f12'; x.fillRect(px + 8, py + 8, TS - 16, 2);
+      // La mousse, cote nord.
+      x.fillStyle = '#4d7a33';
+      x.fillRect(px + 3, py + 11, 4, 3);
+      x.fillRect(px + TS - 7, py + 13, 3, 3);
+      // Quelques eclats d'ecorce au pied.
+      x.fillStyle = '#3a2a18';
+      for (i = 0; i < 3; i++) {
+        n = bruit(tx, ty, 210 + i);
+        x.fillRect(px + 2 + (n * 18 | 0), py + TS - 4, 3, 2);
       }
       return;
     }

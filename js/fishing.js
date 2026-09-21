@@ -41,6 +41,12 @@
   // Une chance sur cent : le Credit Temporel.
   var CHANCE_CREDIT = 100;
 
+  // La souche creuse, au fond du bois du nord-ouest. C'est la que dort le
+  // Pistolet Lumithique. Rien ne la signale de loin : il faut y aller.
+  // L'emplacement a ete choisi dans un creux d'arbres reellement
+  // accessible a pied depuis le depart — vingt cases de foret plus loin.
+  var SOUCHE = { x: 4, y: 9 };
+
   // Les boutons de l'ecran de jeu sont des enseignes peintes. Les deux
   // autres roles — ramasser la canne, entrer a la Poissonnerie — restent
   // en toutes lettres : ils n'ont pas d'image.
@@ -152,6 +158,11 @@
         else if (n < 0.19) g[y][x] = T.BUISSON;
         else if (n < 0.215) g[y][x] = T.ROCHER;
       }
+    }
+
+    // La souche, plantee dans son creux d'arbres.
+    if (g[SOUCHE.y] && g[SOUCHE.y][SOUCHE.x] !== undefined) {
+      g[SOUCHE.y][SOUCHE.x] = T.SOUCHE;
     }
 
     // La cabane : deux rangees de toit, deux de facade, une porte au milieu.
@@ -325,6 +336,9 @@
       var depuis = 0;              // date du dernier changement d'etat
       var balade = null;
       var canneAuSol = !DP.aLaCanne();
+      var armeAuSol = !DP.aLArme();
+      var devantLaSouche = false;
+      var duel = null;             // le duel en cours contre un requin
       var M2 = window.MATERIEL;
       var mordant = null, mordantCm = 0, lourd = false;
       var mordantShiny = false;       // la prise est-elle dans sa seconde livree ?
@@ -426,6 +440,17 @@
         // Parfois rien ne vient : il faut relancer.
         var mord = Math.random() < 0.68;
         var delai = reduit ? 300 : 1200 + Math.random() * 2800;
+
+        // Avant toute chose : le requin. Il ne se montre qu'a qui porte le
+        // Pistolet Lumithique, et rarement.
+        var R = window.REQUIN;
+        if (R && DP.aLArme() &&
+            Math.floor(Math.random() * R.CHANCE_RENCONTRE) === 0) {
+          return plusTard(function () {
+            if (vivant() && etat === 'lancee') rencontre();
+          }, delai);
+        }
+
         plusTard(function () {
           if (!vivant() || etat !== 'lancee') return;
           if (!mord) {
@@ -510,6 +535,7 @@
         vol = null; gerbe = null;
         mordant = null; mordantCm = 0; lourd = false; irradie = false;
         mordantShiny = false;
+        if (duel) { duel.arreter(); duel = null; }
         prise.hidden = true;
         prise.textContent = '';
         dire('');
@@ -549,6 +575,9 @@
         } else if (etat === 'repos' && canneAuSol && prochesDeLaCanne()) {
           action.hidden = false;
           poserAction('ramasser', 'RAMASSER LA CANNE');
+        } else if (etat === 'repos' && armeAuSol && devantLaSouche) {
+          action.hidden = false;
+          poserAction('fouiller', 'FOUILLER LA SOUCHE');
         } else if (etat === 'repos' && devantCabane) {
           action.hidden = false;
           poserAction('entrer', 'RENTRER');
@@ -556,6 +585,19 @@
           action.hidden = true;
           poserAction('', '');
         }
+      }
+
+      // A-t-on la souche juste devant soi ? C'est la seule facon de la
+      // fouiller : passer a cote ne suffit pas.
+      function faceALaSouche() {
+        var c = balade.caseDevant();
+        return c[0] === SOUCHE.x && c[1] === SOUCHE.y;
+      }
+
+      function prochesDeLaSouche() {
+        var dx = balade.chef.x - (SOUCHE.x + 0.5) * TS;
+        var dy = balade.chef.y - (SOUCHE.y + 0.5) * TS;
+        return dx * dx + dy * dy < 90 * 90;
       }
 
       function prochesDeLaCanne() {
@@ -593,6 +635,50 @@
         prise.appendChild(box);
         plusTard(function () { if (vivant()) ranger(); }, 2600);
         majAction();
+      }
+
+      // Fouiller la souche : ce qui luit au fond, c'est le Pistolet
+      // Lumithique. Il rejoint les Items et ne se reperd plus.
+      function fouiller() {
+        if (!armeAuSol) return;
+        DP.prendreArme();
+        armeAuSol = false;
+        etat = 'repos';
+        prise.hidden = false;
+        prise.textContent = '';
+        var box = el('div', 'pe-prise-box pe-prise-box--arme');
+        box.appendChild(el('p', 'pe-prise-titre', 'PISTOLET LUMITHIQUE'));
+        var im = el('img', 'pe-prise-arme');
+        if (window.ARME) im.src = window.ARME.url();
+        im.alt = '';
+        box.appendChild(im);
+        box.appendChild(el('p', 'pe-prise-txt',
+          'Il dormait là depuis longtemps, et il fonctionne encore.'));
+        box.appendChild(el('p', 'pe-prise-txt pe-prise-txt--sous',
+          'Ajouté à tes Items. Quelque chose de gros vit dans ces lacs.'));
+        prise.appendChild(box);
+        dire('Le Pistolet Lumithique est à toi.');
+        plusTard(function () { if (vivant()) ranger(); }, reduit ? 900 : 3600);
+        majAction();
+      }
+
+      // --- La rencontre ---
+      // Une ligne sur seize, arme au poing : ce n'est pas un poisson qui
+      // monte. Le duel gele la balade tant qu'il dure.
+      function rencontre() {
+        var R = window.REQUIN;
+        if (!R) return ranger();
+        etat = 'requin';
+        bouchon = null; vol = null; gerbe = null;
+        majAction();
+        dire('Quelque chose de gros remonte…');
+        var bete = R.tirer(DP.armeNiveau(), irradie);
+        duel = R.Duel({
+          parent: scene,
+          bete: bete,
+          irradie: irradie,
+          surSortie: function () { duel = null; if (vivant()) ranger(); }
+        });
       }
 
       // --- Les panneaux de prise ---
@@ -738,6 +824,7 @@
         else if (r === 'ferrer') ferrer();
         else if (r === 'ramasser') ramasser();
         else if (r === 'entrer') entrerBoutique();
+        else if (r === 'fouiller') fouiller();
       }
       action.addEventListener('click', agir);
 
@@ -914,6 +1001,36 @@
             }
           });
 
+          // La souche ne livre son secret qu'a bout portant : la lueur
+          // ne s'allume qu'a quelques pas, et pas avant.
+          if (armeAuSol && balade && prochesDeLaSouche()) {
+            sortie.push({
+              x: (SOUCHE.x + 0.5) * TS, y: (SOUCHE.y + 1) * TS - 2,
+              dessin: function (ctx, sx, sy) {
+                // La lueur monte bien au-dessus de la souche : plante
+                // devant elle, le pecheur la masque entierement, et l'on
+                // ne verrait plus rien de ce qu'on est venu chercher.
+                var puls = reduit ? 0.22 : 0.16 + 0.12 * Math.sin(t / 340);
+                ctx.fillStyle = 'rgba(124,240,255,' + puls.toFixed(2) + ')';
+                ctx.beginPath();
+                ctx.ellipse(sx, sy - 26, 16, 11, 0, 0, 6.3);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(sx, sy - 10, 12, 6, 0, 0, 6.3);
+                ctx.fill();
+                // Trois etincelles qui remontent du creux.
+                for (var e = 0; e < 3; e++) {
+                  var ph = reduit ? e / 3 : ((t / 1100 + e / 3) % 1);
+                  var ex = Math.round(sx - 5 + e * 5 + Math.sin(ph * 6.3 + e) * 2);
+                  var ey = Math.round(sy - 6 - ph * 26);
+                  ctx.fillStyle = 'rgba(214,250,255,' +
+                    (0.9 * (1 - ph)).toFixed(2) + ')';
+                  ctx.fillRect(ex, ey, 2, 2);
+                }
+              }
+            });
+          }
+
           if (!canneAuSol) return sortie;
           // La canne flotte et scintille tant qu'on ne l'a pas prise.
           sortie.push({
@@ -953,6 +1070,7 @@
             reprise.y = balade.chef.y;
             reprise.dir = balade.chef.dir;
           }
+          devantLaSouche = armeAuSol && faceALaSouche();
           if (etat !== 'repos') return;
           majAction();
           // L'indication suit ce que le joueur a devant lui, a chaque pas.
@@ -960,7 +1078,10 @@
             var c = balade.caseDevant();
             return balade.tuile(c[0], c[1]) === T.EAU_RAD;
           })();
-          var aide = canneAuSol ? 'Une canne à pêche flotte non loin.'
+          var aide = devantLaSouche ? 'Quelque chose luit au creux de la souche.'
+                   : armeAuSol && prochesDeLaSouche()
+                     ? 'Une vieille souche, au milieu des arbres.'
+                   : canneAuSol ? 'Une canne à pêche flotte non loin.'
                    : devantCabane ? 'La Poissonnerie est ouverte.'
                    : devantRad ? 'Eau irradiée : ici ne mordent que des Spéciaux.'
                    : pretALancer() ? 'Face à l’eau : lance ta ligne.'
@@ -974,6 +1095,7 @@
         if (vivant()) return;
         clearInterval(veille);
         window.removeEventListener('keydown', auClavier);
+        if (duel) { duel.arreter(); duel = null; }
         balade.arreter();
       }, 400);
       minuteurs.push(veille);

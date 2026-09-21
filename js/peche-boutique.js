@@ -91,7 +91,13 @@
     box.appendChild(droite);
 
     // ---- La barre de dialogue, en bas ----
-    var barre = el('p', 'bq-barre', 'Sélectionne un article.');
+    // Le poissonnier lâche son secret tant qu'on ne l'a pas trouvé. C'est
+    // la seule piste donnée vers la souche du nord-ouest : sans elle,
+    // l'arme serait introuvable autrement qu'au hasard.
+    var barre = el('p', 'bq-barre', DP.aLArme()
+      ? 'Sélectionne un article.'
+      : 'Entre nous : il y a un truc qui luit dans une vieille souche, ' +
+        'tout au nord-ouest du bois. Moi, j’y vais pas.');
     box.appendChild(barre);
 
     function dire(txt) {
