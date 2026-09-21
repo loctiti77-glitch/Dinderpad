@@ -104,5 +104,11 @@ async function sprite(entree, sortie, W, H, couleurs) {
   await sprite(ROOT + '/assets/_source/peche/fisherman.PNG',
                path.join(OUT, 'objets', 'poissonnier.png'), 26, 38, 18);
 
+  // L'enseigne clouee sur le toit de la Poissonnerie. Plus de couleurs
+  // que les autres : c'est une illustration chargee, et elle doit rester
+  // lisible une fois reduite a la largeur de la cabane.
+  await sprite(ROOT + '/assets/_source/peche/panneau.PNG',
+               path.join(OUT, 'objets', 'panneau.png'), 140, 70, 30);
+
   console.log('\n' + IDS.length + ' Dinders + Le Fondateur + la canne en sprites');
 })();

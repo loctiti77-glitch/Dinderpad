@@ -920,13 +920,44 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
   animation: pe-appel 1.2s ease-in-out infinite;
 }
 
-/* Ferrer se joue en une seconde et demie : le bouton doit crier. */
+/* Lancer et Ferrer portent une enseigne peinte : le bouton s'efface
+   derriere elle, seule l'image reste. */
+.pe-action[data-role="lancer"],
 .pe-action[data-role="ferrer"] {
-  border-color: #ffd166;
-  background: rgba(70, 30, 6, .92);
-  color: #ffe9a8;
-  animation: pe-urgence .32s ease-in-out infinite;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  animation: none;
+  line-height: 0;
+  filter: drop-shadow(0 calc(5 * var(--px)) calc(8 * var(--px)) rgba(0, 0, 0, .65));
 }
+
+.pe-action-img {
+  display: block;
+  width: calc(268 * var(--px));
+  height: auto;
+  animation: pe-enseigne 1.4s ease-in-out infinite;
+}
+
+/* Ferrer se joue en une seconde et demie : l'enseigne doit crier. */
+.pe-action[data-role="ferrer"] .pe-action-img {
+  width: calc(292 * var(--px));
+  animation: pe-enseigne-vite .34s ease-in-out infinite;
+}
+
+@keyframes pe-enseigne {
+  0%, 100% { transform: scale(1)    rotate(-1deg); }
+  50%      { transform: scale(1.04) rotate(1deg); }
+}
+
+@keyframes pe-enseigne-vite {
+  0%, 100% { transform: scale(1.02) rotate(-2deg); }
+  50%      { transform: scale(1.12) rotate(2deg); }
+}
+
+.pe-action[data-role="lancer"]:hover .pe-action-img,
+.pe-action[data-role="ferrer"]:hover .pe-action-img { filter: brightness(1.12); }
 
 @keyframes pe-appel {
   0%, 100% { box-shadow: 0 0 calc(10 * var(--px)) rgba(124, 224, 255, .5); }
@@ -938,17 +969,30 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
   50%      { transform: scale(1.07); box-shadow: 0 0 calc(32 * var(--px)) rgba(255, 209, 102, 1); }
 }
 
+/* Le carnet n'est plus un mot mais son livre, dans le coin de l'ecran. */
 .pe-carnet {
   position: absolute;
-  right: calc(30 * var(--px));
-  top: calc(16 * var(--px));
-  padding: calc(8 * var(--px)) calc(16 * var(--px));
-  border: calc(3 * var(--px)) solid rgba(124, 224, 255, .6);
-  border-radius: calc(8 * var(--px));
-  background: rgba(4, 14, 24, .84);
-  color: #cdeeff;
-  font-size: calc(20 * var(--px));
+  right: calc(24 * var(--px));
+  top: calc(14 * var(--px));
+  display: block;
+  line-height: 0;
   text-decoration: none;
+  filter: drop-shadow(0 calc(4 * var(--px)) calc(7 * var(--px)) rgba(0, 0, 0, .7));
+  transition: transform .12s ease, filter .12s ease;
+}
+
+.pe-carnet-img {
+  display: block;
+  width:  calc(84 * var(--px));
+  height: calc(84 * var(--px));
+  object-fit: contain;
+}
+
+.pe-carnet:hover, .pe-carnet:focus-visible {
+  transform: scale(1.08) rotate(-3deg);
+  filter: drop-shadow(0 calc(4 * var(--px)) calc(10 * var(--px)) rgba(0, 0, 0, .8))
+          brightness(1.1);
+  outline: none;
 }
 
 /* ---------- Le panneau de prise ---------- */
@@ -1057,8 +1101,9 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
 .pe-fiche.is-vide .pe-fiche-det { color: #4d6470; }
 
 @media (prefers-reduced-motion: reduce) {
-  .pe-action, .pe-prise-box { animation: none; }
-  .pe-carte, .pe-btn { transition: none; }
+  .pe-action, .pe-prise-box, .pe-action-img,
+  .pe-action[data-role="ferrer"] .pe-action-img { animation: none; }
+  .pe-carte, .pe-btn, .pe-carnet { transition: none; }
 }
 
 /* ==========================================================

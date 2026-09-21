@@ -31,8 +31,24 @@
   // Un peu a l'ecart de la porte : plante devant, il masquait l'enseigne.
   var POISSONNIER = { x: (CABANE.porte + 3.6) * TS, y: (CABANE.y1 + 1.5) * TS };
 
+  // L'enseigne de la boutique, clouee sur le toit : centree sur la cabane,
+  // le bas mordant un peu sur les bardeaux.
+  var PANNEAU = {
+    x: (CABANE.x0 + CABANE.x1 + 1) / 2 * TS,
+    y: CABANE.y0 * TS + 9
+  };
+
   // Une chance sur cent : le Credit Temporel.
   var CHANCE_CREDIT = 100;
+
+  // Les boutons de l'ecran de jeu sont des enseignes peintes. Les deux
+  // autres roles — ramasser la canne, entrer a la Poissonnerie — restent
+  // en toutes lettres : ils n'ont pas d'image.
+  var BOUTONS = {
+    carnet: 'assets/peche/boutons/carnet.webp',
+    lancer: 'assets/peche/boutons/lancer.webp',
+    ferrer: 'assets/peche/boutons/ferrer.webp'
+  };
 
   // Ou en est la partie en cours : le pecheur et l'endroit exact ou il se
   // tient. Tant qu'on reste dans les ecrans de peche — boutique, carnet,
@@ -265,8 +281,14 @@
       action.hidden = true;
       scene.appendChild(action);
 
-      var carnetBtn = el('a', 'pe-carnet', 'Carnet');
+      var carnetBtn = el('a', 'pe-carnet');
       carnetBtn.href = '#peche-collection';
+      carnetBtn.setAttribute('aria-label', 'Carnet de pêche');
+      carnetBtn.title = 'Carnet de pêche';
+      var carnetImg = el('img', 'pe-carnet-img');
+      carnetImg.src = BOUTONS.carnet;
+      carnetImg.alt = '';
+      carnetBtn.appendChild(carnetImg);
       scene.appendChild(carnetBtn);
 
       var prise = el('div', 'pe-prise');
@@ -453,26 +475,39 @@
                c[0] >= CABANE.porte - 1 && c[0] <= CABANE.porte + 2;
       }
 
+      // Les deux roles du jeu ont leur enseigne ; les autres restent ecrits.
+      function poserAction(role, texte) {
+        if (action.dataset.role === role) return;
+        action.dataset.role = role;
+        action.textContent = '';
+        if (BOUTONS[role]) {
+          var im = el('img', 'pe-action-img');
+          im.src = BOUTONS[role];
+          im.alt = texte;
+          action.appendChild(im);
+          action.setAttribute('aria-label', texte);
+        } else {
+          action.textContent = texte;
+          action.removeAttribute('aria-label');
+        }
+      }
+
       function majAction() {
         if (etat === 'mord') {
           action.hidden = false;
-          action.textContent = 'FERRER !';
-          action.dataset.role = 'ferrer';
+          poserAction('ferrer', 'Ferrer');
         } else if (etat === 'repos' && pretALancer()) {
           action.hidden = false;
-          action.textContent = 'LANCER';
-          action.dataset.role = 'lancer';
+          poserAction('lancer', 'Lancer');
         } else if (etat === 'repos' && canneAuSol && prochesDeLaCanne()) {
           action.hidden = false;
-          action.textContent = 'RAMASSER LA CANNE';
-          action.dataset.role = 'ramasser';
+          poserAction('ramasser', 'RAMASSER LA CANNE');
         } else if (etat === 'repos' && devantCabane) {
           action.hidden = false;
-          action.textContent = 'RENTRER';
-          action.dataset.role = 'entrer';
+          poserAction('entrer', 'RENTRER');
         } else {
           action.hidden = true;
-          action.dataset.role = '';
+          poserAction('', '');
         }
       }
 
@@ -696,6 +731,8 @@
       spriteCanne.src = 'assets/games/sprites/objets/canne.png';
       var spritePoissonnier = new Image();
       spritePoissonnier.src = 'assets/games/sprites/objets/poissonnier.png';
+      var spritePanneau = new Image();
+      spritePanneau.src = 'assets/games/sprites/objets/panneau.png';
 
       balade = M.Balade({
         grille: g,
@@ -711,6 +748,18 @@
 
         extras: function (t) {
           var sortie = [];
+
+          // L'enseigne du toit. Son point d'ancrage est haut : elle passe
+          // donc derriere quiconque marche devant la cabane.
+          sortie.push({
+            x: PANNEAU.x, y: PANNEAU.y,
+            dessin: function (ctx, sx, sy) {
+              if (!spritePanneau.width) return;
+              ctx.drawImage(spritePanneau,
+                Math.round(sx - spritePanneau.width / 2),
+                Math.round(sy - spritePanneau.height));
+            }
+          });
 
           // Le poissonnier, planté devant sa cabane.
           sortie.push({
@@ -906,7 +955,7 @@
   window.PECHE = {
     construireCarte: construireCarte,
     MW: MW, MH: MH, DEPART: DEPART, CANNE: CANNE,
-    CABANE: CABANE, POISSONNIER: POISSONNIER,
+    CABANE: CABANE, POISSONNIER: POISSONNIER, PANNEAU: PANNEAU,
     reprise: function () { return reprise; },
     poserReprise: function (r) { reprise = r; },
     LACS: LACS, CHANCE_CREDIT: CHANCE_CREDIT
