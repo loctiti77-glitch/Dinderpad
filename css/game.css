@@ -4953,7 +4953,7 @@ body.is-locked .pad-niveau { opacity: 0; pointer-events: none; }
 .xp-flash {
   position: absolute;
   left: 50%;
-  top: calc(128 * var(--px));
+  top: calc(212 * var(--px));
   z-index: 60;
   width: calc(460 * var(--px));
   padding: calc(8 * var(--px)) calc(14 * var(--px)) calc(10 * var(--px));
@@ -5345,22 +5345,21 @@ body.is-locked .art-trouve { display: none; }
 /* ==========================================================
    Le bandeau de l'accueil : titre et etoiles
    ========================================================== */
+/* La bande bleue vierge de l'accueil va de 10,7 % a 19,4 % de la hauteur
+   du chassis : le titre s'y pose, sans fond, aligne sur les rubriques. */
 .pad-titre {
   position: absolute;
   z-index: 18;
-  left: 18.9%;
-  top: 13.1%;
+  left: 18.89%;
+  top: 10.7%;
   width: 61.6%;
-  height: 6.6%;
+  height: 8.7%;
   display: none;
   align-items: center;
   justify-content: space-between;
   gap: calc(10 * var(--px));
-  padding: 0 calc(18 * var(--px));
+  padding: 0 calc(6 * var(--px));
   box-sizing: border-box;
-  border-radius: calc(12 * var(--px));
-  background: linear-gradient(180deg, rgba(4, 30, 56, .78), rgba(2, 18, 38, .78));
-  box-shadow: inset 0 0 0 calc(2 * var(--px)) rgba(0, 241, 253, .45);
   font-family: "Courier New", Courier, monospace;
   line-height: 1;
   color: #eafdff;
@@ -5369,22 +5368,26 @@ body.is-locked .art-trouve { display: none; }
 body.is-home .pad-titre { display: flex; }
 body.is-locked .pad-titre { display: none; }
 .pad-titre-nom {
-  font-size: calc(30 * var(--px));
+  font-size: calc(34 * var(--px));
   font-weight: 700;
   letter-spacing: calc(2 * var(--px));
-  text-shadow: 0 0 calc(10 * var(--px)) rgba(0, 241, 253, .6);
+  text-shadow: calc(2 * var(--px)) calc(2 * var(--px)) 0 rgba(2, 20, 40, .85),
+               0 0 calc(12 * var(--px)) rgba(0, 241, 253, .55);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .pad-titre-etoiles {
   flex: none;
-  font-size: calc(30 * var(--px));
+  font-size: calc(34 * var(--px));
   letter-spacing: calc(2 * var(--px));
   color: #ffd84a;
   text-shadow: 0 0 calc(12 * var(--px)) rgba(255, 216, 74, .9);
 }
-.pad-titre.a-etoiles { box-shadow: inset 0 0 0 calc(2 * var(--px)) rgba(255, 216, 74, .6); }
+.pad-titre-etoiles:not(:empty) {
+  text-shadow: calc(2 * var(--px)) calc(2 * var(--px)) 0 rgba(30, 20, 0, .8),
+               0 0 calc(14 * var(--px)) rgba(255, 216, 74, .9);
+}
 
 /* ==========================================================
    Le solde, sur la page des Dindises
