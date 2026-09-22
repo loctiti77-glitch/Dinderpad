@@ -113,7 +113,21 @@
       detail: function () {
         return window.ARME ? window.ARME.niveau().nom : 'Arme lumithique';
       },
-      view: 'armurerie', acquis: function () { return aLArme(); } }
+      view: 'armurerie', acquis: function () { return aLArme(); } },
+    { id: 'teleportail', name: 'Téléportail',
+      sub: 'Tombé du ciel',
+      // L'image du joueur si elle est la ; sinon celle que le jeu peint.
+      // La bascule se fait a l'affichage, sans toucher au code.
+      img: 'assets/items/teleportail.webp',
+      visuel: function () {
+        return window.ODYSSEE ? window.ODYSSEE.visuel() : 'assets/items/teleportail.webp';
+      },
+      detail: function () {
+        var n = window.ODYSSEE ? window.ODYSSEE.compteAstres() : 0;
+        return n ? n + (n > 1 ? ' mondes visités' : ' monde visité')
+                 : 'Aucune destination connue';
+      },
+      view: 'teleportail', acquis: function () { return aLaTelecommande(); } }
   ];
 
   // Ce que le joueur possede vraiment, dans l'ordre du catalogue.
@@ -320,7 +334,13 @@
       noyaux: 0,
       revetements: [],
       revetement: 'origine',
-      requins: {}
+      requins: {},
+      // L'Odyssee : la telecommande, les mondes ou l'on a pose le pied,
+      // ce qu'on y a scanne, et le chapitre atteint.
+      telecommande: false,
+      chapitre: 0,
+      astres: [],
+      scans: {}
     };
   }
 
@@ -366,6 +386,10 @@
       p.revetement = p.revetements[0] || 'origine';
     }
     if (!p.requins || typeof p.requins !== 'object') p.requins = {};
+    if (typeof p.telecommande !== 'boolean') p.telecommande = false;
+    if (typeof p.chapitre !== 'number') p.chapitre = 0;
+    if (!Array.isArray(p.astres)) p.astres = [];
+    if (!p.scans || typeof p.scans !== 'object') p.scans = {};
     if (!p.credits) p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
     if (!Array.isArray(p.owned)) p.owned = [];
     return p;
@@ -777,6 +801,61 @@
     return e;
   }
 
+  // ---------- Le Teleportail ----------
+  // La telecommande tombee du ciel au chapitre premier. Elle retient les
+  // mondes ou l'on s'est pose, et tout ce qu'on y a scanne.
+
+  function aLaTelecommande() { return !!me().telecommande; }
+
+  function prendreTelecommande() {
+    var p = me();
+    if (p.telecommande) return false;
+    p.telecommande = true;
+    p.chapitre = Math.max(1, p.chapitre);
+    save();
+    return true;
+  }
+
+  function chapitre() { return me().chapitre || 0; }
+
+  function ouvrirChapitre(n) {
+    var p = me();
+    if (n <= p.chapitre) return false;
+    p.chapitre = n;
+    save();
+    return true;
+  }
+
+  // Les mondes visites, dans l'ordre ou on les a decouverts.
+  function astresVus() { return me().astres.slice(); }
+
+  function aVuAstre(id) { return me().astres.indexOf(id) !== -1; }
+
+  function noterAstre(id) {
+    var p = me();
+    if (p.astres.indexOf(id) !== -1) return false;
+    p.astres.push(id);
+    save();
+    return true;
+  }
+
+  // Le carnet du scanner : chaque entree garde le nombre de scans et la
+  // date du premier, qui sert a ordonner les decouvertes.
+  function scans() { return me().scans; }
+
+  function aScanne(id) { return !!me().scans[id]; }
+
+  function noterScan(id, astre) {
+    var p = me();
+    var e = p.scans[id];
+    var neuf = !e;
+    if (!e) e = { n: 0, astre: astre || '', le: Date.now() };
+    e.n++;
+    p.scans[id] = e;
+    save();
+    return { entree: e, neuf: neuf };
+  }
+
   // ---------- Les exploits ----------
   // Ce que la seule collection ne dit pas : une victoire, un chrono. Les
   // badges s'en servent pour savoir ce qui est acquis.
@@ -838,6 +917,10 @@
     p.revetements = [];
     p.revetement = 'origine';
     p.requins = {};
+    p.telecommande = false;
+    p.chapitre = 0;
+    p.astres = [];
+    p.scans = {};
     save();
   }
 
@@ -887,6 +970,10 @@
     revetement: revetement, acquerirRevetement: acquerirRevetement,
     equiperRevetement: equiperRevetement,
     requins: requins, noterRequin: noterRequin,
+    aLaTelecommande: aLaTelecommande, prendreTelecommande: prendreTelecommande,
+    chapitre: chapitre, ouvrirChapitre: ouvrirChapitre,
+    astresVus: astresVus, aVuAstre: aVuAstre, noterAstre: noterAstre,
+    scans: scans, aScanne: aScanne, noterScan: noterScan,
     materiel: materiel, possede: possede, acquerir: acquerir,
     equipe: equipe, equiper: equiper, retirerPrise: retirerPrise,
     leurres: leurres, leurre: leurre, ajouterLeurre: ajouterLeurre,

@@ -3420,3 +3420,648 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
   .rq.is-charge .rq-cv,
   .rq.is-charge .rq-aide { animation: none; }
 }
+
+/* ==========================================================
+   The Odyssey of Dinder
+   L'intro, le Teleportail, les mondes et le carnet du scanner.
+   ========================================================== */
+
+.ody-hote { position: absolute; inset: 0; }
+
+.ody {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: "Courier New", "Cutive Mono", monospace;
+  color: #d8f8ff;
+  line-height: 1.25;
+  background: radial-gradient(120% 90% at 50% 0%, #10243c 0%, #070f1c 70%, #02060c 100%);
+}
+
+.ody-btn {
+  padding: calc(8 * var(--px)) calc(26 * var(--px));
+  border: calc(3 * var(--px)) solid #7cf0c8;
+  border-radius: calc(10 * var(--px));
+  background: rgba(124, 240, 200, .14);
+  color: #eaf7ff;
+  font-family: inherit;
+  font-size: calc(20 * var(--px));
+  letter-spacing: calc(1 * var(--px));
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ody-btn:hover { background: rgba(124, 240, 200, .28); }
+
+.ody-btn--plat {
+  border-color: rgba(124, 240, 200, .45);
+  background: transparent;
+  color: #a8dccc;
+}
+
+/* ---------- L'intro ---------- */
+
+.ody--intro { background: #02060c; }
+
+.ody-cv {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.ody-recit {
+  position: absolute;
+  left: calc(40 * var(--px));
+  right: calc(40 * var(--px));
+  bottom: calc(26 * var(--px));
+  margin: 0;
+  padding: calc(9 * var(--px)) calc(20 * var(--px));
+  border: calc(3 * var(--px)) solid rgba(124, 240, 200, .5);
+  border-radius: calc(10 * var(--px));
+  background: rgba(2, 8, 14, .82);
+  font-size: calc(24 * var(--px));
+  text-align: center;
+  color: #d8fff0;
+}
+
+.ody-recit.is-neuf { animation: ody-recit .4s ease; }
+
+@keyframes ody-recit {
+  from { opacity: 0; transform: translateY(calc(8 * var(--px))); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ody-passer {
+  position: absolute;
+  top: calc(16 * var(--px));
+  right: calc(18 * var(--px));
+  padding: calc(4 * var(--px)) calc(16 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(200, 224, 236, .5);
+  border-radius: calc(8 * var(--px));
+  background: rgba(2, 8, 14, .6);
+  color: #b8dcef;
+  font-family: inherit;
+  font-size: calc(17 * var(--px));
+  cursor: pointer;
+}
+
+.ody-passer:hover { background: rgba(2, 8, 14, .9); }
+
+/* ---------- La trouvaille ---------- */
+
+.ody--trouvaille { align-items: center; justify-content: center; }
+
+.ody-carte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8 * var(--px));
+  max-width: calc(640 * var(--px));
+  padding: calc(20 * var(--px)) calc(34 * var(--px));
+  border: calc(4 * var(--px)) solid #7cf0c8;
+  border-radius: calc(16 * var(--px));
+  background: rgba(4, 16, 26, .96);
+  box-shadow: 0 0 calc(44 * var(--px)) rgba(124, 240, 200, .6);
+  animation: ody-carte .5s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+
+@keyframes ody-carte {
+  from { opacity: 0; transform: translateY(calc(26 * var(--px))) scale(.88); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ody-carte-titre {
+  margin: 0;
+  font-size: calc(30 * var(--px));
+  letter-spacing: calc(4 * var(--px));
+  color: #7cf0c8;
+  text-shadow: 0 0 calc(16 * var(--px)) rgba(124, 240, 200, .8);
+}
+
+.ody-carte-img {
+  height: calc(150 * var(--px));
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 calc(16 * var(--px)) rgba(124, 240, 200, .7));
+  animation: ody-flotte 3s ease-in-out infinite alternate;
+}
+
+@keyframes ody-flotte {
+  from { transform: translateY(calc(-4 * var(--px))); }
+  to   { transform: translateY(calc(4 * var(--px))); }
+}
+
+.ody-carte-txt {
+  margin: 0;
+  max-width: calc(520 * var(--px));
+  text-align: center;
+  font-size: calc(19 * var(--px));
+  color: #b8dcef;
+}
+
+.ody-carte-txt--sous { color: #7fa8bd; font-size: calc(17 * var(--px)); }
+
+.ody-carte-plaque {
+  margin: 0;
+  padding: calc(5 * var(--px)) calc(18 * var(--px));
+  border: calc(2 * var(--px)) dashed rgba(124, 240, 200, .7);
+  border-radius: calc(8 * var(--px));
+  font-size: calc(21 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: #d8fff0;
+}
+
+/* ==========================================================
+   Le Teleportail
+   ========================================================== */
+
+.tp {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: calc(330 * var(--px)) minmax(0, 1fr);
+  gap: calc(14 * var(--px));
+  padding: calc(12 * var(--px)) calc(16 * var(--px));
+  font-family: "Courier New", "Cutive Mono", monospace;
+  color: #d8f8ff;
+  line-height: 1.25;
+  background: radial-gradient(90% 70% at 20% 30%, #123a40 0%, #071c22 55%, #030d12 100%);
+  animation: ody-entree .35s ease both;
+}
+
+@keyframes ody-entree {
+  from { opacity: 0; transform: scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+.tp-appareil {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(7 * var(--px));
+  padding: calc(10 * var(--px));
+  border: calc(3 * var(--px)) solid rgba(124, 240, 200, .45);
+  border-radius: calc(14 * var(--px));
+  background: rgba(3, 18, 22, .74);
+  min-height: 0;
+}
+
+.tp-appareil.is-refus { animation: tp-refus .34s ease; }
+
+@keyframes tp-refus {
+  0%, 100% { transform: none; }
+  25% { transform: translateX(calc(-7 * var(--px))); }
+  60% { transform: translateX(calc(6 * var(--px))); }
+}
+
+.tp-appareil.is-depart { animation: tp-depart .7s ease forwards; }
+
+@keyframes tp-depart {
+  0%   { filter: none; }
+  40%  { filter: brightness(2.4); }
+  100% { filter: brightness(6) saturate(0); opacity: .1; }
+}
+
+.tp-image {
+  height: calc(96 * var(--px));
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 calc(12 * var(--px)) rgba(124, 240, 200, .55));
+}
+
+.tp-ecran {
+  width: 100%;
+  padding: calc(7 * var(--px)) calc(12 * var(--px));
+  border: calc(3 * var(--px)) solid #0c2a24;
+  border-radius: calc(8 * var(--px));
+  background: #0a1b18;
+  box-shadow: inset 0 0 calc(18 * var(--px)) rgba(124, 240, 200, .22);
+}
+
+.tp-ecran.is-erreur { border-color: #e8483a; }
+
+.tp-entete {
+  margin: 0;
+  font-size: calc(13 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  color: #4c8c7c;
+}
+
+.tp-code {
+  margin: calc(2 * var(--px)) 0;
+  font-size: calc(34 * var(--px));
+  letter-spacing: calc(5 * var(--px));
+  color: #7cf0c8;
+  text-shadow: 0 0 calc(12 * var(--px)) rgba(124, 240, 200, .7);
+}
+
+.tp-ecran.is-erreur .tp-code { color: #ff7a6a; text-shadow: none; }
+
+.tp-mot { margin: 0; font-size: calc(15 * var(--px)); color: #9fd8c8; }
+.tp-ecran.is-erreur .tp-mot { color: #ff9b8a; }
+
+.tp-pave {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(5 * var(--px));
+  width: 100%;
+}
+
+.tp-touche {
+  padding: calc(7 * var(--px)) 0;
+  border: calc(2 * var(--px)) solid #1d4a42;
+  border-radius: calc(7 * var(--px));
+  background: rgba(14, 44, 40, .9);
+  color: #d8fff0;
+  font-family: inherit;
+  font-size: calc(20 * var(--px));
+  cursor: pointer;
+}
+
+.tp-touche:hover { background: rgba(28, 78, 70, .95); }
+
+.tp-touche--eff { color: #ffb02e; }
+
+.tp-touche--go {
+  grid-column: span 3;
+  border-color: #7cf0c8;
+  background: rgba(124, 240, 200, .18);
+  font-size: calc(18 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+}
+
+.tp-touche--go:disabled { opacity: .34; cursor: not-allowed; }
+
+.tp-plaque {
+  margin: auto 0 0;
+  padding: calc(4 * var(--px)) calc(10 * var(--px));
+  border: calc(2 * var(--px)) dashed rgba(124, 240, 200, .5);
+  border-radius: calc(7 * var(--px));
+  font-size: calc(16 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  color: #9fd8c8;
+}
+
+/* ---------- Le journal de bord ---------- */
+
+.tp-droite {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--px));
+  min-height: 0;
+}
+
+.tp-banniere {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--px));
+  padding: calc(5 * var(--px)) calc(14 * var(--px));
+  border: calc(3 * var(--px)) solid #0a2e28;
+  border-radius: calc(12 * var(--px));
+  background: linear-gradient(180deg, #2fd8b0 0%, #1b9c80 100%);
+}
+
+.tp-enseigne {
+  font-size: calc(23 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(3 * var(--px));
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: calc(2 * var(--px)) calc(2 * var(--px)) 0 #05352c;
+}
+
+.tp-compte { font-size: calc(16 * var(--px)); color: #04302a; }
+
+.tp-mondes {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(6 * var(--px));
+  overflow: auto;
+  align-content: start;
+  scrollbar-width: none;
+}
+
+.tp-mondes::-webkit-scrollbar { width: 0; }
+
+.tp-monde {
+  --r: #7cf0c8;
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--px));
+  padding: calc(6 * var(--px)) calc(10 * var(--px));
+  border: calc(3 * var(--px)) solid var(--r);
+  border-radius: calc(10 * var(--px));
+  background: rgba(6, 26, 30, .9);
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tp-monde:hover { background: rgba(14, 44, 48, .95); }
+
+.tp-monde.is-inconnu {
+  border-color: #2a3c40;
+  background: rgba(6, 16, 20, .8);
+  color: #5f7a7a;
+  cursor: default;
+}
+
+.tp-disque {
+  flex: 0 0 auto;
+  width: calc(38 * var(--px));
+  height: calc(38 * var(--px));
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 32%, var(--c1), var(--c2) 78%);
+  box-shadow: inset calc(-4 * var(--px)) calc(-3 * var(--px)) calc(8 * var(--px)) rgba(0, 0, 0, .55);
+}
+
+.tp-monde.is-inconnu .tp-disque { filter: grayscale(1) brightness(.35); }
+
+.tp-monde-txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.tp-monde-nom { font-size: calc(20 * var(--px)); }
+.tp-monde-code { font-size: calc(14 * var(--px)); color: #7fb8a8; }
+.tp-monde.is-inconnu .tp-monde-code { color: #4d6470; }
+.tp-monde-n { font-size: calc(15 * var(--px)); color: #d8fff0; }
+
+.tp-pied { display: flex; gap: calc(8 * var(--px)); }
+.tp-pied .ody-btn { flex: 1; font-size: calc(18 * var(--px)); }
+
+/* ==========================================================
+   Les mondes
+   ========================================================== */
+
+.ody-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* Le pad impose line-height: 0 a tout ce qu'il contient : sans ces deux
+     lignes, les fiches de scan s'empilaient en une seule ligne. */
+  font-family: "Courier New", "Cutive Mono", monospace;
+  line-height: 1.25;
+  color: #d8f8ff;
+  background: linear-gradient(180deg, var(--ciel1) 0%, var(--ciel2) 45%, var(--ciel3) 100%);
+}
+
+.ody-scene.is-arrivee { animation: ody-arrivee .8s ease both; }
+
+@keyframes ody-arrivee {
+  0%   { opacity: 0; filter: brightness(7) saturate(0); transform: scale(1.12); }
+  45%  { opacity: 1; filter: brightness(2.2) saturate(.5); }
+  100% { opacity: 1; filter: none; transform: none; }
+}
+
+.ody-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.ody-hud {
+  position: absolute;
+  top: calc(12 * var(--px));
+  left: calc(16 * var(--px));
+  right: calc(16 * var(--px));
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(14 * var(--px));
+  font-family: "Courier New", "Cutive Mono", monospace;
+  line-height: 1.25;
+  pointer-events: none;
+}
+
+.ody-hud-nom {
+  padding: calc(3 * var(--px)) calc(12 * var(--px));
+  border-radius: calc(8 * var(--px));
+  background: rgba(2, 10, 14, .7);
+  font-size: calc(20 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  color: #7cf0c8;
+}
+
+.ody-hud-txt {
+  padding: calc(3 * var(--px)) calc(12 * var(--px));
+  border-radius: calc(8 * var(--px));
+  background: rgba(2, 10, 14, .7);
+  font-size: calc(18 * var(--px));
+  color: #d8f8ff;
+}
+
+.ody-action {
+  position: absolute;
+  right: calc(24 * var(--px));
+  bottom: calc(30 * var(--px));
+  padding: calc(10 * var(--px)) calc(26 * var(--px));
+  border: calc(4 * var(--px)) solid #7cf0c8;
+  border-radius: calc(12 * var(--px));
+  background: rgba(10, 40, 36, .92);
+  color: #d8fff0;
+  font-family: "Courier New", "Cutive Mono", monospace;
+  font-size: calc(22 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  cursor: pointer;
+  animation: ody-appel 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes ody-appel {
+  from { box-shadow: 0 0 calc(10 * var(--px)) rgba(124, 240, 200, .35); }
+  to   { box-shadow: 0 0 calc(26 * var(--px)) rgba(124, 240, 200, .9); }
+}
+
+.ody-action[data-deja="1"] {
+  border-color: #6f90a4;
+  color: #b8dcef;
+  animation: none;
+}
+
+.ody-retour {
+  position: absolute;
+  top: calc(56 * var(--px));
+  left: calc(16 * var(--px));
+  padding: calc(4 * var(--px)) calc(14 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(124, 240, 200, .6);
+  border-radius: calc(8 * var(--px));
+  background: rgba(2, 10, 14, .78);
+  color: #9fd8c8;
+  font-family: "Courier New", "Cutive Mono", monospace;
+  font-size: calc(15 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-decoration: none;
+}
+
+.ody-retour:hover { background: rgba(14, 44, 40, .95); }
+
+.ody-scene.is-scan .ody-canvas { filter: saturate(1.3) brightness(1.06); }
+
+/* ---------- La fiche d'un scan ---------- */
+
+.ody-panneau[hidden] { display: none; }
+
+.ody-panneau {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16 * var(--px));
+  background: rgba(2, 8, 12, .76);
+}
+
+.ody-fiche {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(7 * var(--px));
+  width: calc(600 * var(--px));
+  max-height: 100%;
+  overflow: auto;
+  scrollbar-width: none;
+  padding: calc(16 * var(--px)) calc(26 * var(--px));
+  border: calc(4 * var(--px)) solid #7cf0c8;
+  border-radius: calc(14 * var(--px));
+  background: rgba(4, 18, 22, .97);
+  box-shadow: 0 0 calc(36 * var(--px)) rgba(124, 240, 200, .6);
+  animation: ody-carte .4s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+
+.ody-fiche::-webkit-scrollbar { width: 0; }
+.ody-fiche.is-neuf { border-color: #ffd166; box-shadow: 0 0 calc(40 * var(--px)) rgba(255, 209, 102, .7); }
+
+.ody-fiche-titre {
+  margin: 0;
+  font-size: calc(20 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: #7cf0c8;
+}
+
+.ody-fiche.is-neuf .ody-fiche-titre { color: #ffd166; }
+
+.ody-fiche-img {
+  height: calc(120 * var(--px));
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 calc(12 * var(--px)) rgba(124, 240, 200, .5));
+}
+
+.ody-fiche-nom { margin: 0; font-size: calc(30 * var(--px)); color: #eaf7ff; }
+
+.ody-fiche-det {
+  margin: 0;
+  display: flex;
+  gap: calc(12 * var(--px));
+  font-size: calc(17 * var(--px));
+  color: #9fd8c8;
+}
+
+.ody-fiche-astre { color: #7cf0c8; font-weight: 700; }
+
+.ody-fiche-txt {
+  margin: 0;
+  max-width: calc(520 * var(--px));
+  text-align: center;
+  font-size: calc(18 * var(--px));
+  color: #b8dcef;
+}
+
+/* ==========================================================
+   Le carnet du scanner
+   ========================================================== */
+
+.ody--carnet { padding: calc(16 * var(--px)) calc(20 * var(--px)); gap: calc(10 * var(--px)); }
+
+.ody-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(16 * var(--px));
+}
+
+.ody-titre {
+  margin: 0;
+  font-size: calc(36 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  text-transform: uppercase;
+  color: #7cf0c8;
+  text-shadow: 0 0 calc(14 * var(--px)) rgba(124, 240, 200, .6);
+}
+
+.ody-compte { margin: 0; font-size: calc(22 * var(--px)); color: #9fd8c8; }
+
+.ody-grille {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(7 * var(--px));
+  overflow: auto;
+  align-content: start;
+  scrollbar-width: none;
+}
+
+.ody-grille::-webkit-scrollbar { width: 0; }
+
+.ody-section {
+  --r: #7cf0c8;
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--px));
+  margin: calc(6 * var(--px)) 0 calc(2 * var(--px));
+  padding-bottom: calc(3 * var(--px));
+  border-bottom: calc(2 * var(--px)) solid var(--r);
+  font-size: calc(18 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-transform: uppercase;
+  color: var(--r);
+}
+
+.ody-section:first-child { margin-top: 0; }
+.ody-section-n { font-size: calc(15 * var(--px)); color: #7fb8a8; }
+
+.ody-case {
+  --r: #7cf0c8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2 * var(--px));
+  padding: calc(6 * var(--px)) calc(4 * var(--px));
+  border: calc(3 * var(--px)) solid var(--r);
+  border-radius: calc(9 * var(--px));
+  background: rgba(6, 22, 26, .9);
+}
+
+.ody-case.is-vide {
+  border-color: #2a3c40;
+  background: rgba(6, 14, 18, .8);
+  color: #5f7a7a;
+}
+
+.ody-case-img {
+  width: 100%;
+  height: calc(46 * var(--px));
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.ody-case-vide {
+  height: calc(46 * var(--px));
+  font-size: calc(30 * var(--px));
+  line-height: calc(46 * var(--px));
+}
+
+.ody-case-nom { font-size: calc(15 * var(--px)); text-align: center; line-height: 1.05; }
+.ody-case-det { font-size: calc(12 * var(--px)); color: #7fb8a8; }
+.ody-case.is-vide .ody-case-det { color: #4d6470; }
+.ody-case-n { font-size: calc(13 * var(--px)); color: #d8fff0; }
+
+.ody-pied { display: flex; gap: calc(8 * var(--px)); justify-content: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ody-carte, .ody-carte-img, .ody-recit.is-neuf, .ody-fiche,
+  .tp, .tp-appareil.is-refus, .tp-appareil.is-depart,
+  .ody-scene.is-arrivee, .ody-action { animation: none; }
+}

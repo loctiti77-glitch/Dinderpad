@@ -11,13 +11,19 @@
   var T = {
     HERBE: 0, FLEUR: 1, CHEMIN: 2, ARBRE: 3, BUISSON: 4, ROCHER: 5,
     EAU: 6, MUR: 7, DALLE: 8, PORTE: 9, SABLE: 10, PONTON: 11, ROSEAU: 12,
-    CABANE: 13, TOIT: 14, PORTE_BOIS: 15, EAU_RAD: 16, SOUCHE: 17
+    CABANE: 13, TOIT: 14, PORTE_BOIS: 15, EAU_RAD: 16, SOUCHE: 17,
+    // Les tuiles des autres mondes. Elles n'ont pas de couleur a elles :
+    // chaque astre fournit sa palette, et le meme jeu de sept tuiles
+    // donne huit planetes qui ne se ressemblent pas.
+    SOL: 18, SOL_B: 19, GRAVATS: 20, ROCHE_A: 21, LIQUIDE: 22,
+    CRISTAL: 23, STRUCTURE: 24
   };
 
   // Ce qu'on ne traverse pas. L'eau se longe, elle ne se marche pas.
   var BLOQUANT = {};
   [T.ARBRE, T.BUISSON, T.ROCHER, T.EAU, T.EAU_RAD, T.MUR, T.ROSEAU,
-   T.CABANE, T.TOIT, T.SOUCHE].forEach(function (k) {
+   T.CABANE, T.TOIT, T.SOUCHE,
+   T.ROCHE_A, T.LIQUIDE, T.CRISTAL, T.STRUCTURE].forEach(function (k) {
     BLOQUANT[k] = true;
   });
 
@@ -34,12 +40,137 @@
 
   function borne(v, a, b) { return v < a ? a : (v > b ? b : v); }
 
+  // La palette d'un astre. Sans elle, les tuiles de monde lointain se
+  // peignent en gris : c'est le jeu qui fournit la sienne, par opts.
+  var PALETTE_PAR_DEFAUT = {
+    sol: '#6b6560', sol2: '#5f5a55', grain: '#7d766f',
+    roche: '#4a4642', rocheHaut: '#6d6862', rocheOmbre: '#2e2b28',
+    liquide: '#3b3a38', liquide2: '#56534f', ecume: '#8d8781',
+    cristal: '#9fb6c8', cristal2: '#d8e6f2',
+    structure: '#5a5f68', structureHaut: '#7d838c'
+  };
+
+  function palette(opts) {
+    return (opts && opts.palette) || PALETTE_PAR_DEFAUT;
+  }
+
+  // Les tuiles d'astre, toutes peintes a partir de la meme palette. Le
+  // bruit stable fait le reste : deux cases voisines ne se ressemblent
+  // jamais tout a fait.
+  function solAstre(x, g, tx, ty, opts) {
+    var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
+    var c = palette(opts);
+
+    if (t === T.LIQUIDE) {
+      // Une nappe : lave, acide, methane — c'est la palette qui tranche.
+      var bord = false;
+      for (var k = 0; k < 4; k++) {
+        var nx = tx + [1, -1, 0, 0][k], ny = ty + [0, 0, 1, -1][k];
+        if (!g[ny] || g[ny][nx] === undefined) continue;
+        if (g[ny][nx] !== T.LIQUIDE) bord = true;
+      }
+      x.fillStyle = bord ? c.liquide2 : c.liquide;
+      x.fillRect(px, py, TS, TS);
+      x.fillStyle = c.ecume;
+      for (i = 0; i < 4; i++) {
+        n = bruit(tx, ty, 240 + i);
+        x.fillRect(px + (n * 18 | 0), py + 2 + i * 5, 5, 2);
+      }
+      return;
+    }
+
+    if (t === T.CRISTAL) {
+      x.fillStyle = c.sol; x.fillRect(px, py, TS, TS);
+      // Trois eclats plantes de travers.
+      for (i = 0; i < 3; i++) {
+        n = bruit(tx, ty, 250 + i);
+        var cx = px + 4 + (n * 14 | 0);
+        var h = 9 + ((bruit(tx, ty, 255 + i) * 11) | 0);
+        x.fillStyle = c.cristal;
+        x.fillRect(cx, py + TS - h, 4, h);
+        x.fillStyle = c.cristal2;
+        x.fillRect(cx + 1, py + TS - h + 1, 1, h - 2);
+        x.fillRect(cx, py + TS - h, 4, 2);
+      }
+      return;
+    }
+
+    if (t === T.STRUCTURE) {
+      x.fillStyle = c.structure; x.fillRect(px, py, TS, TS);
+      x.fillStyle = c.structureHaut;
+      x.fillRect(px + 1, py + 1, TS - 2, 6);
+      x.fillRect(px + 1, py + 9, TS - 2, 5);
+      x.fillStyle = 'rgba(0,0,0,.3)';
+      x.fillRect(px, py + 7, TS, 2);
+      x.fillRect(px + ((ty % 2) ? 7 : 16), py, 2, 7);
+      x.fillRect(px + ((ty % 2) ? 16 : 7), py + 9, 2, 5);
+      return;
+    }
+
+    if (t === T.GRAVATS) {
+      x.fillStyle = c.sol2; x.fillRect(px, py, TS, TS);
+      x.fillStyle = c.rocheOmbre;
+      for (i = 0; i < 7; i++) {
+        n = bruit(tx, ty, 260 + i);
+        x.fillRect(px + (n * 20 | 0), py + ((bruit(tx, ty, 270 + i) * 20) | 0), 3, 2);
+      }
+      x.fillStyle = c.grain;
+      for (i = 0; i < 4; i++) {
+        n = bruit(tx, ty, 280 + i);
+        x.fillRect(px + (n * 21 | 0), py + ((bruit(tx, ty, 285 + i) * 21) | 0), 2, 2);
+      }
+      return;
+    }
+
+    // Le sol nu : deux tons en damier, du grain, et parfois une fissure.
+    x.fillStyle = (tx + ty) % 2 ? c.sol : c.sol2;
+    x.fillRect(px, py, TS, TS);
+    x.fillStyle = c.grain;
+    for (i = 0; i < 5; i++) {
+      n = bruit(tx, ty, 290 + i);
+      x.fillRect(px + (n * 21 | 0), py + ((bruit(tx, ty, 295 + i) * 21) | 0), 2, 2);
+    }
+    if (t === T.SOL_B) {
+      // La variante : une craquelure en diagonale.
+      x.fillStyle = c.rocheOmbre;
+      var d = (bruit(tx, ty, 300) * 8) | 0;
+      for (i = 0; i < 11; i++) {
+        x.fillRect(px + 6 + i, py + d + ((i * 7) % 9), 2, 1);
+      }
+    }
+  }
+
+  // Le relief d'astre : les rochers, qu'on ne traverse pas.
+  function objetAstre(x, g, tx, ty, opts) {
+    var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
+    var c = palette(opts);
+    if (t !== T.ROCHE_A) return false;
+    // Un bloc arrondi, plus ou moins haut selon la case : alignes, des
+    // carres pleins faisaient un mur de briques.
+    var haut = 8 + ((bruit(tx, ty, 318) * 8) | 0);
+    x.fillStyle = 'rgba(0,0,0,.28)';
+    x.fillRect(px + 3, py + TS - 5, TS - 6, 4);
+    x.fillStyle = c.roche;
+    x.fillRect(px + 4, py + TS - 3 - haut, TS - 8, haut);
+    x.fillRect(px + 2, py + TS - haut, TS - 4, haut - 4);
+    x.fillStyle = c.rocheHaut;
+    x.fillRect(px + 6, py + TS - 3 - haut, TS - 14, 3);
+    x.fillStyle = c.rocheOmbre;
+    for (i = 0; i < 3; i++) {
+      n = bruit(tx, ty, 310 + i);
+      x.fillRect(px + 4 + (n * 13 | 0), py + 10 + ((bruit(tx, ty, 315 + i) * 8) | 0), 3, 2);
+    }
+    return true;
+  }
+
   // ==========================================================
   //  Le dessin du terrain
   // ==========================================================
 
-  function solTuile(x, g, tx, ty) {
+  function solTuile(x, g, tx, ty, opts) {
     var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
+
+    if (t >= T.SOL) return solAstre(x, g, tx, ty, opts);
 
     if (estEau(t)) {
       // Un fond plus sombre au large, plus clair pres du bord : ca donne
@@ -165,6 +296,8 @@
 
   function objetTuile(x, g, tx, ty, opts) {
     var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
+
+    if (t >= T.SOL) { objetAstre(x, g, tx, ty, opts); return; }
 
     if (t === T.ROSEAU) {
       // Des joncs qui depassent de l'eau, au bord des etangs.
@@ -350,7 +483,7 @@
     var x = c.getContext('2d');
     if (!x) return c;
     var tx, ty;
-    for (ty = 0; ty < MH; ty++) for (tx = 0; tx < MW; tx++) solTuile(x, g, tx, ty);
+    for (ty = 0; ty < MH; ty++) for (tx = 0; tx < MW; tx++) solTuile(x, g, tx, ty, opts);
     for (ty = 0; ty < MH; ty++) for (tx = 0; tx < MW; tx++) objetTuile(x, g, tx, ty, opts);
     return c;
   }
