@@ -33,7 +33,19 @@
     { n: 4, nom: 'Mk IV — Solstice', degats: 32, cadence: 440, cout: 13,
       texte: 'De quoi discuter d’égal à égal avec un Grand Blanc.' },
     { n: 5, nom: 'Mk V — Supernova', degats: 52, cadence: 380, cout: 22,
-      texte: 'Ce n’est plus une arme, c’est une petite étoile tenue à bout de bras.' }
+      texte: 'Ce n’est plus une arme, c’est une petite étoile tenue à bout de bras.' },
+    // Au-dela du Mk V : de quoi tenir tete aux gardiens des planetes
+    // lointaines, de Mars a Neptune.
+    { n: 6, nom: 'Mk VI — Pulsar', degats: 80, cadence: 350, cout: 32,
+      texte: 'Il bat comme un cœur d’étoile morte, et chaque battement perce.' },
+    { n: 7, nom: 'Mk VII — Quasar', degats: 118, cadence: 330, cout: 45,
+      texte: 'Le faisceau se voit depuis l’orbite. Les gardiens aussi le voient venir.' },
+    { n: 8, nom: 'Mk VIII — Magnétar', degats: 165, cadence: 310, cout: 60,
+      texte: 'Il tord le métal à dix pas. Mieux vaut ne pas le poser près d’une montre.' },
+    { n: 9, nom: 'Mk IX — Horizon', degats: 225, cadence: 290, cout: 80,
+      texte: 'La lumière qui en sort a l’air de ne pas vouloir revenir.' },
+    { n: 10, nom: 'Mk X — Singularité', degats: 300, cadence: 270, cout: 105,
+      texte: 'Au bout du canon, l’espace se plie. Neptune n’a qu’à bien se tenir.' }
   ];
 
   var MAX = NIVEAUX.length;
@@ -101,7 +113,21 @@
     { id: 'etoile', nom: 'Étoile Filante', c: ['#3a2a6e', '#c9b8ff', '#ffe36a'],
       gagne: 'Récompense du niveau 20 du joueur.', niveau: 20 },
     { id: 'couronne', nom: 'Couronne', c: ['#8a6a14', '#ffe38a', '#ff4ad8'],
-      gagne: 'Récompense du niveau 30 du joueur.', niveau: 30 }
+      gagne: 'Récompense du niveau 30 du joueur.', niveau: 30 },
+    { id: 'aurore', nom: 'Aurore Boréale', c: ['#1a4a4a', '#7affc8', '#c86aff'],
+      gagne: 'Récompense du niveau 50 du joueur.', niveau: 50 },
+    { id: 'singularite', nom: 'Singularité', c: ['#050508', '#ffffff', '#ff8a2e'],
+      gagne: 'Récompense du niveau 75 du joueur.', niveau: 75 },
+    { id: 'supreme', nom: 'Dinder Suprême', c: ['#e8e8f0', '#ffd84a', '#ff3b5c'],
+      gagne: 'Récompense du niveau 100 du joueur.', niveau: 100 },
+    { id: 'nova', nom: 'Nova Écarlate', c: ['#6a0a1a', '#ff6a5a', '#ffe36a'],
+      gagne: 'Récompense du niveau 200 du joueur.', niveau: 200 },
+    { id: 'constellation', nom: 'Constellation', c: ['#0a0e2a', '#5a6ad8', '#ffffff'],
+      gagne: 'Récompense du niveau 300 du joueur.', niveau: 300 },
+    { id: 'voie-lactee', nom: 'Voie Lactée', c: ['#1a1030', '#e8d8ff', '#8ef3ff'],
+      gagne: 'Récompense du niveau 400 du joueur.', niveau: 400 },
+    { id: 'big-bang', nom: 'Big Bang', c: ['#ffffff', '#ffb02e', '#ff2a6a'],
+      gagne: 'Récompense du niveau 500 du joueur.', niveau: 500 }
   ];
 
   function revetement(id) {
@@ -149,7 +175,13 @@
     // Le canon : un tube, puis les bagues, puis l'emetteur.
     p(33, 10, 14, 5, corps);
     p(33, 10, 14, 1, eclat);
-    for (var b = 0; b < n; b++) p(35 + b * 2, 9, 1, 7, lueur);
+    // Cinq bagues au plus sur le canon ; au-dela, des ailettes dorees
+    // viennent se greffer sur le dos du corps.
+    for (var b = 0; b < Math.min(n, 5); b++) p(35 + b * 2, 9, 1, 7, lueur);
+    for (var a = 0; a < n - 5; a++) {
+      p(11 + a * 4, 5, 3, 3, '#ffd84a');
+      p(12 + a * 4, 4, 1, 1, '#fff6cf');
+    }
 
     // L'emetteur, au bout : un anneau qui luit.
     p(46, 8, 3, 9, corps);
@@ -331,7 +363,7 @@
 
     // L'echelle des cinq crans : on voit d'un coup d'oeil ou l'on en est
     // et ce qu'il reste a gravir.
-    var ROMAIN = ['I', 'II', 'III', 'IV', 'V'];
+    var ROMAIN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
     var echelle = el('div', 'ar-echelle');
     NIVEAUX.forEach(function (x) {
       var c = el('span', 'ar-cran' + (x.n <= nAtteint ? ' is-atteint' : ''),
@@ -460,7 +492,9 @@
     var lignes = V ? Object.keys(abattus).map(function (id) {
       return { v: V.parId(id), n: abattus[id] };
     }).filter(function (x) { return x.v && !x.v.forme; }) : [];
-    var gardien = V && DP.exploit('selenophage') > 0;
+    // Les gardiens vaincus ouvrent le tableau, du plus redoutable au moins.
+    var BO = window.BOSS;
+    var gardiens = V && BO ? BO.ORDRE.filter(function (id) { return BO.vaincu(id); }).reverse() : [];
 
     lignes.sort(function (a, b) {
       return (b.v.palier - a.v.palier) || (b.n - a.n);
@@ -476,19 +510,19 @@
     bloc.appendChild(tete);
 
     var grille = el('div', 'ar-trophees ar-trophees--creatures');
-    if (gardien) {
-      var m = V.MONSTRE;
+    gardiens.forEach(function (id) {
+      var m = V.parId(id), ga = BO.GARDIENS[id], astre = V.astre(ga.astre);
       var g = el('div', 'ar-trophee ar-trophee--gardien');
-      g.dataset.creature = m.id;
+      g.dataset.creature = id;
       var gi = el('img', 'ar-trophee-img');
-      gi.src = V.url(m.id);
+      gi.src = V.url(id);
       gi.alt = '';
       g.appendChild(gi);
-      g.appendChild(el('span', 'ar-trophee-nom', m.nom));
-      g.appendChild(el('span', 'ar-trophee-det', 'Lune  ·  gardien'));
-      g.appendChild(el('span', 'ar-trophee-n', '×' + DP.exploit('selenophage')));
+      g.appendChild(el('span', 'ar-trophee-nom', m ? m.nom : ga.nom));
+      g.appendChild(el('span', 'ar-trophee-det', (astre ? astre.nom : '') + '  ·  gardien'));
+      g.appendChild(el('span', 'ar-trophee-n', '×' + DP.exploit(BO.exploitDe(ga))));
       grille.appendChild(g);
-    }
+    });
     lignes.forEach(function (x) {
       var a = V.astre(x.v.astre);
       var n = el('div', 'ar-trophee');
@@ -504,7 +538,7 @@
       n.appendChild(el('span', 'ar-trophee-n', '×' + x.n));
       grille.appendChild(n);
     });
-    if (!lignes.length && !gardien) {
+    if (!lignes.length && !gardiens.length) {
       grille.appendChild(el('p', 'ar-vide',
         'Aucune créature abattue pour l’instant. Celles qui attaquent se ' +
         'reconnaissent au point rouge au-dessus de leur tête.'));

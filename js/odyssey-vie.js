@@ -368,6 +368,15 @@
            'dans sa grotte. La base, elle, était tombée dans sa grotte.'
   };
 
+  // Les gardiens : un par monde. Le Selenophage ouvre la liste ; les
+  // autres sont ajoutes par odyssey-gardiens.js.
+  var MONSTRES = [MONSTRE];
+
+  function monstre(idAstre) {
+    for (var i = 0; i < MONSTRES.length; i++) if (MONSTRES[i].astre === idAstre) return MONSTRES[i];
+    return null;
+  }
+
   // Les objets : ni vivants ni lieux, mais tout ce qui traine et se
   // scanne — mineraux, plantes, epaves, phenomenes. Le fichier de faune
   // les remplit, astre par astre.
@@ -389,7 +398,7 @@
   }
 
   function parId(id) {
-    if (id === MONSTRE.id) return MONSTRE;
+    for (var m = 0; m < MONSTRES.length; m++) if (MONSTRES[m].id === id) return MONSTRES[m];
     for (var i = 0; i < VIES.length; i++) if (VIES[i].id === id) return VIES[i];
     for (var k = 0; k < CURIOSITES.length; k++) {
       if (CURIOSITES[k].id === id) return CURIOSITES[k];
@@ -404,7 +413,8 @@
     var out = vies(idAstre).concat(objets(idAstre));
     var c = curiosite(idAstre);
     if (c) out.push(c);
-    if (idAstre === MONSTRE.astre) out.push(MONSTRE);
+    var g = monstre(idAstre);
+    if (g) out.push(g);
     return out;
   }
 
@@ -966,7 +976,13 @@
       x.fillStyle = col;
       x.fillRect(px, py, w, h);
     };
-    if (v.boss) dessinerMonstre(poser, v);
+    if (v.boss && v.id !== MONSTRE.id && window.BOSS && window.BOSS.feuille(v.id, false)) {
+      // Un gardien : sa grande planche de duel, reduite a la taille du carnet.
+      var fb = window.BOSS.feuille(v.id, false);
+      var k = Math.min(L / fb.L, H / fb.H);
+      x.drawImage(fb.canvas, (L - fb.L * k) / 2, (H - fb.H * k) / 2, fb.L * k, fb.H * k);
+    }
+    else if (v.boss) dessinerMonstre(poser, v);
     else if (v.forme) dessinerCuriosite(poser, v);
     else dessinerVie(poser, v);
     cerner(x);
@@ -995,7 +1011,7 @@
 
   window.ODYVIE = {
     ASTRES: ASTRES, VIES: VIES, CURIOSITES: CURIOSITES, OBJETS: OBJETS,
-    MONSTRE: MONSTRE, FORCE: FORCE, force: force, teintes: teintes,
+    MONSTRE: MONSTRE, MONSTRES: MONSTRES, monstre: monstre, FORCE: FORCE, force: force, teintes: teintes,
     objets: objets,
     astre: astre, vies: vies, curiosite: curiosite, parId: parId,
     scannables: scannables, tout: tout,

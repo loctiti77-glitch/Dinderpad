@@ -1,4 +1,6 @@
-// Le Selenophage : le gardien de la grande grotte, sur la Lune.
+// Les gardiens de l'Odyssee, et le duel qu'on leur livre. Le premier
+// defini ici est le Selenophage, gardien de la grande grotte de la Lune ;
+// les gardiens des planetes viennent de odyssey-gardiens.js.
 //
 // Un duel au viseur, comme contre les requins, mais la bete rend les
 // coups. Elle attaque a intervalles reguliers ; chaque attaque s'annonce
@@ -111,7 +113,7 @@
     }
   }
 
-  function cerner(ctx) {
+  function cerner(ctx, SL, SH) {
     var img = ctx.getImageData(0, 0, SL, SH), d = img.data;
     var plein = new Uint8Array(SL * SH), i;
     for (i = 0; i < SL * SH; i++) plein[i] = d[i * 4 + 3] > 40 ? 1 : 0;
@@ -134,20 +136,26 @@
 
   var cache = {};
 
-  function feuille(ouverte) {
-    var cle = ouverte ? 'o' : 'f';
+  // La planche d'un gardien, gueule fermee ou ouverte. feuille(true) ou
+  // feuille(false) seuls designent le Selenophage, comme avant.
+  function feuille(id, ouverte) {
+    if (typeof id === 'boolean' || id == null) { ouverte = !!id; id = 'selenophage'; }
+    var g = GARDIENS[id];
+    if (!g) return null;
+    var cle = id + (ouverte ? '|o' : '|f');
     if (cache[cle]) return cache[cle];
+    var L = g.L || SL, H = g.H || SH;
     var cv = document.createElement('canvas');
-    cv.width = SL; cv.height = SH;
+    cv.width = L; cv.height = H;
     var x = cv.getContext('2d');
     if (!x) return null;
     x.imageSmoothingEnabled = false;
-    dessiner(function (px, py, w, h, col) {
+    g.dessiner(function (px, py, w, h, col) {
       x.fillStyle = col;
       x.fillRect(Math.round(px), Math.round(py), w, h);
-    }, ouverte);
-    cerner(x);
-    cache[cle] = { canvas: cv, L: SL, H: SH };
+    }, !!ouverte, ovale);
+    cerner(x, L, H);
+    cache[cle] = { canvas: cv, L: L, H: H };
     return cache[cle];
   }
 
@@ -160,11 +168,77 @@
   ];
   var GORGE = { x: 75, y: 71, r: 11 };
 
+  // Le decor du Selenophage : le ciel noir, la Terre suspendue, la
+  // falaise et sa grotte.
+  function fondLune(ctx) {
+    ctx.fillStyle = '#03050a';
+    ctx.fillRect(-10, -10, CV_L + 20, CV_H + 20);
+    ctx.fillStyle = 'rgba(234,247,255,.8)';
+    for (var i = 0; i < 70; i++) {
+      ctx.fillRect((i * 97) % CV_L, (i * 41) % 150, i % 7 ? 1 : 2, i % 7 ? 1 : 2);
+    }
+    ctx.fillStyle = '#2a68c4';
+    ctx.beginPath(); ctx.arc(404, 52, 22, 0, 6.3); ctx.fill();
+    ctx.fillStyle = '#3d8b38';
+    ctx.fillRect(394, 44, 10, 8); ctx.fillRect(408, 56, 8, 6);
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.fillRect(390, 38, 14, 3);
+    ctx.fillStyle = 'rgba(3,5,10,.55)';
+    ctx.beginPath(); ctx.arc(412, 56, 22, 0, 6.3); ctx.fill();
+    ctx.fillStyle = '#4a4a46';
+    ctx.fillRect(0, 150, CV_L, CV_H - 150);
+    ctx.fillStyle = '#5a5a56';
+    for (i = 0; i < 12; i++) ctx.fillRect(i * 44, 144 + (i % 3) * 6, 40, 10);
+    ctx.fillStyle = '#0a0a0c';
+    ctx.beginPath(); ctx.ellipse(CV_L / 2, 250, 170, 110, 0, Math.PI, 0); ctx.fill();
+    ctx.fillRect(CV_L / 2 - 170, 250, 340, 70);
+  }
+
+  // ==========================================================
+  //  Le registre des gardiens
+  // ==========================================================
+  // Chaque gardien porte ses reglages de duel : points de vie, cadence
+  // et coups pour ses trois phases (calme, enrage, furie), le temps de
+  // l'annonce, ce qu'il faut de touches pour l'interrompre, son dessin,
+  // ses points faibles, son decor, ses textes et sa recompense.
+  var GARDIENS = {};
+  var ORDRE = [];
+
+  function definir(g) {
+    GARDIENS[g.id] = g;
+    if (ORDRE.indexOf(g.id) === -1) ORDRE.push(g.id);
+    ORDRE.sort(function (a, b) { return GARDIENS[a].rang - GARDIENS[b].rang; });
+    return g;
+  }
+
+  function exploitDe(g) { return g.exploit || ('gardien-' + g.id); }
+  function vaincu(id) { var g = GARDIENS[id]; return !!g && DP.exploit(exploitDe(g)) > 0; }
+
+  definir({
+    id: 'selenophage', astre: 'lune', rang: 3.5, nom: 'Le Sélénophage',
+    exploit: 'selenophage', xp: 400,
+    pv: PV, cadence: [CADENCE, CADENCE_RAGE, CADENCE_FURIE], coup: [COUP, COUP_RAGE, COUP_FURIE],
+    prepare: PREPARE, etourdi: ETOURDI, interrompre: POUR_INTERROMPRE,
+    recompense: RECOMPENSE,
+    dessiner: dessiner, faibles: FAIBLES, gorge: GORGE, corps: { rx: 58, ry: 44, dy: -4 },
+    fond: fondLune,
+    textes: {
+      victoire: 'LE SÉLÉNOPHAGE EST TOMBÉ',
+      recit: 'Il s’enfonce dans sa grotte et ne remonte pas. La base est silencieuse, pour la première fois depuis des années.',
+      echec: 'Le Téléportail t’a arraché à la grotte juste à temps. La bête t’attend toujours.'
+    }
+  });
+
   // ==========================================================
   //  Le duel
   // ==========================================================
 
   function Duel(cfg) {
+    var G = GARDIENS[cfg.gardien || 'selenophage'] || GARDIENS.selenophage;
+    var PV = G.pv, PREPARE = G.prepare, ETOURDI = G.etourdi;
+    var POUR_INTERROMPRE = G.interrompre;
+    var FAIBLES = G.faibles, GORGE = G.gorge;
+    var SL = G.L || 150, SH = G.H || 112;
     var A = window.ARME;
     var nv = A ? A.niveauJeu('odyssee') : { degats: 6, cadence: 620, nom: 'Mk I' };
     var pvJ = Math.max(1, cfg.pvJoueur || 100), pvJMax = cfg.pvMax || 100;
@@ -181,13 +255,13 @@
 
     hote.insertAdjacentHTML('beforeend',
       '<div class="bs-haut"><div class="bs-titre">' +
-      '<span class="bs-nom">Le Sélénophage</span>' +
+      '<span class="bs-nom"></span>' +
       '<span class="bs-etat"></span></div>' +
       '<div class="bs-jauge"><div class="bs-plein"></div><span class="bs-pv"></span></div></div>' +
       '<div class="bs-bas"><div class="bs-moi"><span class="bs-moi-nom">Toi</span>' +
       '<div class="bs-jauge bs-jauge--moi"><div class="bs-plein bs-plein--moi"></div>' +
       '<span class="bs-pv bs-pv--moi"></span></div></div>' +
-      '<span class="bs-aide">Vise les points orange. Pendant qu’il prépare son coup, trois touches (ou une dans la gueule) l’interrompent.</span></div>' +
+      '<span class="bs-aide"></span></div>' +
       '<div class="bs-fin" hidden></div>');
 
     (cfg.parent || document.body).appendChild(hote);
@@ -198,6 +272,13 @@
     var elMoi = hote.querySelector('.bs-plein--moi');
     var elPvMoi = hote.querySelector('.bs-pv--moi');
     var elEtat = hote.querySelector('.bs-etat');
+    hote.dataset.gardien = G.id;
+    hote.querySelector('.bs-nom').textContent = G.nom;
+    var NOMBRES = ['zéro', 'une', 'deux', 'trois', 'quatre', 'cinq'];
+    hote.querySelector('.bs-aide').textContent =
+      'Vise les points orange. Pendant qu’il prépare son coup, ' +
+      (NOMBRES[POUR_INTERROMPRE] || POUR_INTERROMPRE) + ' touches' +
+      (GORGE ? ' (ou une dans la gueule)' : '') + ' l’interrompent.';
     var fin = hote.querySelector('.bs-fin');
 
     var ECH = 2.05;
@@ -212,7 +293,7 @@
 
     function rage() { return pv <= PV / 2; }
     function furie() { return pv <= PV / 4; }
-    function cadence() { return furie() ? CADENCE_FURIE : rage() ? CADENCE_RAGE : CADENCE; }
+    function cadence() { return G.cadence[furie() ? 2 : rage() ? 1 : 0]; }
     var phaseVue = 0;
 
     function majJauges() {
@@ -231,7 +312,7 @@
     // Les points faibles a l'ecran, selon la pose.
     function faibles() {
       var lst = FAIBLES.slice();
-      if (etat === 'prepare') lst.push(GORGE);
+      if (etat === 'prepare' && GORGE) lst.push(GORGE);
       var e = ECH * echelle;
       return lst.map(function (f) {
         return {
@@ -245,7 +326,8 @@
 
     function dansLeCorps(x, y) {
       var e = ECH * echelle;
-      var dx = (x - pos.x) / (58 * e), dy = (y - (pos.y - 4 * e)) / (44 * e);
+      var C = G.corps;
+      var dx = (x - pos.x) / (C.rx * e), dy = (y - (pos.y + C.dy * e)) / (C.ry * e);
       return dx * dx + dy * dy <= 1;
     }
 
@@ -293,7 +375,7 @@
     }
 
     function frapper(t) {
-      var coup = furie() ? COUP_FURIE : rage() ? COUP_RAGE : COUP;
+      var coup = G.coup[furie() ? 2 : rage() ? 1 : 0];
       pvJ = Math.max(0, pvJ - coup);
       secousse = t; flash = t;
       chiffres.push({ t0: t, x: CV_L / 2, y: CV_H - 60, txt: '-' + coup, moi: true, gros: true });
@@ -367,33 +449,11 @@
         ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
       }
 
-      // Le ciel noir, les etoiles, et la Terre suspendue.
-      ctx.fillStyle = '#03050a';
-      ctx.fillRect(-10, -10, CV_L + 20, CV_H + 20);
-      ctx.fillStyle = 'rgba(234,247,255,.8)';
-      for (var i = 0; i < 70; i++) {
-        ctx.fillRect((i * 97) % CV_L, (i * 41) % 150, i % 7 ? 1 : 2, i % 7 ? 1 : 2);
-      }
-      ctx.fillStyle = '#2a68c4';
-      ctx.beginPath(); ctx.arc(404, 52, 22, 0, 6.3); ctx.fill();
-      ctx.fillStyle = '#3d8b38';
-      ctx.fillRect(394, 44, 10, 8); ctx.fillRect(408, 56, 8, 6);
-      ctx.fillStyle = 'rgba(255,255,255,.5)';
-      ctx.fillRect(390, 38, 14, 3);
-      ctx.fillStyle = 'rgba(3,5,10,.55)';
-      ctx.beginPath(); ctx.arc(412, 56, 22, 0, 6.3); ctx.fill();
-
-      // La falaise et la grotte.
-      ctx.fillStyle = '#4a4a46';
-      ctx.fillRect(0, 150, CV_L, CV_H - 150);
-      ctx.fillStyle = '#5a5a56';
-      for (i = 0; i < 12; i++) ctx.fillRect(i * 44, 144 + (i % 3) * 6, 40, 10);
-      ctx.fillStyle = '#0a0a0c';
-      ctx.beginPath(); ctx.ellipse(CV_L / 2, 250, 170, 110, 0, Math.PI, 0); ctx.fill();
-      ctx.fillRect(CV_L / 2 - 170, 250, 340, 70);
+      // Le decor du gardien.
+      G.fond(ctx, t, CV_L, CV_H);
 
       // Le monstre.
-      var f = feuille(etat === 'prepare' || etat === 'frappe');
+      var f = feuille(G.id, etat === 'prepare' || etat === 'frappe');
       if (f) {
         var e = ECH * echelle;
         ctx.save();
@@ -533,16 +593,18 @@
     }
 
     function recompenser() {
-      DP.compterExploit('selenophage');
-      DP.noterScan('selenophage', 'lune');
-      DP.gagnerRoches(RECOMPENSE.roches);
-      DP.earn('pink', RECOMPENSE.temporel);
+      var R = G.recompense;
+      DP.compterExploit(exploitDe(G));
+      DP.noterScan(G.id, G.astre);
+      DP.gagnerRoches(R.roches);
+      var cle = R.credit ? R.credit[0] : 'pink', n = R.credit ? R.credit[1] : (R.temporel || 0);
+      if (n) DP.earn(cle, n);
       var rev = null;
-      if (DP.aLArme() && !DP.aRevetement(RECOMPENSE.revetement)) {
-        DP.acquerirRevetement(RECOMPENSE.revetement);
-        rev = window.ARME ? window.ARME.revetement(RECOMPENSE.revetement) : null;
+      if (R.revetement && DP.aLArme() && !DP.aRevetement(R.revetement)) {
+        DP.acquerirRevetement(R.revetement);
+        rev = window.ARME ? window.ARME.revetement(R.revetement) : null;
       }
-      return { roches: RECOMPENSE.roches, temporel: RECOMPENSE.temporel, revetement: rev };
+      return { roches: R.roches, credit: cle, n: n, temporel: cle === 'pink' ? n : 0, revetement: rev };
     }
 
     function montrerFin(vaincu, r) {
@@ -554,15 +616,13 @@
         var n = document.createElement('p');
         n.className = cls; n.textContent = txt; carte.appendChild(n); return n;
       }
-      ligne('bs-carte-titre', vaincu ? 'LE SÉLÉNOPHAGE EST TOMBÉ' : 'RAPATRIEMENT D’URGENCE');
-      ligne('bs-carte-txt', vaincu
-        ? 'Il s’enfonce dans sa grotte et ne remonte pas. La base est silencieuse, pour la première fois depuis des années.'
-        : 'Le Téléportail t’a arraché à la grotte juste à temps. La bête t’attend toujours.');
+      ligne('bs-carte-titre', vaincu ? G.textes.victoire : 'RAPATRIEMENT D’URGENCE');
+      ligne('bs-carte-txt', vaincu ? G.textes.recit : G.textes.echec);
       if (vaincu && r) {
         var butin = document.createElement('div');
         butin.className = 'bs-butin';
         [['☀ × ' + r.roches + ' Roches Solaires', 'roche'],
-         ['Crédit Temporel × ' + r.temporel, 'credit']]
+         [(DP.CREDITS[r.credit] ? DP.CREDITS[r.credit].name : 'Crédit') + ' × ' + r.n, 'credit']]
           .forEach(function (g) {
             var s = document.createElement('span');
             s.className = 'bs-gain bs-gain--' + g[1];
@@ -571,7 +631,7 @@
           });
         carte.appendChild(butin);
         if (r.revetement) ligne('bs-revetement', 'Nouveau revêtement : ' + r.revetement.nom);
-        ligne('bs-carte-txt bs-carte-txt--sous', 'Le Sélénophage entre à ton carnet du scanner.');
+        ligne('bs-carte-txt bs-carte-txt--sous', G.nom + ' entre à ton carnet du scanner.');
       }
       var b = document.createElement('button');
       b.className = 'bs-btn'; b.type = 'button';
@@ -613,6 +673,8 @@
     PV: PV, COUP: COUP, COUP_RAGE: COUP_RAGE, COUP_FURIE: COUP_FURIE,
     CADENCE: CADENCE, CADENCE_RAGE: CADENCE_RAGE, CADENCE_FURIE: CADENCE_FURIE, PREPARE: PREPARE,
     POUR_INTERROMPRE: POUR_INTERROMPRE, RECOMPENSE: RECOMPENSE,
-    FAIBLES: FAIBLES, feuille: feuille, Duel: Duel
+    FAIBLES: FAIBLES, feuille: feuille, Duel: Duel,
+    GARDIENS: GARDIENS, ORDRE: ORDRE, definir: definir, vaincu: vaincu, exploitDe: exploitDe,
+    CV_L: CV_L, CV_H: CV_H, ovale: ovale, reduit: reduit
   };
 })();

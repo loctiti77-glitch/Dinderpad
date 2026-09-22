@@ -395,10 +395,10 @@
     if (p.creditsAvantInfini === undefined) p.creditsAvantInfini = null;
     if (typeof p.arme !== 'boolean') p.arme = false;
     if (typeof p.armeNiveau !== 'number') p.armeNiveau = 1;
-    p.armeNiveau = Math.max(1, Math.min(5, p.armeNiveau));
+    p.armeNiveau = Math.max(1, Math.min(10, p.armeNiveau));
     // Le pistolet de l'Odyssee a sa propre progression : il part du Mk I.
     if (typeof p.armeNiveauOdyssee !== 'number') p.armeNiveauOdyssee = 1;
-    p.armeNiveauOdyssee = Math.max(1, Math.min(5, p.armeNiveauOdyssee));
+    p.armeNiveauOdyssee = Math.max(1, Math.min(10, p.armeNiveauOdyssee));
     if (typeof p.noyaux !== 'number') p.noyaux = 0;
     if (!Array.isArray(p.revetements)) p.revetements = [];
     // Porter l'arme, c'est porter au moins son acier d'origine.
@@ -793,7 +793,7 @@
 
   function monterArme(jeu) {
     var p = me(), k = champNiveau(jeu);
-    if ((p[k] || 1) >= 5) return false;
+    if ((p[k] || 1) >= 10) return false;
     p[k] = (p[k] || 1) + 1;
     save();
     return p[k];

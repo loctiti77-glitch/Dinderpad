@@ -230,6 +230,18 @@
 
   function compteAstres() { return DP.astresVus().length; }
 
+  // Deux fois moins d'assaillants : sur chaque monde, une espece agressive
+  // sur deux devient paisible (en alternant les paliers, pour garder des
+  // faibles et des fortes). Les paisibles se defendent encore si on leur
+  // tire dessus.
+  (function apaiser() {
+    V.ASTRES.forEach(function (a) {
+      V.vies(a.id).filter(function (v) { return v.agressif; })
+        .sort(function (x, y) { return (y.palier - x.palier) || (x.id < y.id ? -1 : 1); })
+        .forEach(function (v, i) { if (i % 2) { v.agressif = false; v.apaise = true; } });
+    });
+  })();
+
   function voyageur() {
     var owned = DP.owned();
     return owned.length ? owned[0] : 'dr-islas-human-form';
@@ -947,6 +959,41 @@
     return mieux || { x: 20, y: 18 };
   }
 
+  // Le repaire du gardien : le plus loin possible du point d'arrivee (en
+  // chemin a parcourir), dans un endroit degage, et pas sur la curiosite.
+  function placeRepaire(g, lieu) {
+    var vu = accessibles(g);
+    var dist = {}, file = [[20, 22]], k;
+    dist['20,22'] = 0;
+    while (file.length) {
+      var c = file.shift();
+      for (k = 0; k < 4; k++) {
+        var nx = c[0] + [1, -1, 0, 0][k], ny = c[1] + [0, 0, 1, -1][k], cle = nx + ',' + ny;
+        if (!vu[cle] || dist[cle] !== undefined) continue;
+        dist[cle] = dist[c[0] + ',' + c[1]] + 1;
+        file.push([nx, ny]);
+      }
+    }
+    var mieux = null, loin = -1;
+    for (var y = 3; y < MH - 3; y++) {
+      for (var x = 3; x < MW - 3; x++) {
+        var d = dist[x + ',' + y];
+        if (d === undefined || d <= loin) continue;
+        var degage = true;
+        for (var dy = -1; dy <= 1 && degage; dy++) {
+          for (var dx = -1; dx <= 1; dx++) if (!vu[(x + dx) + ',' + (y + dy)]) { degage = false; break; }
+        }
+        if (!degage) continue;
+        if (lieu && Math.abs(x - lieu.x) + Math.abs(y - lieu.y) < 6) continue;
+        loin = d; mieux = { tx: x, ty: y };
+      }
+    }
+    mieux = mieux || { tx: 20, ty: 10 };
+    mieux.x = mieux.tx + 0.5; mieux.y = mieux.ty + 0.5;
+    mieux.px = mieux.x * TS; mieux.py = mieux.y * TS;
+    return mieux;
+  }
+
   // ==========================================================
   //  La Lune : une carte a part
   // ==========================================================
@@ -1098,7 +1145,16 @@
     var cur = V.curiosite(a.id);
     var lieu = lune ? { x: Math.floor(GROTTE.x), y: Math.floor(DEVANT_GROTTE.y) - 1 }
                     : placeCuriosite(g);
-    var bossBattu = function () { return DP.exploit('selenophage') > 0; };
+    // Le gardien du monde, et son repaire. Sur la Lune, c'est la grotte.
+    var BO = window.BOSS, defG = V.monstre ? V.monstre(a.id) : null;
+    var gardien = BO && defG ? BO.GARDIENS[defG.id] : null;
+    var repaire = !gardien ? null
+      : lune ? { x: GROTTE.x, y: GROTTE.y + 0.6, px: DEVANT_GROTTE.x * TS, py: DEVANT_GROTTE.y * TS }
+      : placeRepaire(g, lieu);
+    var bossBattu = function () { return !gardien || BO.vaincu(gardien.id); };
+    function presDuRepaire(r) {
+      return !!repaire && Math.hypot(balade.chef.x - repaire.px, balade.chef.y - repaire.py) < r;
+    }
 
     reprise = { astre: a.id, x: ou ? ou.x : DEPART.x, y: ou ? ou.y : DEPART.y,
                 dir: ou ? ou.dir : 0 };
@@ -1393,7 +1449,7 @@
       etat = 'boss';
       majBoutons();
       surgi = { t0: maintenant() };
-      dire('Le sol tremble. Quelque chose remonte de la grotte…');
+      dire(gardien.textes.reveil || 'Le sol tremble…');
       scene.classList.add('is-secousse');
       plusTard(function () {
         if (!vivant() || etat !== 'boss') return;
@@ -1402,6 +1458,7 @@
         var B = window.BOSS;
         if (!B) { etat = 'libre'; return; }
         duel = B.Duel({
+          gardien: gardien.id,
           parent: scene,
           pvJoueur: pv, pvMax: PV_MAX,
           surFin: function (r) { pv = r.pvJoueur; majJauge(); },
@@ -1411,7 +1468,7 @@
             majJauge();
             if (r.vaincu) {
               etat = 'libre';
-              dire('La grotte est silencieuse.');
+              dire(lune ? 'La grotte est silencieuse.' : 'Le repaire est silencieux.');
               majBoutons();
             } else {
               pv = 0;
@@ -1550,6 +1607,42 @@
         });
       }
 
+      if (repaire && !lune) {
+        // Le repaire : un gouffre borde de la couleur du gardien, des
+        // griffures, et deux yeux qui s'allument tant qu'il n'est pas vaincu.
+        out.push({
+          x: repaire.px, y: repaire.py - 30,
+          dessin: function (ctx, sx, sy) {
+            var gx = sx, gy = sy + 30, battu = bossBattu();
+            var puls = reduit || battu ? 0.5 : 0.5 + 0.5 * Math.sin(t / 500);
+            ctx.save();
+            ctx.globalAlpha = battu ? 0.5 : 0.35 + 0.4 * puls;
+            ctx.fillStyle = gardien.c[2];
+            ctx.beginPath(); ctx.ellipse(gx, gy, 34, 17, 0, 0, 6.3); ctx.fill();
+            ctx.restore();
+            ctx.fillStyle = '#0a0a0e';
+            ctx.beginPath(); ctx.ellipse(gx, gy, 28, 13, 0, 0, 6.3); ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.ellipse(gx, gy + 2, 20, 8, 0, 0, 6.3); ctx.fill();
+            ctx.strokeStyle = 'rgba(10,10,10,.6)';
+            ctx.lineWidth = 2;
+            for (var k = 0; k < 5; k++) {
+              var an = k / 5 * 6.28 + 0.3;
+              ctx.beginPath();
+              ctx.moveTo(gx + Math.cos(an) * 36, gy + Math.sin(an) * 18);
+              ctx.lineTo(gx + Math.cos(an) * 46, gy + Math.sin(an) * 23);
+              ctx.stroke();
+            }
+            if (!battu) {
+              var lueur = reduit ? 0.6 : Math.max(0, Math.sin(t / 800)) * 0.95;
+              ctx.fillStyle = 'rgba(232,72,58,' + lueur.toFixed(2) + ')';
+              ctx.fillRect(Math.round(gx - 9), Math.round(gy - 2), 4, 3);
+              ctx.fillRect(Math.round(gx + 5), Math.round(gy - 2), 4, 3);
+            }
+          }
+        });
+      }
+
       betes.forEach(function (b) {
         if (b.mort && t - b.mortT > 700) return;
         out.push({
@@ -1652,7 +1745,7 @@
       // Le monstre qui sort : la poussiere, puis la tete, gueule ouverte.
       if (surgi) {
         var ks = Math.min(1, (t - surgi.t0) / SURGIT_DUREE);
-        var gx = GROTTE.x * TS - cam.x, gy = (GROTTE.y + 0.6) * TS - cam.y;
+        var gx = repaire.x * TS - cam.x, gy = repaire.y * TS - cam.y;
         for (i = 0; i < 16; i++) {
           var ph = (ks * 1.6 + i / 16) % 1;
           ctx.fillStyle = 'rgba(160,160,150,' + (0.5 * (1 - ph)).toFixed(2) + ')';
@@ -1662,7 +1755,7 @@
           ctx.fill();
         }
         var B = window.BOSS;
-        var fm = B && B.feuille(ks > 0.55);
+        var fm = B && B.feuille(gardien.id, ks > 0.55);
         if (fm) {
           var montee = Math.min(1, ks * 1.35);
           var e2 = 0.35 + montee * 0.55;
@@ -1709,10 +1802,10 @@
         if (etat === 'ko' || etat === 'boss') { majBoutons(); return; }
 
         // La grotte : on n'en approche pas impunement.
-        if (lune && etat === 'libre' && !bossBattu()) {
-          var dgx = balade.chef.x - DEVANT_GROTTE.x * TS;
-          var dgy = balade.chef.y - DEVANT_GROTTE.y * TS;
-          if (Math.hypot(dgx, dgy) < 60) return reveillerMonstre();
+        // Hors de la Lune, un gardien ne se reveille que devant une arme.
+        if (repaire && etat === 'libre' && !bossBattu() && (lune || DP.aLArme()) &&
+            presDuRepaire(lune ? 60 : 40)) {
+          return reveillerMonstre();
         }
 
         cibleTir = chercherCibleTir();
@@ -1727,8 +1820,8 @@
                                    : 'Une créature attaque. Sans arme, mieux vaut fuir.')
           : cible ? (DP.aScanne(cible.sujet.id) ? cible.sujet.nom + ' — déjà au carnet.'
                                                 : 'Quelque chose à portée de scanner.')
-          : (lune && !bossBattu() && balade.chef.y < 13 * TS)
-            ? 'La grotte respire. Quelque chose dort là-dedans.'
+          : (repaire && !bossBattu() && (lune ? balade.chef.y < 13 * TS : presDuRepaire(170)))
+            ? gardien.textes.indice + (lune || DP.aLArme() ? '' : ' Sans arme, mieux vaut passer son chemin.')
           : a.sous);
       }
     });
@@ -1749,6 +1842,7 @@
       betes: betes, choses: choses, g: g,
       pv: function () { return pv; }, etat: function () { return etat; },
       reveiller: reveillerMonstre, tirer: tirer,
+      gardien: gardien, repaire: repaire,
       viser: function (b) { cibleTir = b; }
     };
   }
@@ -1876,6 +1970,7 @@
     construireCarte: construireCarte, placeCuriosite: placeCuriosite,
     accessibles: accessibles, construireLune: construireLune,
     BASE: BASE, GROTTE: GROTTE, DEVANT_GROTTE: DEVANT_GROTTE, PV_MAX: PV_MAX,
+    placeRepaire: placeRepaire,
     MW: MW, MH: MH, DEPART: DEPART, TEMPS: TEMPS,
     reprise: function () { return reprise; },
     poserReprise: function (r) { reprise = r; }
