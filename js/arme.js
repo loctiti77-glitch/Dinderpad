@@ -92,7 +92,16 @@
     { id: 'comete', nom: 'Comète', c: ['#2a2e4a', '#8a94c8', '#7cf0c8'],
       gagne: '25 espèces différentes abattues dans l’Odyssée.', odyssee: true, especes: 25 },
     { id: 'horizon', nom: 'Horizon Noir', c: ['#0e0c14', '#3a3448', '#b06aff'],
-      gagne: '100 créatures abattues dans l’Odyssée.', odyssee: true, total: 100 }
+      gagne: '100 créatures abattues dans l’Odyssée.', odyssee: true, total: 100 },
+
+    // --- Ceux du niveau du joueur : une recompense de palier, valable
+    // dans les deux jeux.
+    { id: 'galon', nom: 'Galon d’Argent', c: ['#7d8794', '#e6ecf2', '#8ef3ff'],
+      gagne: 'Récompense du niveau 10 du joueur.', niveau: 10 },
+    { id: 'etoile', nom: 'Étoile Filante', c: ['#3a2a6e', '#c9b8ff', '#ffe36a'],
+      gagne: 'Récompense du niveau 20 du joueur.', niveau: 20 },
+    { id: 'couronne', nom: 'Couronne', c: ['#8a6a14', '#ffe38a', '#ff4ad8'],
+      gagne: 'Récompense du niveau 30 du joueur.', niveau: 30 }
   ];
 
   function revetement(id) {
@@ -418,10 +427,10 @@
       im.src = url(r.id);
       im.alt = '';
       n.appendChild(im);
-      if (r.odyssee) {
-        n.classList.add('is-odyssee');
-        var tag = el('span', 'ar-peau-tag', '☀');
-        tag.title = 'Se gagne dans l’Odyssée';
+      if (r.odyssee || r.niveau) {
+        n.classList.add(r.odyssee ? 'is-odyssee' : 'is-niveau');
+        var tag = el('span', 'ar-peau-tag', r.odyssee ? '☀' : '★');
+        tag.title = r.odyssee ? 'Se gagne dans l’Odyssée' : 'Récompense de niveau';
         n.appendChild(tag);
       }
       n.appendChild(el('span', 'ar-peau-nom', a ? r.nom : '???'));

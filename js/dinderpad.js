@@ -350,7 +350,11 @@
       // La monnaie de l'Odyssee : ce que laissent les creatures qu'on
       // abat. Elle fait monter le meme pistolet que les Noyaux de la
       // peche, mais on ne l'echange pas contre eux.
-      roches: 0
+      roches: 0,
+      // Le niveau du joueur : l'XP se deduit de la progression ; on ne
+      // retient que les recompenses deja reclamees et le dernier niveau vu.
+      niveauxReclames: [],
+      niveauVu: 1
     };
   }
 
@@ -386,6 +390,8 @@
     // Un leurre monte dont on n'a plus d'exemplaire ne vaut rien.
     if (p.equip.leurre && !(p.leurres[p.equip.leurre] > 0)) p.equip.leurre = '';
     if (typeof p.illimite !== 'boolean') p.illimite = true;
+    if (!Array.isArray(p.niveauxReclames)) p.niveauxReclames = [];
+    if (typeof p.niveauVu !== 'number') p.niveauVu = 1;
     if (p.creditsAvantInfini === undefined) p.creditsAvantInfini = null;
     if (typeof p.arme !== 'boolean') p.arme = false;
     if (typeof p.armeNiveau !== 'number') p.armeNiveau = 1;
@@ -996,12 +1002,25 @@
       } },
     { id: 'badges', nom: 'Badges', det: 'Les badges et les exploits comptés',
       vider: function (p) { p.exploits = {}; p.vus = []; } },
+    { id: 'niveaux', nom: 'Niveaux', det: 'Les récompenses de niveau déjà réclamées',
+      vider: function (p) { p.niveauxReclames = []; p.niveauVu = 1; } },
     { id: 'credits', nom: 'Crédits', det: 'Le solde de crédits, et celui mis de côté',
       vider: function (p) {
         p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
         p.creditsAvantInfini = null;
       } }
   ];
+
+  function niveauxReclames() { return me().niveauxReclames.slice(); }
+  function reclamerNiveau(n) {
+    var p = me();
+    if (p.niveauxReclames.indexOf(n) !== -1) return false;
+    p.niveauxReclames.push(n);
+    save();
+    return true;
+  }
+  function niveauVu() { return me().niveauVu || 1; }
+  function voirNiveau(n) { var p = me(); if (n !== p.niveauVu) { p.niveauVu = n; save(); } }
 
   // Vide les parties demandees (identifiants de PARTIES). Rend le nombre
   // de parties videes.
@@ -1095,6 +1114,8 @@
     owned: owned, has: has, missing: missing, complete: complete,
     collect: collect, draw: draw, reset: reset,
     PARTIES: PARTIES, viderParties: viderParties,
+    niveauxReclames: niveauxReclames, reclamerNiveau: reclamerNiveau,
+    niveauVu: niveauVu, voirNiveau: voirNiveau,
     markNew: markNew, takeNew: takeNew,
     dinderImg: dinderImg, dinderFull: dinderFull, creditImg: creditImg,
     sprite: sprite,
