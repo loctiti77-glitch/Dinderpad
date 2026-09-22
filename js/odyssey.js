@@ -116,7 +116,16 @@
     return cacheTL;
   }
 
-  function visuel() {
+  // L'image du Telecommande, fournie par l'auteur ; le dessin ne sert plus
+  // qu'en secours, si le fichier venait a manquer.
+  var IMG_TP = 'assets/items/teleportail.webp';
+
+  function visuel() { return IMG_TP; }
+
+  var imgTP = new Image();
+  imgTP.src = IMG_TP;
+
+  function dessinTL() {
     var f = feuilleTL();
     return f ? f.canvas.toDataURL('image/png') : '';
   }
@@ -222,9 +231,9 @@
     im.addEventListener('error', function () {
       if (im.dataset.repli) return;
       im.dataset.repli = '1';
-      im.src = visuel();
+      im.src = dessinTL();
     });
-    im.src = 'assets/items/teleportail.webp';
+    im.src = IMG_TP;
     return im;
   }
 
@@ -515,10 +524,13 @@
       ctx.fillStyle = 'rgba(2,6,12,' + Math.min(0.72, k * 1.6).toFixed(2) + ')';
       ctx.fillRect(0, 0, IN_L, IN_H);
 
-      var f = feuilleTL();
+      // L'image de l'auteur si elle est chargee, sinon le dessin.
+      var vraie = imgTP.complete && imgTP.naturalWidth;
+      var f = vraie ? { canvas: imgTP } : feuilleTL();
       if (!f) return;
       var ech = 2.2 + Math.min(1, k * 1.8) * 1.6;
       var lg = TL_L * ech, ht = TL_H * ech;
+      if (vraie) { ht = TL_H * ech * 1.05; lg = ht * imgTP.naturalWidth / imgTP.naturalHeight; }
       var bob = reduit ? 0 : Math.sin(t / 420) * 4;
       var cx = IN_L / 2, cy = IN_H / 2 + bob;
 
@@ -531,7 +543,7 @@
       ctx.fillRect(0, 0, IN_L, IN_H);
 
       ctx.save();
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = !vraie ? false : true;
       ctx.globalAlpha = Math.min(1, k * 3);
       ctx.drawImage(f.canvas, cx - lg / 2, cy - ht / 2, lg, ht);
       ctx.restore();
@@ -1152,6 +1164,16 @@
       : lune ? { x: GROTTE.x, y: GROTTE.y + 0.6, px: DEVANT_GROTTE.x * TS, py: DEVANT_GROTTE.y * TS }
       : placeRepaire(g, lieu);
     var bossBattu = function () { return !gardien || BO.vaincu(gardien.id); };
+    // L'artefact cache sur ce monde, loin de la curiosite et du repaire.
+    var ART = window.ARTEFACTS;
+    var cachesO = ART ? ART.caches('odyssee', g, { x: 20, y: 22 }, {
+      carte: a.id, graine: 400 + Math.round(a.rang * 13),
+      // Loin du repaire : on ne doit pas reveiller un gardien en ramassant.
+      eviter: [lieu].concat(repaire && repaire.tx != null ? [{ x: repaire.tx, y: repaire.ty, loin: 10 }] : [])
+                    .concat(lune ? [{ x: Math.floor(DEVANT_GROTTE.x), y: Math.floor(DEVANT_GROTTE.y) }] : []),
+      exclure: lune ? function (x, y) { return x >= BASE.x0 && x <= BASE.x1 && y >= BASE.y0 && y <= BASE.y1; } : null
+    }) : [];
+
     function presDuRepaire(r) {
       return !!repaire && Math.hypot(balade.chef.x - repaire.px, balade.chef.y - repaire.py) < r;
     }
@@ -1607,6 +1629,8 @@
         });
       }
 
+      if (ART) out = out.concat(ART.extras(cachesO, balade && balade.chef, t));
+
       if (repaire && !lune) {
         // Le repaire : un gouffre borde de la couleur du gardien, des
         // griffures, et deux yeux qui s'allument tant qu'il n'est pas vaincu.
@@ -1808,6 +1832,7 @@
           return reveillerMonstre();
         }
 
+        if (ART && etat === 'libre') ART.ramasser(cachesO, balade.chef);
         cibleTir = chercherCibleTir();
         if (etat === 'libre') cible = chercherCible();
         majBoutons();
@@ -1842,7 +1867,7 @@
       betes: betes, choses: choses, g: g,
       pv: function () { return pv; }, etat: function () { return etat; },
       reveiller: reveillerMonstre, tirer: tirer,
-      gardien: gardien, repaire: repaire,
+      gardien: gardien, repaire: repaire, caches: cachesO,
       viser: function (b) { cibleTir = b; }
     };
   }

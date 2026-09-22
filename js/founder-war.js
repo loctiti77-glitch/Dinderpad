@@ -397,6 +397,13 @@
 
       var g = construireCarte();
 
+      // Les artefacts caches dans la foret (jamais dans l'arene).
+      var ART = window.ARTEFACTS;
+      var cachesF = ART ? ART.caches('founder', g, { x: Math.floor(DEPART.x / TS), y: Math.floor(DEPART.y / TS) }, {
+        graine: 311,
+        exclure: function (x, y) { return x >= AR.x0 - 1 && x <= AR.x1 + 1 && y >= AR.y0 - 1 && y <= AR.y1 + 2; }
+      }) : [];
+
       // Toute la marche est confiee au moteur partage : il gere le
       // joystick, la camera, les collisions et le pas de la troupe.
       var balade = null, arrive = false;
@@ -415,9 +422,10 @@
 
         // Le Fondateur attend au milieu de son arene, trie en profondeur
         // avec la troupe pour qu'il passe devant ou derriere comme il faut.
-        extras: function () {
-          return [{ id: 'lefondateur', x: (AR.x0 + AR.x1 + 1) / 2 * TS,
+        extras: function (t) {
+          var sortie = [{ id: 'lefondateur', x: (AR.x0 + AR.x1 + 1) / 2 * TS,
                     y: (AR.y0 + AR.y1 + 1) / 2 * TS, dir: DIRS.bas, fixe: true }];
+          return ART ? sortie.concat(ART.extras(cachesF, balade && balade.chef, t)) : sortie;
         },
 
         avant: function (ctx, cam, t) {
@@ -445,6 +453,7 @@
         },
 
         chaqueImage: function () {
+          if (ART) ART.ramasser(cachesF, balade.chef);
           var c = balade.caseDuChef();
           var casier = c[0] + ',' + c[1];
           if (jeu.dataset.tuile !== casier) jeu.dataset.tuile = casier;
@@ -802,6 +811,14 @@
         var chrono = etat.depart ? Math.round((Date.now() - etat.depart) / 1000) : 0;
         DP.compterExploit('fondateurVaincu');
         if (chrono > 0) DP.noterRecord('fondateurChrono', chrono, true);
+        // Les artefacts de l'arene : ce que vaut cette victoire-ci.
+        if (window.ARTEFACTS) {
+          window.ARTEFACTS.victoireFondateur({
+            equipe: equipe.slice(),
+            ko: troupe.filter(function (c) { return c.ko; }).length,
+            chrono: chrono
+          });
+        }
 
         dire('LE FONDATEUR EST TOMBÉ — ' + chrono + ' s.',
              function () { ecranFin(true, gagne, chrono); }, 1400);

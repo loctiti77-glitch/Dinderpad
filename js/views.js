@@ -600,6 +600,12 @@
   // ==========================================================
 
   function viewItems(view) {
+    // Deux onglets : les objets qu'on utilise, et les artefacts qu'on
+    // collectionne.
+    if (window.ARTEFACTS) {
+      view.classList.add('view--items');
+      window.ARTEFACTS.onglets(view, 'items');
+    }
     var list = el('div', 'screen-scroll');
 
     var possedes = DP.items();

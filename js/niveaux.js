@@ -60,6 +60,8 @@
         return t;
       },
       affiche: function (n) { return n + ' × 5–25'; } },
+    { id: 'artefacts', nom: 'Artefacts trouvés', pts: 120,
+      compte: function () { return window.ARTEFACTS ? window.ARTEFACTS.trouves().length : 0; } },
     { id: 'objets', nom: 'Objets trouvés', pts: 150,
       compte: function () {
         return [DP.aLaCanne(), DP.aLArme(), DP.aLaTelecommande()].filter(Boolean).length;
@@ -699,6 +701,10 @@
     return g ? 'Gardien vaincu : ' + g.nom : 'Exploit';
   }, function (cle) { return gardienDe(cle) ? 9 : 1; });
   surveiller('acquerirRevetement', 'Revêtement gagné', 4);
+  surveiller('noterArtefact', function (id) {
+    var a = window.ARTEFACTS && window.ARTEFACTS.parId(id);
+    return 'Artefact trouvé' + (a ? ' : ' + a.nom : '');
+  }, 9);
   surveiller('monterArme', 'Pistolet amélioré', 4);
   surveiller('prendreCanne', 'Objet trouvé : la canne à pêche', 8);
   surveiller('prendreArme', 'Objet trouvé : le Pistolet Lumithique', 8);

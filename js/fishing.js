@@ -333,6 +333,13 @@
 
       var g = construireCarte();
 
+      // Les artefacts caches dans le bois et au bord des lacs.
+      var ART = window.ARTEFACTS;
+      var cachesP = ART ? ART.caches('peche', g, { x: Math.floor(DEPART.x / TS), y: Math.floor(DEPART.y / TS) }, {
+        graine: 517,
+        eviter: [{ x: SOUCHE.x, y: SOUCHE.y }, { x: CABANE.porte, y: CABANE.y1 + 1 }]
+      }) : [];
+
       // Des que la carte est la, la partie devient reprenable.
       reprise = {
         dinder: choisi,
@@ -1347,6 +1354,8 @@
             });
           }
 
+          if (ART) sortie = sortie.concat(ART.extras(cachesP, balade && balade.chef, t));
+
           if (!canneAuSol) return sortie;
           // La canne flotte et scintille tant qu'on ne l'a pas prise.
           sortie.push({
@@ -1389,6 +1398,7 @@
           }
           devantLaSouche = armeAuSol && faceALaSouche();
           if (etat !== 'repos') return;
+          if (ART) ART.ramasser(cachesP, balade.chef);
           majAction();
           // L'indication suit ce que le joueur a devant lui, a chaque pas.
           var devantRad = (function () {

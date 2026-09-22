@@ -354,7 +354,9 @@
       // Le niveau du joueur : l'XP se deduit de la progression ; on ne
       // retient que les recompenses deja reclamees et le dernier niveau vu.
       niveauxReclames: [],
-      niveauVu: 1
+      niveauVu: 1,
+      // Les artefacts trouves dans les mini-jeux, avec la date de la trouvaille.
+      artefacts: {}
     };
   }
 
@@ -391,6 +393,7 @@
     if (p.equip.leurre && !(p.leurres[p.equip.leurre] > 0)) p.equip.leurre = '';
     if (typeof p.illimite !== 'boolean') p.illimite = true;
     if (!Array.isArray(p.niveauxReclames)) p.niveauxReclames = [];
+    if (!p.artefacts || typeof p.artefacts !== 'object') p.artefacts = {};
     if (typeof p.niveauVu !== 'number') p.niveauVu = 1;
     if (p.creditsAvantInfini === undefined) p.creditsAvantInfini = null;
     if (typeof p.arme !== 'boolean') p.arme = false;
@@ -1002,6 +1005,8 @@
       } },
     { id: 'badges', nom: 'Badges', det: 'Les badges et les exploits comptés',
       vider: function (p) { p.exploits = {}; p.vus = []; } },
+    { id: 'artefacts', nom: 'Artefacts', det: 'Les artefacts trouvés dans les mini-jeux',
+      vider: function (p) { p.artefacts = {}; } },
     { id: 'niveaux', nom: 'Niveaux', det: 'Les récompenses de niveau déjà réclamées',
       vider: function (p) { p.niveauxReclames = []; p.niveauVu = 1; } },
     { id: 'credits', nom: 'Crédits', det: 'Le solde de crédits, et celui mis de côté',
@@ -1010,6 +1015,17 @@
         p.creditsAvantInfini = null;
       } }
   ];
+
+  // Les artefacts : noterArtefact rend vrai la premiere fois seulement.
+  function artefacts() { return Object.keys(me().artefacts); }
+  function aArtefact(id) { return !!me().artefacts[id]; }
+  function noterArtefact(id) {
+    var p = me();
+    if (p.artefacts[id]) return false;
+    p.artefacts[id] = Date.now();
+    save();
+    return true;
+  }
 
   function niveauxReclames() { return me().niveauxReclames.slice(); }
   function reclamerNiveau(n) {
@@ -1115,6 +1131,7 @@
     collect: collect, draw: draw, reset: reset,
     PARTIES: PARTIES, viderParties: viderParties,
     niveauxReclames: niveauxReclames, reclamerNiveau: reclamerNiveau,
+    artefacts: artefacts, aArtefact: aArtefact, noterArtefact: noterArtefact,
     niveauVu: niveauVu, voirNiveau: voirNiveau,
     markNew: markNew, takeNew: takeNew,
     dinderImg: dinderImg, dinderFull: dinderFull, creditImg: creditImg,
