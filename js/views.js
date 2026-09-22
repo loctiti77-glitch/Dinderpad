@@ -176,6 +176,31 @@
     var shop = el('div', 'shop');
     shop.dataset.state = 'idle';
 
+    // Le solde, en haut : on doit voir ce qu'on a avant de tenter sa chance.
+    var solde = el('div', 'shop-solde');
+    var soldeN = {};
+    DP.ORDER.forEach(function (key) {
+      var chip = el('span', 'shop-solde-chip');
+      chip.dataset.credit = key;
+      var im = el('img', 'shop-solde-img');
+      im.src = DP.creditImg(key);
+      im.alt = DP.CREDITS[key].name;
+      chip.appendChild(im);
+      soldeN[key] = el('strong', 'shop-solde-n', '');
+      chip.appendChild(soldeN[key]);
+      chip.title = DP.CREDITS[key].name;
+      solde.appendChild(chip);
+    });
+    shop.appendChild(solde);
+
+    function majSolde() {
+      DP.ORDER.forEach(function (key) {
+        var n = DP.creditCount(key);
+        soldeN[key].textContent = n === Infinity ? '∞' : String(n);
+      });
+    }
+    majSolde();
+
     var status = el('p', 'shop-status', ' ');
     shop.appendChild(status);
 
@@ -311,6 +336,7 @@
       if (shop.dataset.state !== 'idle') return;
       if (!DP.dindiseEtat(d).ouvrable) return;
       if (!DP.spend(d.credit)) return;
+      majSolde();
 
       var gagne = DP.draw(d.rarete);
       if (!gagne) return;
@@ -653,8 +679,43 @@
   //  DinderTracker : la carte du monde et ses balises
   // ==========================================================
 
-  function viewTracker(view) {
+  // Les phrases que SinAIster fait defiler pendant une faille.
+  var SINAISTER = [
+    'SinAIster a pris la main sur le réseau de balises.',
+    'Vos relevés ne vous appartiennent plus.',
+    'Chaque balise est désormais une paire d’yeux.',
+    'PropAItious ne répond plus. Il ne répondra plus.',
+    'Purgez-en une, il en restera sept.',
+    'Je connais l’heure qu’il est chez vous.'
+  ];
+
+  // Un texte brouille : des caracteres remplaces au hasard.
+  function brouiller(txt, force) {
+    var sym = '#@%&$?!*_~ø¥§×';
+    return txt.split('').map(function (c) {
+      if (c === ' ' || Math.random() > force) return c;
+      return sym[Math.floor(Math.random() * sym.length)];
+    }).join('');
+  }
+
+  function viewTracker(view, arg) {
     view.classList.add('view--tracker');
+
+    // La faille du jour : SinAIster remplace PropAItious sur toutes les
+    // balises, et l'ecran clignote en rouge tant qu'on ne l'a pas purgee.
+    // "#tracker/essai" en ouvre une a la demande, pour voir ce que ca donne
+    // sans attendre le jour dit. Rien dans le pad n'y renvoie.
+    var essai = arg === 'essai';
+    var F = DP.faille();
+    if (essai) {
+      F = { active: true, cle: 'essai', reste: 86400000,
+            jour: F.jour, prochaine: F.prochaine, prochainJour: F.prochainJour };
+    }
+    var etatF = DP.etatFaille(F.cle);
+    var purgees = etatF.purges.slice();
+    var enFaille = F.active && !etatF.contenue;
+    var coups = {};                     // les coups portes sur chaque balise
+    view.classList.toggle('view--faille', enFaille);
 
     var carte = el('div', 'tracker-map');
     var fond = el('img', 'tracker-img');
@@ -683,6 +744,20 @@
     // Le compte a rebours avant que les balises ne se deplacent.
     var rebours = el('p', 'tracker-rebours');
 
+    // Le voile rouge qui bat une fois par seconde, et le bandeau d'alerte.
+    var voile = el('div', 'faille-voile');
+    voile.hidden = !enFaille;
+    // Rien n'annonce la faille avant qu'elle n'arrive : le bandeau reste
+    // vide tant qu'il n'y en a pas.
+    var bandeau = el('div', 'faille-bandeau');
+    bandeau.hidden = !F.active;
+    var bTitre = el('strong', 'faille-titre', '');
+    var bTexte = el('span', 'faille-texte', '');
+    var bEtat = el('span', 'faille-etat', '');
+    bandeau.appendChild(bTitre);
+    bandeau.appendChild(bTexte);
+    bandeau.appendChild(bEtat);
+
     var actif = null;          // le lieu ouvert dans le panneau
     var horloge = null;        // l'intervalle qui fait avancer l'heure
 
@@ -695,17 +770,21 @@
       carte.querySelectorAll('.pin').forEach(function (p) {
         p.classList.toggle('is-actif', p === pin);
       });
+      var pirate = enFaille && purgees.indexOf(spot.id) === -1;
+      fiche.classList.toggle('is-pirate', pirate);
       fCont.textContent  = spot.continent;
-      fVille.textContent = spot.ville;
-      fPays.textContent  = spot.pays;
-      fHeure.textContent = DP.heureLocale(spot.tz);
-      fDate.textContent  = DP.dateLocale(spot.tz);
+      fVille.textContent = pirate ? brouiller(spot.ville, 0.5) : spot.ville;
+      fPays.textContent  = pirate ? brouiller(spot.pays, 0.35) : spot.pays;
+      fHeure.textContent = pirate ? brouiller(DP.heureLocale(spot.tz), 0.6) : DP.heureLocale(spot.tz);
+      fDate.textContent  = pirate ? 'RELEVÉ CORROMPU — SinAIster' : DP.dateLocale(spot.tz);
       fiche.hidden = false;
 
       stopHorloge();
       horloge = setInterval(function () {
         if (!document.body.contains(fiche)) { stopHorloge(); return; }
-        fHeure.textContent = DP.heureLocale(spot.tz);
+        var pir = enFaille && purgees.indexOf(spot.id) === -1;
+        fHeure.textContent = pir ? brouiller(DP.heureLocale(spot.tz), 0.6) : DP.heureLocale(spot.tz);
+        if (pir) fVille.textContent = brouiller(spot.ville, 0.5);
       }, 1000);
     }
 
@@ -721,13 +800,13 @@
     fermer.addEventListener('click', cacher);
 
     // Pose les balises du moment. Rappelee a chaque heure pleine.
-    function poser() {
-      carte.querySelectorAll('.pin').forEach(function (p) { p.remove(); });
-
-      DP.spots().forEach(function (s) {
+    // Pose une balise sur la carte. "pirate" force SinAIster dessus :
+    // c'est ainsi qu'il rebondit ailleurs quand on le chasse d'un point.
+    function poserBalise(s, force) {
         var pin = el('button', 'pin');
         pin.type = 'button';
         pin.dataset.spot = s.id;
+        pin.dataset.ville = s.ville;
 
         // Anadyr ou Utqiagvik frolent le bord de la carte : on rentre la
         // balise de quelques pixels pour qu'elle reste entiere.
@@ -743,15 +822,26 @@
 
         pin.appendChild(el('span', 'pin-onde'));
         var chip = el('img', 'pin-chip');
-        chip.src = 'assets/items/propaitious.webp';
+        var pirate = force || (enFaille && purgees.indexOf(s.id) === -1);
+        chip.src = pirate ? 'assets/items/sinaister.webp' : 'assets/items/propaitious.webp';
         chip.alt = '';
+        pin.classList.toggle('is-pirate', pirate);
         pin.appendChild(chip);
-        pin.appendChild(el('span', 'pin-nom', s.ville));
+        pin.appendChild(el('span', 'pin-nom', pirate ? brouiller(s.ville, 0.4) : s.ville));
 
         pin.addEventListener('click', function () {
+          if (enFaille && pin.classList.contains('is-pirate')) return frapper(s, pin, chip);
           if (actif && actif.id === s.id) cacher(); else afficher(s, pin);
         });
         carte.appendChild(pin);
+        return pin;
+    }
+
+    function poser() {
+      carte.querySelectorAll('.pin').forEach(function (p) { p.remove(); });
+      DP.spots().forEach(function (s) { poserBalise(s, false); });
+      relais.forEach(function (s) {
+        if (purgees.indexOf(s.id) === -1) poserBalise(s, true).classList.add('is-relais');
       });
 
       // Si le panneau etait ouvert, il suit le nouveau lieu du continent.
@@ -762,19 +852,136 @@
       }
     }
 
+    // Purger une balise : trois coups. Au troisieme, SinAIster lache
+    // prise et PropAItious revient.
+    var COUPS = 3;
+    var RELAIS_MAX = 5;                 // combien de balises il peut encore poser
+    var relais = [];                    // celles qu'il a posees pendant la purge
+
+    // Purger n'est pas gagner : SinAIster saute souvent sur une autre
+    // balise, ailleurs sur la carte. Il n'en pose qu'un nombre limite,
+    // sinon on n'en verrait jamais le bout.
+    function relancerAilleurs(depuis) {
+      if (relais.length >= RELAIS_MAX || Math.random() > 0.55) return null;
+      var villes = [];
+      DP.CONTINENTS.forEach(function (c) {
+        c.lieux.forEach(function (l) { villes.push({ c: c, l: l }); });
+      });
+      var libres = villes.filter(function (v) {
+        return !carte.querySelector('[data-ville="' + v.l.ville + '"]') &&
+               v.l.ville !== depuis.ville;
+      });
+      if (!libres.length) return null;
+      var v = libres[Math.floor(Math.random() * libres.length)];
+      var s = {
+        id: 'relais-' + relais.length, continent: v.c.nom,
+        ville: v.l.ville, pays: v.l.pays, tz: v.l.tz,
+        x: (v.l.lon + 180) / 360 * 100, y: (90 - v.l.lat) / 180 * 100
+      };
+      relais.push(s);
+      var pin = poserBalise(s, true);
+      pin.classList.add('is-relais');
+      bTexte.textContent = 'SinAIster a sauté sur ' + s.ville + '.';
+      return s;
+    }
+
+    // Reste-t-il une balise sous SinAIster ?
+    function resteDesPirates() {
+      return !!carte.querySelector('.pin.is-pirate');
+    }
+
+    function frapper(s, pin, chip) {
+      coups[s.id] = (coups[s.id] || 0) + 1;
+      pin.classList.remove('is-frappee');
+      void pin.offsetWidth;
+      pin.classList.add('is-frappee');
+      if (COUPS - coups[s.id] > 0) {
+        bEtat.textContent = 'Purge de ' + s.ville + ' : ' + coups[s.id] + ' / ' + COUPS;
+        return;
+      }
+      purgees.push(s.id);
+      if (s.id.indexOf('relais-') !== 0) DP.purgerBalise(F.cle, s.id);
+      pin.classList.remove('is-pirate');
+      pin.classList.add('is-purgee');
+      chip.src = 'assets/items/propaitious.webp';
+      pin.querySelector('.pin-nom').textContent = s.ville;
+      // Il se déplace : une autre balise tombe souvent juste apres.
+      relancerAilleurs(s);
+      if (!resteDesPirates()) contenir();
+      else majBandeau();
+    }
+
+    // Toutes les balises rendues : la faille est contenue, et elle paie.
+    function contenir() {
+      enFaille = false;
+      view.classList.remove('view--faille');
+      voile.hidden = true;
+      var neuf = DP.contenirFaille(F.cle);
+      if (neuf) { DP.earn('gold', 3); DP.earn('pink', 1); }
+      majBandeau();
+      var fete = el('div', 'faille-fete');
+      fete.appendChild(el('strong', 'faille-fete-titre', 'FAILLE CONTENUE'));
+      fete.appendChild(el('span', 'faille-fete-txt',
+        'Toutes les balises sont rendues au réseau. SinAIster décroche.'));
+      if (neuf) {
+        fete.appendChild(el('span', 'faille-fete-prime',
+          '+3 Crédits Omniversels  ·  +1 Crédit Temporel'));
+      }
+      carte.appendChild(fete);
+      setTimeout(function () { fete.classList.add('is-sortie'); }, 2600);
+      setTimeout(function () { if (fete.parentNode) fete.remove(); }, 3100);
+    }
+
+    function majBandeau() {
+      if (!F.active) {
+        bandeau.hidden = true;
+        bTitre.textContent = bTexte.textContent = bEtat.textContent = '';
+        return;
+      }
+      bandeau.hidden = false;
+      var contenue = DP.etatFaille(F.cle).contenue;
+      bandeau.classList.toggle('is-contenue', contenue);
+      bTitre.textContent = contenue ? '✓  FAILLE CONTENUE' : '⚠  FAILLE DE SÉCURITÉ  ⚠';
+      if (!contenue && !bTexte.textContent) bTexte.textContent = SINAISTER[0];
+      if (contenue) {
+        bTexte.textContent = 'Le réseau de balises est propre. SinAIster a décroché.';
+        bEtat.textContent = 'Les relevés sont de nouveau fiables.';
+        return;
+      }
+      var reste = DP.faille().reste;
+      var pirates = carte.querySelectorAll('.pin.is-pirate').length;
+      bEtat.textContent = 'Balises purgées ' + purgees.length + '  ·  ' + pirates +
+        ' encore sous SinAIster  ·  fin dans ' +
+        Math.floor(reste / 3600000) + ' h ' + Math.floor(reste % 3600000 / 60000) + ' min';
+    }
+
     function tictac() {
       var reste = DP.prochainSaut();
       var m = Math.floor(reste / 60000), sec = Math.floor(reste % 60000 / 1000);
       rebours.textContent = 'Prochain relevé dans ' + m + ' min ' +
                             String(sec).padStart(2, '0') + ' s';
       if (reste <= 1000) setTimeout(poser, 1100);
+
+      // La faille commence ou s'acheve pendant qu'on regarde : on redessine.
+      var f2 = essai ? F : DP.faille();
+      if (f2.cle !== F.cle || f2.active !== F.active) {
+        if (window.ROUTER) window.ROUTER.reload();
+        return;
+      }
+      if (enFaille) {
+        bTexte.textContent = SINAISTER[Math.floor(DP.maintenant() / 4000) % SINAISTER.length];
+      }
+      majBandeau();
     }
 
+    carte.appendChild(voile);
     carte.appendChild(fiche);
     view.appendChild(carte);
+    view.appendChild(bandeau);
     view.appendChild(rebours);
 
     poser();
+    majBandeau();
     tictac();
     var battement = setInterval(function () {
       if (!document.body.contains(carte)) {

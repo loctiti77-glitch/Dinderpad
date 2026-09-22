@@ -24,7 +24,9 @@
     legende: { nom: 'Légendaire', rarete: 'legende', poissons: 1, credit: 'pink'  },
     // Le materiel irradie se paie en prises irradiees : deux doublons
     // Speciaux, ou un Credit Temporel pour ceux qui sont presses.
-    special: { nom: 'Spécial',    rarete: 'special', poissons: 2, credit: 'pink'  }
+    // Le materiel irradie ne se paie pas avec n'importe quel Special :
+    // il faut deux doublons Speciaux Legendaires.
+    special: { nom: 'Spécial',    rarete: 'special', sous: 'legende', poissons: 2, credit: 'pink'  }
   };
 
   var ORDRE_PALIERS = ['commun', 'peu', 'rare', 'legende', 'special'];
@@ -199,12 +201,15 @@
 
   // Sans rarete, le compte porte sur tout le carnet : c'est ce total-la
   // que le Double-Hameçon exige.
-  function doublons(rareteCle) {
+  // "sous" restreint aux Speciaux d'une rarete donnee : deux doublons
+  // Speciaux Legendaires ne sont pas deux doublons Speciaux quelconques.
+  function doublons(rareteCle, sous) {
     var P = window.POISSONS;
     if (!P) return 0;
     var prises = DP.prises(), n = 0;
     P.LISTE.forEach(function (f) {
       if (rareteCle && f.rarete !== rareteCle) return;
+      if (sous && P.sousRarete(f) !== sous) return;
       var e = prises[f.id];
       if (e && e.n > 1) n += e.n - 1;
     });
@@ -213,12 +218,13 @@
 
   // Retire n doublons de cette rarete, en commencant par les especes qui
   // en ont le plus. Rend le nombre reellement retire.
-  function depenserDoublons(rareteCle, n) {
+  function depenserDoublons(rareteCle, n, sous) {
     var P = window.POISSONS;
     if (!P || n <= 0) return 0;
     var prises = DP.prises();
     var dispo = P.LISTE
       .filter(function (f) {
+        if (sous && P.sousRarete(f) !== sous) return false;
         return f.rarete === rareteCle && prises[f.id] && prises[f.id].n > 1;
       })
       .sort(function (a, b) { return prises[b.id].n - prises[a.id].n; });
@@ -300,10 +306,10 @@
     if (!p) return { ok: false, raison: 'pas à vendre' };
 
     if (mode === 'poissons') {
-      if (doublons(p.rarete) < p.poissons) {
+      if (doublons(p.rarete, p.sous) < p.poissons) {
         return { ok: false, raison: 'pas assez de doublons' };
       }
-      depenserDoublons(p.rarete, p.poissons);
+      depenserDoublons(p.rarete, p.poissons, p.sous);
     } else {
       if (!DP.spend(p.credit)) return { ok: false, raison: 'crédits manquants' };
     }
@@ -318,7 +324,7 @@
     if (!p) return null;
     return {
       palier: item.palier, nom: p.nom,
-      poissons: p.poissons, rarete: p.rarete,
+      poissons: p.poissons, rarete: p.rarete, sous: p.sous || null,
       credit: p.credit, credits: DP.PRICE[p.credit],
       couleur: couleurPalier(item.palier)
     };
@@ -331,7 +337,7 @@
     if (!p) return { possede: false, poissons: false, credits: false, raison: 'introuvable' };
     return {
       possede: false,
-      poissons: doublons(p.rarete) >= p.poissons,
+      poissons: doublons(p.rarete, p.sous) >= p.poissons,
       credits: DP.canAfford(p.credit),
       prix: p
     };
@@ -345,8 +351,8 @@
     if (!p) return { ok: false, raison: 'pas à vendre' };
 
     if (mode === 'poissons') {
-      if (doublons(p.rarete) < p.poissons) return { ok: false, raison: 'pas assez de doublons' };
-      depenserDoublons(p.rarete, p.poissons);
+      if (doublons(p.rarete, p.sous) < p.poissons) return { ok: false, raison: 'pas assez de doublons' };
+      depenserDoublons(p.rarete, p.poissons, p.sous);
     } else {
       if (!DP.spend(p.credit)) return { ok: false, raison: 'crédits manquants' };
     }

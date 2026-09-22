@@ -118,7 +118,8 @@
         chip.dataset.palier = cle;
         chip.style.setProperty('--r', M.couleurPalier(cle));
         chip.appendChild(el('span', 'bq-chip-nom', p.nom));
-        chip.appendChild(el('strong', 'bq-chip-n', String(M.doublons(p.rarete))));
+        chip.appendChild(el('strong', 'bq-chip-n', String(M.doublons(p.rarete, p.sous))));
+        if (p.sous) chip.appendChild(el('span', 'bq-chip-sous', 'légendaires'));
         bourse.appendChild(chip);
       });
     }
@@ -240,7 +241,7 @@
       M.liste('leurre').forEach(function (item) {
         var p = M.prix(item);
         var n = DP.leurre(item.id);
-        var assezP = M.doublons(p.rarete) >= p.poissons;
+        var assezP = M.doublons(p.rarete, p.sous) >= p.poissons;
         var assezC = DP.canAfford(p.credit);
         liste.appendChild(ligne({
           id: 'leurre-' + item.id, palier: item.palier, couleur: p.couleur,
@@ -264,7 +265,7 @@
     function construireVente() {
       M.ORDRE_PALIERS.forEach(function (cle) {
         var p = M.PALIERS[cle];
-        var n = M.doublons(p.rarete);
+        var n = M.doublons(p.rarete, p.sous);
         var assez = n >= p.poissons;
         var im = el('img', 'bq-ligne-img');
         im.src = DP.creditImg(p.credit);
@@ -272,7 +273,7 @@
         liste.appendChild(ligne({
           id: 'vendre-' + cle, palier: cle, couleur: M.couleurPalier(cle),
           vignette: im,
-          nom: 'Doublons ' + p.nom.toLowerCase() + 's',
+          nom: 'Doublons ' + p.nom.toLowerCase() + 's' + (p.sous ? ' légendaires' : ''),
           sous: n + ' en double  ·  ' + p.poissons + ' contre ' +
                 DP.PRICE[p.credit] + ' ' + DP.CREDITS[p.credit].name,
           choisi: choix === 'vendre-' + cle,
@@ -333,7 +334,7 @@
 
         var lp = el('button', 'bq-agir', 'Acheter en poissons');
         lp.type = 'button';
-        lp.disabled = !pl || M.doublons(pl.rarete) < pl.poissons;
+        lp.disabled = !pl || M.doublons(pl.rarete, pl.sous) < pl.poissons;
         lp.addEventListener('click', function () { prendreLeurre(lu, 'poissons'); });
         pied.appendChild(lp);
 

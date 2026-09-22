@@ -95,28 +95,28 @@
     // ---- Speciaux : les eaux irradiees ----
     // Ils ne remontent que des lacs fluo. "poids" pese leur tirage dans ce
     // vivier-la, "pente" dit a quel point un bon flotteur les favorise.
-    { id: 'gardon-luisant', nom: 'Gardon Luisant', rarete: 'special', radioactif: true,
+    { id: 'gardon-luisant', nom: 'Gardon Luisant', rarete: 'special', sousRarete: 'commun', radioactif: true,
       forme: 'classique', motif: 'lueur', poids: 28, pente: -0.5,
       cm: [12, 30],  c: ['#7cbf2a', '#dcf58a', '#3f6b12'] },
-    { id: 'carpe-fluo', nom: 'Carpe Fluo', rarete: 'special', radioactif: true,
+    { id: 'carpe-fluo', nom: 'Carpe Fluo', rarete: 'special', sousRarete: 'commun', radioactif: true,
       forme: 'plat', motif: 'ecailles', poids: 24, pente: -0.3,
       cm: [30, 80],  c: ['#a8e02a', '#e8fbb0', '#5c7a14'] },
-    { id: 'sandre-irradie', nom: 'Sandre Irradié', rarete: 'special', radioactif: true,
+    { id: 'sandre-irradie', nom: 'Sandre Irradié', rarete: 'special', sousRarete: 'peu', radioactif: true,
       forme: 'long', motif: 'rayures', poids: 19, pente: 0.2,
       cm: [35, 85],  c: ['#6fa81e', '#cdf07a', '#2f4a0c'] },
-    { id: 'anguille-photonique', nom: 'Anguille Photonique', rarete: 'special', radioactif: true,
+    { id: 'anguille-photonique', nom: 'Anguille Photonique', rarete: 'special', sousRarete: 'peu', radioactif: true,
       forme: 'anguille', motif: 'lueur', poids: 13, pente: 0.8,
       cm: [40, 110], c: ['#4a8a1e', '#b4e85c', '#d8ff4a'] },
-    { id: 'silure-mutant', nom: 'Silure Mutant', rarete: 'special', radioactif: true,
+    { id: 'silure-mutant', nom: 'Silure Mutant', rarete: 'special', sousRarete: 'rare', radioactif: true,
       forme: 'long', motif: 'moustache', poids: 9, pente: 1.4,
       cm: [70, 200], c: ['#546b2a', '#a8c46e', '#c8f02a'] },
-    { id: 'meduse-atomique', nom: 'Méduse Atomique', rarete: 'special', radioactif: true,
+    { id: 'meduse-atomique', nom: 'Méduse Atomique', rarete: 'special', sousRarete: 'rare', radioactif: true,
       forme: 'meduse', motif: 'aucun', poids: 5, pente: 2.2,
       cm: [20, 55],  c: ['#c8f02a', '#f2ffc0', '#8ab81e'] },
-    { id: 'axolotl-cesium', nom: 'Axolotl Césium', rarete: 'special', radioactif: true,
+    { id: 'axolotl-cesium', nom: 'Axolotl Césium', rarete: 'special', sousRarete: 'legende', radioactif: true,
       forme: 'triton', motif: 'points', poids: 3, pente: 3,
       cm: [14, 34],  c: ['#e0ff4a', '#f8ffd0', '#7ca81e'] },
-    { id: 'coeur-de-pile', nom: 'Cœur de Pile', rarete: 'special', radioactif: true,
+    { id: 'coeur-de-pile', nom: 'Cœur de Pile', rarete: 'special', sousRarete: 'legende', radioactif: true,
       forme: 'rond', motif: 'lueur', poids: 1.5, pente: 4.5,
       cm: [20, 60],  c: ['#1d2410', '#c8f02a', '#f4ff8a'] },
 
@@ -157,11 +157,11 @@
       evolueDe: 'silure', seuil: 10, poids: 2,
       forme: 'long', motif: 'moustache',
       cm: [140, 300], c: ['#3a352f', '#9c907c', '#d8c46a'] },
-    { id: 'gardon-plutonium', nom: 'Gardon Plutonium', rarete: 'special',
+    { id: 'gardon-plutonium', nom: 'Gardon Plutonium', rarete: 'special', sousRarete: 'rare',
       radioactif: true, evolueDe: 'gardon-luisant', seuil: 8,
       poids: 6, pente: 0.6, forme: 'classique', motif: 'lueur',
       cm: [26, 58],  c: ['#9ce02a', '#f0ffb4', '#2c5008'] },
-    { id: 'meduse-critique', nom: 'Méduse Critique', rarete: 'special',
+    { id: 'meduse-critique', nom: 'Méduse Critique', rarete: 'special', sousRarete: 'legende',
       radioactif: true, evolueDe: 'meduse-atomique', seuil: 3,
       poids: 2, pente: 2.5, forme: 'meduse', motif: 'aucun',
       cm: [40, 95],  c: ['#e8ff6a', '#ffffd8', '#a8d81e'] },
@@ -191,7 +191,7 @@
       cm: [30, 70],  c: ['#dfe8f2', '#ffffff', '#a8b8c8'],
       condition: { eau: 'claire', flotteur: 'doree', chance: 0.008 },
       indice: 'Il ne monte que vers le Flotteur Doré, où il se reconnaît.' },
-    { id: 'noyau-vivant', nom: 'Noyau Vivant', rarete: 'special', secret: true,
+    { id: 'noyau-vivant', nom: 'Noyau Vivant', rarete: 'special', sousRarete: 'legende', secret: true,
       radioactif: true, forme: 'rond', motif: 'lueur',
       cm: [30, 80],  c: ['#1a2208', '#d8ff3a', '#ffffc0'],
       condition: { eau: 'radio', canne: 'radioactive', chance: 0.012 },
@@ -393,6 +393,19 @@
 
   // Le poids maximal qu'une espece peut atteindre : sert aux fiches.
   function poidsMax(f) { return poids(f, f.cm[1]); }
+
+  // Les Speciaux ont leur propre echelle de rarete, a l'interieur de leur
+  // categorie : un Coeur de Pile est un Special Legendaire. Pour les
+  // autres especes, la rarete est celle qu'on connait.
+  function sousRarete(f) {
+    return f.rarete === 'special' ? (f.sousRarete || 'commun') : f.rarete;
+  }
+
+  // Le nom lisible de cette echelle-la.
+  function sousRareteNom(f) {
+    var r = rarete(sousRarete(f));
+    return r ? r.nom : '';
+  }
 
   // ==========================================================
   //  Le dessin
@@ -644,6 +657,7 @@
     aShiny: aShiny, especesShiny: especesShiny, estShiny: estShiny,
     parId: parId, rarete: rarete, tirer: tirer, taille: taille,
     poids: poids, poidsMax: poidsMax, poidsTexte: poidsTexte, charge: charge,
+    sousRarete: sousRarete, sousRareteNom: sousRareteNom,
     feuille: feuille, url: url, L: L, H: H,
     vider: function () { cache = {}; }
   };

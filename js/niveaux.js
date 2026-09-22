@@ -60,6 +60,8 @@
         return t;
       },
       affiche: function (n) { return n + ' × 5–25'; } },
+    { id: 'failles', nom: 'Failles contenues', pts: 250,
+      compte: function () { return DP.faillesContenues(); } },
     { id: 'artefacts', nom: 'Artefacts trouvés', pts: 120,
       compte: function () { return window.ARTEFACTS ? window.ARTEFACTS.trouves().length : 0; } },
     { id: 'objets', nom: 'Objets trouvés', pts: 150,
@@ -263,9 +265,36 @@
       if (!d) { DP.earn('gold', 3); return '3 Crédits Omniversels (collection complète)'; }
       DP.collect(d.id);
       if (DP.markNew) DP.markNew(d.id);
+      montrerDinder(d);
       return 'Dinder : ' + d.name;
     }
     return '';
+  }
+
+  // Un Dinder mystere ne tombe pas dans une liste : il arrive en grand,
+  // dans une gerbe de rayons, comme au sortir d'une Dindise.
+  function montrerDinder(d) {
+    var pad = document.querySelector('.pad');
+    if (!pad) return;
+    var carte = el('div', 'nv-dinder');
+    carte.dataset.rarete = DP.rarityKey(d.rarity);
+    carte.appendChild(el('div', 'nv-dinder-rayons'));
+    carte.appendChild(el('span', 'nv-dinder-haut', 'Dinder mystère'));
+    var im = el('img', 'nv-dinder-img');
+    im.src = DP.dinderImg(d.id);
+    im.alt = '';
+    carte.appendChild(im);
+    carte.appendChild(el('strong', 'nv-dinder-nom', d.name));
+    if (d.form) carte.appendChild(el('span', 'nv-dinder-forme', d.form));
+    carte.appendChild(el('span', 'nv-dinder-rarete', d.rarity));
+    for (var i = 0; i < 12; i++) {
+      var p = el('span', 'nv-dinder-eclat');
+      p.style.setProperty('--a', (i / 12 * 360) + 'deg');
+      carte.appendChild(p);
+    }
+    pad.appendChild(carte);
+    setTimeout(function () { carte.classList.add('is-sortie'); }, reduit ? 1600 : 3200);
+    setTimeout(function () { carte.remove(); }, reduit ? 1800 : 3700);
   }
 
   function reclame(n) { return DP.niveauxReclames().indexOf(n) !== -1; }
@@ -297,7 +326,28 @@
   //  Le cercle du flanc droit
   // ==========================================================
 
-  var cercle = null;
+  var cercle = null, banniere = null;
+
+  // Le bandeau de l'accueil : le titre du joueur a gauche, ses etoiles a
+  // droite. Il ne s'affiche que sur l'ecran d'accueil.
+  function construireBanniere() {
+    var pad = document.querySelector('.pad');
+    if (!pad || banniere) return;
+    banniere = el('div', 'pad-titre');
+    banniere.appendChild(el('span', 'pad-titre-nom', ''));
+    banniere.appendChild(el('span', 'pad-titre-etoiles', ''));
+    pad.appendChild(banniere);
+  }
+
+  function majBanniere() {
+    if (!banniere) return;
+    var e = etat(), et = etoiles(e.niveau);
+    banniere.querySelector('.pad-titre-nom').textContent = titre();
+    var coin = banniere.querySelector('.pad-titre-etoiles');
+    coin.textContent = et ? '★'.repeat(et) : '';
+    coin.title = et ? et + (et > 1 ? ' étoiles' : ' étoile') + ' — un niveau 100 chacune' : '';
+    banniere.classList.toggle('a-etoiles', et > 0);
+  }
 
   function construireCercle() {
     var pad = document.querySelector('.pad');
@@ -314,6 +364,7 @@
     cercle.appendChild(anneau);
     cercle.appendChild(el('span', 'pad-niveau-alerte', '!'));
     pad.appendChild(cercle);
+    construireBanniere();
     majCercle();
   }
 
@@ -333,6 +384,7 @@
     cercle.classList.toggle('is-monte', e.niveau > DP.niveauVu());
     cercle.title = 'Niveau ' + e.niveau + ' · ' + e.xp + ' XP' +
                    (attente ? ' · ' + attente + ' récompense' + (attente > 1 ? 's' : '') + ' à réclamer' : '');
+    majBanniere();
   }
 
   // ==========================================================
@@ -701,6 +753,7 @@
     return g ? 'Gardien vaincu : ' + g.nom : 'Exploit';
   }, function (cle) { return gardienDe(cle) ? 9 : 1; });
   surveiller('acquerirRevetement', 'Revêtement gagné', 4);
+  surveiller('contenirFaille', 'Faille de sécurité contenue', 9);
   surveiller('noterArtefact', function (id) {
     var a = window.ARTEFACTS && window.ARTEFACTS.parId(id);
     return 'Artefact trouvé' + (a ? ' : ' + a.nom : '');

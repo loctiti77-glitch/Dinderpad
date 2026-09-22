@@ -88,6 +88,12 @@
   var ITEMS = [
     { id: 'dindertracker', name: 'DinderTracker',
       sub: 'Traceur de signaux',
+      // Les jours de faille, l'inventaire le dit avant meme qu'on ouvre.
+      detail: function () {
+        var f = faille();
+        if (!f.active) return 'Traceur de signaux';
+        return etatFaille(f.cle).contenue ? 'Faille contenue ✓' : '⚠ Faille de sécurité en cours';
+      },
       img: 'assets/items/dindertracker.webp',
       view: 'tracker', acquis: function () { return true; } },
     { id: 'canne', name: 'Canne à Pêche',
@@ -259,7 +265,7 @@
   // Le lieu designe change a chaque heure pleine, et reste le meme pour
   // tout le monde : il ne depend que de l'heure, pas du hasard.
   function spots(quand) {
-    var h = Math.floor((quand || Date.now()) / 3600000);
+    var h = Math.floor((quand || maintenant()) / 3600000);
     return CONTINENTS.map(function (c, k) {
       var n = c.lieux.length;
       var lieu = c.lieux[(((h + k * 5) % n) + n) % n];
@@ -275,8 +281,84 @@
 
   // Combien de millisecondes avant le prochain saut des balises.
   function prochainSaut(quand) {
-    var t = quand || Date.now();
+    var t = quand || maintenant();
     return 3600000 - (t % 3600000);
+  }
+
+  // ---------- Les failles de securite ----------
+  // Une par semaine, et elle dure toute une journee (heure locale). Son
+  // jour avance d'un cran chaque semaine : lundi, puis mardi la semaine
+  // suivante, puis mercredi... La semaine du lundi 1er janvier 2024 ouvre
+  // le compte, avec une faille le lundi. Comme les balises, tout depend de
+  // la date : le meme jour pour tout le monde.
+  var decalage = 0;
+  function maintenant() { return Date.now() + decalage; }
+  // Pour les essais : avancer ou reculer l'horloge du pad.
+  function decalerHorloge(ms) { decalage = ms || 0; }
+
+  var JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+  function numeroJour(d) {
+    return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2024, 0, 1)) / 864e5);
+  }
+
+  // Une faille tous les huit jours : elle tombe donc un jour plus tard
+  // chaque semaine, lundi puis mardi puis mercredi, sans jamais doubler.
+  function jourDeFaille(n) { return (((n % 8) + 8) % 8) === 0; }
+
+  function cleDuJour(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function faille(quand) {
+    var d = new Date(quand || maintenant());
+    var n = numeroJour(d);
+    var active = jourDeFaille(n);
+    var minuit = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var fin = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+    // La prochaine : on avance jour par jour (au plus deux semaines).
+    var k = 1;
+    while (k < 9 && !jourDeFaille(n + k)) k++;
+    var prochaine = new Date(d.getFullYear(), d.getMonth(), d.getDate() + k);
+    return {
+      active: active,
+      cle: cleDuJour(minuit),
+      debut: minuit, fin: fin,
+      reste: fin.getTime() - d.getTime(),
+      jour: JOURS[(minuit.getDay() + 6) % 7],
+      prochaine: prochaine,
+      prochaineCle: cleDuJour(prochaine),
+      prochainJour: JOURS[(prochaine.getDay() + 6) % 7]
+    };
+  }
+
+  // Les balises purgees pendant une faille, et les failles contenues.
+  function etatFaille(cle) {
+    var f = me().failles[cle];
+    return f ? { purges: f.purges.slice(), contenue: !!f.contenue } : { purges: [], contenue: false };
+  }
+
+  function purgerBalise(cle, id) {
+    var p = me();
+    var f = p.failles[cle] || (p.failles[cle] = { purges: [], contenue: false });
+    if (f.purges.indexOf(id) === -1) f.purges.push(id);
+    save();
+    return f.purges.length;
+  }
+
+  function contenirFaille(cle) {
+    var p = me();
+    var f = p.failles[cle] || (p.failles[cle] = { purges: [], contenue: false });
+    if (f.contenue) return false;
+    f.contenue = true;
+    save();
+    return true;
+  }
+
+  function faillesContenues() {
+    var f = me().failles, n = 0;
+    for (var k in f) if (f[k] && f[k].contenue) n++;
+    return n;
   }
 
   // L'heure locale d'un fuseau. Un moteur trop ancien peut refuser un
@@ -356,7 +438,9 @@
       niveauxReclames: [],
       niveauVu: 1,
       // Les artefacts trouves dans les mini-jeux, avec la date de la trouvaille.
-      artefacts: {}
+      artefacts: {},
+      // Les failles de securite du DinderTracker, jour par jour.
+      failles: {}
     };
   }
 
@@ -394,6 +478,7 @@
     if (typeof p.illimite !== 'boolean') p.illimite = true;
     if (!Array.isArray(p.niveauxReclames)) p.niveauxReclames = [];
     if (!p.artefacts || typeof p.artefacts !== 'object') p.artefacts = {};
+    if (!p.failles || typeof p.failles !== 'object') p.failles = {};
     if (typeof p.niveauVu !== 'number') p.niveauVu = 1;
     if (p.creditsAvantInfini === undefined) p.creditsAvantInfini = null;
     if (typeof p.arme !== 'boolean') p.arme = false;
@@ -1007,6 +1092,8 @@
       vider: function (p) { p.exploits = {}; p.vus = []; } },
     { id: 'artefacts', nom: 'Artefacts', det: 'Les artefacts trouvés dans les mini-jeux',
       vider: function (p) { p.artefacts = {}; } },
+    { id: 'failles', nom: 'Failles de sécurité', det: 'Les failles du DinderTracker contenues',
+      vider: function (p) { p.failles = {}; } },
     { id: 'niveaux', nom: 'Niveaux', det: 'Les récompenses de niveau déjà réclamées',
       vider: function (p) { p.niveauxReclames = []; p.niveauVu = 1; } },
     { id: 'credits', nom: 'Crédits', det: 'Le solde de crédits, et celui mis de côté',
@@ -1132,6 +1219,9 @@
     PARTIES: PARTIES, viderParties: viderParties,
     niveauxReclames: niveauxReclames, reclamerNiveau: reclamerNiveau,
     artefacts: artefacts, aArtefact: aArtefact, noterArtefact: noterArtefact,
+    maintenant: maintenant, decalerHorloge: decalerHorloge, faille: faille,
+    etatFaille: etatFaille, purgerBalise: purgerBalise, contenirFaille: contenirFaille,
+    faillesContenues: faillesContenues,
     niveauVu: niveauVu, voirNiveau: voirNiveau,
     markNew: markNew, takeNew: takeNew,
     dinderImg: dinderImg, dinderFull: dinderFull, creditImg: creditImg,

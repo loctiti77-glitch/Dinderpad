@@ -5255,3 +5255,249 @@ body.is-locked .art-trouve { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .art-trouve, .art-trouve.is-sortie, .art-trouve-rayons, .art-trouve-img, .art-fiche, .art-fiche-carte { animation: none; }
 }
+
+/* ==========================================================
+   La bagarre avec une grosse piece
+   ========================================================== */
+.pe-lutte {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  top: calc(82 * var(--px));
+  transform: translateX(-50%);
+  width: calc(430 * var(--px));
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--px));
+  padding: calc(8 * var(--px)) calc(14 * var(--px));
+  border: calc(3 * var(--px)) solid #ffb02e;
+  border-radius: calc(12 * var(--px));
+  background: rgba(6, 18, 26, .92);
+  box-shadow: 0 0 calc(20 * var(--px)) rgba(255, 176, 46, .5);
+  font-family: "Courier New", "Cutive Mono", monospace;
+  line-height: 1.2;
+  color: #ffe7c0;
+  text-align: center;
+  pointer-events: none;
+}
+.pe-lutte[hidden] { display: none; }
+.pe-lutte[data-chaud="1"] {
+  border-color: #ff3b2a;
+  box-shadow: 0 0 calc(26 * var(--px)) rgba(255, 60, 40, .8);
+  animation: pe-lutte-chaud .5s steps(1, end) infinite;
+}
+.pe-lutte-txt { font-size: calc(18 * var(--px)); }
+.pe-lutte-jauge {
+  position: relative;
+  height: calc(22 * var(--px));
+  border: calc(2 * var(--px)) solid #000;
+  border-radius: calc(8 * var(--px));
+  background: rgba(0, 0, 0, .55);
+  overflow: hidden;
+}
+.pe-lutte-plein {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #2f9cd8, #7cf0c8);
+  transition: width .12s linear;
+}
+.pe-lutte-plein--ligne { background: linear-gradient(90deg, #ffd84a, #ff3b2a); }
+.pe-lutte-nom {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(13 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  color: #eafaff;
+  text-shadow: 0 0 calc(4 * var(--px)) #000;
+}
+@keyframes pe-lutte-chaud {
+  0%, 49% { filter: none; }
+  50%, 100% { filter: brightness(1.6); }
+}
+
+/* L'ecran tremble tant que ca tire, et sursaute a chaque tour de moulinet. */
+.pe.is-lutte .pe-canvas, .pe-scene.is-lutte canvas { animation: pe-secousse .18s steps(2, end) infinite; }
+.pe-scene.is-tire canvas { animation: pe-coup .22s ease-out; }
+@keyframes pe-secousse {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(calc(1.5 * var(--px)), calc(-1 * var(--px))); }
+  100% { transform: translate(calc(-1 * var(--px)), calc(1 * var(--px))); }
+}
+@keyframes pe-coup {
+  0%   { transform: scale(1.012) translateY(calc(-3 * var(--px))); }
+  100% { transform: none; }
+}
+
+/* Un Special garde sa couleur de rarete, mais reste marque comme irradie. */
+.pe-fiche--special::after {
+  content: '☢';
+  position: absolute;
+  top: calc(4 * var(--px));
+  left: calc(6 * var(--px));
+  font-size: calc(14 * var(--px));
+  color: #c8f02a;
+  opacity: .85;
+}
+.bq-chip-sous { font-size: calc(10 * var(--px)); color: #c8f02a; letter-spacing: calc(1 * var(--px)); }
+
+/* ==========================================================
+   Le bandeau de l'accueil : titre et etoiles
+   ========================================================== */
+.pad-titre {
+  position: absolute;
+  z-index: 18;
+  left: 18.9%;
+  top: 13.1%;
+  width: 61.6%;
+  height: 6.6%;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(10 * var(--px));
+  padding: 0 calc(18 * var(--px));
+  box-sizing: border-box;
+  border-radius: calc(12 * var(--px));
+  background: linear-gradient(180deg, rgba(4, 30, 56, .78), rgba(2, 18, 38, .78));
+  box-shadow: inset 0 0 0 calc(2 * var(--px)) rgba(0, 241, 253, .45);
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1;
+  color: #eafdff;
+  pointer-events: none;
+}
+body.is-home .pad-titre { display: flex; }
+body.is-locked .pad-titre { display: none; }
+.pad-titre-nom {
+  font-size: calc(30 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(2 * var(--px));
+  text-shadow: 0 0 calc(10 * var(--px)) rgba(0, 241, 253, .6);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pad-titre-etoiles {
+  flex: none;
+  font-size: calc(30 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  color: #ffd84a;
+  text-shadow: 0 0 calc(12 * var(--px)) rgba(255, 216, 74, .9);
+}
+.pad-titre.a-etoiles { box-shadow: inset 0 0 0 calc(2 * var(--px)) rgba(255, 216, 74, .6); }
+
+/* ==========================================================
+   Le solde, sur la page des Dindises
+   ========================================================== */
+.shop-solde {
+  display: flex;
+  justify-content: center;
+  gap: calc(14 * var(--px));
+  margin-bottom: calc(4 * var(--px));
+}
+.shop-solde-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(4 * var(--px)) calc(12 * var(--px));
+  border: calc(3 * var(--px)) solid #000;
+  border-radius: calc(999 * var(--px));
+  background: rgba(3, 20, 38, .85);
+  box-shadow: inset 0 0 0 calc(2 * var(--px)) rgba(0, 241, 253, .45);
+  font-family: "Courier New", Courier, monospace;
+  color: #eafdff;
+}
+.shop-solde-img { width: calc(34 * var(--px)); height: calc(24 * var(--px)); object-fit: contain; }
+.shop-solde-n { font-size: calc(24 * var(--px)); }
+.shop-solde-chip[data-credit="green"] { box-shadow: inset 0 0 0 calc(2 * var(--px)) #4fd13a; }
+.shop-solde-chip[data-credit="blue"]  { box-shadow: inset 0 0 0 calc(2 * var(--px)) #45b0ff; }
+.shop-solde-chip[data-credit="gold"]  { box-shadow: inset 0 0 0 calc(2 * var(--px)) #f5c93a; }
+.shop-solde-chip[data-credit="pink"]  { box-shadow: inset 0 0 0 calc(2 * var(--px)) #ff6ad8; }
+
+/* ==========================================================
+   Le Dinder mystere d'un palier
+   ========================================================== */
+.nv-dinder {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 72;
+  width: calc(460 * var(--px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  padding: calc(20 * var(--px)) calc(24 * var(--px));
+  border: calc(5 * var(--px)) solid #000;
+  border-radius: calc(20 * var(--px));
+  background: radial-gradient(circle at 50% 40%, rgba(20, 60, 96, .98), rgba(4, 10, 24, .98) 72%);
+  box-shadow: inset 0 0 0 calc(4 * var(--px)) #00f1fd, 0 0 calc(40 * var(--px)) rgba(0, 241, 253, .6);
+  color: #eafdff;
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.2;
+  text-align: center;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: nv-dinder-in .5s cubic-bezier(.2, 1.6, .4, 1) both;
+}
+.nv-dinder.is-sortie { animation: nv-dinder-out .5s ease-in forwards; }
+.nv-dinder[data-rarete="blue"] { box-shadow: inset 0 0 0 calc(4 * var(--px)) #45b0ff, 0 0 calc(40 * var(--px)) rgba(69, 176, 255, .6); }
+.nv-dinder[data-rarete="gold"] { box-shadow: inset 0 0 0 calc(4 * var(--px)) #f5c93a, 0 0 calc(40 * var(--px)) rgba(245, 201, 58, .6); }
+.nv-dinder[data-rarete="pink"] { box-shadow: inset 0 0 0 calc(4 * var(--px)) #ff6ad8, 0 0 calc(44 * var(--px)) rgba(255, 106, 216, .7); }
+.nv-dinder-rayons {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: calc(700 * var(--px));
+  height: calc(700 * var(--px));
+  margin: calc(-350 * var(--px)) 0 0 calc(-350 * var(--px));
+  background: repeating-conic-gradient(rgba(124, 240, 255, .18) 0 9deg, transparent 9deg 18deg);
+  animation: nv-dinder-rayons 7s linear infinite;
+  z-index: -1;
+}
+.nv-dinder-haut { font-size: calc(15 * var(--px)); letter-spacing: calc(4 * var(--px)); text-transform: uppercase; color: #7cf0ff; }
+.nv-dinder-img {
+  width: calc(210 * var(--px));
+  height: calc(210 * var(--px));
+  object-fit: contain;
+  filter: drop-shadow(0 0 calc(16 * var(--px)) rgba(124, 240, 255, .8));
+  animation: nv-dinder-pop .8s cubic-bezier(.2, 1.5, .4, 1) .12s both;
+}
+.nv-dinder-nom { font-size: calc(30 * var(--px)); }
+.nv-dinder-forme { font-size: calc(16 * var(--px)); color: #b8dcef; }
+.nv-dinder-rarete { font-size: calc(15 * var(--px)); color: #ffd84a; letter-spacing: calc(2 * var(--px)); }
+.nv-dinder-eclat {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: calc(9 * var(--px));
+  height: calc(9 * var(--px));
+  border-radius: 2px;
+  background: #7cf0ff;
+  transform: rotate(var(--a)) translateX(0);
+  animation: nv-dinder-eclat 1.5s ease-out forwards;
+}
+.nv-dinder-eclat:nth-child(3n) { background: #ffd84a; }
+.nv-dinder-eclat:nth-child(3n+1) { background: #ff6ad8; }
+
+@keyframes nv-dinder-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes nv-dinder-out { to { opacity: 0; transform: translate(-50%, -58%) scale(.92); } }
+@keyframes nv-dinder-pop { from { transform: scale(.2) rotate(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes nv-dinder-rayons { to { transform: rotate(360deg); } }
+@keyframes nv-dinder-eclat {
+  from { transform: rotate(var(--a)) translateX(calc(40 * var(--px))); opacity: 1; }
+  to   { transform: rotate(var(--a)) translateX(calc(420 * var(--px))); opacity: 0; }
+}
+
+/* Une balise ou SinAIster vient de sauter. */
+.pin.is-relais { animation: pin-relais .6s ease-out; }
+@keyframes pin-relais {
+  0%   { transform: scale(2.2); filter: brightness(2.6); }
+  100% { transform: none; filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pe-lutte[data-chaud="1"], .pe-scene.is-lutte canvas, .pe-scene.is-tire canvas,
+  .nv-dinder, .nv-dinder-img, .nv-dinder-rayons, .nv-dinder-eclat, .pin.is-relais { animation: none; }
+}

@@ -329,6 +329,24 @@
       prise.hidden = true;
       scene.appendChild(prise);
 
+      // Les deux jauges de la bagarre : ce qu'on a remonte, et ce que la
+      // ligne encaisse.
+      var panneauLutte = el('div', 'pe-lutte');
+      panneauLutte.hidden = true;
+      var txtLutte = el('span', 'pe-lutte-txt', 'Mouline !');
+      panneauLutte.appendChild(txtLutte);
+      var jaugeL = el('div', 'pe-lutte-jauge pe-lutte-jauge--prise');
+      var barreLutte = el('div', 'pe-lutte-plein');
+      jaugeL.appendChild(barreLutte);
+      jaugeL.appendChild(el('span', 'pe-lutte-nom', 'REMONTÉE'));
+      panneauLutte.appendChild(jaugeL);
+      var jaugeT = el('div', 'pe-lutte-jauge pe-lutte-jauge--ligne');
+      var barreTension = el('div', 'pe-lutte-plein pe-lutte-plein--ligne');
+      jaugeT.appendChild(barreTension);
+      jaugeT.appendChild(el('span', 'pe-lutte-nom', 'LIGNE'));
+      panneauLutte.appendChild(jaugeT);
+      scene.appendChild(panneauLutte);
+
       jeu.appendChild(scene);
 
       var g = construireCarte();
@@ -361,6 +379,7 @@
       var surgi = null;            // la bete en train de sortir de l'eau
       var M2 = window.MATERIEL;
       var mordant = null, mordantCm = 0, lourd = false;
+      var lutte = null;                  // la bagarre avec une grosse piece
       var mordantShiny = false;       // la prise est-elle dans sa seconde livree ?
       var irradie = false;            // la ligne est-elle en eau fluo ?
       // Les especes secretes se meritent : certaines ne se montrent qu'au
@@ -522,8 +541,18 @@
         var cm = f ? (mordantCm || P.taille(f)) : 0;
         var kg = f ? P.poids(f, cm) : 0;
 
-        // La prise sort de l'eau et vole jusqu'au pecheur avant qu'on
-        // l'annonce : c'est le moment ou l'on voit ce qu'on a ferre.
+        // Une belle piece ne se sort pas d'un coup : on l'a ferree, il
+        // reste a la remonter.
+        if (f && !credit && P.charge(kg) >= SEUIL_LUTTE) {
+          return commencerLutte(f, cm, kg, brillant);
+        }
+
+        sortirLaPrise(f, cm, kg, brillant, credit);
+      }
+
+      // La prise sort de l'eau et vole jusqu'au pecheur avant qu'on
+      // l'annonce : c'est le moment ou l'on voit ce qu'on a ferre.
+      function sortirLaPrise(f, cm, kg, brillant, credit) {
         etat = 'sortie';
         dire(lourd ? 'Ferré ! Ça pèse…' : 'Ferré !');
         majAction();
@@ -574,6 +603,9 @@
         bouchon = null;
         vol = null; gerbe = null;
         mordant = null; mordantCm = 0; lourd = false; irradie = false;
+        lutte = null;
+        panneauLutte.hidden = true;
+        scene.classList.remove('is-lutte');
         mordantShiny = false;
         surgi = null;
         scene.classList.remove('is-secousse');
@@ -608,7 +640,10 @@
       }
 
       function majAction() {
-        if (etat === 'mord') {
+        if (etat === 'lutte') {
+          action.hidden = false;
+          poserAction('mouliner', 'MOULINER');
+        } else if (etat === 'mord') {
           action.hidden = false;
           poserAction('ferrer', 'Ferrer');
         } else if (etat === 'repos' && pretALancer()) {
@@ -904,7 +939,7 @@
       // --- Les panneaux de prise ---
 
       function montrerPoisson(f, cm, kg, neuf, e, brillant, ensuite, second) {
-        var r = P.rarete(f.rarete);
+        var r = P.rarete(P.sousRarete(f));
         prise.hidden = false;
         prise.textContent = '';
         var box = el('div', 'pe-prise-box');
@@ -929,7 +964,8 @@
         if (brillant) nom.appendChild(el('span', 'pe-etoile', '✦'));
         box.appendChild(nom);
         var det = el('p', 'pe-prise-det');
-        det.appendChild(el('span', 'pe-prise-rarete', f.secret ? 'Secret' : r.nom));
+        det.appendChild(el('span', 'pe-prise-rarete',
+          f.secret ? 'Secret' : f.rarete === 'special' ? 'Spécial ' + r.nom.toLowerCase() : r.nom));
         det.appendChild(el('span', null, cm + ' cm'));
         det.appendChild(el('span', 'pe-prise-kg', P.poidsTexte(kg)));
         if (e && e.n > 1) det.appendChild(el('span', 'pe-prise-n', '×' + e.n));
@@ -1138,11 +1174,104 @@
         var r = action.dataset.role;
         if (r === 'lancer') lancer();
         else if (r === 'ferrer') ferrer();
+        else if (r === 'mouliner') mouliner();
         else if (r === 'ramasser') ramasser();
         else if (r === 'entrer') entrerBoutique();
         else if (r === 'fouiller') fouiller();
       }
       action.addEventListener('click', agir);
+
+      // ---------- La bagarre ----------
+      // Une grosse piece ne se remonte pas d'un geste : il faut mouliner,
+      // et lacher du mou quand la ligne chauffe. Une canne chere encaisse
+      // pour le pecheur ; avec celle d'origine, un monstre casse souvent.
+
+      var SEUIL_LUTTE = 0.45;            // a partir de quelle charge on lutte
+
+      function forceCanne() { return M2 ? M2.equipee('canne').puissance : 0; }
+
+      function commencerLutte(f, cm, kg, brillant) {
+        var charge = P.charge(kg), puis = forceCanne();
+        lutte = {
+          f: f, cm: cm, kg: kg, brillant: brillant,
+          charge: charge, puis: puis,
+          progres: 0.08, tension: 0,
+          t: maintenant(), t0: maintenant(), fini: false,
+          // Ce que le poisson reprend chaque seconde, ce qu'un tour de
+          // moulinet rend, ce qu'il chauffe la ligne, et ce que la ligne
+          // recupere quand on la laisse souffler. Une canne chere gagne
+          // sur les quatre tableaux : avec celle d'origine, une piece de
+          // plus de quarante kilos finit toujours par l'emporter.
+          fuite: (0.05 + 0.15 * charge) * (1 - 0.55 * puis),
+          gain: 0.062 + 0.05 * puis,
+          chauffe: 0.16 - 0.07 * puis,
+          repos: 0.42 + 0.22 * puis,
+          coup: maintenant()
+        };
+        etat = 'lutte';
+        scene.classList.add('is-lutte');
+        panneauLutte.hidden = false;
+        dire('ÇA RÉSISTE ! Mouline — et laisse souffler la ligne.');
+        majAction();
+        majLutte();
+      }
+
+      function mouliner() {
+        if (etat !== 'lutte' || !lutte || lutte.fini) return;
+        lutte.progres += lutte.gain;
+        lutte.tension += lutte.chauffe;
+        lutte.coup = maintenant();
+        scene.classList.remove('is-tire');
+        void scene.offsetWidth;
+        scene.classList.add('is-tire');
+        if (lutte.tension >= 1) return finirLutte(false, 'casse');
+        if (lutte.progres >= 1) return finirLutte(true);
+        majLutte();
+      }
+
+      // Le fil du temps : le poisson tire, la ligne se detend.
+      function avancerLutte(t) {
+        if (etat !== 'lutte' || !lutte || lutte.fini) return;
+        var dt = Math.min(0.2, (t - lutte.t) / 1000);
+        lutte.t = t;
+        lutte.progres = Math.max(0, lutte.progres - lutte.fuite * dt);
+        lutte.tension = Math.max(0, lutte.tension - lutte.repos * dt);
+        // Il finit toujours par se decrocher si l'on ne fait rien, et la
+        // bagarre ne s'eternise pas : au bout de dix-huit secondes, il gagne.
+        if (lutte.progres <= 0 && t - lutte.coup > 2600) return finirLutte(false, 'decroche');
+        if (t - lutte.t0 > 18000) return finirLutte(false, 'epuise');
+        majLutte();
+      }
+
+      function majLutte() {
+        if (!lutte) return;
+        barreLutte.style.width = Math.round(Math.min(1, lutte.progres) * 100) + '%';
+        barreTension.style.width = Math.round(Math.min(1, lutte.tension) * 100) + '%';
+        panneauLutte.dataset.chaud = lutte.tension > 0.72 ? '1' : '0';
+        txtLutte.textContent = lutte.tension > 0.72
+          ? 'La ligne chauffe — lâche un peu !'
+          : (lutte.progres > 0.7 ? 'Il arrive ! Encore !' : 'Mouline !');
+      }
+
+      function finirLutte(gagne, cause) {
+        if (!lutte || lutte.fini) return;
+        lutte.fini = true;
+        var l = lutte;
+        scene.classList.remove('is-lutte');
+        panneauLutte.hidden = true;
+        if (gagne) {
+          lutte = null;
+          return sortirLaPrise(l.f, l.cm, l.kg, l.brillant, false);
+        }
+        etat = 'rate';
+        lutte = null;
+        bouchon = null;
+        majAction();
+        dire(cause === 'casse' ? 'La ligne a cassé ! Il est parti avec.'
+           : cause === 'epuise' ? 'Il file vers le fond… tes bras lâchent avant lui.'
+           : 'Il s’est décroché… trop lourd pour toi.');
+        plusTard(function () { if (etat === 'rate') ranger(); }, 1800);
+      }
 
       var auClavier = function (e) {
         if (e.key !== ' ' && e.key !== 'Enter') return;
@@ -1261,17 +1390,41 @@
           ctx.stroke();
         }
 
+        // Pendant la bagarre, le flotteur est tire au fond et l'eau gicle.
+        if (etat === 'lutte' && lutte) {
+          var sec = reduit ? 0 : Math.sin(t / 45) * (2 + lutte.tension * 3);
+          for (var g = 0; g < 7; g++) {
+            var ph = ((t / 420 + g / 7) % 1);
+            ctx.fillStyle = 'rgba(226,244,255,' + (0.8 * (1 - ph)).toFixed(2) + ')';
+            ctx.fillRect(Math.round(bx - 6 + g * 2 + Math.sin(ph * 6 + g) * 5),
+                         Math.round(by - 2 - ph * 14), 2, 2);
+          }
+          ctx.strokeStyle = 'rgba(255,120,80,' + (0.3 + 0.6 * lutte.tension).toFixed(2) + ')';
+          ctx.lineWidth = 1 + lutte.tension * 2;
+          ctx.beginPath();
+          ctx.ellipse(bx + sec, by + 2, 9 + lutte.tension * 6, 4, 0, 0, 6.3);
+          ctx.stroke();
+        }
+
         // Le flotteur, aux couleurs de celui qui est monte. Il plonge
         // quand ca mord, et d'autant plus vite que la prise est lourde.
-        var plonge = vif ? Math.abs(Math.sin((t - depuis) / (lourd ? 60 : 90))) * (lourd ? 5 : 3) : 0;
+        var plonge = etat === 'lutte' ? 6 + (lutte ? lutte.tension * 3 : 0)
+                   : vif ? Math.abs(Math.sin((t - depuis) / (lourd ? 60 : 90))) * (lourd ? 5 : 3) : 0;
         var flot = M2 ? M2.equipee('flotteur').couleurs : ['#e8402f', '#f4f7fb'];
         ctx.fillStyle = flot[0];
         ctx.fillRect(Math.round(bx) - 1, Math.round(by - 4 + plonge), 3, 3);
         ctx.fillStyle = flot[1];
         ctx.fillRect(Math.round(bx) - 1, Math.round(by - 1 + plonge), 3, 2);
 
-        // Le fil, du pecheur au flotteur.
-        fil(ctx, cam, balade.chef.x, balade.chef.y - 18, bouchon.x, bouchon.y - 3, 7);
+        // Le fil, du pecheur au flotteur. Pendant la bagarre il se tend
+        // presque droit, et il tremble.
+        if (etat === 'lutte' && lutte) {
+          var tremble = reduit ? 0 : Math.sin(t / 38) * (1 + lutte.tension * 2);
+          fil(ctx, cam, balade.chef.x, balade.chef.y - 22 + tremble,
+              bouchon.x, bouchon.y - 3, 1);
+        } else {
+          fil(ctx, cam, balade.chef.x, balade.chef.y - 18, bouchon.x, bouchon.y - 3, 7);
+        }
       }
 
       var spriteCanne = new Image();
@@ -1381,6 +1534,7 @@
 
         chaqueImage: function (t) {
           dessinerMini(t);
+          if (etat === 'lutte') avancerLutte(t);
           var c = balade.caseDuChef();
           var casier = c[0] + ',' + c[1];
           if (jeu.dataset.tuile !== casier) jeu.dataset.tuile = casier;
@@ -1418,6 +1572,19 @@
           if (hudTxt.textContent !== aide) hudTxt.textContent = aide;
         }
       });
+
+      // Pour les essais : l'etat interne de la partie, sans passer par
+      // l'ecran. C'est aussi ce qui permet de rejouer une bagarre.
+      scene._pe = {
+        etat: function () { return etat; },
+        lutte: function () { return lutte; },
+        mouliner: mouliner,
+        lutter: function (f, cm) {
+          cm = cm || P.taille(f);
+          commencerLutte(f, cm, P.poids(f, cm), false);
+        },
+        balade: function () { return balade; }
+      };
 
       // Le nettoyage quand on quitte l'ecran.
       var veille = setInterval(function () {
@@ -1504,9 +1671,13 @@
 
     function fiche(f) {
       var e = prises[f.id];
-      var r = P.rarete(f.rarete);
+      // Les Speciaux ont leur propre echelle : la vignette prend la
+      // couleur de cette rarete-la, sans quitter la section irradiee.
+      var r = P.rarete(P.sousRarete(f));
       var n = el('div', 'pe-fiche');
       n.dataset.rarete = f.rarete;
+      n.dataset.sousRarete = P.sousRarete(f);
+      if (f.rarete === 'special') n.classList.add('pe-fiche--special');
       n.dataset.poisson = f.id;
       n.style.setProperty('--r', r.couleur);
       n.classList.toggle('is-vide', !e);
@@ -1622,7 +1793,7 @@
     }
 
     function ouvrirFiche(f, e) {
-      var r = P.rarete(f.rarete);
+      var r = P.rarete(P.sousRarete(f));
       var brillant = !!e.shiny;
       voile.hidden = false;
       voile.textContent = '';
@@ -1652,7 +1823,8 @@
       titres.appendChild(nom);
       var chips = el('p', 'pe-detail-chips');
       chips.appendChild(el('span', 'pe-detail-chip pe-detail-chip--rarete',
-        f.secret ? 'Secret' : r.nom));
+        f.secret ? 'Secret'
+          : f.rarete === 'special' ? 'Spécial ' + r.nom.toLowerCase() : r.nom));
       if (f.evolueDe) {
         var base = P.parId(f.evolueDe);
         chips.appendChild(el('span', 'pe-detail-chip pe-detail-chip--evo',
