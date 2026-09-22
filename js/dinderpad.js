@@ -49,8 +49,10 @@
       nom: 'Dindise Temporelle',    img: 'assets/dindises/temporel.webp' }
   ];
 
-  // Tant que ce drapeau est vrai, les achats ne retirent aucun credit.
-  var UNLIMITED = true;
+  // Les credits infinis sont un reglage du profil (Parametres) : tant
+  // qu'il est actif, les achats ne retirent aucun credit. Par defaut, on
+  // y est.
+  function illimite() { return me().illimite !== false; }
 
   // ---------- Le roster ----------
   // L'ordre fixe la place de chaque Dinder dans la collection : le premier
@@ -314,6 +316,8 @@
       name: name,
       created: Date.now(),
       credits: { green: 0, blue: 0, gold: 0, pink: 0 },
+      illimite: true,
+      creditsAvantInfini: null,
       owned: [],
       canne: false,
       peche: {},
@@ -331,6 +335,7 @@
       // abattus.
       arme: false,
       armeNiveau: 1,
+      armeNiveauOdyssee: 1,
       noyaux: 0,
       revetements: [],
       revetement: 'origine',
@@ -380,9 +385,14 @@
     }
     // Un leurre monte dont on n'a plus d'exemplaire ne vaut rien.
     if (p.equip.leurre && !(p.leurres[p.equip.leurre] > 0)) p.equip.leurre = '';
+    if (typeof p.illimite !== 'boolean') p.illimite = true;
+    if (p.creditsAvantInfini === undefined) p.creditsAvantInfini = null;
     if (typeof p.arme !== 'boolean') p.arme = false;
     if (typeof p.armeNiveau !== 'number') p.armeNiveau = 1;
     p.armeNiveau = Math.max(1, Math.min(5, p.armeNiveau));
+    // Le pistolet de l'Odyssee a sa propre progression : il part du Mk I.
+    if (typeof p.armeNiveauOdyssee !== 'number') p.armeNiveauOdyssee = 1;
+    p.armeNiveauOdyssee = Math.max(1, Math.min(5, p.armeNiveauOdyssee));
     if (typeof p.noyaux !== 'number') p.noyaux = 0;
     if (!Array.isArray(p.revetements)) p.revetements = [];
     // Porter l'arme, c'est porter au moins son acier d'origine.
@@ -530,20 +540,20 @@
   // ---------- Credits ----------
 
   function creditCount(key) {
-    return UNLIMITED ? Infinity : (me().credits[key] || 0);
+    return illimite() ? Infinity : (me().credits[key] || 0);
   }
 
   function canAfford(key) { return creditCount(key) >= PRICE[key]; }
 
   function spend(key) {
     if (!canAfford(key)) return false;
-    if (!UNLIMITED) { me().credits[key] -= PRICE[key]; save(); }
+    if (!illimite()) { me().credits[key] -= PRICE[key]; save(); }
     return true;
   }
 
   // Un gain, par exemple la recompense d'un mini-jeu. Il est toujours
-  // inscrit au profil, meme quand les credits sont illimites : le jour ou
-  // UNLIMITED passera a false, la cagnotte sera deja la.
+  // inscrit au profil, meme quand les credits sont infinis. Revenir aux
+  // credits normaux rend toutefois le solde d'avant le passage a l'infini.
   function earn(key, n) {
     n = Math.max(0, Math.round(n || 0));
     if (!CREDITS[key] || !n) return 0;
@@ -553,8 +563,31 @@
     return p.credits[key];
   }
 
-  // Le total reellement engrange, sans le voile de UNLIMITED.
+  // Le total reellement engrange, sans le voile des credits infinis.
   function creditPurse(key) { return me().credits[key] || 0; }
+
+  // Passer en credits infinis met le solde de cote ; revenir aux credits
+  // normaux le rend tel qu'il etait au moment du passage.
+  function creditsMisDeCote() {
+    var c = me().creditsAvantInfini;
+    return c ? JSON.parse(JSON.stringify(c)) : null;
+  }
+
+  function passerIllimite(oui) {
+    var p = me();
+    oui = !!oui;
+    if (illimite() === oui) return false;
+    if (oui) {
+      p.creditsAvantInfini = {};
+      ORDER.forEach(function (k) { p.creditsAvantInfini[k] = p.credits[k] || 0; });
+    } else if (p.creditsAvantInfini) {
+      ORDER.forEach(function (k) { p.credits[k] = p.creditsAvantInfini[k] || 0; });
+      p.creditsAvantInfini = null;
+    }
+    p.illimite = oui;
+    save();
+    return true;
+  }
 
   // ---------- Collection ----------
 
@@ -746,14 +779,18 @@
     return true;
   }
 
-  function armeNiveau() { return me().armeNiveau || 1; }
+  // Deux progressions pour le meme pistolet : celle de Fish n'Der (par
+  // defaut) et celle de l'Odyssee (jeu === 'odyssee').
+  function champNiveau(jeu) { return jeu === 'odyssee' ? 'armeNiveauOdyssee' : 'armeNiveau'; }
 
-  function monterArme() {
-    var p = me();
-    if (p.armeNiveau >= 5) return false;
-    p.armeNiveau++;
+  function armeNiveau(jeu) { return me()[champNiveau(jeu)] || 1; }
+
+  function monterArme(jeu) {
+    var p = me(), k = champNiveau(jeu);
+    if ((p[k] || 1) >= 5) return false;
+    p[k] = (p[k] || 1) + 1;
     save();
-    return p.armeNiveau;
+    return p[k];
   }
 
   // Les Noyaux Lumithiques : la monnaie des requins, et rien d'autre.
@@ -932,33 +969,55 @@
     return neuf;
   }
 
-  // Vide la progression du profil courant, sans supprimer le profil.
+  // Ce qu'on peut vider, piece par piece, depuis les Parametres. Chaque
+  // partie sait remettre a zero ses propres champs du profil ; "reset"
+  // les vide toutes. Le profil lui-meme n'est jamais supprime.
+  var PARTIES = [
+    { id: 'dinders', nom: 'Dinders', det: 'La collection de Dinders',
+      vider: function (p) { p.owned = []; } },
+    { id: 'poissons', nom: 'Poissons', det: 'Le carnet de pêche : espèces, records, brillants',
+      vider: function (p) { p.peche = {}; } },
+    { id: 'materiel', nom: 'Matériel de pêche', det: 'Canne, flotteurs, hameçons et leurres',
+      vider: function (p) {
+        p.canne = false; p.cannes = []; p.flotteurs = []; p.hamecons = []; p.leurres = {};
+        p.equip = { canne: 'base', flotteur: 'base', hamecon: 'base', leurre: '' };
+      } },
+    { id: 'requins', nom: 'Requins', det: 'Les requins abattus et les Noyaux Lumithiques',
+      vider: function (p) { p.requins = {}; p.noyaux = 0; } },
+    { id: 'arme', nom: 'Pistolet Lumithique', det: 'L’arme, ses deux niveaux et ses revêtements',
+      vider: function (p) {
+        p.arme = false; p.armeNiveau = 1; p.armeNiveauOdyssee = 1;
+        p.revetements = []; p.revetement = 'origine';
+      } },
+    { id: 'odyssee', nom: 'The Odyssey of Dinder', det: 'Téléportail, mondes, scans, créatures abattues, Roches Solaires',
+      vider: function (p) {
+        p.telecommande = false; p.chapitre = 0; p.astres = []; p.scans = {};
+        p.abattus = {}; p.roches = 0; p.armeNiveauOdyssee = 1;
+      } },
+    { id: 'badges', nom: 'Badges', det: 'Les badges et les exploits comptés',
+      vider: function (p) { p.exploits = {}; p.vus = []; } },
+    { id: 'credits', nom: 'Crédits', det: 'Le solde de crédits, et celui mis de côté',
+      vider: function (p) {
+        p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
+        p.creditsAvantInfini = null;
+      } }
+  ];
+
+  // Vide les parties demandees (identifiants de PARTIES). Rend le nombre
+  // de parties videes.
+  function viderParties(ids) {
+    var p = me(), n = 0;
+    PARTIES.forEach(function (x) {
+      if (ids.indexOf(x.id) === -1) return;
+      x.vider(p); n++;
+    });
+    if (n) { completer(p); save(); }
+    return n;
+  }
+
+  // Vide toute la progression du profil courant, sans supprimer le profil.
   function reset() {
-    var p = me();
-    p.owned = [];
-    p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
-    p.canne = false;
-    p.peche = {};
-    p.exploits = {};
-    p.vus = [];
-    p.cannes = [];
-    p.flotteurs = [];
-    p.hamecons = [];
-    p.leurres = {};
-    p.equip = { canne: 'base', flotteur: 'base', hamecon: 'base', leurre: '' };
-    p.arme = false;
-    p.armeNiveau = 1;
-    p.noyaux = 0;
-    p.revetements = [];
-    p.revetement = 'origine';
-    p.requins = {};
-    p.telecommande = false;
-    p.chapitre = 0;
-    p.astres = [];
-    p.scans = {};
-    p.abattus = {};
-    p.roches = 0;
-    save();
+    viderParties(PARTIES.map(function (x) { return x.id; }));
   }
 
   // Retient le dernier Dinder obtenu, le temps d'aller l'annoncer sur la
@@ -993,7 +1052,9 @@
 
   window.DP = {
     CREDITS: CREDITS, ORDER: ORDER, PRICE: PRICE, DINDERS: DINDERS,
-    SLOTS: SLOTS, UNLIMITED: UNLIMITED, RARITIES: RARITIES,
+    SLOTS: SLOTS, RARITIES: RARITIES,
+    illimite: illimite, passerIllimite: passerIllimite,
+    creditsMisDeCote: creditsMisDeCote, creditPurse: creditPurse,
     DINDISES: DINDISES, ofRarity: ofRarity, missingOf: missingOf,
     dindiseEtat: dindiseEtat,
     ITEMS: ITEMS, items: items, CONTINENTS: CONTINENTS,
@@ -1033,6 +1094,7 @@
     earn: earn, creditPurse: creditPurse,
     owned: owned, has: has, missing: missing, complete: complete,
     collect: collect, draw: draw, reset: reset,
+    PARTIES: PARTIES, viderParties: viderParties,
     markNew: markNew, takeNew: takeNew,
     dinderImg: dinderImg, dinderFull: dinderFull, creditImg: creditImg,
     sprite: sprite,
@@ -1042,4 +1104,6 @@
       return null;
     }
   };
+  // L'ancien drapeau, lu par le materiel de peche : il suit le profil.
+  Object.defineProperty(window.DP, 'UNLIMITED', { get: illimite, enumerable: true });
 })();

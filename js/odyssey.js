@@ -302,7 +302,7 @@
     }
 
     // Le dormeur, vu de trois quarts : un lit, une couette, une tete.
-    function chambre(t, eclat) {
+    function chambre(t, eclat, debout) {
       ciel('#0a1424', '#05080f');
       // Le mur et la fenetre.
       ctx.fillStyle = '#1b2436';
@@ -340,27 +340,62 @@
       ctx.fillRect(254, 190, 12, 44);
       ctx.fillStyle = '#6a4a38';
       ctx.fillRect(56, 150, 16, 44);          // la tete de lit
-      // La couette.
-      ctx.fillStyle = '#2f5fa8';
-      ctx.fillRect(96, 160, 172, 22);
-      ctx.fillStyle = '#3f79cf';
-      ctx.fillRect(96, 160, 172, 7);
-      // L'oreiller et la tete.
+      // L'oreiller.
       ctx.fillStyle = '#e8eef7';
-      ctx.fillRect(74, 158, 30, 18);
-      ctx.fillStyle = '#f0c8a0';
-      ctx.fillRect(84, 160, 18, 14);
-      ctx.fillStyle = '#e06a2a';
-      ctx.fillRect(84, 156, 18, 6);
-      // Les yeux fermes, puis ouverts quand ca brille.
-      ctx.fillStyle = '#2a1e18';
-      if (eclat > 0.25) {
-        ctx.fillRect(90, 165, 3, 4);
-        ctx.fillRect(96, 165, 3, 4);
-      } else {
-        ctx.fillRect(89, 167, 5, 1);
-        ctx.fillRect(96, 167, 5, 1);
+      ctx.fillRect(72, 156, 34, 22);
+      ctx.fillStyle = '#c9d3e2';
+      ctx.fillRect(72, 172, 34, 6);
+
+      // Le dormeur : le Dinder du joueur, celui qu'il incarnera ensuite.
+      // Comme dans les chambres des Pokemon : la tete droite sur
+      // l'oreiller, le corps sous la couette, et un souffle lent. Quand la
+      // comete illumine la piece, il se redresse d'un bond.
+      var C = window.CHIBI, fe = C && C.feuille(voyageur()), f = fe && fe.canvas;
+      var reveille = !!debout || eclat > 0.25;
+      var s = 2.4;
+      var hautCouette = reveille ? 170 : 160;
+      if (f) {
+        var dx = 74, dy;
+        if (reveille) {
+          var saut = Math.max(0, Math.sin(t / 55)) * 3;
+          dy = hautCouette - 26 * s - saut;       // assis : on le voit jusqu'a la taille
+        } else {
+          dy = hautCouette - 19 * s + Math.sin(t / 700) * 1.2;  // la tete entiere depasse
+        }
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.beginPath();
+        ctx.rect(0, 0, IN_L, 182);
+        ctx.clip();
+        ctx.drawImage(f, 0, C.DIRS.bas * C.H, C.L, C.H, dx, dy, C.L * s, C.H * s);
+        ctx.restore();
       }
+
+      // La couette, par-dessus le corps. Elle glisse quand on se redresse.
+      ctx.fillStyle = '#2f5fa8';
+      ctx.fillRect(70, hautCouette, 198, 182 - hautCouette);
+      ctx.fillStyle = '#3f79cf';
+      ctx.fillRect(70, hautCouette, 198, 6);
+      ctx.fillStyle = '#26508f';
+      ctx.fillRect(70, hautCouette + 6, 198, 2);
+
+      // Les Z du sommeil, qui montent et s'effacent ; un "!" au reveil.
+      ctx.save();
+      ctx.font = 'bold 14px "Courier New", monospace';
+      ctx.textAlign = 'left';
+      if (!reveille) {
+        for (var z = 0; z < 3; z++) {
+          var kz = ((t / 1400) + z / 3) % 1;
+          ctx.fillStyle = 'rgba(220,236,255,' + (1 - kz).toFixed(2) + ')';
+          ctx.font = 'bold ' + Math.round(10 + kz * 10) + 'px "Courier New", monospace';
+          ctx.fillText('z', 118 + kz * 34 + Math.sin(kz * 9) * 4, 132 - kz * 56);
+        }
+      } else {
+        ctx.fillStyle = '#ffe36a';
+        ctx.font = 'bold 26px "Courier New", monospace';
+        ctx.fillText('!', 124, 104);
+      }
+      ctx.restore();
 
       if (eclat > 0) {
         ctx.fillStyle = 'rgba(255,250,236,' + (eclat * 0.85).toFixed(2) + ')';
@@ -372,7 +407,8 @@
     function comete(t) {
       var k = t / TEMPS[1].duree;
       var eclat = k < 0.55 ? 0 : Math.max(0, 1 - (k - 0.55) / 0.2);
-      chambre(t, eclat);
+      // Une fois reveille par l'impact, on le reste.
+      chambre(t, eclat, k >= 0.55);
       if (k < 0.62) {
         var av = Math.min(1, k / 0.6);
         var x = 258 + av * 130, y = 40 + av * 78;
@@ -1035,7 +1071,7 @@
     var tir = el('button', 'ody-tir');
     tir.type = 'button';
     tir.hidden = true;
-    iconeBouton(tir, window.ARME ? window.ARME.url() : '', 'Tirer', 'ody-tir-img');
+    iconeBouton(tir, window.ARME ? window.ARME.url(null, DP.armeNiveau('odyssee')) : '', 'Tirer', 'ody-tir-img');
     boutons.appendChild(tir);
     var action = el('button', 'ody-action');
     action.type = 'button';
@@ -1187,7 +1223,7 @@
       tir.hidden = !(libre || etat === 'scan') || !cibleTir;
       if (!tir.hidden) {
         var A = window.ARME;
-        var pret = maintenant() - dernierTir >= (A ? A.niveau().cadence : 620);
+        var pret = maintenant() - dernierTir >= (A ? A.niveauJeu('odyssee').cadence : 620);
         tir.classList.toggle('is-recharge', !pret);
       }
     }
@@ -1253,7 +1289,7 @@
       if (!DP.aLArme()) return;
       if (!(etat === 'libre' || etat === 'scan') || !cibleTir) return;
       var A = window.ARME;
-      var nv = A ? A.niveau() : { degats: 6, cadence: 620 };
+      var nv = A ? A.niveauJeu('odyssee') : { degats: 6, cadence: 620 };
       var t = maintenant();
       if (t - dernierTir < nv.cadence) return;
       dernierTir = t;
@@ -1301,7 +1337,7 @@
       var cadre = el('span', 'ody-trophee-cadre');
       var im = el('img', 'ody-trophee-img');
       im.alt = '';
-      im.src = A.url(r.id);
+      im.src = A.url(r.id, DP.armeNiveau('odyssee'));
       cadre.appendChild(im);
       cadre.appendChild(el('span', 'ody-trophee-eclat'));
       carte.appendChild(cadre);

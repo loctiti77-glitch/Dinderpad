@@ -379,6 +379,11 @@
   //  Parametres : le compte, la progression, la remise a zero
   // ==========================================================
 
+  // Vrai juste apres une bascule des credits : la ligne s'anime au redessin.
+  var basculeCredits = false;
+  // Les noms des collections tout juste videes, montres une fois.
+  var videesRecentes = null;
+
   function viewSettings(view) {
     var wrap = el('div', 'settings');
 
@@ -411,7 +416,36 @@
     see.href = '#dinders';
     a2.appendChild(see);
 
-    var a3 = row('', 'Recommencer', 'Vider la collection', 'Le compte est conservé');
+    // Credits infinis ou normaux : le solde normal est mis de cote au
+    // passage a l'infini, et rendu tel quel au retour.
+    function solde(c) {
+      return ['green', 'blue', 'gold', 'pink'].map(function (k) {
+        return (c && c[k] || 0) + ' ' + { green: 'U', blue: 'M', gold: 'O', pink: 'T' }[k];
+      }).join(' · ');
+    }
+    var inf = DP.illimite();
+    var mis = DP.creditsMisDeCote();
+    var actuel = {};
+    DP.ORDER.forEach(function (k) { actuel[k] = DP.creditPurse(k); });
+    var aC = row('setting--credits' + (basculeCredits ? ' is-bascule' : ''), 'Crédits',
+                 inf ? 'Infinis ∞' : 'Normaux',
+                 inf ? (mis ? 'Solde mis de côté : ' + solde(mis) : 'Les achats ne retirent rien')
+                     : 'Solde : ' + solde(actuel));
+    basculeCredits = false;
+    var bascule = el('button', 'set-btn' + (inf ? '' : ' set-btn--key'),
+                     inf ? 'Revenir aux crédits normaux' : 'Revenir aux crédits infinis');
+    bascule.type = 'button';
+    bascule.dataset.credits = inf ? 'normaux' : 'infinis';
+    bascule.addEventListener('click', function () {
+      DP.passerIllimite(!DP.illimite());
+      basculeCredits = true;
+      window.ROUTER.reload();
+    });
+    aC.appendChild(bascule);
+
+    var a3 = row(videesRecentes ? 'is-vide-anim' : '', 'Recommencer', 'Vider des collections',
+                 videesRecentes ? 'Vidé : ' + videesRecentes : 'Tout, ou seulement ce que tu choisis');
+    videesRecentes = null;
     var resetBtn = el('button', 'set-btn set-btn--danger', 'Réinitialiser');
     resetBtn.type = 'button';
     a3.appendChild(resetBtn);
@@ -509,12 +543,55 @@
       }, function () { DP.switchProfile(chosen); close(); redraw(); });
     });
 
+    // Vider tout, ou seulement certaines collections : on coche.
     resetBtn.addEventListener('click', function () {
+      var cases = [], tout;
       open('Réinitialiser', function () {
+        body.appendChild(el('p', 'sheet-note sheet-note--top',
+          'Que veux-tu vider sur « ' + me.name + ' » ?'));
+        var liste = el('div', 'sheet-choix');
+
+        function ligne(id, nom, det, cls) {
+          var l = el('label', 'sheet-choix-ligne' + (cls ? ' ' + cls : ''));
+          var c = el('input');
+          c.type = 'checkbox';
+          c.value = id;
+          l.appendChild(c);
+          var t = el('span', 'sheet-choix-txt');
+          t.appendChild(el('strong', null, nom));
+          if (det) t.appendChild(el('span', 'sheet-choix-det', det));
+          l.appendChild(t);
+          liste.appendChild(l);
+          return c;
+        }
+
+        tout = ligne('tout', 'Tout', 'Toutes les collections d’un coup', 'is-tout');
+        DP.PARTIES.forEach(function (x) { cases.push(ligne(x.id, x.nom, x.det)); });
+
+        // "Tout" coche ou decoche le reste ; le reste tient "Tout" a jour.
+        tout.addEventListener('change', function () {
+          cases.forEach(function (c) { c.checked = tout.checked; });
+          error.textContent = ' ';
+        });
+        cases.forEach(function (c) {
+          c.addEventListener('change', function () {
+            tout.checked = cases.every(function (x) { return x.checked; });
+            error.textContent = ' ';
+          });
+        });
+        body.appendChild(liste);
         body.appendChild(el('p', 'sheet-note sheet-note--warn',
-          'Les ' + me.owned + ' Dinders de « ' + me.name +
-          ' » seront effacés. Le compte, lui, reste en place. C’est définitif.'));
-      }, function () { DP.reset(); close(); redraw(); });
+          'Le compte reste en place. C’est définitif.'));
+      }, function () {
+        var ids = cases.filter(function (c) { return c.checked; })
+                       .map(function (c) { return c.value; });
+        if (!ids.length) { error.textContent = 'Coche au moins une collection.'; return; }
+        DP.viderParties(ids);
+        videesRecentes = ids.length === DP.PARTIES.length ? 'tout'
+          : DP.PARTIES.filter(function (x) { return ids.indexOf(x.id) !== -1; })
+              .map(function (x) { return x.nom; }).join(', ');
+        close(); redraw();
+      });
     });
   }
 

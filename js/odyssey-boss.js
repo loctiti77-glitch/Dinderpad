@@ -2,7 +2,7 @@
 //
 // Un duel au viseur, comme contre les requins, mais la bete rend les
 // coups. Elle attaque a intervalles reguliers ; chaque attaque s'annonce
-// une seconde a l'avance — la gueule s'ouvre, les yeux rougissent. Deux
+// une seconde a l'avance — la gueule s'ouvre, les yeux rougissent. Trois
 // touches sur un point faible pendant ce temps-la, et l'attaque avorte :
 // la bete reste etourdie un instant. Sinon, le coup porte.
 //
@@ -20,18 +20,19 @@
   // ==========================================================
   //  Les reglages
   // ==========================================================
-  // Mille cinq cents points de vie. Un Mk III correct en vient a bout en
-  // une demi-minute, avant que la bete n'ait pu le mettre a terre ; un
-  // Mk I n'y arrive qu'en interrompant presque chaque attaque. A mille
-  // huit cents, le Mk III tombait a peu pres en meme temps qu'elle.
-  var PV = 1500;
-  var CADENCE = 3400, CADENCE_RAGE = 2600;      // entre deux attaques
-  var PREPARE = 1100;                           // le temps de l'annonce
-  var ETOURDI = 1300;
-  var COUP = 13, COUP_RAGE = 17;
-  var POUR_INTERROMPRE = 2;                     // touches faibles pendant l'annonce
+  // Deux mille six cents points de vie et trois phases : calme, enrage
+  // (sous la moitie), puis en furie (sous le quart). Le pistolet de
+  // l'Odyssee repart du Mk I : il faut un Mk V, ou un Mk IV qui vise
+  // juste, pour l'abattre avant de tomber ; en dessous, il faut
+  // interrompre presque chaque attaque.
+  var PV = 2600;
+  var CADENCE = 3200, CADENCE_RAGE = 2500, CADENCE_FURIE = 1900;  // entre deux attaques
+  var PREPARE = 1000;                           // le temps de l'annonce
+  var ETOURDI = 1100;
+  var COUP = 14, COUP_RAGE = 19, COUP_FURIE = 24;
+  var POUR_INTERROMPRE = 3;                     // touches faibles pendant l'annonce
 
-  var RECOMPENSE = { roches: 25, temporel: 1, revetement: 'selenite' };
+  var RECOMPENSE = { roches: 40, temporel: 1, revetement: 'selenite' };
 
   // ==========================================================
   //  Le dessin
@@ -165,7 +166,7 @@
 
   function Duel(cfg) {
     var A = window.ARME;
-    var nv = A ? A.niveau() : { degats: 6, cadence: 620, nom: 'Mk I' };
+    var nv = A ? A.niveauJeu('odyssee') : { degats: 6, cadence: 620, nom: 'Mk I' };
     var pvJ = Math.max(1, cfg.pvJoueur || 100), pvJMax = cfg.pvMax || 100;
     var pv = PV;
 
@@ -186,7 +187,7 @@
       '<div class="bs-bas"><div class="bs-moi"><span class="bs-moi-nom">Toi</span>' +
       '<div class="bs-jauge bs-jauge--moi"><div class="bs-plein bs-plein--moi"></div>' +
       '<span class="bs-pv bs-pv--moi"></span></div></div>' +
-      '<span class="bs-aide">Vise les points orange. Pendant qu’il prépare son coup, deux touches l’interrompent.</span></div>' +
+      '<span class="bs-aide">Vise les points orange. Pendant qu’il prépare son coup, trois touches (ou une dans la gueule) l’interrompent.</span></div>' +
       '<div class="bs-fin" hidden></div>');
 
     (cfg.parent || document.body).appendChild(hote);
@@ -210,6 +211,9 @@
     var secousse = 0, flash = 0;
 
     function rage() { return pv <= PV / 2; }
+    function furie() { return pv <= PV / 4; }
+    function cadence() { return furie() ? CADENCE_FURIE : rage() ? CADENCE_RAGE : CADENCE; }
+    var phaseVue = 0;
 
     function majJauges() {
       elPlein.style.width = (pv / PV * 100).toFixed(1) + '%';
@@ -219,8 +223,9 @@
       elPvMoi.textContent = Math.ceil(pvJ) + ' / ' + pvJMax;
       elEtat.textContent = etat === 'prepare' ? 'IL PRÉPARE SON COUP'
                          : etat === 'etourdi' ? 'ÉTOURDI'
-                         : rage() ? 'ENRAGÉ' : '';
+                         : furie() ? 'EN FURIE' : rage() ? 'ENRAGÉ' : '';
       hote.dataset.etat = etat;
+      hote.dataset.fureur = furie() ? '2' : rage() ? '1' : '0';
     }
 
     // Les points faibles a l'ecran, selon la pose.
@@ -264,7 +269,7 @@
       chiffres.push({ t0: t, x: x, y: y, txt: '-' + degats, faible: !!touche });
       eclats.push({ t0: t, x: x, y: y, faible: !!touche });
 
-      // Interrompre : deux touches faibles pendant l'annonce, ou une seule
+      // Interrompre : trois touches faibles pendant l'annonce, ou une seule
       // dans la gorge ouverte.
       if (etat === 'prepare' && touche) {
         touchesPrep += touche.gorge ? POUR_INTERROMPRE : 1;
@@ -274,11 +279,21 @@
         }
       }
       majJauges();
+      // Un palier franchi s'annonce : la bete rugit, l'ecran tremble.
+      var ph = furie() ? 2 : rage() ? 1 : 0;
+      if (ph > phaseVue && pv > 0) {
+        phaseVue = ph;
+        secousse = t;
+        chiffres.push({ t0: t, x: CV_L / 2, y: 70, txt: ph === 2 ? 'FURIE !' : 'ENRAGÉ !', faible: true, gros: true });
+        hote.classList.remove('is-palier');
+        void hote.offsetWidth;
+        hote.classList.add('is-palier');
+      }
       if (pv <= 0) mourir(t);
     }
 
     function frapper(t) {
-      var coup = rage() ? COUP_RAGE : COUP;
+      var coup = furie() ? COUP_FURIE : rage() ? COUP_RAGE : COUP;
       pvJ = Math.max(0, pvJ - coup);
       secousse = t; flash = t;
       chiffres.push({ t0: t, x: CV_L / 2, y: CV_H - 60, txt: '-' + coup, moi: true, gros: true });
@@ -328,7 +343,7 @@
         echelle = 0.92 + 0.26 * Math.sin(k * Math.PI);
         if (k >= 1) {
           etat = 'nage'; etatDepuis = t;
-          prochaine = t + (rage() ? CADENCE_RAGE : CADENCE);
+          prochaine = t + cadence();
           majJauges();
         }
         return;
@@ -338,7 +353,7 @@
         pos.x = base.x + Math.sin(t / 60) * 5; pos.y = base.y + 10; echelle = 0.97;
         if (k >= 1) {
           etat = 'nage'; etatDepuis = t;
-          prochaine = t + (rage() ? CADENCE_RAGE : CADENCE);
+          prochaine = t + cadence();
           majJauges();
         }
       }
@@ -595,7 +610,8 @@
   }
 
   window.BOSS = {
-    PV: PV, COUP: COUP, COUP_RAGE: COUP_RAGE, CADENCE: CADENCE, PREPARE: PREPARE,
+    PV: PV, COUP: COUP, COUP_RAGE: COUP_RAGE, COUP_FURIE: COUP_FURIE,
+    CADENCE: CADENCE, CADENCE_RAGE: CADENCE_RAGE, CADENCE_FURIE: CADENCE_FURIE, PREPARE: PREPARE,
     POUR_INTERROMPRE: POUR_INTERROMPRE, RECOMPENSE: RECOMPENSE,
     FAIBLES: FAIBLES, feuille: feuille, Duel: Duel
   };

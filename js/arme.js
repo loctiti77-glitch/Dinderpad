@@ -209,20 +209,23 @@
   //  Monter en niveau
   // ==========================================================
 
-  function prochain() {
-    var n = DP.armeNiveau();
+  function prochain(cle) {
+    var n = DP.armeNiveau(monnaie(cle).jeu);
     return n >= MAX ? null : NIVEAUX[n];
   }
 
-  // Deux monnaies pour le meme pistolet : les Noyaux Lumithiques qu'on
-  // arrache aux requins, et les Roches Solaires que laissent les
-  // creatures de l'Odyssee. Le tarif est le meme ; seule la caisse change
-  // selon l'armurerie ou l'on se trouve.
+  // Le niveau atteint dans un jeu : 'peche' (par defaut) ou 'odyssee'.
+  function niveauJeu(jeu) { return niveau(DP.armeNiveau(jeu)); }
+
+  // Deux progressions, deux monnaies : a Fish n'Der, le pistolet monte
+  // avec les Noyaux Lumithiques arraches aux requins ; dans l'Odyssee, il
+  // repart du Mk I et monte avec les Roches Solaires des creatures. Le
+  // tarif est le meme ; les revetements, eux, sont communs.
   var MONNAIES = {
-    noyaux: { nom: 'Noyaux Lumithiques', court: 'noyaux', signe: '◈',
+    noyaux: { nom: 'Noyaux Lumithiques', court: 'noyaux', signe: '◈', jeu: 'peche',
               solde: function () { return DP.noyaux(); },
               depenser: function (n) { return DP.depenserNoyaux(n); } },
-    roches: { nom: 'Roches Solaires', court: 'roches', signe: '☀',
+    roches: { nom: 'Roches Solaires', court: 'roches', signe: '☀', jeu: 'odyssee',
               solde: function () { return DP.roches(); },
               depenser: function (n) { return DP.depenserRoches(n); } }
   };
@@ -230,17 +233,17 @@
   function monnaie(cle) { return MONNAIES[cle] || MONNAIES.noyaux; }
 
   function peutMonter(cle) {
-    var p = prochain();
+    var p = prochain(cle);
     return !!p && monnaie(cle).solde() >= p.cout;
   }
 
   function monter(cle) {
     var m = monnaie(cle);
-    var p = prochain();
+    var p = prochain(cle);
     if (!p) return { ok: false, raison: 'déjà au maximum' };
     if (m.solde() < p.cout) return { ok: false, raison: 'pas assez de ' + m.court };
     m.depenser(p.cout);
-    DP.monterArme();
+    DP.monterArme(m.jeu);
     cache = {};
     return { ok: true, niveau: p };
   }
@@ -278,14 +281,16 @@
   // ==========================================================
 
   // "#armurerie" est celle de la peche ; "#armurerie/odyssee" celle de
-  // l'Odyssee. Meme arme, memes revetements — mais on y paie en Roches
-  // Solaires, et le tableau de chasse compte les creatures au lieu des
-  // requins.
+  // l'Odyssee. Memes revetements, mais chacune son niveau : on y paie en
+  // Roches Solaires, et le tableau de chasse compte les creatures au lieu
+  // des requins.
   function viewArmurerie(view, arg) {
     if (!DP.aLArme()) { location.hash = '#items'; return; }
 
     var odyssee = arg === 'odyssee';
-    var caisse = monnaie(odyssee ? 'roches' : 'noyaux');
+    var cleCaisse = odyssee ? 'roches' : 'noyaux';
+    var caisse = monnaie(cleCaisse);
+    var nAtteint = DP.armeNiveau(caisse.jeu);
     var box = el('div', 'ar' + (odyssee ? ' ar--odyssee' : ''));
     box.dataset.jeu = odyssee ? 'odyssee' : 'peche';
     var R = window.REQUIN;
@@ -295,12 +300,12 @@
 
     var vitrine = el('div', 'ar-vitrine');
     var img = el('img', 'ar-arme');
-    img.src = url();
+    img.src = url(null, nAtteint);
     img.alt = '';
     vitrine.appendChild(img);
     gauche.appendChild(vitrine);
 
-    var nv = niveau();
+    var nv = niveau(nAtteint);
     gauche.appendChild(el('h2', 'ar-nom', 'Pistolet Lumithique'));
     gauche.appendChild(el('p', 'ar-niveau', nv.nom));
     gauche.appendChild(el('p', 'ar-texte', nv.texte));
@@ -320,7 +325,7 @@
     var ROMAIN = ['I', 'II', 'III', 'IV', 'V'];
     var echelle = el('div', 'ar-echelle');
     NIVEAUX.forEach(function (x) {
-      var c = el('span', 'ar-cran' + (x.n <= DP.armeNiveau() ? ' is-atteint' : ''),
+      var c = el('span', 'ar-cran' + (x.n <= nAtteint ? ' is-atteint' : ''),
                  'Mk ' + ROMAIN[x.n - 1]);
       c.title = x.nom + '  ·  ' + x.degats + ' dégâts' +
                 (x.cout ? '  ·  ' + x.cout + ' ' + caisse.court : '');
@@ -334,7 +339,7 @@
     noyaux.appendChild(el('span', null, ' ' + caisse.nom));
     gauche.appendChild(noyaux);
 
-    var suite = prochain();
+    var suite = prochain(cleCaisse);
     var monte = el('button', 'ar-monter');
     monte.type = 'button';
     if (!suite) {
@@ -554,7 +559,7 @@
   window.ARME = {
     NIVEAUX: NIVEAUX, REVETEMENTS: REVETEMENTS, MAX: MAX,
     PAR_REQUIN: PAR_REQUIN,
-    niveau: niveau, revetement: revetement,
+    niveau: niveau, niveauJeu: niveauJeu, revetement: revetement,
     feuille: feuille, url: url, L: L, H: H,
     prochain: prochain, peutMonter: peutMonter, monter: monter,
     MONNAIES: MONNAIES, monnaie: monnaie,

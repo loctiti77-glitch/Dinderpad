@@ -4473,3 +4473,19 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 }
 
 .bs-gain--roche { border-color: #ffd166; color: #ffd166; }
+
+/* Le Selenophage enrage, puis en furie : l'ecran rougit de plus en plus. */
+.bs[data-fureur="1"] .bs-cv { filter: saturate(1.25) contrast(1.05); }
+.bs[data-fureur="2"] .bs-cv { animation: bs-furie 0.9s ease-in-out infinite alternate; }
+.bs.is-palier .bs-cv { animation: bs-palier .6s ease-out; }
+@keyframes bs-furie {
+  from { filter: saturate(1.3) sepia(.15) hue-rotate(-12deg); }
+  to   { filter: saturate(1.8) sepia(.35) hue-rotate(-22deg) brightness(1.08); }
+}
+@keyframes bs-palier {
+  0%   { filter: brightness(2.4) saturate(2) hue-rotate(-20deg); transform: scale(1.03); }
+  100% { filter: none; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bs[data-fureur="2"] .bs-cv, .bs.is-palier .bs-cv { animation: none; }
+}
