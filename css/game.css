@@ -3094,6 +3094,18 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 
 .ar-peau-nom { font-size: calc(14 * var(--px)); text-align: center; }
 
+.ar-peau { position: relative; }
+.ar-peau-tag {
+  position: absolute;
+  top: calc(2 * var(--px));
+  right: calc(4 * var(--px));
+  font-size: calc(13 * var(--px));
+  line-height: 1;
+  color: #ffd36a;
+  text-shadow: 0 0 calc(6 * var(--px)) rgba(255, 190, 60, .8);
+}
+.ar-peau.is-vide .ar-peau-tag { color: #8a6a2a; text-shadow: none; }
+
 .ar-peau-cond {
   font-size: calc(11 * var(--px));
   line-height: 1.1;
@@ -4126,6 +4138,106 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 }
 
 .ody-tir.is-recharge { opacity: .55; box-shadow: none; }
+
+/* ---------- Un revetement gagne ---------- */
+.ody-trophee {
+  --r: #ffd36a;
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(14 * var(--px)) calc(30 * var(--px));
+  border: calc(4 * var(--px)) solid var(--r);
+  border-radius: calc(14 * var(--px));
+  background: rgba(4, 10, 18, .94);
+  box-shadow: 0 0 calc(34 * var(--px)) var(--r);
+  color: #eef6ff;
+  font-family: "Courier New", "Cutive Mono", monospace;
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: ody-trophee-in .55s cubic-bezier(.2, 1.6, .4, 1) both;
+}
+.ody-trophee.is-sortie { animation: ody-trophee-out .5s ease-in forwards; }
+.ody-trophee-titre {
+  font-size: calc(14 * var(--px));
+  letter-spacing: calc(4 * var(--px));
+  text-transform: uppercase;
+  color: var(--r);
+}
+.ody-trophee-cadre {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  line-height: 0;
+}
+.ody-trophee-img {
+  display: block;
+  width: calc(156 * var(--px));
+  height: calc(78 * var(--px));
+  image-rendering: pixelated;
+  animation: ody-trophee-vrille .8s cubic-bezier(.2, 1.3, .4, 1) .1s both;
+}
+.ody-trophee-eclat {
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  width: 30%;
+  left: -40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .85), transparent);
+  animation: ody-trophee-eclat .9s ease-in-out .7s both;
+}
+.ody-trophee-nom { font-size: calc(24 * var(--px)); letter-spacing: calc(2 * var(--px)); }
+.ody-trophee-det { font-size: calc(12 * var(--px)); color: #9fb4c4; }
+
+@keyframes ody-trophee-in {
+  from { opacity: 0; transform: translateX(-50%) scale(.3); }
+  to   { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+@keyframes ody-trophee-out {
+  to { opacity: 0; transform: translateX(-50%) translateY(calc(-30 * var(--px))) scale(.9); }
+}
+@keyframes ody-trophee-vrille {
+  from { transform: rotate(-540deg) scale(.1); }
+  to   { transform: rotate(0) scale(1); }
+}
+@keyframes ody-trophee-eclat {
+  from { left: -40%; }
+  to   { left: 120%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ody-trophee, .ody-trophee-img, .ody-trophee-eclat { animation: none; }
+}
+
+/* Les boutons de la scene sont des images, peintes au pixel pres. */
+.ody-tir, .ody-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(8 * var(--px)) calc(14 * var(--px));
+  line-height: 0;
+}
+.ody-tir[hidden], .ody-action[hidden] { display: none; }
+.ody-tir-img, .ody-action-img, .ody-retour-img {
+  display: block;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.ody-tir-img    { width: calc(104 * var(--px)); height: calc(52 * var(--px)); }
+.ody-action-img { width: calc(66 * var(--px));  height: calc(60 * var(--px)); }
+.ody-action[data-deja="1"] .ody-action-img { filter: saturate(.45) brightness(.9); }
+.ody-retour {
+  display: flex;
+  align-items: center;
+  padding: calc(6 * var(--px)) calc(10 * var(--px));
+  line-height: 0;
+}
+.ody-retour-img { width: calc(34 * var(--px)); height: calc(56 * var(--px)); object-fit: contain; }
 
 /* Un coup recu : l'ecran rougit un instant. */
 .ody-scene::after {

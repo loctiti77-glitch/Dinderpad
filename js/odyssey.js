@@ -78,7 +78,7 @@
     p(7, 46, 19, 1, ecran2);
   }
 
-  function cernerTL(ctx) {
+  function cernerTL(ctx, TL_L, TL_H) {
     var img = ctx.getImageData(0, 0, TL_L, TL_H);
     var d = img.data;
     var plein = new Uint8Array(TL_L * TL_H), i;
@@ -111,7 +111,7 @@
       x.fillStyle = col;
       x.fillRect(px, py, w, h);
     });
-    cernerTL(x);
+    cernerTL(x, TL_L, TL_H);
     cacheTL = { canvas: cv, L: TL_L, H: TL_H };
     return cacheTL;
   }
@@ -119,6 +119,100 @@
   function visuel() {
     var f = feuilleTL();
     return f ? f.canvas.toDataURL('image/png') : '';
+  }
+
+  // ==========================================================
+  //  Le scanneur
+  // ==========================================================
+  // Un appareil a poignee, violet, coiffe d'une coupole radar dont
+  // part un faisceau en eventail. Il sert de bouton SCANNER en jeu.
+
+  var SC_L = 44, SC_H = 40;
+  var cacheSC = null;
+
+  function dessinerScanneur(p) {
+    var corps = '#5b3f8c', clair = '#8d6fc4', ombre = '#34214f';
+    var verre = '#6ff2ff', verre2 = '#e2fdff', lave = '#ff7a2e';
+
+    // Le faisceau, en eventail vers le haut a droite.
+    p(30, 1, 3, 2, verre2);
+    p(34, 3, 4, 2, verre);
+    p(38, 6, 4, 2, verre);
+    p(27, 4, 3, 2, verre);
+    p(32, 7, 3, 2, verre2);
+    p(36, 10, 4, 2, verre);
+
+    // La coupole radar.
+    p(20, 8, 12, 3, clair);
+    p(18, 11, 16, 5, corps);
+    p(21, 9, 4, 2, verre2);
+    p(23, 12, 6, 3, verre);
+    p(24, 12, 2, 1, verre2);
+    p(24, 16, 4, 3, ombre);
+
+    // Le corps.
+    p(8, 18, 30, 12, corps);
+    p(8, 18, 30, 2, clair);
+    p(8, 18, 2, 12, clair);
+    p(36, 18, 2, 12, ombre);
+    p(8, 28, 30, 2, ombre);
+
+    // L'ecran, avec une onde.
+    p(12, 21, 16, 6, '#0c1018');
+    p(13, 24, 2, 1, verre);
+    p(15, 23, 2, 1, verre);
+    p(17, 22, 2, 1, verre2);
+    p(19, 24, 2, 1, verre);
+    p(21, 25, 2, 1, verre);
+    p(23, 23, 2, 1, verre);
+    p(25, 24, 2, 1, verre);
+
+    // Le voyant et la gachette.
+    p(31, 21, 3, 3, lave);
+    p(31, 21, 1, 1, '#ffd2a8');
+    p(31, 25, 3, 2, clair);
+
+    // La poignee.
+    p(12, 30, 9, 9, corps);
+    p(12, 30, 2, 9, clair);
+    p(19, 30, 2, 9, ombre);
+    p(13, 33, 6, 1, ombre);
+    p(13, 36, 6, 1, ombre);
+  }
+
+  function feuilleSC() {
+    if (cacheSC) return cacheSC;
+    var cv = document.createElement('canvas');
+    cv.width = SC_L; cv.height = SC_H;
+    var x = cv.getContext('2d');
+    if (!x) return null;
+    x.imageSmoothingEnabled = false;
+    dessinerScanneur(function (px, py, w, h, col) {
+      x.fillStyle = col;
+      x.fillRect(px, py, w, h);
+    });
+    cernerTL(x, SC_L, SC_H);
+    cacheSC = { canvas: cv, L: SC_L, H: SC_H };
+    return cacheSC;
+  }
+
+  function visuelScanneur() {
+    var f = feuilleSC();
+    return f ? f.canvas.toDataURL('image/png') : '';
+  }
+
+  // Un bouton de la scene : une image a la place du libelle, le libelle
+  // restant lisible pour les lecteurs d'ecran et au survol.
+  function iconeBouton(noeud, src, libelle, cls) {
+    noeud.textContent = '';
+    noeud.setAttribute('aria-label', libelle);
+    noeud.title = libelle;
+    if (!src) { noeud.textContent = libelle; return; }
+    var im = el('img', cls);
+    im.alt = '';
+    im.src = src;
+    noeud.appendChild(im);
+    return im;
   }
 
   // Une image qui prefere le fichier du joueur et retombe sur le dessin.
@@ -938,18 +1032,23 @@
     scene.appendChild(stick);
 
     var boutons = el('div', 'ody-boutons');
-    var tir = el('button', 'ody-tir', 'TIRER');
+    var tir = el('button', 'ody-tir');
     tir.type = 'button';
     tir.hidden = true;
+    iconeBouton(tir, window.ARME ? window.ARME.url() : '', 'Tirer', 'ody-tir-img');
     boutons.appendChild(tir);
     var action = el('button', 'ody-action');
     action.type = 'button';
     action.hidden = true;
+    iconeBouton(action, visuelScanneur(), 'Scanner', 'ody-action-img');
     boutons.appendChild(action);
     scene.appendChild(boutons);
 
-    var retour = el('a', 'ody-retour', 'TÉLÉPORTAIL');
+    var retour = el('a', 'ody-retour');
     retour.href = '#teleportail';
+    retour.setAttribute('aria-label', 'Téléportail');
+    retour.title = 'Téléportail';
+    retour.appendChild(imageTelecommande('ody-retour-img'));
     scene.appendChild(retour);
 
     var panneau = el('div', 'ody-panneau');
@@ -1080,7 +1179,9 @@
       action.hidden = !libre || !cible;
       if (!action.hidden) {
         var deja = DP.aScanne(cible.sujet.id);
-        action.textContent = deja ? 'RESCANNER' : 'SCANNER';
+        var lib = deja ? 'Rescanner' : 'Scanner';
+        action.setAttribute('aria-label', lib);
+        action.title = lib;
         action.dataset.deja = deja ? '1' : '0';
       }
       tir.hidden = !(libre || etat === 'scan') || !cibleTir;
@@ -1181,6 +1282,34 @@
       DP.noterAbattu(b.v.id);
       chiffres.push({ t0: t, x: b.x, y: b.y - 40, txt: '+' + b.f.noyaux + ' ☀', noyau: true });
       dire(b.v.nom + ' abattu.');
+      var A = window.ARME;
+      if (A && A.recompenseOdyssee) {
+        A.recompenseOdyssee(b.v.id).forEach(function (r, i) {
+          setTimeout(function () { annoncerRevetement(r); }, 500 + i * 3400);
+        });
+      }
+    }
+
+    // Un revetement gagne : le pistolet repeint arrive en tournoyant,
+    // un eclat le traverse, puis le bandeau s'efface tout seul.
+    function annoncerRevetement(r) {
+      if (!scene.isConnected) return;
+      var A = window.ARME;
+      var carte = el('div', 'ody-trophee');
+      carte.style.setProperty('--r', r.c[2]);
+      carte.appendChild(el('span', 'ody-trophee-titre', 'Nouveau revêtement'));
+      var cadre = el('span', 'ody-trophee-cadre');
+      var im = el('img', 'ody-trophee-img');
+      im.alt = '';
+      im.src = A.url(r.id);
+      cadre.appendChild(im);
+      cadre.appendChild(el('span', 'ody-trophee-eclat'));
+      carte.appendChild(cadre);
+      carte.appendChild(el('span', 'ody-trophee-nom', r.nom));
+      carte.appendChild(el('span', 'ody-trophee-det', 'À équiper dans l’armurerie · valable partout'));
+      scene.appendChild(carte);
+      setTimeout(function () { carte.classList.add('is-sortie'); }, 2700);
+      setTimeout(function () { carte.remove(); }, 3300);
     }
 
     // --- Les coups recus ---

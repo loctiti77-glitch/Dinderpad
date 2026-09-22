@@ -66,7 +66,33 @@
     { id: 'irradie', nom: 'Irradié', c: ['#4a6b16', '#a8d81e', '#e8ff6a'],
       gagne: 'Premier requin irradié abattu.' },
     { id: 'selenite', nom: 'Sélénite', c: ['#cfc7b4', '#efe8d6', '#e8483a'],
-      gagne: 'Le Sélénophage abattu, sur la Lune.' }
+      gagne: 'Le Sélénophage abattu, sur la Lune.', odyssee: true },
+
+    // --- Ceux de l'Odyssee : ils ne se gagnent que la-bas, mais le
+    // pistolet les porte partout, pêche comprise. Un par monde, pour son
+    // gardien (la créature la plus redoutable), et deux pour les chasseurs.
+    { id: 'zinc', nom: 'Zinc Fondu', c: ['#6e6a66', '#c9c2b8', '#ff9a3c'],
+      gagne: 'Le Géant de Plomb abattu, sur Mercure.', odyssee: true, gardien: 'geant-plomb' },
+    { id: 'soufre', nom: 'Soufre', c: ['#a8862a', '#f1dc7a', '#fff29a'],
+      gagne: 'Le Titan d’Ishtar abattu, sur Vénus.', odyssee: true, gardien: 'titan-ishtar' },
+    { id: 'nocturne', nom: 'Jardin Nocturne', c: ['#2d4a2a', '#6f9a5a', '#c8ff7a'],
+      gagne: 'La Chose-qui-Regarde abattue, sur Terre.', odyssee: true, gardien: 'chose-qui-regarde' },
+    { id: 'regolithe', nom: 'Régolithe', c: ['#5e6168', '#b9bcc4', '#9fd8ff'],
+      gagne: 'Le Colosse de Tycho abattu, sur la Lune.', odyssee: true, gardien: 'colosse-tycho' },
+    { id: 'rouille', nom: 'Rouille de Tharsis', c: ['#8a3a1e', '#d0704a', '#ffb07a'],
+      gagne: 'Le Géant de Tharsis abattu, sur Mars.', odyssee: true, gardien: 'geant-tharsis' },
+    { id: 'tempete', nom: 'Grande Tache', c: ['#9a5a34', '#e2b48a', '#ff5a3a'],
+      gagne: 'Le Colosse Gazeux abattu, sur Jupiter.', odyssee: true, gardien: 'colosse-gazeux' },
+    { id: 'hexagone', nom: 'Hexagone', c: ['#6a5a8a', '#d8c9a0', '#ffe9a8'],
+      gagne: 'Le Roi de l’Hexagone abattu, sur Saturne.', odyssee: true, gardien: 'roi-hexagone' },
+    { id: 'oberon', nom: 'Obéron', c: ['#2e8a8a', '#9fe8e0', '#e0fffa'],
+      gagne: 'Le Gardien d’Obéron abattu, sur Uranus.', odyssee: true, gardien: 'gardien-oberon' },
+    { id: 'abysses', nom: 'Abysses de Neptune', c: ['#1a2a6e', '#3e5ac4', '#7ab0ff'],
+      gagne: 'Le Colosse des Abysses abattu, sur Neptune.', odyssee: true, gardien: 'colosse-abysses' },
+    { id: 'comete', nom: 'Comète', c: ['#2a2e4a', '#8a94c8', '#7cf0c8'],
+      gagne: '25 espèces différentes abattues dans l’Odyssée.', odyssee: true, especes: 25 },
+    { id: 'horizon', nom: 'Horizon Noir', c: ['#0e0c14', '#3a3448', '#b06aff'],
+      gagne: '100 créatures abattues dans l’Odyssée.', odyssee: true, total: 100 }
   ];
 
   function revetement(id) {
@@ -227,6 +253,26 @@
     return r && !DP.aRevetement(r) ? r : null;
   }
 
+  // Apres une creature abattue dans l'Odyssee (deja notee dans
+  // DP.abattus()) : les revetements qu'elle vient de debloquer, acquis
+  // au passage. Rien sans le pistolet.
+  function recompenseOdyssee(idCreature) {
+    if (!DP.aLArme()) return [];
+    var abattus = DP.abattus(), especes = 0, total = 0;
+    Object.keys(abattus).forEach(function (k) {
+      if (abattus[k] > 0) { especes++; total += abattus[k]; }
+    });
+    var gagnes = [];
+    REVETEMENTS.forEach(function (r) {
+      if (!r.odyssee || DP.aRevetement(r.id)) return;
+      var ok = (r.gardien && r.gardien === idCreature) ||
+               (r.especes && especes >= r.especes) ||
+               (r.total && total >= r.total);
+      if (ok && DP.acquerirRevetement(r.id)) gagnes.push(r);
+    });
+    return gagnes;
+  }
+
   // ==========================================================
   //  La salle des trophees
   // ==========================================================
@@ -349,7 +395,11 @@
 
     droite.appendChild(el('p', 'ar-sous-titre', 'Revêtements'));
     var peaux = el('div', 'ar-peaux');
-    REVETEMENTS.forEach(function (r) {
+    // Chaque armurerie montre d'abord ce qui se gagne chez elle.
+    var ordre = REVETEMENTS.filter(function (r) { return r.id === 'origine'; })
+      .concat(REVETEMENTS.filter(function (r) { return r.id !== 'origine' && !!r.odyssee === odyssee; }))
+      .concat(REVETEMENTS.filter(function (r) { return r.id !== 'origine' && !!r.odyssee !== odyssee; }));
+    ordre.forEach(function (r) {
       var a = DP.aRevetement(r.id);
       var n = el('button', 'ar-peau');
       n.type = 'button';
@@ -363,6 +413,12 @@
       im.src = url(r.id);
       im.alt = '';
       n.appendChild(im);
+      if (r.odyssee) {
+        n.classList.add('is-odyssee');
+        var tag = el('span', 'ar-peau-tag', '☀');
+        tag.title = 'Se gagne dans l’Odyssée';
+        n.appendChild(tag);
+      }
       n.appendChild(el('span', 'ar-peau-nom', a ? r.nom : '???'));
       if (!a) n.appendChild(el('span', 'ar-peau-cond', r.gagne));
 
@@ -502,7 +558,7 @@
     feuille: feuille, url: url, L: L, H: H,
     prochain: prochain, peutMonter: peutMonter, monter: monter,
     MONNAIES: MONNAIES, monnaie: monnaie,
-    revetementPour: revetementPour,
+    revetementPour: revetementPour, recompenseOdyssee: recompenseOdyssee,
     vider: function () { cache = {}; }
   };
 })();
