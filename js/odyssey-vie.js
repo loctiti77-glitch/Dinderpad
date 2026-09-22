@@ -66,6 +66,25 @@
       liquideNom: 'la mare', eau: 0.05, roche: 0.08, cristal: 0.01
     },
     {
+      // La Lune n'est pas une planete, mais le Teleportail s'en moque : il
+      // suffit de suivre la regle. L comme Lune, 3 comme la planete autour
+      // de laquelle elle tourne.
+      code: 'SS-L3', id: 'lune', nom: 'Lune', rang: 3, satellite: true,
+      sous: 'La base, et ce qui dort dessous',
+      texte: 'Du régolithe gris jusqu’à l’horizon, la Terre suspendue au ' +
+             'ciel noir, et une base spatiale que personne n’a éteinte. Plus ' +
+             'loin, une grotte trop grande pour avoir été creusée par la pluie.',
+      ciel: ['#05070c', '#141820', '#000000'],
+      palette: {
+        sol: '#9a9a94', sol2: '#8c8c86', grain: '#b4b4ae',
+        roche: '#6a6a66', rocheHaut: '#8e8e88', rocheOmbre: '#3a3a38',
+        liquide: '#2a2a2e', liquide2: '#3a3a40', ecume: '#5a5a60',
+        cristal: '#e8f0ff', cristal2: '#ffffff',
+        structure: '#c4c9d0', structureHaut: '#e4e8ee'
+      },
+      liquideNom: 'des cratères d’ombre', eau: 0, roche: 0.12, cristal: 0.02
+    },
+    {
       code: 'SS-M4', id: 'mars', nom: 'Mars', rang: 4,
       sous: 'La rouille et le silence',
       texte: 'De la poussière de fer jusqu’à l’horizon, et de la glace ' +
@@ -275,6 +294,24 @@
              'plus solide que l’acier. Le Téléportail en veut un échantillon.' }
   ];
 
+  // La force et le temperament des vingt-quatre premieres. Les autres
+  // les portent directement, dans le fichier de faune.
+  var TEMPERAMENTS = {
+    'fondeur': [1, 0], 'braise-mite': [1, 1], 'ombre-longue': [3, 1],
+    'cloche-acide': [1, 0], 'rampe-soufre': [1, 0], 'chanteur': [4, 0],
+    'chat-jardin': [1, 0], 'luciole': [1, 0], 'chose-cabanon': [3, 1],
+    'fouisseur': [1, 0], 'voile-poussiere': [2, 1], 'rover': [3, 0],
+    'planeur': [1, 0], 'anguille-foudre': [2, 1], 'grand-calme': [4, 0],
+    'brouteur': [1, 0], 'cristal-chanteur': [1, 0], 'faucheur-givre': [3, 1],
+    'nageur-methane': [2, 0], 'tourne-givre': [1, 0], 'dormeur': [4, 0],
+    'crieur-vents': [1, 0], 'geyser-vivant': [2, 0], 'fileur-azote': [3, 1]
+  };
+  VIES.forEach(function (v) {
+    var t = TEMPERAMENTS[v.id] || [1, 0];
+    v.palier = t[0];
+    v.agressif = !!t[1];
+  });
+
   // ==========================================================
   //  Les curiosites
   // ==========================================================
@@ -312,11 +349,36 @@
     { id: 'tache-sombre', astre: 'neptune', nom: 'La Tache Sombre',
       forme: 'tache', c: ['#161f3c', '#2a3f74', '#9fb6f0'],
       texte: 'Un anticyclone grand comme un continent, qui apparaît, ' +
-             'dérive quelques années, puis se dissout sans laisser de trace.' }
+             'dérive quelques années, puis se dissout sans laisser de trace.' },
+    { id: 'grande-grotte', astre: 'lune', nom: 'La Grande Grotte',
+      forme: 'grotte', c: ['#3a3a38', '#6a6a66', '#0a0a0c'],
+      texte: 'Quarante mètres de haut, et une pente qui descend sous la ' +
+             'croûte bien plus loin que le scanner ne porte. Les parois sont ' +
+             'rayées de l’intérieur, comme par des griffes.' }
   ];
+
+  // Le gardien de la grotte : il n'erre pas sur la carte, il ne se scanne
+  // pas au detour d'un rocher. Il entre au carnet le jour ou on l'abat.
+  var MONSTRE = {
+    id: 'selenophage', astre: 'lune', nom: 'Le Sélénophage',
+    boss: true, carrure: 'colosse', palier: 6,
+    c: ['#cfc7b4', '#efe8d6', '#e8483a'],
+    texte: 'Il dormait sous la base depuis bien avant qu’on la construise. ' +
+           'Il se nourrit de régolithe, de métal, et de tout ce qui tombe ' +
+           'dans sa grotte. La base, elle, était tombée dans sa grotte.'
+  };
+
+  // Les objets : ni vivants ni lieux, mais tout ce qui traine et se
+  // scanne — mineraux, plantes, epaves, phenomenes. Le fichier de faune
+  // les remplit, astre par astre.
+  var OBJETS = [];
 
   function vies(idAstre) {
     return VIES.filter(function (v) { return v.astre === idAstre; });
+  }
+
+  function objets(idAstre) {
+    return OBJETS.filter(function (o) { return o.astre === idAstre; });
   }
 
   function curiosite(idAstre) {
@@ -327,20 +389,38 @@
   }
 
   function parId(id) {
+    if (id === MONSTRE.id) return MONSTRE;
     for (var i = 0; i < VIES.length; i++) if (VIES[i].id === id) return VIES[i];
     for (var k = 0; k < CURIOSITES.length; k++) {
       if (CURIOSITES[k].id === id) return CURIOSITES[k];
     }
+    for (var j = 0; j < OBJETS.length; j++) if (OBJETS[j].id === id) return OBJETS[j];
     return null;
   }
 
-  // Tout ce qui se scanne, dans l'ordre des astres.
+  // Tout ce qui se scanne, dans l'ordre : les vivants, les objets, le lieu
+  // remarquable — et, sur la Lune, le monstre, en dernier.
   function scannables(idAstre) {
-    var out = vies(idAstre).slice();
+    var out = vies(idAstre).concat(objets(idAstre));
     var c = curiosite(idAstre);
     if (c) out.push(c);
+    if (idAstre === MONSTRE.astre) out.push(MONSTRE);
     return out;
   }
+
+  // ---------- La force des creatures ----------
+  // Cinq paliers, comme pour les requins : une bete de palier 1 tombe en
+  // cinq tirs de Mk I, une de palier 5 demande une arme bien montee.
+  var FORCE = [
+    null,
+    { pv: 30,  degats: 4,  noyaux: 1, vitesse: 38 },
+    { pv: 70,  degats: 7,  noyaux: 1, vitesse: 44 },
+    { pv: 140, degats: 11, noyaux: 2, vitesse: 50 },
+    { pv: 260, degats: 16, noyaux: 3, vitesse: 54 },
+    { pv: 450, degats: 24, noyaux: 5, vitesse: 58 }
+  ];
+
+  function force(v) { return FORCE[Math.max(1, Math.min(5, v.palier || 1))]; }
 
   function tout() {
     var out = [];
@@ -499,6 +579,117 @@
       return;
     }
 
+    if (v.carrure === 'crabe') {
+      ovale(p, cx, cy + 2, 12, 6, a);
+      ovale(p, cx, cy + 3, 9, 3, b);
+      // Les pinces, levees.
+      p(3, cy - 6, 7, 5, a); p(2, cy - 8, 3, 3, d); p(7, cy - 9, 3, 3, d);
+      p(30, cy - 6, 7, 5, a); p(35, cy - 8, 3, 3, d); p(30, cy - 9, 3, 3, d);
+      p(8, cy - 2, 4, 4, a); p(28, cy - 2, 4, 4, a);
+      for (i = 0; i < 3; i++) {
+        p(10 + i * 3, cy + 7, 1, 5, d);
+        p(27 - i * 3, cy + 7, 1, 5, d);
+      }
+      p(16, cy - 5, 1, 4, d); p(23, cy - 5, 1, 4, d);
+      oeil(p, 15, cy - 7); oeil(p, 22, cy - 7);
+      return;
+    }
+
+    if (v.carrure === 'oiseau') {
+      ovale(p, cx, cy, 7, 5, a);
+      ovale(p, cx + 1, cy + 2, 5, 3, b);
+      // Les ailes deployees.
+      for (i = 0; i < 13; i++) {
+        var hy = Math.round(Math.abs(i - 6) * 0.6);
+        p(cx - 20 + i, cy - 6 + hy, 1, 4, a);
+        p(cx + 8 + i, cy - 6 + (6 - hy), 1, 4, a);
+      }
+      p(cx - 20, cy - 6, 5, 2, d); p(cx + 16, cy - 6, 5, 2, d);
+      p(cx - 9, cy - 3, 5, 4, a);                 // la tete
+      p(cx - 13, cy - 2, 4, 2, d);                // le bec
+      p(cx + 6, cy + 1, 5, 3, d);                 // la queue
+      oeil(p, cx - 8, cy - 2);
+      return;
+    }
+
+    if (v.carrure === 'limace') {
+      for (i = 0; i < 28; i++) {
+        var hl = Math.round(3 + 4 * Math.sin((i / 27) * Math.PI));
+        p(6 + i, cy + 6 - hl, 1, hl + 2, a);
+        p(6 + i, cy + 6, 1, 2, b);
+      }
+      p(8, cy - 6, 1, 6, d); p(12, cy - 7, 1, 7, d);  // les cornes
+      p(7, cy - 7, 3, 2, d); p(11, cy - 8, 3, 2, d);
+      for (i = 0; i < 4; i++) p(16 + i * 4, cy - 1, 2, 1, b);
+      oeil(p, 7, cy - 8, b); oeil(p, 11, cy - 9, b);
+      return;
+    }
+
+    if (v.carrure === 'araignee') {
+      ovale(p, cx + 4, cy, 8, 6, a);
+      ovale(p, cx - 6, cy - 1, 5, 4, a);
+      ovale(p, cx + 5, cy - 1, 4, 2, b);
+      // Huit pattes, pliees.
+      for (i = 0; i < 4; i++) {
+        var px2 = cx - 6 + i * 4;
+        p(px2, cy - 9 + i, 1, 6, d); p(px2 - 3, cy - 10 + i, 4, 1, d);
+        p(px2, cy + 4, 1, 7 - i, d); p(px2 - 3, cy + 10 - i, 4, 1, d);
+      }
+      oeil(p, cx - 9, cy - 3, '#ff5a4a'); oeil(p, cx - 6, cy - 4, '#ff5a4a');
+      p(cx - 11, cy - 1, 2, 1, '#ff5a4a');
+      return;
+    }
+
+    if (v.carrure === 'tortue') {
+      ovale(p, cx + 2, cy, 12, 8, a);
+      ovale(p, cx + 2, cy - 1, 9, 5, b);
+      // Les plaques de la carapace.
+      for (i = 0; i < 3; i++) p(cx - 5 + i * 6, cy - 5, 4, 7, a);
+      p(4, cy - 1, 7, 5, d);                      // la tete
+      for (i = 0; i < 2; i++) {
+        p(9 + i * 16, cy + 6, 5, 5, d);           // les pattes
+      }
+      p(34, cy + 1, 4, 2, d);
+      oeil(p, 5, cy);
+      return;
+    }
+
+    if (v.carrure === 'champignon') {
+      ovale(p, cx, cy - 4, 13, 7, a);
+      p(8, cy - 4, 25, 3, a);
+      for (i = 0; i < 6; i++) {
+        p(10 + i * 4, cy - 8 + (i % 2) * 2, 2, 2, b);
+      }
+      p(16, cy - 1, 9, 12, b);                    // le pied
+      p(15, cy + 10, 11, 2, d);
+      oeil(p, 17, cy + 2, d); oeil(p, 22, cy + 2, d);
+      return;
+    }
+
+    if (v.carrure === 'raie') {
+      for (var dy2 = -8; dy2 <= 8; dy2++) {
+        var w2 = Math.round(16 * (1 - Math.abs(dy2) / 9));
+        p(cx - w2, cy + dy2, w2 * 2, 1, a);
+      }
+      ovale(p, cx - 1, cy, 6, 4, b);
+      p(cx + 14, cy - 1, 9, 2, d);                // la queue
+      p(cx + 21, cy - 3, 2, 6, d);
+      oeil(p, cx - 6, cy - 3); oeil(p, cx + 3, cy - 3);
+      return;
+    }
+
+    if (v.carrure === 'bipede') {
+      p(14, cy - 9, 12, 14, a);                   // le corps
+      p(16, cy - 7, 8, 8, b);
+      p(15, cy - 16, 10, 8, a);                   // la tete
+      p(17, cy - 20, 2, 4, d); p(21, cy - 20, 2, 4, d);
+      p(14, cy + 5, 4, 8, d); p(22, cy + 5, 4, 8, d);   // les jambes
+      p(8, cy - 7, 6, 3, a); p(26, cy - 7, 6, 3, a);   // les bras
+      p(6, cy - 8, 3, 5, d); p(31, cy - 8, 3, 5, d);   // les griffes
+      oeil(p, 17, cy - 13); oeil(p, 21, cy - 13);
+      return;
+    }
+
     // Repli : une bestiole simple.
     ovale(p, cx, cy, 11, 7, a);
     ovale(p, cx, cy + 2, 8, 4, b);
@@ -599,6 +790,121 @@
       return;
     }
 
+    if (q.forme === 'grotte') {
+      for (i = 0; i < 40; i++) {
+        var hg = Math.round(18 + 9 * Math.sin(i / 39 * Math.PI));
+        p(i, 30 - hg, 1, hg, i % 5 ? a : b);
+      }
+      ovale(p, 20, 22, 11, 9, d);
+      p(9, 22, 23, 9, d);
+      return;
+    }
+
+    // ----- Les objets, plus petits : poses au sol, au centre de la case -----
+
+    if (q.forme === 'cristal') {
+      for (i = 0; i < 4; i++) {
+        var hc = 9 + ((i * 5) % 9);
+        p(12 + i * 4, 28 - hc, 3, hc, a);
+        p(13 + i * 4, 29 - hc, 1, hc - 2, b);
+      }
+      p(10, 27, 20, 3, d);
+      return;
+    }
+
+    if (q.forme === 'geode') {
+      ovale(p, 20, 20, 10, 8, d);
+      ovale(p, 20, 20, 7, 5, a);
+      for (i = 0; i < 6; i++) p(15 + i * 2, 17 + (i % 3) * 2, 2, 2, b);
+      return;
+    }
+
+    if (q.forme === 'fleur') {
+      for (i = 0; i < 3; i++) {
+        var fx = 12 + i * 8, fy = 12 + (i % 2) * 4;
+        p(fx + 1, fy + 4, 1, 28 - fy - 4, d);
+        p(fx - 1, fy, 5, 5, a);
+        p(fx + 1, fy + 2, 1, 1, b);
+      }
+      p(10, 27, 20, 3, d);
+      return;
+    }
+
+    if (q.forme === 'fossile') {
+      ovale(p, 20, 20, 12, 7, d);
+      for (i = 0; i < 5; i++) {
+        p(12 + i * 4, 16, 1, 9, a);
+      }
+      p(10, 20, 22, 1, a);
+      ovale(p, 11, 20, 3, 3, b);
+      return;
+    }
+
+    if (q.forme === 'sphere') {
+      ovale(p, 20, 20, 7, 7, a);
+      ovale(p, 18, 18, 3, 3, b);
+      p(14, 27, 12, 2, d);
+      return;
+    }
+
+    if (q.forme === 'epave') {
+      p(8, 18, 22, 9, a);
+      p(10, 16, 10, 3, b);
+      p(24, 10, 2, 9, d);                         // l'antenne tordue
+      p(24, 9, 6, 2, d);
+      p(4, 22, 6, 2, b); p(29, 21, 7, 2, b);      // les panneaux arraches
+      for (i = 0; i < 3; i++) p(10 + i * 7, 26, 4, 4, d);
+      return;
+    }
+
+    if (q.forme === 'totem') {
+      p(15, 6, 10, 24, a);
+      p(16, 7, 8, 4, b);
+      p(17, 14, 2, 2, d); p(21, 14, 2, 2, d);
+      p(17, 19, 6, 2, d);
+      p(13, 27, 14, 3, d);
+      return;
+    }
+
+    if (q.forme === 'balise') {
+      p(19, 6, 2, 24, d);
+      p(21, 7, 12, 8, a);
+      p(21, 7, 12, 2, b);
+      p(15, 28, 10, 2, d);
+      return;
+    }
+
+    if (q.forme === 'geyser') {
+      ovale(p, 20, 27, 8, 3, d);
+      for (i = 0; i < 5; i++) {
+        p(18 - i, 24 - i * 4, 4 + i * 2, 3, i % 2 ? a : b);
+      }
+      return;
+    }
+
+    if (q.forme === 'os') {
+      p(10, 19, 20, 3, a);
+      ovale(p, 9, 18, 3, 3, a); ovale(p, 9, 23, 3, 3, a);
+      ovale(p, 31, 18, 3, 3, a); ovale(p, 31, 23, 3, 3, a);
+      p(11, 20, 18, 1, b);
+      return;
+    }
+
+    if (q.forme === 'plaque') {
+      ovale(p, 20, 23, 14, 5, a);
+      ovale(p, 20, 22, 10, 3, b);
+      p(10, 23, 20, 1, d);
+      return;
+    }
+
+    if (q.forme === 'module') {
+      p(6, 12, 28, 16, a);
+      p(6, 12, 28, 3, b);
+      for (i = 0; i < 3; i++) p(10 + i * 8, 17, 5, 4, d);
+      p(4, 26, 32, 3, d);
+      return;
+    }
+
     ovale(p, 20, 16, 13, 9, a);
     ovale(p, 20, 16, 8, 5, b);
   }
@@ -630,6 +936,21 @@
     ctx.putImageData(img, 0, 0);
   }
 
+  // Le Selenophage, en vignette : une tete de ver cuirassee, trois paires
+  // d'yeux et des mandibules. Le duel a son propre dessin, bien plus grand.
+  function dessinerMonstre(p, m) {
+    var a = m.c[0], b = m.c[1], d = m.c[2], i;
+    for (i = 0; i < 5; i++) {
+      ovale(p, 26 - i * 4, 18 - i, 10 - i, 9 - i, i % 2 ? b : a);
+    }
+    p(4, 20, 8, 3, '#3a3228'); p(2, 16, 6, 3, '#3a3228');   // les mandibules
+    p(4, 26, 8, 3, '#3a3228'); p(2, 29, 5, 2, '#3a3228');
+    for (i = 0; i < 3; i++) {
+      p(10 + i * 3, 11 + i, 2, 2, d);
+      p(10 + i * 3, 16 + i, 2, 2, d);
+    }
+  }
+
   var cache = {};
 
   function feuille(id) {
@@ -645,7 +966,8 @@
       x.fillStyle = col;
       x.fillRect(px, py, w, h);
     };
-    if (v.forme) dessinerCuriosite(poser, v);
+    if (v.boss) dessinerMonstre(poser, v);
+    else if (v.forme) dessinerCuriosite(poser, v);
     else dessinerVie(poser, v);
     cerner(x);
     cache[id] = { canvas: cv, L: L, H: H };
@@ -657,8 +979,24 @@
     return f ? f.canvas.toDataURL('image/png') : '';
   }
 
+  // Une couleur de base suffit a vetir une creature : on en tire le
+  // clair et le sombre. Le fichier de faune s'en sert pour ecrire court.
+  function teintes(hex) {
+    return [hex, melange(hex, '#ffffff', 0.45), melange(hex, '#000000', 0.5)];
+  }
+
+  function melange(hex, vers, k) {
+    var a = parseInt(hex.slice(1), 16), b = parseInt(vers.slice(1), 16);
+    var r = Math.round(((a >> 16) & 255) * (1 - k) + ((b >> 16) & 255) * k);
+    var g = Math.round(((a >> 8) & 255) * (1 - k) + ((b >> 8) & 255) * k);
+    var u = Math.round((a & 255) * (1 - k) + (b & 255) * k);
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + u).toString(16).slice(1);
+  }
+
   window.ODYVIE = {
-    ASTRES: ASTRES, VIES: VIES, CURIOSITES: CURIOSITES,
+    ASTRES: ASTRES, VIES: VIES, CURIOSITES: CURIOSITES, OBJETS: OBJETS,
+    MONSTRE: MONSTRE, FORCE: FORCE, force: force, teintes: teintes,
+    objets: objets,
     astre: astre, vies: vies, curiosite: curiosite, parId: parId,
     scannables: scannables, tout: tout,
     feuille: feuille, url: url, L: L, H: H,

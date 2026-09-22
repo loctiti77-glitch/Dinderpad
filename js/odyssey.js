@@ -28,7 +28,7 @@
   // La partie en cours : le monde ou l'on se tient, et l'endroit exact.
   // Comme pour la peche, passer par le carnet ne doit pas tout perdre.
   var reprise = null;
-  var ECRANS = ['odyssee', 'teleportail', 'odyssee-carnet'];
+  var ECRANS = ['odyssee', 'teleportail', 'odyssee-carnet', 'armurerie'];
 
   window.addEventListener('hashchange', function () {
     var nom = (location.hash || '').replace(/^#/, '').split('/')[0];
@@ -538,7 +538,7 @@
     appareil.appendChild(ecran);
 
     var pave = el('div', 'tp-pave');
-    var TOUCHES = ['S', 'M', 'V', 'T', 'J', 'U', 'N', '-',
+    var TOUCHES = ['S', 'M', 'V', 'T', 'J', 'U', 'N', 'L', '-',
                    '1', '2', '3', '4', '5', '6', '7', '8'];
     TOUCHES.forEach(function (c) {
       var b = el('button', 'tp-touche', c);
@@ -571,7 +571,7 @@
     tete.appendChild(el('span', 'tp-enseigne', 'Journal de bord'));
     var nScans = Object.keys(DP.scans()).length;
     tete.appendChild(el('span', 'tp-compte',
-      DP.astresVus().length + ' / 8 mondes  ·  ' + nScans + ' / ' +
+      DP.astresVus().length + ' / ' + V.ASTRES.length + ' mondes  ·  ' + nScans + ' / ' +
       V.tout().length + ' scans'));
     droite.appendChild(tete);
 
@@ -619,6 +619,11 @@
     var carnet = el('a', 'ody-btn ody-btn--plat', 'Carnet du scanner');
     carnet.href = '#odyssee-carnet';
     pied.appendChild(carnet);
+    if (DP.aLArme()) {
+      var arm = el('a', 'ody-btn ody-btn--plat', 'Armurerie  ·  ' + DP.roches() + ' ☀');
+      arm.href = '#armurerie/odyssee';
+      pied.appendChild(arm);
+    }
     var items = el('a', 'ody-btn ody-btn--plat', 'Items');
     items.href = '#items';
     pied.appendChild(items);
@@ -812,12 +817,94 @@
     return mieux || { x: 20, y: 18 };
   }
 
+  // ==========================================================
+  //  La Lune : une carte a part
+  // ==========================================================
+  // Pas de nappes ni de hasard : une base spatiale pres du point
+  // d'arrivee, des crateres, et au nord une falaise percee d'une grotte
+  // immense. C'est de la que sort le Selenophage.
+
+  var BASE = { x0: 4, x1: 14, y0: 15, y1: 24 };
+  var GROTTE = { x: 19.5, y: 4.2, lx: 5.2, ly: 3.1 };      // en cases
+  var DEVANT_GROTTE = { x: 19.5, y: 8.2 };
+
+  function construireLune() {
+    var g = [], x, y;
+    var bruit = M.bruit;
+    for (y = 0; y < MH; y++) {
+      g.push([]);
+      for (x = 0; x < MW; x++) {
+        g[y].push(bruit(x, y, 91) < 0.18 ? T.SOL_B : T.SOL);
+      }
+    }
+    // Les bords, et la falaise du nord.
+    for (y = 0; y < MH; y++) {
+      for (x = 0; x < MW; x++) {
+        if (x < 2 || x >= MW - 2 || y >= MH - 2 || y < 7) g[y][x] = T.ROCHE_A;
+      }
+    }
+    // Les crateres : un anneau de gravats autour d'un creux d'ombre.
+    [[29, 14, 3], [33, 22, 2], [24, 11, 2], [9, 10, 2]].forEach(function (c) {
+      for (y = c[1] - c[2] - 1; y <= c[1] + c[2] + 1; y++) {
+        for (x = c[0] - c[2] - 1; x <= c[0] + c[2] + 1; x++) {
+          var d = Math.hypot(x - c[0], y - c[1]);
+          if (d <= c[2] - 0.5) g[y][x] = T.LIQUIDE;
+          else if (d <= c[2] + 1) g[y][x] = T.GRAVATS;
+        }
+      }
+    });
+    // Quelques rochers, loin de la base et du parvis de la grotte.
+    for (y = 8; y < MH - 2; y++) {
+      for (x = 2; x < MW - 2; x++) {
+        if (g[y][x] !== T.SOL && g[y][x] !== T.SOL_B) continue;
+        if (x >= BASE.x0 - 1 && x <= BASE.x1 + 1 && y >= BASE.y0 - 1 && y <= BASE.y1 + 1) continue;
+        if (Math.abs(x - DEVANT_GROTTE.x) < 5 && y < 12) continue;
+        if (bruit(x, y, 93) < 0.05) g[y][x] = T.ROCHE_A;
+        else if (bruit(x, y, 94) < 0.02) g[y][x] = T.CRISTAL;
+      }
+    }
+    // La base : des murs de modules, un sol nu, deux portes.
+    for (y = BASE.y0; y <= BASE.y1; y++) {
+      for (x = BASE.x0; x <= BASE.x1; x++) {
+        var bord = y === BASE.y0 || y === BASE.y1 || x === BASE.x0 || x === BASE.x1;
+        g[y][x] = bord ? T.STRUCTURE : T.SOL;
+      }
+    }
+    g[BASE.y0][9] = T.SOL; g[BASE.y0][10] = T.SOL;               // la porte nord
+    g[19][BASE.x1] = T.SOL; g[20][BASE.x1] = T.SOL;               // la porte est
+    // Le point d'arrivee, degage.
+    for (y = 18; y <= 26; y++) {
+      for (x = 16; x <= 24; x++) {
+        if (Math.abs(x - 20) + Math.abs(y - 22) <= 4 && y < MH - 2) g[y][x] = T.SOL;
+      }
+    }
+    // Le parvis de la grotte : du sol nu jusqu'a la falaise.
+    for (y = 7; y <= 10; y++) {
+      for (x = 16; x <= 23; x++) g[y][x] = T.SOL;
+    }
+    relier(g);
+    return g;
+  }
+
+  // La ou poser les objets de la base, dans l'enceinte.
+  var PLACES_BASE = {
+    'module-habitation': [6, 17], 'sas-base': [10, 16], 'reacteur': [12, 22],
+    'serre-base': [6, 22], 'antenne-relais': [12, 18]
+  };
+
+  // ==========================================================
+  //  L'ecran d'un monde
+  // ==========================================================
+
+  var PV_MAX = 100;
+
   function ecranMonde(jeu, idAstre, ou) {
     var a = V.astre(idAstre);
     if (!a) { location.hash = '#teleportail'; return; }
 
     jeu.textContent = '';
     DP.noterAstre(a.id);
+    var lune = a.id === 'lune';
 
     var scene = el('div', 'ody-scene');
     scene.dataset.astre = a.id;
@@ -830,10 +917,18 @@
     cv.width = 480; cv.height = 316;
     scene.appendChild(cv);
 
+    // Le bandeau : le monde, l'etat du voyageur, ce qu'on a devant soi.
     var hud = el('div', 'ody-hud');
-    var hudNom = el('span', 'ody-hud-nom', a.nom + '  ·  ' + a.code);
+    var hudG = el('div', 'ody-hud-g');
+    hudG.appendChild(el('span', 'ody-hud-nom', a.nom + '  ·  ' + a.code));
+    var jauge = el('div', 'ody-pv');
+    var jaugePlein = el('div', 'ody-pv-plein');
+    var jaugeTxt = el('span', 'ody-pv-txt');
+    jauge.appendChild(jaugePlein);
+    jauge.appendChild(jaugeTxt);
+    hudG.appendChild(jauge);
+    hud.appendChild(hudG);
     var hudTxt = el('span', 'ody-hud-txt', '');
-    hud.appendChild(hudNom);
     hud.appendChild(hudTxt);
     scene.appendChild(hud);
 
@@ -842,10 +937,16 @@
     stick.appendChild(pomme);
     scene.appendChild(stick);
 
+    var boutons = el('div', 'ody-boutons');
+    var tir = el('button', 'ody-tir', 'TIRER');
+    tir.type = 'button';
+    tir.hidden = true;
+    boutons.appendChild(tir);
     var action = el('button', 'ody-action');
     action.type = 'button';
     action.hidden = true;
-    scene.appendChild(action);
+    boutons.appendChild(action);
+    scene.appendChild(boutons);
 
     var retour = el('a', 'ody-retour', 'TÉLÉPORTAIL');
     retour.href = '#teleportail';
@@ -857,87 +958,149 @@
 
     jeu.appendChild(scene);
 
-    var g = construireCarte(a);
-    var lieu = placeCuriosite(g);
+    var g = lune ? construireLune() : construireCarte(a);
+    var libres = accessibles(g);
     var cur = V.curiosite(a.id);
+    var lieu = lune ? { x: Math.floor(GROTTE.x), y: Math.floor(DEVANT_GROTTE.y) - 1 }
+                    : placeCuriosite(g);
+    var bossBattu = function () { return DP.exploit('selenophage') > 0; };
 
     reprise = { astre: a.id, x: ou ? ou.x : DEPART.x, y: ou ? ou.y : DEPART.y,
                 dir: ou ? ou.dir : 0 };
 
+    // --- Le voyageur ---
+    var pv = PV_MAX, dernierCoupRecu = -99999;
+
     // --- Les habitants ---
-    // Trois especes, quelques individus chacune, qui derivent autour d'un
-    // point d'attache. Scanner n'en fait pas disparaitre : on peut
-    // rescanner, seul le premier compte pour le carnet.
+    // Un individu par espece, deux pour les plus communes. Les agressives
+    // foncent sur le voyageur quand il passe a portee ; les autres errent
+    // autour de leur point d'attache, et fuient si on leur tire dessus.
+    function caseLibreAuHasard(graine, loinDuDepart) {
+      for (var essai = 0; essai < 300; essai++) {
+        var bx = 3 + Math.floor(M.bruit(graine, essai, a.rang * 13 + 7) * (MW - 6));
+        var by = 3 + Math.floor(M.bruit(graine, essai + 500, a.rang * 13 + 8) * (MH - 6));
+        if (!libres[bx + ',' + by]) continue;
+        if (Math.abs(bx - 20) + Math.abs(by - 22) < (loinDuDepart || 0)) continue;
+        return [bx, by];
+      }
+      return [20, 18];
+    }
+
     var betes = [];
-    var libres = accessibles(g);
     V.vies(a.id).forEach(function (v, k) {
-      var n = v.rarete === 'rare' ? 1 : 3;
+      var n = v.palier <= 1 ? 2 : 1;
       for (var i = 0; i < n; i++) {
-        var bx = 0, by = 0, essais = 0;
-        do {
-          bx = 3 + Math.floor(M.bruit(k * 7 + i, 11, a.rang + essais) * (MW - 6));
-          by = 3 + Math.floor(M.bruit(k * 7 + i, 23, a.rang + essais) * (MH - 6));
-          essais++;
-        } while (!libres[bx + ',' + by] && essais < 200);
+        // Les agressives naissent a distance : on ne se fait pas mordre en
+        // posant le pied sur un monde.
+        var c = caseLibreAuHasard(k * 11 + i, v.agressif ? 9 : 3);
+        var f = V.force(v);
         betes.push({
-          v: v, x: (bx + 0.5) * TS, y: (by + 0.5) * TS,
-          ax: (bx + 0.5) * TS, ay: (by + 0.5) * TS,
-          ph: Math.random() * 6.3
+          v: v, f: f, x: (c[0] + 0.5) * TS, y: (c[1] + 0.5) * TS,
+          ax: (c[0] + 0.5) * TS, ay: (c[1] + 0.5) * TS,
+          ph: M.bruit(k, i, 3) * 6.3, pv: f.pv, pvMax: f.pv,
+          agressif: v.agressif, fuite: 0, coup: -99999, touche: -99999,
+          mort: false, mortT: 0
         });
       }
     });
 
+    // --- Les objets ---
+    var choses = V.objets(a.id).map(function (o, k) {
+      var c = lune && PLACES_BASE[o.id] ? PLACES_BASE[o.id] : caseLibreAuHasard(300 + k * 17, 4);
+      return { o: o, x: (c[0] + 0.5) * TS, y: (c[1] + 0.5) * TS };
+    });
+
     var balade = null;
-    var cible = null;              // ce qu'on a devant soi
-    var scan = null;               // le scan en cours
-    var etat = 'libre';
+    var cible = null, cibleTir = null;
+    var scan = null, tirs = [], chiffres = [];
+    var surgi = null;                  // le monstre qui sort de sa grotte
+    var duel = null;
+    var dernierTir = -99999;
+    var etat = 'libre';                // libre | scan | fiche | boss | ko
     var minuteurs = [];
+    var derniere = 0;
     function plusTard(fn, ms) { var t = setTimeout(fn, ms); minuteurs.push(t); return t; }
     function vivant() { return document.body.contains(scene); }
+    function maintenant() { return performance.now(); }
 
     function dire(txt) { if (hudTxt.textContent !== txt) hudTxt.textContent = txt; }
 
-    // La chose la plus proche, a portee de scanner.
+    function majJauge() {
+      var k = pv / PV_MAX;
+      jaugePlein.style.width = (k * 100).toFixed(1) + '%';
+      jaugePlein.dataset.bas = k < 0.3 ? '1' : '0';
+      jaugeTxt.textContent = Math.ceil(pv) + ' / ' + PV_MAX;
+    }
+
+    function tuileLibre(px, py) {
+      var t = balade.tuile(Math.floor(px / TS), Math.floor(py / TS));
+      return t !== undefined && !M.BLOQUANT[t];
+    }
+
+    function distance(b) {
+      return Math.hypot(b.x - balade.chef.x, b.y - balade.chef.y);
+    }
+
+    // --- Le scanner ---
     function chercherCible() {
-      var cx = balade.chef.x, cy = balade.chef.y;
-      var mieux = null, d2 = 46 * 46;
+      var mieux = null, d2 = 46;
       betes.forEach(function (b) {
-        var dx = b.x - cx, dy = b.y - cy;
-        var d = dx * dx + dy * dy;
-        if (d < d2) { d2 = d; mieux = { type: 'vie', sujet: b.v, ref: b }; }
+        if (b.mort) return;
+        var d = distance(b);
+        if (d < d2) { d2 = d; mieux = { sujet: b.v, ref: b }; }
       });
-      if (cur) {
+      choses.forEach(function (c) {
+        var d = Math.hypot(c.x - balade.chef.x, c.y - balade.chef.y);
+        if (d < d2) { d2 = d; mieux = { sujet: c.o, ref: c }; }
+      });
+      if (cur && (!lune || bossBattu())) {
         var lx = (lieu.x + 0.5) * TS, ly = (lieu.y + 0.5) * TS;
-        var dx2 = lx - cx, dy2 = ly - cy;
-        if (dx2 * dx2 + dy2 * dy2 < d2) {
-          mieux = { type: 'lieu', sujet: cur, ref: { x: lx, y: ly } };
-        }
+        var d3 = Math.hypot(lx - balade.chef.x, ly - balade.chef.y);
+        if (d3 < d2 + (lune ? 30 : 0)) mieux = { sujet: cur, ref: { x: lx, y: ly } };
       }
       return mieux;
     }
 
-    function majAction() {
-      if (etat !== 'libre' || !cible) {
-        action.hidden = true;
-        action.textContent = '';
-        return;
+    // --- La cible du pistolet : la plus menacante a portee ---
+    function chercherCibleTir() {
+      if (!DP.aLArme()) return null;
+      var mieux = null, score = Infinity;
+      betes.forEach(function (b) {
+        if (b.mort) return;
+        var d = distance(b);
+        if (d > 170) return;
+        var s = d - (b.agressif ? 80 : 0);
+        if (s < score) { score = s; mieux = b; }
+      });
+      return mieux;
+    }
+
+    function majBoutons() {
+      var libre = etat === 'libre';
+      action.hidden = !libre || !cible;
+      if (!action.hidden) {
+        var deja = DP.aScanne(cible.sujet.id);
+        action.textContent = deja ? 'RESCANNER' : 'SCANNER';
+        action.dataset.deja = deja ? '1' : '0';
       }
-      action.hidden = false;
-      var deja = DP.aScanne(cible.sujet.id);
-      action.textContent = deja ? 'RESCANNER' : 'SCANNER';
-      action.dataset.deja = deja ? '1' : '0';
+      tir.hidden = !(libre || etat === 'scan') || !cibleTir;
+      if (!tir.hidden) {
+        var A = window.ARME;
+        var pret = maintenant() - dernierTir >= (A ? A.niveau().cadence : 620);
+        tir.classList.toggle('is-recharge', !pret);
+      }
     }
 
     function lancerScan() {
       if (etat !== 'libre' || !cible) return;
       etat = 'scan';
       var sujet = cible.sujet, ref = cible.ref;
-      scan = { t0: performance.now(), x: ref.x, y: ref.y, sujet: sujet };
+      scan = { t0: maintenant(), x: ref.x, y: ref.y, sujet: sujet };
       scene.classList.add('is-scan');
       dire('Analyse en cours…');
-      majAction();
+      majBoutons();
       plusTard(function () {
-        if (!vivant()) return;
+        if (!vivant() || etat !== 'scan') return;
         scene.classList.remove('is-scan');
         scan = null;
         var r = DP.noterScan(sujet.id, a.id);
@@ -951,9 +1114,7 @@
       panneau.textContent = '';
       var carte = el('div', 'ody-fiche' + (neuf ? ' is-neuf' : ''));
       carte.dataset.sujet = sujet.id;
-
-      carte.appendChild(el('p', 'ody-fiche-titre',
-        neuf ? 'NOUVELLE ENTRÉE' : 'DÉJÀ AU CARNET'));
+      carte.appendChild(el('p', 'ody-fiche-titre', neuf ? 'NOUVELLE ENTRÉE' : 'DÉJÀ AU CARNET'));
       var im = el('img', 'ody-fiche-img');
       im.src = V.url(sujet.id);
       im.alt = '';
@@ -961,11 +1122,14 @@
       carte.appendChild(el('p', 'ody-fiche-nom', sujet.nom));
       var det = el('p', 'ody-fiche-det');
       det.appendChild(el('span', 'ody-fiche-astre', a.nom));
-      det.appendChild(el('span', null, sujet.forme ? 'Curiosité' : 'Forme de vie'));
+      det.appendChild(el('span', null, genre(sujet)));
+      if (sujet.palier && !sujet.forme) {
+        det.appendChild(el('span', 'ody-fiche-palier' + (sujet.agressif ? ' is-agressif' : ''),
+          'Palier ' + sujet.palier + (sujet.agressif ? ' · agressif' : '')));
+      }
       if (entree && entree.n > 1) det.appendChild(el('span', null, '×' + entree.n));
       carte.appendChild(det);
       carte.appendChild(el('p', 'ody-fiche-txt', sujet.texte));
-
       var b = el('button', 'ody-btn', 'Continuer');
       b.type = 'button';
       b.addEventListener('click', fermerFiche);
@@ -978,74 +1142,377 @@
       panneau.hidden = true;
       panneau.textContent = '';
       etat = 'libre';
-      majAction();
+      majBoutons();
+    }
+
+    // --- Le pistolet ---
+    function tirer() {
+      // Le bouton est cache sans l'arme, mais le clavier, lui, ne l'est
+      // pas : c'est donc ici que se tranche la question.
+      if (!DP.aLArme()) return;
+      if (!(etat === 'libre' || etat === 'scan') || !cibleTir) return;
+      var A = window.ARME;
+      var nv = A ? A.niveau() : { degats: 6, cadence: 620 };
+      var t = maintenant();
+      if (t - dernierTir < nv.cadence) return;
+      dernierTir = t;
+      var b = cibleTir;
+      tirs.push({ t0: t, x: b.x, y: b.y - 10 });
+      b.pv = Math.max(0, b.pv - nv.degats);
+      b.touche = t;
+      chiffres.push({ t0: t, x: b.x, y: b.y - 26, txt: '-' + nv.degats });
+
+      // Une bete qu'on blesse ne reste pas indifferente : les plus fortes
+      // se retournent, les plus faibles detalent.
+      if (!b.agressif) {
+        if (b.v.palier >= 2) b.agressif = true;
+        else b.fuite = t + 2600;
+      }
+
+      if (b.pv <= 0) abattre(b, t);
+      majBoutons();
+    }
+
+    function abattre(b, t) {
+      b.mort = true; b.mortT = t;
+      // Dans l'Odyssee, les betes laissent des Roches Solaires : c'est la
+      // monnaie de l'armurerie d'ici.
+      DP.gagnerRoches(b.f.noyaux);
+      DP.noterAbattu(b.v.id);
+      chiffres.push({ t0: t, x: b.x, y: b.y - 40, txt: '+' + b.f.noyaux + ' ☀', noyau: true });
+      dire(b.v.nom + ' abattu.');
+    }
+
+    // --- Les coups recus ---
+    function encaisser(b, t) {
+      pv = Math.max(0, pv - b.f.degats);
+      dernierCoupRecu = t;
+      b.coup = t;
+      chiffres.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 30, txt: '-' + b.f.degats, moi: true });
+      scene.classList.remove('is-touche');
+      void scene.offsetWidth;
+      scene.classList.add('is-touche');
+      majJauge();
+      if (pv <= 0) ko();
+    }
+
+    function ko() {
+      if (etat === 'ko') return;
+      etat = 'ko';
+      scan = null;
+      scene.classList.remove('is-scan');
+      majBoutons();
+      panneau.hidden = false;
+      panneau.textContent = '';
+      var carte = el('div', 'ody-fiche ody-fiche--ko');
+      carte.appendChild(el('p', 'ody-fiche-titre', 'RAPATRIEMENT D’URGENCE'));
+      carte.appendChild(imageTelecommande('ody-fiche-img'));
+      carte.appendChild(el('p', 'ody-fiche-txt',
+        'Le Téléportail a détecté que tu ne tenais plus debout, et il t’a ramené. ' +
+        'Rien de ce que tu as scanné n’est perdu.'));
+      var b = el('button', 'ody-btn', 'Retour au Téléportail');
+      b.type = 'button';
+      b.addEventListener('click', function () {
+        reprise = null;
+        location.hash = '#teleportail';
+      });
+      carte.appendChild(b);
+      panneau.appendChild(carte);
+      b.focus();
+    }
+
+    // --- Le monstre de la grotte ---
+    var SURGIT_DUREE = 2200;
+
+    function reveillerMonstre() {
+      etat = 'boss';
+      majBoutons();
+      surgi = { t0: maintenant() };
+      dire('Le sol tremble. Quelque chose remonte de la grotte…');
+      scene.classList.add('is-secousse');
+      plusTard(function () {
+        if (!vivant() || etat !== 'boss') return;
+        scene.classList.remove('is-secousse');
+        surgi = null;
+        var B = window.BOSS;
+        if (!B) { etat = 'libre'; return; }
+        duel = B.Duel({
+          parent: scene,
+          pvJoueur: pv, pvMax: PV_MAX,
+          surFin: function (r) { pv = r.pvJoueur; majJauge(); },
+          surSortie: function (r) {
+            duel = null;
+            pv = r.pvJoueur;
+            majJauge();
+            if (r.vaincu) {
+              etat = 'libre';
+              dire('La grotte est silencieuse.');
+              majBoutons();
+            } else {
+              pv = 0;
+              ko();
+            }
+          }
+        });
+      }, reduit ? 100 : SURGIT_DUREE);
     }
 
     action.addEventListener('click', lancerScan);
+    tir.addEventListener('click', tirer);
 
     var auClavier = function (e) {
+      if (e.key === 'f' || e.key === 'F' || e.key === 'x' || e.key === 'X') {
+        if (etat === 'boss') return;
+        e.preventDefault();
+        return tirer();
+      }
       if (e.key !== ' ' && e.key !== 'Enter') return;
+      if (etat === 'boss' || etat === 'ko') return;
       e.preventDefault();
       if (etat === 'fiche') return fermerFiche();
       lancerScan();
     };
     window.addEventListener('keydown', auClavier);
 
-    // --- Le decor mouvant ---
-    function dessinerVies(ctx, cam, t) {
-      // La curiosite, plantee.
-      if (cur) {
-        var f = V.feuille(cur.id);
-        if (f) {
-          var lx = (lieu.x + 0.5) * TS - cam.x;
-          var ly = (lieu.y + 1) * TS - cam.y;
-          ctx.save();
-          ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(f.canvas, Math.round(lx - f.L * 1.1), Math.round(ly - f.H * 2.2),
-                        f.L * 2.2, f.H * 2.2);
-          ctx.restore();
+    // --- La vie des betes, a chaque image ---
+    function animer(t) {
+      var dt = derniere ? Math.min(0.05, (t - derniere) / 1000) : 0;
+      derniere = t;
+      var chefX = balade.chef.x, chefY = balade.chef.y;
+      var chassent = (etat === 'libre' || etat === 'scan') && pv > 0;
+
+      betes.forEach(function (b, i) {
+        if (b.mort) return;
+        var dx = chefX - b.x, dy = chefY - b.y;
+        var d = Math.hypot(dx, dy) || 1;
+        var vx = 0, vy = 0, vit = 0;
+
+        if (b.fuite > t) {
+          vx = -dx / d; vy = -dy / d; vit = b.f.vitesse * 1.3;
+        } else if (b.agressif && chassent && d < 135) {
+          if (d > 16) { vx = dx / d; vy = dy / d; vit = b.f.vitesse; }
+          else if (t - b.coup > 1150) encaisser(b, t);
+        } else if (!reduit) {
+          // L'errance : un point qui tourne lentement autour de l'attache.
+          var tx = b.ax + Math.sin(t / (1500 + i * 70) + b.ph) * 30;
+          var ty = b.ay + Math.cos(t / (1800 + i * 50) + b.ph) * 20;
+          var ex = tx - b.x, ey = ty - b.y, de = Math.hypot(ex, ey);
+          if (de > 1) { vx = ex / de; vy = ey / de; vit = Math.min(22, de * 2); }
         }
+
+        if (vit) {
+          var nx = b.x + vx * vit * dt, ny = b.y + vy * vit * dt;
+          if (tuileLibre(nx, b.y)) b.x = nx;
+          if (tuileLibre(b.x, ny)) b.y = ny;
+        }
+      });
+
+      // On se refait une sante quand plus rien ne mord depuis un moment.
+      if (pv > 0 && pv < PV_MAX && t - dernierCoupRecu > 4000 && etat !== 'boss') {
+        pv = Math.min(PV_MAX, pv + 4 * dt);
+        majJauge();
+      }
+    }
+
+    // --- Ce qu'on peint avec le decor, a sa profondeur ---
+    function extras(t) {
+      var out = [];
+
+      choses.forEach(function (c) {
+        out.push({
+          x: c.x, y: c.y + 6,
+          dessin: function (ctx, sx, sy) {
+            var f = V.feuille(c.o.id);
+            if (!f) return;
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(f.canvas, Math.round(sx - f.L * 0.55), Math.round(sy - f.H * 1.1 + 2),
+                          f.L * 1.1, f.H * 1.1);
+            ctx.restore();
+          }
+        });
+      });
+
+      if (cur && !lune) {
+        out.push({
+          x: (lieu.x + 0.5) * TS, y: (lieu.y + 1) * TS,
+          dessin: function (ctx, sx, sy) {
+            var f = V.feuille(cur.id);
+            if (!f) return;
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(f.canvas, Math.round(sx - f.L * 1.1), Math.round(sy - f.H * 2.2),
+                          f.L * 2.2, f.H * 2.2);
+            ctx.restore();
+          }
+        });
+      }
+
+      if (lune) {
+        // La bouche de la grotte, dans la falaise.
+        out.push({
+          x: GROTTE.x * TS, y: (GROTTE.y + GROTTE.ly) * TS - 40,
+          dessin: function (ctx, sx, sy) {
+            var gx = sx, gy = sy + 40 - GROTTE.ly * TS * 0.5;
+            ctx.fillStyle = '#2e2e2c';
+            ctx.beginPath();
+            ctx.ellipse(gx, gy, GROTTE.lx * TS * 0.62, GROTTE.ly * TS * 0.62, 0, Math.PI, 0);
+            ctx.fill();
+            ctx.fillStyle = '#070708';
+            ctx.beginPath();
+            ctx.ellipse(gx, gy + 6, GROTTE.lx * TS * 0.52, GROTTE.ly * TS * 0.52, 0, Math.PI, 0);
+            ctx.fill();
+            ctx.fillRect(gx - GROTTE.lx * TS * 0.52, gy + 6, GROTTE.lx * TS * 1.04, 14);
+            // Les griffures, tout autour.
+            ctx.strokeStyle = 'rgba(20,20,20,.7)';
+            ctx.lineWidth = 2;
+            for (var k = 0; k < 6; k++) {
+              var ang = Math.PI + (k + 0.5) / 6 * Math.PI;
+              var r0 = GROTTE.lx * TS * 0.66;
+              ctx.beginPath();
+              ctx.moveTo(gx + Math.cos(ang) * r0, gy + Math.sin(ang) * r0 * 0.6);
+              ctx.lineTo(gx + Math.cos(ang) * (r0 + 10), gy + Math.sin(ang) * (r0 + 10) * 0.6);
+              ctx.stroke();
+            }
+            if (!bossBattu()) {
+              // Deux yeux, tout au fond, qui s'allument par moments.
+              var lueur = reduit ? 0.5 : Math.max(0, Math.sin(t / 900)) * 0.9;
+              ctx.fillStyle = 'rgba(232,72,58,' + lueur.toFixed(2) + ')';
+              ctx.fillRect(Math.round(gx - 12), Math.round(gy - 6), 4, 3);
+              ctx.fillRect(Math.round(gx + 8), Math.round(gy - 6), 4, 3);
+            }
+          }
+        });
       }
 
       betes.forEach(function (b) {
-        var fb = V.feuille(b.v.id);
-        if (!fb) return;
-        var e = b.v.taille;
-        var bx = b.x - cam.x, by = b.y - cam.y;
-        if (bx < -60 || bx > 540 || by < -60 || by > 380) return;
-        ctx.save();
-        ctx.globalAlpha = 0.28;
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.ellipse(bx, by + 6, 12 * e, 4 * e, 0, 0, 6.3);
-        ctx.fill();
-        ctx.restore();
-        ctx.save();
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(fb.canvas,
-          Math.round(bx - fb.L * e / 2),
-          Math.round(by - fb.H * e + 6), fb.L * e, fb.H * e);
-        ctx.restore();
+        if (b.mort && t - b.mortT > 700) return;
+        out.push({
+          x: b.x, y: b.y,
+          dessin: function (ctx, sx, sy) {
+            var fb = V.feuille(b.v.id);
+            if (!fb) return;
+            var e = b.v.taille || 1;
+            ctx.save();
+            if (b.mort) ctx.globalAlpha = Math.max(0, 1 - (t - b.mortT) / 700);
+            ctx.globalAlpha *= 0.28;
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.ellipse(sx, sy + 6, 12 * e, 4 * e, 0, 0, 6.3); ctx.fill();
+            ctx.restore();
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            if (b.mort) {
+              ctx.globalAlpha = Math.max(0, 1 - (t - b.mortT) / 700);
+              ctx.translate(sx, sy);
+              ctx.rotate(Math.min(1, (t - b.mortT) / 400) * 1.57);
+              ctx.translate(-sx, -sy);
+            }
+            ctx.drawImage(fb.canvas, Math.round(sx - fb.L * e / 2), Math.round(sy - fb.H * e + 6),
+                          fb.L * e, fb.H * e);
+            ctx.restore();
+            // Le blanc de la touche.
+            if (!b.mort && t - b.touche < 120) {
+              ctx.save();
+              ctx.globalAlpha = 0.7;
+              ctx.globalCompositeOperation = 'lighter';
+              ctx.drawImage(fb.canvas, Math.round(sx - fb.L * e / 2), Math.round(sy - fb.H * e + 6),
+                            fb.L * e, fb.H * e);
+              ctx.restore();
+            }
+            // La jauge, des qu'elle est entamee.
+            if (!b.mort && b.pv < b.pvMax) {
+              var lj = 24 * e;
+              ctx.fillStyle = 'rgba(0,0,0,.6)';
+              ctx.fillRect(Math.round(sx - lj / 2), Math.round(sy - fb.H * e - 2), Math.round(lj), 3);
+              ctx.fillStyle = b.agressif ? '#e8483a' : '#7cf0c8';
+              ctx.fillRect(Math.round(sx - lj / 2), Math.round(sy - fb.H * e - 2),
+                           Math.round(lj * b.pv / b.pvMax), 3);
+            }
+            // Le signe des agressives quand elles chassent.
+            if (!b.mort && b.agressif && Math.hypot(b.x - balade.chef.x, b.y - balade.chef.y) < 135) {
+              ctx.fillStyle = '#ff5a4a';
+              ctx.fillRect(Math.round(sx - 1), Math.round(sy - fb.H * e - 10), 2, 5);
+              ctx.fillRect(Math.round(sx - 1), Math.round(sy - fb.H * e - 4), 2, 2);
+            }
+          }
+        });
       });
 
-      // Le faisceau du scanner.
+      return out;
+    }
+
+    // --- Par-dessus tout : les tirs, le scan, les chiffres, le monstre ---
+    function apres(ctx, cam, t) {
+      var i;
+      for (i = tirs.length - 1; i >= 0; i--) {
+        var r = tirs[i], ag = Math.max(0, (t - r.t0) / 180);
+        if (ag >= 1) { tirs.splice(i, 1); continue; }
+        ctx.strokeStyle = 'rgba(124,240,255,' + (1 - ag).toFixed(2) + ')';
+        ctx.lineWidth = 2.5 - ag * 1.5;
+        ctx.beginPath();
+        ctx.moveTo(balade.chef.x - cam.x, balade.chef.y - cam.y - 16);
+        ctx.lineTo(r.x - cam.x, r.y - cam.y);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,200,120,' + (1 - ag).toFixed(2) + ')';
+        ctx.beginPath();
+        ctx.arc(r.x - cam.x, r.y - cam.y, 3 + ag * 10, 0, 6.3);
+        ctx.stroke();
+      }
+
       if (scan) {
         var k = Math.min(1, (t - scan.t0) / 1500);
         var sx = scan.x - cam.x, sy = scan.y - cam.y;
         ctx.strokeStyle = 'rgba(124,240,200,.9)';
         ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(sx, sy, 10 + k * 26, -1.57, -1.57 + k * 6.283);
-        ctx.stroke();
+        ctx.beginPath(); ctx.arc(sx, sy, 10 + k * 26, -1.57, -1.57 + k * 6.283); ctx.stroke();
         ctx.strokeStyle = 'rgba(124,240,200,' + (0.5 * (1 - k)).toFixed(2) + ')';
         ctx.beginPath();
         ctx.moveTo(balade.chef.x - cam.x, balade.chef.y - cam.y - 16);
         ctx.lineTo(sx, sy);
         ctx.stroke();
-        for (var i = 0; i < 4; i++) {
-          var ph = (k * 2 + i / 4) % 1;
-          ctx.fillStyle = 'rgba(216,255,240,' + (0.9 * (1 - ph)).toFixed(2) + ')';
-          ctx.fillRect(Math.round(sx - 1), Math.round(sy + 18 - ph * 40), 2, 3);
+      }
+
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 11px "Courier New", monospace';
+      for (i = chiffres.length - 1; i >= 0; i--) {
+        var c = chiffres[i], ac = Math.max(0, (t - c.t0) / 900);
+        if (ac >= 1) { chiffres.splice(i, 1); continue; }
+        ctx.fillStyle = c.moi ? 'rgba(255,90,74,' + (1 - ac).toFixed(2) + ')'
+          : c.noyau ? 'rgba(255,209,102,' + (1 - ac).toFixed(2) + ')'
+          : 'rgba(255,236,200,' + (1 - ac).toFixed(2) + ')';
+        ctx.fillText(c.txt, c.x - cam.x, c.y - cam.y - ac * 18);
+      }
+      ctx.textAlign = 'left';
+
+      // Le monstre qui sort : la poussiere, puis la tete, gueule ouverte.
+      if (surgi) {
+        var ks = Math.min(1, (t - surgi.t0) / SURGIT_DUREE);
+        var gx = GROTTE.x * TS - cam.x, gy = (GROTTE.y + 0.6) * TS - cam.y;
+        for (i = 0; i < 16; i++) {
+          var ph = (ks * 1.6 + i / 16) % 1;
+          ctx.fillStyle = 'rgba(160,160,150,' + (0.5 * (1 - ph)).toFixed(2) + ')';
+          ctx.beginPath();
+          ctx.arc(gx + Math.cos(i * 2.4) * (20 + ph * 60), gy + 30 - ph * 20,
+                  4 + ph * 10, 0, 6.3);
+          ctx.fill();
+        }
+        var B = window.BOSS;
+        var fm = B && B.feuille(ks > 0.55);
+        if (fm) {
+          var montee = Math.min(1, ks * 1.35);
+          var e2 = 0.35 + montee * 0.55;
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          ctx.beginPath();
+          ctx.rect(gx - 200, -40, 400, gy + 84);
+          ctx.clip();
+          ctx.drawImage(fm.canvas, gx - fm.L * e2 / 2, gy + 40 - fm.H * e2 * montee,
+                        fm.L * e2, fm.H * e2);
+          ctx.restore();
+        }
+        if (ks > 0.8) {
+          ctx.fillStyle = 'rgba(20,4,4,' + ((ks - 0.8) / 0.2 * 0.9).toFixed(2) + ')';
+          ctx.fillRect(0, 0, 480, 316);
         }
       }
     }
@@ -1063,38 +1530,70 @@
       vitesse: 88,
       vivant: vivant,
       fige: function () { return etat !== 'libre'; },
-      apres: dessinerVies,
+      extras: extras,
+      apres: apres,
 
       chaqueImage: function (t) {
-        // Les betes derivent autour de leur point d'attache.
-        if (!reduit) {
-          betes.forEach(function (b, i) {
-            b.x = b.ax + Math.sin(t / (1400 + i * 90) + b.ph) * 26;
-            b.y = b.ay + Math.cos(t / (1700 + i * 70) + b.ph) * 18;
-          });
-        }
+        animer(t);
         if (reprise) {
           reprise.x = balade.chef.x;
           reprise.y = balade.chef.y;
           reprise.dir = balade.chef.dir;
         }
+        scene.dataset.etat = etat;
+        if (etat === 'ko' || etat === 'boss') { majBoutons(); return; }
+
+        // La grotte : on n'en approche pas impunement.
+        if (lune && etat === 'libre' && !bossBattu()) {
+          var dgx = balade.chef.x - DEVANT_GROTTE.x * TS;
+          var dgy = balade.chef.y - DEVANT_GROTTE.y * TS;
+          if (Math.hypot(dgx, dgy) < 60) return reveillerMonstre();
+        }
+
+        cibleTir = chercherCibleTir();
+        if (etat === 'libre') cible = chercherCible();
+        majBoutons();
         if (etat !== 'libre') return;
-        cible = chercherCible();
-        majAction();
-        dire(cible
-          ? (DP.aScanne(cible.sujet.id) ? cible.sujet.nom + ' — déjà au carnet.'
-                                        : 'Quelque chose à portée de scanner.')
+
+        var menace = betes.some(function (b) {
+          return !b.mort && b.agressif && distance(b) < 135;
+        });
+        dire(menace ? (DP.aLArme() ? 'Une créature attaque — TIRER !'
+                                   : 'Une créature attaque. Sans arme, mieux vaut fuir.')
+          : cible ? (DP.aScanne(cible.sujet.id) ? cible.sujet.nom + ' — déjà au carnet.'
+                                                : 'Quelque chose à portée de scanner.')
+          : (lune && !bossBattu() && balade.chef.y < 13 * TS)
+            ? 'La grotte respire. Quelque chose dort là-dedans.'
           : a.sous);
       }
     });
+
+    majJauge();
 
     var veille = setInterval(function () {
       if (vivant()) return;
       clearInterval(veille);
       window.removeEventListener('keydown', auClavier);
       minuteurs.forEach(clearTimeout);
+      if (duel) duel.arreter();
       balade.arreter();
     }, 400);
+
+    // Pour les essais : l'etat interne, sans passer par l'ecran.
+    scene._ody = {
+      betes: betes, choses: choses, g: g,
+      pv: function () { return pv; }, etat: function () { return etat; },
+      reveiller: reveillerMonstre, tirer: tirer,
+      viser: function (b) { cibleTir = b; }
+    };
+  }
+
+  // Ce que dit la fiche du genre d'une entree.
+  function genre(s) {
+    if (s.boss) return 'Gardien';
+    if (s.objet) return 'Objet';
+    if (s.forme) return 'Curiosité';
+    return 'Forme de vie';
   }
 
   // ==========================================================
@@ -1140,13 +1639,14 @@
           im.alt = '';
           c.appendChild(im);
           c.appendChild(el('span', 'ody-case-nom', s.nom));
-          c.appendChild(el('span', 'ody-case-det',
-            s.forme ? 'Curiosité' : 'Forme de vie'));
-          if (e.n > 1) c.appendChild(el('span', 'ody-case-n', '×' + e.n));
+          c.appendChild(el('span', 'ody-case-det', genre(s)));
+          var ab = DP.abattus()[s.id];
+          c.appendChild(el('span', 'ody-case-n',
+            (e.n > 1 ? '×' + e.n : '') + (ab ? (e.n > 1 ? '  ·  ' : '') + ab + ' abattu' + (ab > 1 ? 's' : '') : '')));
           c.title = s.texte;
         } else {
-          c.appendChild(el('span', 'ody-case-vide', '?'));
-          c.appendChild(el('span', 'ody-case-nom', '???'));
+          c.appendChild(el('span', 'ody-case-vide', s.boss ? '!' : '?'));
+          c.appendChild(el('span', 'ody-case-nom', s.boss ? 'Gardien de la grotte' : '???'));
           c.appendChild(el('span', 'ody-case-det',
             vu ? 'jamais scanné' : 'monde inconnu'));
         }
@@ -1160,6 +1660,11 @@
     var tp = el('a', 'ody-btn', 'Téléportail');
     tp.href = '#teleportail';
     pied.appendChild(tp);
+    if (DP.aLArme()) {
+      var arm2 = el('a', 'ody-btn ody-btn--plat', 'Armurerie');
+      arm2.href = '#armurerie/odyssee';
+      pied.appendChild(arm2);
+    }
     var items = el('a', 'ody-btn ody-btn--plat', 'Items');
     items.href = '#items';
     pied.appendChild(items);
@@ -1204,7 +1709,8 @@
   window.ODYSSEE = {
     visuel: visuel, compteAstres: compteAstres,
     construireCarte: construireCarte, placeCuriosite: placeCuriosite,
-    accessibles: accessibles,
+    accessibles: accessibles, construireLune: construireLune,
+    BASE: BASE, GROTTE: GROTTE, DEVANT_GROTTE: DEVANT_GROTTE, PV_MAX: PV_MAX,
     MW: MW, MH: MH, DEPART: DEPART, TEMPS: TEMPS,
     reprise: function () { return reprise; },
     poserReprise: function (r) { reprise = r; }

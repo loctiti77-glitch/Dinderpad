@@ -64,7 +64,9 @@
     { id: 'prisme', nom: 'Prisme Doré', c: ['#a8842a', '#ffe9a8', '#fff6cf'],
       gagne: 'Premier requin brillant abattu.' },
     { id: 'irradie', nom: 'Irradié', c: ['#4a6b16', '#a8d81e', '#e8ff6a'],
-      gagne: 'Premier requin irradié abattu.' }
+      gagne: 'Premier requin irradié abattu.' },
+    { id: 'selenite', nom: 'Sélénite', c: ['#cfc7b4', '#efe8d6', '#e8483a'],
+      gagne: 'Le Sélénophage abattu, sur la Lune.' }
   ];
 
   function revetement(id) {
@@ -186,16 +188,32 @@
     return n >= MAX ? null : NIVEAUX[n];
   }
 
-  function peutMonter() {
+  // Deux monnaies pour le meme pistolet : les Noyaux Lumithiques qu'on
+  // arrache aux requins, et les Roches Solaires que laissent les
+  // creatures de l'Odyssee. Le tarif est le meme ; seule la caisse change
+  // selon l'armurerie ou l'on se trouve.
+  var MONNAIES = {
+    noyaux: { nom: 'Noyaux Lumithiques', court: 'noyaux', signe: '◈',
+              solde: function () { return DP.noyaux(); },
+              depenser: function (n) { return DP.depenserNoyaux(n); } },
+    roches: { nom: 'Roches Solaires', court: 'roches', signe: '☀',
+              solde: function () { return DP.roches(); },
+              depenser: function (n) { return DP.depenserRoches(n); } }
+  };
+
+  function monnaie(cle) { return MONNAIES[cle] || MONNAIES.noyaux; }
+
+  function peutMonter(cle) {
     var p = prochain();
-    return !!p && DP.noyaux() >= p.cout;
+    return !!p && monnaie(cle).solde() >= p.cout;
   }
 
-  function monter() {
+  function monter(cle) {
+    var m = monnaie(cle);
     var p = prochain();
     if (!p) return { ok: false, raison: 'déjà au maximum' };
-    if (DP.noyaux() < p.cout) return { ok: false, raison: 'pas assez de noyaux' };
-    DP.depenserNoyaux(p.cout);
+    if (m.solde() < p.cout) return { ok: false, raison: 'pas assez de ' + m.court };
+    m.depenser(p.cout);
     DP.monterArme();
     cache = {};
     return { ok: true, niveau: p };
@@ -213,10 +231,17 @@
   //  La salle des trophees
   // ==========================================================
 
-  function viewArmurerie(view) {
+  // "#armurerie" est celle de la peche ; "#armurerie/odyssee" celle de
+  // l'Odyssee. Meme arme, memes revetements — mais on y paie en Roches
+  // Solaires, et le tableau de chasse compte les creatures au lieu des
+  // requins.
+  function viewArmurerie(view, arg) {
     if (!DP.aLArme()) { location.hash = '#items'; return; }
 
-    var box = el('div', 'ar');
+    var odyssee = arg === 'odyssee';
+    var caisse = monnaie(odyssee ? 'roches' : 'noyaux');
+    var box = el('div', 'ar' + (odyssee ? ' ar--odyssee' : ''));
+    box.dataset.jeu = odyssee ? 'odyssee' : 'peche';
     var R = window.REQUIN;
 
     // ---------- La colonne de gauche : l'arme ----------
@@ -252,15 +277,15 @@
       var c = el('span', 'ar-cran' + (x.n <= DP.armeNiveau() ? ' is-atteint' : ''),
                  'Mk ' + ROMAIN[x.n - 1]);
       c.title = x.nom + '  ·  ' + x.degats + ' dégâts' +
-                (x.cout ? '  ·  ' + x.cout + ' noyaux' : '');
+                (x.cout ? '  ·  ' + x.cout + ' ' + caisse.court : '');
       echelle.appendChild(c);
     });
     gauche.appendChild(echelle);
 
     var noyaux = el('p', 'ar-noyaux');
-    noyaux.appendChild(el('span', 'ar-noyau-pastille', '◈'));
-    noyaux.appendChild(el('strong', null, String(DP.noyaux())));
-    noyaux.appendChild(el('span', null, ' Noyaux Lumithiques'));
+    noyaux.appendChild(el('span', 'ar-noyau-pastille', caisse.signe));
+    noyaux.appendChild(el('strong', null, String(caisse.solde())));
+    noyaux.appendChild(el('span', null, ' ' + caisse.nom));
     gauche.appendChild(noyaux);
 
     var suite = prochain();
@@ -271,13 +296,13 @@
       monte.disabled = true;
     } else {
       monte.textContent = 'Monter en ' + suite.nom.split(' — ')[0] +
-                          '  ·  ' + suite.cout + ' ◈';
-      monte.disabled = !peutMonter();
+                          '  ·  ' + suite.cout + ' ' + caisse.signe;
+      monte.disabled = !peutMonter(caisse.court);
       monte.addEventListener('click', function () {
-        var r = monter();
+        var r = monter(caisse.court);
         if (!r.ok) return;
         view.textContent = '';
-        viewArmurerie(view);
+        viewArmurerie(view, arg);
       });
     }
     gauche.appendChild(monte);
@@ -285,8 +310,20 @@
     // Si une partie de peche est en cours, on y retourne plutot que de
     // repasser par l'accueil : l'armurerie est alors une annexe du jeu.
     var partie = window.PECHE && window.PECHE.reprise();
+    var voyage = window.ODYSSEE && window.ODYSSEE.reprise();
     var retours = el('div', 'ar-retours');
-    if (partie) {
+    if (odyssee) {
+      // Depuis l'Odyssee : on retourne ou l'on etait, sinon au Teleportail.
+      var V = window.ODYVIE;
+      var ici = voyage && V ? V.astre(voyage.astre) : null;
+      var aller = el('a', 'ar-retour ar-retour--jeu',
+                     ici ? 'Retour sur ' + ici.nom : 'Retour au Téléportail');
+      aller.href = ici ? '#odyssee' : '#teleportail';
+      retours.appendChild(aller);
+      var carnetO = el('a', 'ar-retour', 'Carnet');
+      carnetO.href = '#odyssee-carnet';
+      retours.appendChild(carnetO);
+    } else if (partie) {
       var aLaPeche = el('a', 'ar-retour ar-retour--jeu', 'Retour à la pêche');
       aLaPeche.href = '#peche';
       retours.appendChild(aLaPeche);
@@ -304,6 +341,112 @@
     // ---------- La colonne de droite : trophees et revetements ----------
     var droite = el('div', 'ar-droite');
 
+    if (odyssee) {
+      droite.appendChild(tableauCreatures());
+    } else {
+      droite.appendChild(tableauRequins());
+    }
+
+    droite.appendChild(el('p', 'ar-sous-titre', 'Revêtements'));
+    var peaux = el('div', 'ar-peaux');
+    REVETEMENTS.forEach(function (r) {
+      var a = DP.aRevetement(r.id);
+      var n = el('button', 'ar-peau');
+      n.type = 'button';
+      n.dataset.peau = r.id;
+      n.classList.toggle('is-vide', !a);
+      n.classList.toggle('is-monte', a && DP.revetement() === r.id);
+      n.style.setProperty('--r', r.c[2]);
+      n.title = a ? r.nom : r.gagne;
+
+      var im = el('img', 'ar-peau-img');
+      im.src = url(r.id);
+      im.alt = '';
+      n.appendChild(im);
+      n.appendChild(el('span', 'ar-peau-nom', a ? r.nom : '???'));
+      if (!a) n.appendChild(el('span', 'ar-peau-cond', r.gagne));
+
+      n.addEventListener('click', function () {
+        if (!a) return;
+        DP.equiperRevetement(r.id);
+        view.textContent = '';
+        viewArmurerie(view, arg);
+      });
+      peaux.appendChild(n);
+    });
+    droite.appendChild(peaux);
+    box.appendChild(droite);
+
+    view.appendChild(box);
+  }
+
+  // Les creatures abattues dans l'Odyssee, les plus redoutables d'abord.
+  // Il y en a cent quatre-vingts : on ne montre que celles qu'on a deja
+  // eues au bout du canon, et le gardien de la grotte en tete.
+  function tableauCreatures() {
+    var V = window.ODYVIE;
+    var bloc = el('div', 'ar-chasse');
+    var abattus = DP.abattus();
+    var lignes = V ? Object.keys(abattus).map(function (id) {
+      return { v: V.parId(id), n: abattus[id] };
+    }).filter(function (x) { return x.v && !x.v.forme; }) : [];
+    var gardien = V && DP.exploit('selenophage') > 0;
+
+    lignes.sort(function (a, b) {
+      return (b.v.palier - a.v.palier) || (b.n - a.n);
+    });
+    var total = lignes.reduce(function (t, x) { return t + x.n; }, 0);
+    var especes = V ? V.VIES.length : 0;
+
+    var tete = el('div', 'ar-banniere');
+    tete.appendChild(el('span', 'ar-enseigne', 'Tableau de chasse'));
+    tete.appendChild(el('span', 'ar-total',
+      total + (total > 1 ? ' créatures abattues' : ' créature abattue') +
+      '  ·  ' + lignes.length + ' / ' + especes + ' espèces'));
+    bloc.appendChild(tete);
+
+    var grille = el('div', 'ar-trophees ar-trophees--creatures');
+    if (gardien) {
+      var m = V.MONSTRE;
+      var g = el('div', 'ar-trophee ar-trophee--gardien');
+      g.dataset.creature = m.id;
+      var gi = el('img', 'ar-trophee-img');
+      gi.src = V.url(m.id);
+      gi.alt = '';
+      g.appendChild(gi);
+      g.appendChild(el('span', 'ar-trophee-nom', m.nom));
+      g.appendChild(el('span', 'ar-trophee-det', 'Lune  ·  gardien'));
+      g.appendChild(el('span', 'ar-trophee-n', '×' + DP.exploit('selenophage')));
+      grille.appendChild(g);
+    }
+    lignes.forEach(function (x) {
+      var a = V.astre(x.v.astre);
+      var n = el('div', 'ar-trophee');
+      n.dataset.creature = x.v.id;
+      n.style.setProperty('--r', a ? a.ciel[1] : '#7cf0c8');
+      var im = el('img', 'ar-trophee-img');
+      im.src = V.url(x.v.id);
+      im.alt = '';
+      n.appendChild(im);
+      n.appendChild(el('span', 'ar-trophee-nom', x.v.nom));
+      n.appendChild(el('span', 'ar-trophee-det',
+        (a ? a.nom : '') + '  ·  palier ' + x.v.palier));
+      n.appendChild(el('span', 'ar-trophee-n', '×' + x.n));
+      grille.appendChild(n);
+    });
+    if (!lignes.length && !gardien) {
+      grille.appendChild(el('p', 'ar-vide',
+        'Aucune créature abattue pour l’instant. Celles qui attaquent se ' +
+        'reconnaissent au point rouge au-dessus de leur tête.'));
+    }
+    bloc.appendChild(grille);
+    return bloc;
+  }
+
+  // Les requins de la peche : cinq formes, abattues ou non.
+  function tableauRequins() {
+    var R = window.REQUIN;
+    var bloc = el('div', 'ar-chasse');
     var tro = R ? R.LISTE : [];
     var abattus = DP.requins();
     var total = 0;
@@ -313,7 +456,7 @@
     tete.appendChild(el('span', 'ar-enseigne', 'Tableau de chasse'));
     tete.appendChild(el('span', 'ar-total',
       total + (total > 1 ? ' requins abattus' : ' requin abattu')));
-    droite.appendChild(tete);
+    bloc.appendChild(tete);
 
     var grille = el('div', 'ar-trophees');
     tro.forEach(function (q) {
@@ -344,39 +487,8 @@
       }
       grille.appendChild(n);
     });
-    droite.appendChild(grille);
-
-    droite.appendChild(el('p', 'ar-sous-titre', 'Revêtements'));
-    var peaux = el('div', 'ar-peaux');
-    REVETEMENTS.forEach(function (r) {
-      var a = DP.aRevetement(r.id);
-      var n = el('button', 'ar-peau');
-      n.type = 'button';
-      n.dataset.peau = r.id;
-      n.classList.toggle('is-vide', !a);
-      n.classList.toggle('is-monte', a && DP.revetement() === r.id);
-      n.style.setProperty('--r', r.c[2]);
-      n.title = a ? r.nom : r.gagne;
-
-      var im = el('img', 'ar-peau-img');
-      im.src = url(r.id);
-      im.alt = '';
-      n.appendChild(im);
-      n.appendChild(el('span', 'ar-peau-nom', a ? r.nom : '???'));
-      if (!a) n.appendChild(el('span', 'ar-peau-cond', r.gagne));
-
-      n.addEventListener('click', function () {
-        if (!a) return;
-        DP.equiperRevetement(r.id);
-        view.textContent = '';
-        viewArmurerie(view);
-      });
-      peaux.appendChild(n);
-    });
-    droite.appendChild(peaux);
-    box.appendChild(droite);
-
-    view.appendChild(box);
+    bloc.appendChild(grille);
+    return bloc;
   }
 
   if (window.VIEWS) {
@@ -389,6 +501,7 @@
     niveau: niveau, revetement: revetement,
     feuille: feuille, url: url, L: L, H: H,
     prochain: prochain, peutMonter: peutMonter, monter: monter,
+    MONNAIES: MONNAIES, monnaie: monnaie,
     revetementPour: revetementPour,
     vider: function () { cache = {}; }
   };

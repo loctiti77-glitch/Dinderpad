@@ -340,7 +340,12 @@
       telecommande: false,
       chapitre: 0,
       astres: [],
-      scans: {}
+      scans: {},
+      abattus: {},
+      // La monnaie de l'Odyssee : ce que laissent les creatures qu'on
+      // abat. Elle fait monter le meme pistolet que les Noyaux de la
+      // peche, mais on ne l'echange pas contre eux.
+      roches: 0
     };
   }
 
@@ -390,6 +395,8 @@
     if (typeof p.chapitre !== 'number') p.chapitre = 0;
     if (!Array.isArray(p.astres)) p.astres = [];
     if (!p.scans || typeof p.scans !== 'object') p.scans = {};
+    if (!p.abattus || typeof p.abattus !== 'object') p.abattus = {};
+    if (typeof p.roches !== 'number') p.roches = 0;
     if (!p.credits) p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
     if (!Array.isArray(p.owned)) p.owned = [];
     return p;
@@ -856,6 +863,34 @@
     return { entree: e, neuf: neuf };
   }
 
+  // Les Roches Solaires.
+  function roches() { return me().roches || 0; }
+
+  function gagnerRoches(n) {
+    var p = me();
+    p.roches = (p.roches || 0) + n;
+    save();
+    return p.roches;
+  }
+
+  function depenserRoches(n) {
+    var p = me();
+    if ((p.roches || 0) < n) return false;
+    p.roches -= n;
+    save();
+    return true;
+  }
+
+  // Les creatures abattues au Pistolet Lumithique, espece par espece.
+  function abattus() { return me().abattus; }
+
+  function noterAbattu(id) {
+    var p = me();
+    p.abattus[id] = (p.abattus[id] || 0) + 1;
+    save();
+    return p.abattus[id];
+  }
+
   // ---------- Les exploits ----------
   // Ce que la seule collection ne dit pas : une victoire, un chrono. Les
   // badges s'en servent pour savoir ce qui est acquis.
@@ -921,6 +956,8 @@
     p.chapitre = 0;
     p.astres = [];
     p.scans = {};
+    p.abattus = {};
+    p.roches = 0;
     save();
   }
 
@@ -974,6 +1011,8 @@
     chapitre: chapitre, ouvrirChapitre: ouvrirChapitre,
     astresVus: astresVus, aVuAstre: aVuAstre, noterAstre: noterAstre,
     scans: scans, aScanne: aScanne, noterScan: noterScan,
+    abattus: abattus, noterAbattu: noterAbattu,
+    roches: roches, gagnerRoches: gagnerRoches, depenserRoches: depenserRoches,
     materiel: materiel, possede: possede, acquerir: acquerir,
     equipe: equipe, equiper: equiper, retirerPrise: retirerPrise,
     leurres: leurres, leurre: leurre, ajouterLeurre: ajouterLeurre,
