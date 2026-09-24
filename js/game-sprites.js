@@ -113,6 +113,42 @@
       torse: '#5e1418', accent: '#c9a227', bas: '#3a0f12', chaussures: '#1d0a0c',
       couronne: '#f5c93a', couronneGemme: '#e0453a', cape: '#8e1f28'
     },
+    // Les cinq derniers arrives.
+    'harry-hargrove': {
+      piques: 'court', cheveux: '#141318', cheveuxClair: '#34323a',
+      peau: '#e8dcc6', visiere: '#1b1a20', demi: false, oeil: null,
+      beret: '#23222c',
+      torse: '#1d1b22', accent: '#3a3742', bas: '#16151b', chaussures: '#0e0d12',
+      cape: '#16151c', gemme: '#e8c65a'
+    },
+    'marlon-coach': {
+      piques: 'court', cheveux: '#141318', cheveuxClair: '#34323a',
+      peau: '#1a1920', visiere: '#141319', demi: true, oeil: '#ece7dd',
+      beret: '#22212b',
+      torse: '#1a191f', accent: '#d8d4cc', bas: '#151419', chaussures: '#0d0c11',
+      medaillon: 'M', medaillonFond: '#26252f'
+    },
+    'baron-zofiax': {
+      piques: 'herisse', cheveux: '#17151c', cheveuxClair: '#3b3844',
+      peau: '#f7cd93', visiere: '#e3b93a', demi: true, oeil: '#f2e2b0',
+      visiereLueur: true,
+      torse: '#1e1c22', accent: '#cbbfa6', bas: '#191720', chaussures: '#101017',
+      cravate: '#cbbfa6'
+    },
+    'timeo-traveler': {
+      piques: 'dresse', cheveux: '#17141c', cheveux2: '#3aa8e8',
+      cheveuxClair: '#8fd6ff', peau: '#f8d0a0',
+      visiere: '#e8c24a', demi: true, oeil: '#3ad6f0', visiereLueur: true,
+      torse: '#b4712f', accent: '#3aa8e8', bas: '#6d4a24', chaussures: '#2d1c15',
+      ceinture: true, gemme: '#3ad6f0'
+    },
+    'william-batant': {
+      piques: 'sauvage', cheveux: '#5a4f45', cheveuxClair: '#8e8176',
+      peau: '#8b7a6c', visiere: null,
+      oreilles: '#6b5e52',
+      torse: '#1f1c1e', accent: '#e6e2dc', bas: '#191618', chaussures: '#0f0d0f',
+      cravate: '#131113'
+    },
     'lefondateur': {
       piques: 'dresse', cheveux: '#101018', cheveuxClair: '#32323f',
       peau: '#f0b978', visiere: '#c41e12', demi: true, oeil: '#f2a93a',
@@ -315,8 +351,34 @@
     p(17, bd + 5, 3, 2, c.peau);
   }
 
+  // De grandes oreilles, de part et d'autre du crane. Elles se posent
+  // avant la chevelure : la masse de cheveux vient ensuite les recouvrir
+  // a leur base, et l'oreille parait bien attachee a la tete.
+  function oreilles(p, c) {
+    var o = c.oreilles;
+    p(1, 5, 4, 8, o);
+    p(19, 5, 4, 8, o);
+    p(1, 5, 4, 1, ombre(o, 1.35));
+    p(19, 5, 4, 1, ombre(o, 1.35));
+    p(2, 7, 2, 5, ombre(o, 0.62));                // le creux de l'oreille
+    p(20, 7, 2, 5, ombre(o, 0.62));
+    p(1, 13, 4, 1, ombre(o, 0.5));
+    p(19, 13, 4, 1, ombre(o, 0.5));
+  }
+
+  // Un beret, pose de biais sur le crane.
+  function beret(p, c, dos) {
+    var b = c.beret;
+    p(6, 5, 12, 3, b);                            // la calotte, bombee
+    p(6, 5, 12, 1, ombre(b, 1.45));
+    p(4, 7, 16, 2, b);                            // le bord, qui deborde
+    p(4, 8, 16, 1, ombre(b, 0.55));
+    if (!dos) p(17, 4, 2, 1, ombre(b, 1.5));      // la petite queue
+  }
+
   function tete(p, c, dos, profil) {
     p(11, 18, 3, 2, ombre(c.peau, 0.78));         // le cou
+    if (c.oreilles) oreilles(p, c);
 
     if (c.capuche) {
       // La capuche remplace la chevelure et encadre un visage d'ombre.
@@ -336,10 +398,12 @@
           p(12, 16, 1, 1, '#e0d0ff');
         }
       }
+      if (c.beret) beret(p, c, dos);
       return;
     }
 
     chevelure(p, c, dos);
+    if (c.beret) beret(p, c, dos);
     if (dos) return;
 
     if (profil) {

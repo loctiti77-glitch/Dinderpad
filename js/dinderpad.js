@@ -79,6 +79,13 @@
     { id: 'h',                                 name: 'H',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: 'Protecteur d’orbe.' },
     { id: 'multinder',                         name: 'Multinder',     form: '',                 rarity: 'Universel',    universe: 'SS-03',  desc: 'Multinder est le gardien des 5 éléments fondamentaux de la planète Terre.' },
     { id: 'gart-kervelor-king-of-karsovia',    name: 'Gart Kervelor', form: 'King of Karsovia', rarity: 'Multiversel',  universe: 'SSt-03', desc: 'Gart Kervelor est le monarque du royaume de Karsovie.' },
+    // Les cinq derniers arrives. Leur description reste a ecrire : elle
+    // est de l'auteur, on ne la remplit pas a sa place.
+    { id: 'harry-hargrove',                    name: 'Harry Hargrove', form: '',                rarity: 'Universel',    universe: '???',    desc: '' },
+    { id: 'marlon-coach',                      name: 'Marlon Coach',  form: '',                 rarity: 'Universel',    universe: '???',    desc: '' },
+    { id: 'baron-zofiax',                      name: 'Baron Zofiax',  form: '',                 rarity: 'Multiversel',  universe: '???',    desc: '' },
+    { id: 'timeo-traveler',                    name: 'Timeo Traveler', form: '',                rarity: 'Omniversel',   universe: '???',    desc: '' },
+    { id: 'william-batant',                    name: 'William Batant', form: '',                rarity: 'Omniversel',   universe: '???',    desc: '' },
     // Il ne s'obtient pas dans une Dindise : il faut le battre au bout de
     // The Founder War, a l'Effondrement Terminal.
     { id: 'lefondateur',                       name: 'Le Fondateur',  form: '',                   rarity: 'Temporel',     universe: '???',    horsTirage: true, desc: 'Celui qui voulait remettre de l’ordre dans l’omnivers : un seul monde de chaque, à sa place, pour toujours. Vaincu, il suit désormais celui qui l’a battu.' }

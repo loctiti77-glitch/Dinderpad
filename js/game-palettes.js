@@ -146,6 +146,66 @@ window.FW_PALETTES = {
     "basOmbre": "#241416",
     "chaussures": "#15161b"
   },
+  "harry-hargrove": {
+    "peau": "#eadcc5",
+    "peauOmbre": "#b6ac9a",
+    "cheveux": "#2e2829",
+    "cheveuxClair": "#716d6e",
+    "vetement": "#3e2b19",
+    "vetementOmbre": "#2b1e12",
+    "accent": "#504445",
+    "bas": "#261a10",
+    "basOmbre": "#1b120b",
+    "chaussures": "#15161b"
+  },
+  "marlon-coach": {
+    "peau": "#eaa775",
+    "peauOmbre": "#b7835b",
+    "cheveux": "#2e2a29",
+    "cheveuxClair": "#716e6e",
+    "vetement": "#583624",
+    "vetementOmbre": "#3d261a",
+    "accent": "#4c4c50",
+    "bas": "#362117",
+    "basOmbre": "#261710",
+    "chaussures": "#15161b"
+  },
+  "baron-zofiax": {
+    "peau": "#fbd498",
+    "peauOmbre": "#c4a576",
+    "cheveux": "#23202e",
+    "cheveuxClair": "#696871",
+    "vetement": "#78583d",
+    "vetementOmbre": "#543d2b",
+    "accent": "#32333e",
+    "bas": "#2e2f34",
+    "basOmbre": "#202124",
+    "chaussures": "#15161b"
+  },
+  "timeo-traveler": {
+    "peau": "#fbd7a8",
+    "peauOmbre": "#c4a883",
+    "cheveux": "#2e2e2a",
+    "cheveuxClair": "#71716e",
+    "vetement": "#e8fdfe",
+    "vetementOmbre": "#a2b1b2",
+    "accent": "#50362b",
+    "bas": "#3969a6",
+    "basOmbre": "#284974",
+    "chaussures": "#2d1c15"
+  },
+  "william-batant": {
+    "peau": "#76665a",
+    "peauOmbre": "#5c5046",
+    "cheveux": "#2e211d",
+    "cheveuxClair": "#716866",
+    "vetement": "#3e1e1c",
+    "vetementOmbre": "#2b1514",
+    "accent": "#32333e",
+    "bas": "#261311",
+    "basOmbre": "#1b0d0c",
+    "chaussures": "#15161b"
+  },
   "lefondateur": {
     "peau": "#f7c577",
     "peauOmbre": "#c1995d",

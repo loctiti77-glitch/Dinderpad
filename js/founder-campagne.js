@@ -89,6 +89,16 @@
       { nom: 'Horizon Partagé', degats: [150, 195], ultime: true, soinTous: 45 },
     'multinder':
       { nom: 'Les Cinq Éléments', degats: [40, 56], coups: 5, ultime: true },
+    'harry-hargrove':
+      { nom: 'Arrêt sur Image', degats: [112, 146], ultime: true, etourdit: 0.75 },
+    'marlon-coach':
+      { nom: 'Dernier Round', degats: [120, 155], ultime: true, boost: 0.5 },
+    'baron-zofiax':
+      { nom: 'Offre Publique', degats: [30, 44], coups: 5, ultime: true, drain: true },
+    'timeo-traveler':
+      { nom: 'Boucle Fermée', degats: [168, 214], ultime: true, soinTous: 40 },
+    'william-batant':
+      { nom: 'Nuit Sans Lune', degats: [175, 222], ultime: true, faiblesse: 0.55 },
     'gart-kervelor-king-of-karsovia':
       { nom: 'Couronnement', degats: [165, 210], ultime: true, bouclier: 55 },
     'lefondateur':

@@ -12,7 +12,9 @@ const ROOT = 'C:/Users/Portable8/dinderpad-site';
 const IDS = [
   'dr-islas-human-form', 'dr-islas-demicos-form', 'dr-islas-final-form',
   'calder-veyne-veinburner', 'carl-sinars-cardinal-sin', 'edgar-marks-grincrusher',
-  'he-melt', 'v', 'a', 'h', 'multinder', 'gart-kervelor-king-of-karsovia'
+  'he-melt', 'v', 'a', 'h', 'multinder', 'gart-kervelor-king-of-karsovia',
+  'harry-hargrove', 'marlon-coach', 'baron-zofiax', 'timeo-traveler',
+  'william-batant'
 ];
 
 function versHsv(r, g, b) {
@@ -142,6 +144,8 @@ async function palette(src) {
     out[id] = await palette(ROOT + '/assets/dinders/full/' + id + '.webp');
     console.log(id.padEnd(32) + JSON.stringify(out[id]));
   }
+  // Le Fondateur garde la palette relevee sur son illustration d'origine :
+  // son armure noire trompe le releve par bandes sur la nouvelle planche.
   out['lefondateur'] = await palette(ROOT + '/assets/_source/LeFondateur.PNG');
   console.log('lefondateur'.padEnd(32) + JSON.stringify(out['lefondateur']));
 

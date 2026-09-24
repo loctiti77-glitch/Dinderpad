@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Essai : tout débloqué</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center;
+         justify-content: center; background: #05080e; color: #7cf0c8;
+         font-family: "Courier New", Courier, monospace; font-size: 17px;
+         line-height: 1.6; text-align: center; }
+  ul { list-style: none; padding: 0; margin: 14px 0 0; color: #9fb4c4; font-size: 14px; }
+</style>
+</head>
+<body>
+<div>
+  <p id="etat">Préparation du profil…</p>
+  <ul id="detail"></ul>
+</div>
+<script src="js/dinderpad.js"></script>
+<script src="js/pad.js"></script>
+<script src="js/views.js"></script>
+<script src="js/game-palettes.js"></script>
+<script src="js/game-sprites.js"></script>
+<script src="js/game-monde.js"></script>
+<script src="js/game-intro.js"></script>
+<script src="js/game-poissons.js"></script>
+<script src="js/arme.js"></script>
+<script src="js/requin.js"></script>
+<script src="js/odyssey-vie.js"></script>
+<script src="js/odyssey-faune.js"></script>
+<script src="js/odyssey-boss.js"></script>
+<script src="js/odyssey-gardiens.js"></script>
+<script src="js/founder-campagne.js"></script>
+<script src="js/founder-war.js"></script>
+<script src="js/peche-materiel.js"></script>
+<script src="js/fishing.js"></script>
+<script src="js/peche-boutique.js"></script>
+<script src="js/odyssey.js"></script>
+<script src="js/badges.js"></script>
+<script src="js/artefacts.js"></script>
+<script src="js/niveaux.js"></script>
+<script>
+// Page d'essai : elle ouvre tout — la collection, les artefacts, le
+// materiel, les armes, la campagne — puis renvoie sur le DinderPad.
+// Elle ne sert qu'a regarder ce que donne un profil complet.
+(function () {
+  var lignes = [];
+  function note(t) { lignes.push(t); }
+
+  // La collection entiere, Le Fondateur compris.
+  DP.DINDERS.forEach(function (d) { DP.collect(d.id); });
+  note(DP.owned().length + ' Dinders');
+
+  // La campagne bouclee, et de l'experience pour que les niveaux se voient.
+  DP.noterFwNiveau(11);
+  DP.DINDERS.forEach(function (d, i) { DP.gagnerDinderXP(d.id, 400 + i * 300); });
+  note('The Founder War : campagne bouclée');
+
+  // Les cinquante artefacts.
+  if (window.ARTEFACTS) {
+    window.ARTEFACTS.LISTE.forEach(function (a) { DP.noterArtefact(a.id); });
+    note(DP.artefacts().length + ' artefacts');
+  }
+
+  // Le materiel : la canne, l'arme, la telecommande.
+  DP.prendreCanne();
+  DP.prendreArme();
+  if (DP.prendreTelecommande) DP.prendreTelecommande();
+
+  // Les deux pistolets au maximum, avec tous leurs revetements.
+  ['peche', 'odyssee'].forEach(function (jeu) {
+    for (var i = 0; i < 12; i++) DP.monterArme(jeu);
+  });
+  if (window.ARME && window.ARME.REVETEMENTS) {
+    window.ARME.REVETEMENTS.forEach(function (r) { DP.acquerirRevetement(r.id); });
+    note('pistolet Mk X, ' + DP.revetements().length + ' revêtements');
+  }
+
+  // Tout le materiel de peche de la boutique.
+  if (window.MATERIEL) {
+    [['canne', 'CANNES'], ['flotteur', 'FLOTTEURS'], ['hamecon', 'HAMECONS']]
+      .forEach(function (fam) {
+        (window.MATERIEL[fam[1]] || []).forEach(function (o) { DP.acquerir(fam[0], o.id); });
+      });
+    note('matériel de pêche au complet');
+  }
+
+  // L'Odyssee entiere : les neuf gardiens tombes, donc les neuf mondes
+  // ouverts, et leurs hologrammes disponibles.
+  if (window.BOSS && window.ODYVIE) {
+    window.BOSS.ORDRE.forEach(function (id) {
+      DP.compterExploit(window.BOSS.exploitDe(window.BOSS.GARDIENS[id]));
+      DP.noterScan(id, window.BOSS.GARDIENS[id].astre);
+    });
+    window.ODYVIE.ASTRES.forEach(function (x) { DP.noterAstre(x.id); });
+    note(window.ODYVIE.ASTRES.length + ' mondes ouverts, gardiens vaincus');
+  }
+
+  // De quoi acheter : les credits infinis sont deja le reglage par defaut.
+  DP.gagnerNoyaux(9999);
+  DP.gagnerRoches(9999);
+
+  try { sessionStorage.setItem('dinderpad.unlocked', '1'); } catch (e) {}
+
+  document.getElementById('etat').textContent = 'Profil complet — ouverture du DinderPad…';
+  var ul = document.getElementById('detail');
+  lignes.forEach(function (t) {
+    var li = document.createElement('li');
+    li.textContent = t;
+    ul.appendChild(li);
+  });
+  setTimeout(function () { location.replace('/#accueil'); }, 900);
+})();
+</script>
+</body>
+</html>

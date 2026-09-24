@@ -732,10 +732,12 @@
     var liste = el('div', 'tp-mondes');
     V.ASTRES.forEach(function (a) {
       var vu = DP.aVuAstre(a.id);
+      var ouvert = V.ouvert(a.id);
       var n = el('button', 'tp-monde');
       n.type = 'button';
       n.dataset.astre = a.id;
       n.classList.toggle('is-inconnu', !vu);
+      n.classList.toggle('is-ferme', vu && !ouvert);
       n.style.setProperty('--r', a.ciel[1]);
 
       var disque = el('span', 'tp-disque');
@@ -748,17 +750,24 @@
       txt.appendChild(el('span', 'tp-monde-code', vu ? a.code : 'code inconnu'));
       n.appendChild(txt);
 
-      if (vu) {
+      if (vu && ouvert) {
         var faits = V.scannables(a.id).filter(function (s) {
           return DP.aScanne(s.id);
         }).length;
         n.appendChild(el('span', 'tp-monde-n',
           faits + ' / ' + V.scannables(a.id).length));
+      } else if (vu) {
+        n.appendChild(el('span', 'tp-monde-n tp-monde-n--ferme', 'relais fermé'));
       }
 
       n.addEventListener('click', function () {
         if (!vu) {
           dire('Ce monde n’est pas encore au journal. Tape ses coordonnées.', true);
+          return;
+        }
+        if (!ouvert) {
+          var av = V.precedent(a.id);
+          dire('Relais fermé' + (av ? ' — le gardien de ' + av.nom + ' tient la ligne.' : '.'), true);
           return;
         }
         saisie = a.code;
@@ -824,14 +833,22 @@
       partir.disabled = saisie.length < 5;
     }
 
+    function refuser(mot) {
+      dire(mot, true);
+      appareil.classList.remove('is-refus');
+      void appareil.offsetWidth;
+      appareil.classList.add('is-refus');
+    }
+
     function valider() {
       var a = V.astre(saisie);
-      if (!a) {
-        dire('Coordonnées refusées. Rien ne répond.', true);
-        appareil.classList.remove('is-refus');
-        void appareil.offsetWidth;
-        appareil.classList.add('is-refus');
-        return;
+      if (!a) return refuser('Coordonnées refusées. Rien ne répond.');
+      // On ne saute pas une escale : le gardien du monde d'avant barre
+      // la route tant qu'il est debout.
+      if (!V.ouvert(a.id)) {
+        var av = V.precedent(a.id);
+        return refuser('Le relais de ' + a.nom + ' est fermé. ' +
+          (av ? 'Le gardien de ' + av.nom + ' tient encore la ligne.' : ''));
       }
       dire('Verrouillage sur ' + a.nom + '…');
       appareil.classList.add('is-depart');
@@ -1137,6 +1154,11 @@
     action.hidden = true;
     iconeBouton(action, visuelScanneur(), 'Scanner', 'ody-action-img');
     boutons.appendChild(action);
+    // Le repaire d'un gardien deja tombe en rejoue l'hologramme.
+    var holo = el('button', 'ody-holo', 'HOLOGRAMME');
+    holo.type = 'button';
+    holo.hidden = true;
+    boutons.appendChild(holo);
     scene.appendChild(boutons);
 
     var retour = el('a', 'ody-retour');
@@ -1173,6 +1195,18 @@
                     .concat(lune ? [{ x: Math.floor(DEVANT_GROTTE.x), y: Math.floor(DEVANT_GROTTE.y) }] : []),
       exclure: lune ? function (x, y) { return x >= BASE.x0 && x <= BASE.x1 && y >= BASE.y0 && y <= BASE.y1; } : null
     }) : [];
+
+    // Un gardien tombe ouvre le monde d'apres : on l'inscrit au journal
+    // de bord pour que le Teleportail en donne les coordonnees.
+    function ouvrirSuivante() {
+      var suite = V.suivant(a.id);
+      if (!suite || DP.aVuAstre(suite.id)) return;
+      DP.noterAstre(suite.id);
+      plusTard(function () {
+        if (!vivant()) return;
+        dire('Nouvelles coordonnées au journal : ' + suite.nom + '  ·  ' + suite.code + '.');
+      }, reduit ? 300 : 2600);
+    }
 
     function presDuRepaire(r) {
       return !!repaire && Math.hypot(balade.chef.x - repaire.px, balade.chef.y - repaire.py) < r;
@@ -1297,6 +1331,13 @@
         action.setAttribute('aria-label', lib);
         action.title = lib;
         action.dataset.deja = deja ? '1' : '0';
+      }
+      // Devant le repaire d'un gardien deja vaincu : sa projection.
+      holo.hidden = !libre || !repaire || !gardien || !bossBattu() ||
+                    !presDuRepaire(lune ? 90 : 70);
+      if (!holo.hidden) {
+        holo.title = 'Réaffronter ' + gardien.nom + ' en hologramme';
+        holo.setAttribute('aria-label', holo.title);
       }
       tir.hidden = !(libre || etat === 'scan') || !cibleTir;
       if (!tir.hidden) {
@@ -1467,11 +1508,13 @@
     // --- Le monstre de la grotte ---
     var SURGIT_DUREE = 2200;
 
-    function reveillerMonstre() {
+    function reveillerMonstre(projection) {
+      if (etat === 'boss') return;
       etat = 'boss';
       majBoutons();
       surgi = { t0: maintenant() };
-      dire(gardien.textes.reveil || 'Le sol tremble…');
+      dire(projection ? 'Le repaire rejoue ce qu’il a gardé…'
+                      : (gardien.textes.reveil || 'Le sol tremble…'));
       scene.classList.add('is-secousse');
       plusTard(function () {
         if (!vivant() || etat !== 'boss') return;
@@ -1481,6 +1524,7 @@
         if (!B) { etat = 'libre'; return; }
         duel = B.Duel({
           gardien: gardien.id,
+          holo: !!projection,
           parent: scene,
           pvJoueur: pv, pvMax: PV_MAX,
           surFin: function (r) { pv = r.pvJoueur; majJauge(); },
@@ -1490,7 +1534,11 @@
             majJauge();
             if (r.vaincu) {
               etat = 'libre';
-              dire(lune ? 'La grotte est silencieuse.' : 'Le repaire est silencieux.');
+              if (projection) dire('La projection s’éteint. Elle reviendra.');
+              else {
+                dire(lune ? 'La grotte est silencieuse.' : 'Le repaire est silencieux.');
+                ouvrirSuivante();
+              }
               majBoutons();
             } else {
               pv = 0;
@@ -1501,8 +1549,28 @@
       }, reduit ? 100 : SURGIT_DUREE);
     }
 
-    action.addEventListener('click', lancerScan);
-    tir.addEventListener('click', tirer);
+    // Tenir le joystick ne doit pas empecher de tirer ni de scanner : on
+    // declenche des l'appui (pointerdown), sans attendre un "click" que
+    // le navigateur annule volontiers quand un autre doigt est deja pose.
+    function surAppui(bouton, quoi) {
+      var vuPointeur = false;
+      bouton.addEventListener('pointerdown', function (e) {
+        vuPointeur = true;
+        e.preventDefault();
+        quoi();
+      });
+      // Repli pour les navigateurs sans evenements de pointeur.
+      bouton.addEventListener('click', function () {
+        if (vuPointeur) return;
+        quoi();
+      });
+    }
+    surAppui(action, lancerScan);
+    surAppui(tir, tirer);
+    surAppui(holo, function () {
+      if (etat !== 'libre' || !gardien || !bossBattu()) return;
+      reveillerMonstre(true);
+    });
 
     var auClavier = function (e) {
       if (e.key === 'f' || e.key === 'F' || e.key === 'x' || e.key === 'X') {
@@ -1868,7 +1936,11 @@
       pv: function () { return pv; }, etat: function () { return etat; },
       reveiller: reveillerMonstre, tirer: tirer,
       gardien: gardien, repaire: repaire, caches: cachesO,
-      viser: function (b) { cibleTir = b; }
+      viser: function (b) { cibleTir = b; },
+      // Se poser ou l'on veut : les essais s'en servent pour venir
+      // devant un repaire sans traverser la carte a pied.
+      poser: function (x, y) { balade.chef.x = x; balade.chef.y = y; },
+      holo: function () { reveillerMonstre(true); }
     };
   }
 
@@ -1980,6 +2052,13 @@
       // "#odyssee/mars" pose directement sur le monde ; sans argument,
       // on reprend la partie en cours, ou l'on ouvre le chapitre premier.
       if (arg && DP.aLaTelecommande()) {
+        // Un monde encore ferme ne s'ouvre pas non plus par l'adresse :
+        // on renvoie au Teleportail.
+        var cible = V.astre(arg);
+        if (cible && !V.ouvert(cible.id)) {
+          location.hash = '#teleportail';
+          return;
+        }
         var jeu = el('div', 'ody-hote');
         view.appendChild(jeu);
         return ecranMonde(jeu, arg);

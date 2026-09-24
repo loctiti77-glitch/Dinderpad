@@ -1,4 +1,4 @@
-// Les artefacts : quarante reliques de l'histoire des Dinders, cachees
+// Les artefacts : cinquante reliques de l'histoire des Dinders, cachees
 // dans les trois mini-jeux. Une categorie a part dans les Items : on ne
 // les utilise pas, on les collectionne.
 //
@@ -25,7 +25,7 @@
                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ==========================================================
-  //  Les quarante artefacts
+  //  Les cinquante artefacts
   // ==========================================================
   // jeu : 'founder' | 'peche' | 'odyssee' ; ou : 'cache', 'exploit' ou
   // 'ligne' ; carte : pour une cache de l'Odyssee, le monde ; dinder :
@@ -59,6 +59,22 @@
       dinder: 'gart-kervelor-king-of-karsovia', forme: 'fragment', c: ['#d8a820', '#fff0a0', '#7a5a08', '#ff4ad8'],
       indice: 'Il brille au fond des bois.',
       texte: 'Un morceau d’or ouvragé, tombé de la couronne de Karsovie pendant une bataille oubliée.' },
+    { id: 'montre-hargrove', nom: 'Montre à gousset', jeu: 'founder', ou: 'cache',
+      dinder: 'harry-hargrove', forme: 'montre', c: ['#c8a040', '#f8ecc0', '#5a4410', '#1a1a22'],
+      indice: 'Elle bat encore, quelque part dans la forêt.',
+      texte: 'Harry Hargrove la remonte chaque soir à la même heure. Le jour où elle s’arrêtera, il s’arrêtera aussi.' },
+    { id: 'sifflet-coach', nom: 'Sifflet de Marlon', jeu: 'founder', ou: 'cache',
+      dinder: 'marlon-coach', forme: 'sifflet', c: ['#b8bcc4', '#f0f2f6', '#4a4e56', '#e8283a'],
+      indice: 'Tombé entre deux racines.',
+      texte: 'Marlon Coach n’entraîne personne. Il siffle la fin, et on s’arrête : c’est tout ce qu’on lui demande.' },
+    { id: 'liasse-zofiax', nom: 'Liasse du Baron', jeu: 'founder', ou: 'cache',
+      dinder: 'baron-zofiax', forme: 'billet', c: ['#3a7a52', '#b8e8c4', '#143a24', '#d8c060'],
+      indice: 'Le vent l’a plaquée contre un tronc.',
+      texte: 'Le Baron Zofiax paie toujours d’avance et ne compte jamais. Personne n’a encore osé recompter à sa place.' },
+    { id: 'puce-timeo', nom: 'Puce chronométrique', jeu: 'founder', ou: 'cache',
+      dinder: 'timeo-traveler', forme: 'puce', c: ['#1a4a6a', '#4adcf0', '#0a1a2a', '#f0f8ff'],
+      indice: 'Elle clignote sous les fougères.',
+      texte: 'Timeo Traveler en sème derrière lui à chaque saut : c’est ainsi qu’il retrouve les lignes déjà visitées.' },
     { id: 'as-du-peche', nom: 'As du Péché', jeu: 'founder', ou: 'exploit',
       dinder: 'carl-sinars-cardinal-sin', forme: 'carte', c: ['#1a1a2a', '#f4f0e6', '#8a1a2a', '#e8283a'],
       indice: 'Vaincre Le Fondateur une première fois.',
@@ -79,6 +95,14 @@
       dinder: 'gart-kervelor-king-of-karsovia', forme: 'sceptre', c: ['#c8a040', '#fff0a0', '#6a5018', '#e8283a'],
       indice: 'Vaincre Le Fondateur cinq fois.',
       texte: 'Gart Kervelor l’a confié à celui qui battrait Le Fondateur cinq fois. Il n’y croyait pas.' },
+    { id: 'boutonniere-batant', nom: 'Boutonnière de William', jeu: 'founder', ou: 'exploit', palier: 5,
+      dinder: 'william-batant', forme: 'graine', c: ['#6a2a3a', '#e8a8b8', '#2a0a14', '#e6e2dc'],
+      indice: 'Franchir cinq niveaux de la campagne.',
+      texte: 'William Batant en porte une neuve à chaque combat. Il la choisit la nuit, à l’oreille, sur l’arbre qui craque le mieux.' },
+    { id: 'cadran-timeo', nom: 'Cadran de Timeo', jeu: 'founder', ou: 'exploit', palier: 10,
+      dinder: 'timeo-traveler', forme: 'sablier', c: ['#b4712f', '#4adcf0', '#3a2410', '#f0f8ff'],
+      indice: 'Franchir les dix sbires du Fondateur.',
+      texte: 'Le cadran de Timeo ne compte pas les heures : il compte les fois où l’on est déjà passé par là. Il en est à dix.' },
 
     // ---------- Fish n'Der : le bois, les lacs et leurs geants ----------
     { id: 'fiole-acide', nom: 'Fiole d’acide', jeu: 'peche', ou: 'cache',
@@ -105,6 +129,14 @@
       dinder: 'he-melt', forme: 'goutte', c: ['#8a5ac8', '#d8c0ff', '#3a1a6a', '#7cf0c8'],
       indice: 'Elle rampe quelque part sur la carte.',
       texte: 'Un morceau de He Melt, détaché et bien vivant. Il prend la forme de ce qu’on regarde.' },
+    { id: 'cagoule-coach', nom: 'Cagoule noire', jeu: 'peche', ou: 'cache',
+      dinder: 'marlon-coach', forme: 'masque', c: ['#1a191f', '#4a4854', '#0b0a0e', '#ece7dd'],
+      indice: 'Roulée en boule sous un buisson.',
+      texte: 'Elle a deux trous pour les yeux et aucun pour la bouche. Marlon Coach n’a jamais eu besoin de parler.' },
+    { id: 'griffe-batant', nom: 'Griffe de William', jeu: 'peche', ou: 'cache',
+      dinder: 'william-batant', forme: 'griffe', c: ['#c8bca8', '#f4ece0', '#5a4e40', '#1f1c1e'],
+      indice: 'Plantée dans un tronc, au bord de l’eau.',
+      texte: 'Le majeur de William Batant, long et sec, avec lequel il tape le bois pour écouter ce qui vit dessous.' },
     { id: 'de-pipe', nom: 'Dé pipé', jeu: 'peche', ou: 'ligne',
       dinder: 'carl-sinars-cardinal-sin', forme: 'de', c: ['#f4f0e6', '#ffffff', '#a8a090', '#b02a3a'],
       indice: 'Parfois, au bout de la ligne.',
@@ -121,6 +153,14 @@
       dinder: 'a', forme: 'orbe', c: ['#1a6ac8', '#a8d8ff', '#0a1a5a', '#ffffff'],
       indice: 'Parfois, au bout de la ligne.',
       texte: 'Le deuxième orbe. A l’avait caché au fond d’un lac, là où personne ne pense à regarder.' },
+    { id: 'beret-hargrove', nom: 'Béret trempé', jeu: 'peche', ou: 'ligne',
+      dinder: 'harry-hargrove', forme: 'tissu', c: ['#34323f', '#5e5c6c', '#16161d', '#c8a040'],
+      indice: 'Parfois, au bout de la ligne.',
+      texte: 'Le béret de Harry Hargrove, repêché dans un lac. Il en a d’autres, tous identiques, tous noirs.' },
+    { id: 'lunettes-zofiax', nom: 'Lunettes dorées', jeu: 'peche', ou: 'ligne',
+      dinder: 'baron-zofiax', forme: 'lentille', c: ['#e3b93a', '#fff0b0', '#6a5410', '#1e1c22'],
+      indice: 'Parfois, au bout de la ligne.',
+      texte: 'Le Baron Zofiax les garde même la nuit. Sous les verres, dit-on, il n’y a rien à voir.' },
     { id: 'collier-crocs', nom: 'Collier à crocs', jeu: 'peche', ou: 'exploit',
       dinder: 'edgar-marks-grincrusher', forme: 'collier', c: ['#6a4a2a', '#f4efe0', '#3a2414', '#e8283a'],
       indice: 'Dans le ventre d’un Grand Blanc.',
@@ -240,6 +280,44 @@
   }
 
   var FORMES = {
+    // Une montre a gousset : le boitier, l'anneau, la chainette.
+    montre: function (d, c) {
+      d.ligne(4, 2, 11, 6, 1, c[0]);
+      d.anneau(12, 5, 2, 1, c[0]);
+      d.disque(12, 14, 7, c[2]); d.disque(12, 14, 6, c[0]); d.disque(12, 14, 5, c[1]);
+      d.p(11, 10, 1, 5, c[3]); d.p(12, 14, 4, 1, c[3]);
+      d.p(9, 11, 2, 1, '#ffffff');
+    },
+    // Un sifflet d'arbitre, bec a gauche, bille visible.
+    sifflet: function (d, c) {
+      d.p(3, 11, 10, 3, c[0]); d.p(3, 11, 10, 1, c[1]);
+      d.disque(16, 13, 6, c[2]); d.disque(16, 13, 5, c[0]); d.disque(16, 13, 3, c[1]);
+      d.disque(16, 13, 1, c[3]);
+      d.p(13, 9, 2, 2, c[2]); d.p(5, 12, 3, 1, '#ffffff');
+    },
+    // Une liasse de billets, tenue par un bandeau.
+    billet: function (d, c) {
+      d.p(3, 7, 18, 11, c[2]); d.p(3, 6, 18, 11, c[0]); d.p(4, 7, 16, 9, c[1]);
+      d.disque(12, 11, 3, c[0]); d.disque(12, 11, 2, c[3]);
+      d.p(5, 8, 2, 1, c[0]); d.p(17, 14, 2, 1, c[0]);
+      d.p(10, 3, 4, 17, c[3]);
+    },
+    // Une puce electronique, pattes de part et d'autre.
+    puce: function (d, c) {
+      for (var i = 0; i < 4; i++) { d.p(2, 7 + i * 3, 4, 2, c[1]); d.p(18, 7 + i * 3, 4, 2, c[1]); }
+      d.p(6, 5, 12, 14, c[2]); d.p(7, 6, 10, 12, c[0]);
+      d.p(9, 8, 6, 1, c[1]); d.p(9, 11, 6, 1, c[1]); d.p(9, 14, 4, 1, c[1]);
+      d.p(8, 16, 2, 1, c[3]);
+    },
+    // Une griffe longue et recourbee, sur sa base sombre.
+    griffe: function (d, c) {
+      d.p(9, 18, 7, 4, c[3]); d.p(9, 18, 7, 1, c[2]);
+      for (var y = 0; y < 15; y++) {
+        var w = Math.max(1, 5 - Math.round(y / 3.4));
+        d.p(10 - Math.round(y * 0.42), 18 - y - 1, w, 1, y < 3 ? c[2] : c[0]);
+      }
+      d.p(8, 9, 1, 5, c[1]);
+    },
     monocle: function (d, c) {
       d.anneau(10, 10, 7, 5, c[0]); d.disque(10, 10, 4, c[3]); d.p(7, 7, 2, 2, '#ffffff');
       d.anneau(10, 10, 6, 6, c[1]);
@@ -621,6 +699,14 @@
     if (reste.length) trouver(reste[Math.floor(Math.random() * reste.length)].id);
   });
 
+  // The Founder War, palier par palier : certains artefacts ne tiennent
+  // qu'a la progression dans la campagne.
+  function victoireNiveau(n) {
+    LISTE.forEach(function (a) {
+      if (a.palier && n >= a.palier) trouver(a.id);
+    });
+  }
+
   // The Founder War : le jeu signale sa victoire avec ce qu'il sait.
   function victoireFondateur(info) {
     info = info || {};
@@ -720,6 +806,7 @@
     LISTE: LISTE, JEUX: JEUX, parId: function (id) { return PAR_ID[id] || null; },
     feuille: feuille, url: url, trouves: trouves, aTrouve: aTrouve, trouver: trouver,
     placer: placer, caches: caches, extras: extras, ramasser: ramasser, eclat: eclat,
-    victoireFondateur: victoireFondateur, onglets: onglets, CHANCE_LIGNE: CHANCE_LIGNE
+    victoireFondateur: victoireFondateur,
+    victoireNiveau: victoireNiveau, onglets: onglets, CHANCE_LIGNE: CHANCE_LIGNE
   };
 })();

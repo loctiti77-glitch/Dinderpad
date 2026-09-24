@@ -37,7 +37,9 @@
       node.appendChild(mark);
     }
 
-    var name = el('span', 'slot-name');
+    // Un nom long ne doit pas finir en points de suspension : la ligne
+    // le compose plus petit plutot que de le couper.
+    var name = el('span', 'slot-name' + (got && d.name.length > 11 ? ' slot-name--long' : ''));
     name.appendChild(el('span', 'slot-name-main', got ? d.name : '???'));
     if (got && d.form) name.appendChild(el('span', 'slot-name-sub', d.form));
     node.appendChild(name);

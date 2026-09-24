@@ -136,6 +136,31 @@
 
   var cache = {};
 
+  // La meme planche, passee au projecteur : teinte cyan, lignes de
+  // balayage, et rien qui deborde de la silhouette.
+  var toile = null;
+  function projeter(f, t) {
+    if (!toile) toile = document.createElement('canvas');
+    if (toile.width !== f.L || toile.height !== f.H) {
+      toile.width = f.L; toile.height = f.H;
+    }
+    var x = toile.getContext('2d');
+    if (!x) return f.canvas;
+    x.clearRect(0, 0, f.L, f.H);
+    x.imageSmoothingEnabled = false;
+    x.filter = 'hue-rotate(160deg) saturate(1.8) brightness(1.3)';
+    x.drawImage(f.canvas, 0, 0);
+    x.filter = 'none';
+    x.globalCompositeOperation = 'source-atop';
+    x.fillStyle = 'rgba(0,241,253,.2)';
+    x.fillRect(0, 0, f.L, f.H);
+    x.fillStyle = 'rgba(190,250,255,.3)';
+    var depart = reduit ? 0 : Math.round((t / 26) % 4);
+    for (var ly = -4; ly < f.H; ly += 4) x.fillRect(0, ly + depart, f.L, 1);
+    x.globalCompositeOperation = 'source-over';
+    return toile;
+  }
+
   // La planche d'un gardien, gueule fermee ou ouverte. feuille(true) ou
   // feuille(false) seuls designent le Selenophage, comme avant.
   function feuille(id, ouverte) {
@@ -235,6 +260,10 @@
 
   function Duel(cfg) {
     var G = GARDIENS[cfg.gardien || 'selenophage'] || GARDIENS.selenophage;
+    // Un gardien deja tombe ne revient pas en chair : le repaire garde
+    // sa trace et la rejoue. On se bat contre un hologramme, pour
+    // l'entrainement — il rapporte moins, et rien qu'on ait deja.
+    var holo = !!cfg.holo;
     var PV = G.pv, PREPARE = G.prepare, ETOURDI = G.etourdi;
     var POUR_INTERROMPRE = G.interrompre;
     var FAIBLES = G.faibles, GORGE = G.gorge;
@@ -273,7 +302,8 @@
     var elPvMoi = hote.querySelector('.bs-pv--moi');
     var elEtat = hote.querySelector('.bs-etat');
     hote.dataset.gardien = G.id;
-    hote.querySelector('.bs-nom').textContent = G.nom;
+    hote.querySelector('.bs-nom').textContent = holo ? G.nom + ' (hologramme)' : G.nom;
+    if (holo) hote.dataset.holo = '1';
     var NOMBRES = ['zéro', 'une', 'deux', 'trois', 'quatre', 'cinq'];
     hote.querySelector('.bs-aide').textContent =
       'Vise les points orange. Pendant qu’il prépare son coup, ' +
@@ -460,7 +490,16 @@
         ctx.imageSmoothingEnabled = false;
         if (etat === 'mort') ctx.globalAlpha = Math.max(0, 1 - (t - etatDepuis) / 1400);
         if (etat === 'etourdi') ctx.filter = 'saturate(.3) brightness(.85)';
-        ctx.drawImage(f.canvas, pos.x - SL * e / 2, pos.y - SH * e / 2, SL * e, SH * e);
+        var bx = pos.x - SL * e / 2, by = pos.y - SH * e / 2;
+        if (holo) {
+          // L'hologramme : une projection bleutee, un peu transparente,
+          // que des lignes de balayage traversent. On la compose a part
+          // pour que les lignes s'arretent a la silhouette.
+          ctx.globalAlpha *= 0.72;
+          ctx.drawImage(projeter(f, t), bx, by, SL * e, SH * e);
+        } else {
+          ctx.drawImage(f.canvas, bx, by, SL * e, SH * e);
+        }
         ctx.restore();
       }
 
@@ -594,6 +633,13 @@
 
     function recompenser() {
       var R = G.recompense;
+      // L'hologramme ne rapporte que des Roches Solaires, et moins : il
+      // ne donne ni entree au carnet, ni revetement, ni exploit.
+      if (holo) {
+        var butin = Math.max(1, Math.round(R.roches * 0.35));
+        DP.gagnerRoches(butin);
+        return { roches: butin, credit: 'pink', n: 0, temporel: 0, revetement: null, holo: true };
+      }
       DP.compterExploit(exploitDe(G));
       DP.noterScan(G.id, G.astre);
       DP.gagnerRoches(R.roches);
@@ -616,14 +662,23 @@
         var n = document.createElement('p');
         n.className = cls; n.textContent = txt; carte.appendChild(n); return n;
       }
-      ligne('bs-carte-titre', vaincu ? G.textes.victoire : 'RAPATRIEMENT D’URGENCE');
-      ligne('bs-carte-txt', vaincu ? G.textes.recit : G.textes.echec);
+      ligne('bs-carte-titre', vaincu
+        ? (holo ? 'L’HOLOGRAMME S’ÉTEINT' : G.textes.victoire)
+        : 'RAPATRIEMENT D’URGENCE');
+      ligne('bs-carte-txt', vaincu
+        ? (holo ? 'La projection se replie sur elle-même et disparaît. ' +
+                  'Le repaire la rejouera autant de fois que tu voudras.'
+                : G.textes.recit)
+        : (holo ? 'La projection t’a mis à terre. Ce n’était qu’un entraînement, ' +
+                  'mais elle frappe comme l’original.'
+                : G.textes.echec));
       if (vaincu && r) {
         var butin = document.createElement('div');
         butin.className = 'bs-butin';
-        [['☀ × ' + r.roches + ' Roches Solaires', 'roche'],
-         [(DP.CREDITS[r.credit] ? DP.CREDITS[r.credit].name : 'Crédit') + ' × ' + r.n, 'credit']]
-          .forEach(function (g) {
+        var gains = [['☀ × ' + r.roches + ' Roches Solaires', 'roche']];
+        if (r.n) gains.push([(DP.CREDITS[r.credit] ? DP.CREDITS[r.credit].name : 'Crédit') +
+                             ' × ' + r.n, 'credit']);
+        gains.forEach(function (g) {
             var s = document.createElement('span');
             s.className = 'bs-gain bs-gain--' + g[1];
             s.textContent = g[0];
@@ -631,7 +686,9 @@
           });
         carte.appendChild(butin);
         if (r.revetement) ligne('bs-revetement', 'Nouveau revêtement : ' + r.revetement.nom);
-        ligne('bs-carte-txt bs-carte-txt--sous', G.nom + ' entre à ton carnet du scanner.');
+        ligne('bs-carte-txt bs-carte-txt--sous', holo
+          ? 'Un hologramme ne se scanne pas : ton carnet ne bouge pas.'
+          : G.nom + ' entre à ton carnet du scanner.');
       }
       var b = document.createElement('button');
       b.className = 'bs-btn'; b.type = 'button';

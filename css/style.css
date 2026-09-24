@@ -236,6 +236,8 @@ html, body {
   letter-spacing: calc(2 * var(--px));
 }
 
+.slot-name--long .slot-name-main { font-size: calc(40 * var(--px)); }
+
 .slot-name-sub {
   font-size: calc(34 * var(--px));
   letter-spacing: calc(1 * var(--px));

@@ -1009,8 +1009,55 @@
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + u).toString(16).slice(1);
   }
 
+  // ==========================================================
+  //  L'ordre de l'expedition
+  // ==========================================================
+  // On ne saute pas un monde : chacun s'ouvre quand le gardien du
+  // precedent est tombe. Mercure, premiere escale, est toujours ouverte.
+
+  function ordre() {
+    return ASTRES.slice().sort(function (x, y) { return x.rang - y.rang; });
+  }
+
+  function suivant(id) {
+    var l = ordre();
+    for (var i = 0; i < l.length; i++) {
+      if (l[i].id === id) return l[i + 1] || null;
+    }
+    return null;
+  }
+
+  function precedent(id) {
+    var l = ordre();
+    for (var i = 0; i < l.length; i++) {
+      if (l[i].id === id) return i > 0 ? l[i - 1] : null;
+    }
+    return null;
+  }
+
+  // Le gardien qui veille sur un monde.
+  function gardienDe(id) {
+    var B = window.BOSS;
+    if (!B) return null;
+    for (var i = 0; i < B.ORDRE.length; i++) {
+      var g = B.GARDIENS[B.ORDRE[i]];
+      if (g.astre === id) return g;
+    }
+    return null;
+  }
+
+  function ouvert(id) {
+    var av = precedent(id);
+    if (!av) return true;
+    var g = gardienDe(av.id);
+    if (!g) return true;
+    return window.BOSS.vaincu(g.id);
+  }
+
   window.ODYVIE = {
     ASTRES: ASTRES, VIES: VIES, CURIOSITES: CURIOSITES, OBJETS: OBJETS,
+    ordre: ordre, suivant: suivant, precedent: precedent,
+    gardienDe: gardienDe, ouvert: ouvert,
     MONSTRE: MONSTRE, MONSTRES: MONSTRES, monstre: monstre, FORCE: FORCE, force: force, teintes: teintes,
     objets: objets,
     astre: astre, vies: vies, curiosite: curiosite, parId: parId,

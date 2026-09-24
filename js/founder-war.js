@@ -86,6 +86,26 @@
       { nom: 'Décret Royal',        degats: [50, 68] },
       { nom: 'Bouclier de Karsovia', degats: [12, 18], bouclier: 40 }
     ],
+    'harry-hargrove': [
+      { nom: 'Heure Volée',         degats: [40, 54], etourdit: 0.35 },
+      { nom: 'Montre à Gousset',    degats: [18, 26], bouclier: 34 }
+    ],
+    'marlon-coach': [
+      { nom: 'Coup du Capuchon',    degats: [42, 56] },
+      { nom: 'Pouce en l’Air',      degats: [12, 18], boost: 0.35 }
+    ],
+    'baron-zofiax': [
+      { nom: 'Liasse au Visage',    degats: [15, 22], coups: 4 },
+      { nom: 'Rachat Hostile',      degats: [40, 54], drain: true }
+    ],
+    'timeo-traveler': [
+      { nom: 'Saut de Ligne',       degats: [62, 82] },
+      { nom: 'Retour Arrière',      degats: [24, 34], soinTous: 30 }
+    ],
+    'william-batant': [
+      { nom: 'Griffe Nocturne',     degats: [58, 78], brulure: 6 },
+      { nom: 'Écoute Fine',         degats: [26, 36], faiblesse: 0.4 }
+    ],
     // Une fois vaincu, Le Fondateur se bat a vos cotes — avec ce qu'il
     // vous faisait subir.
     'lefondateur': [
@@ -1380,6 +1400,9 @@
 
         // Le niveau est franchi ; la finale ouvre Le Fondateur.
         var neuf = DP.noterFwNiveau(adv.n);
+        if (window.ARTEFACTS && window.ARTEFACTS.victoireNiveau) {
+          window.ARTEFACTS.victoireNiveau(DP.fwNiveau());
+        }
         var fondateurNeuf = false;
         if (final) {
           DP.compterExploit('fondateurVaincu');
