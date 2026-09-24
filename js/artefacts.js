@@ -72,7 +72,7 @@
       indice: 'Vaincre Le Fondateur sans perdre un seul Dinder.',
       texte: 'L’un des trois orbes. V le protégeait ; il ne dit pas de quoi. Il pulse au rythme d’un cœur lent.' },
     { id: 'sceau-fondateur', nom: 'Sceau du Fondateur', jeu: 'founder', ou: 'exploit',
-      dinder: 'multinder', forme: 'medaillon', c: ['#8a1a1a', '#ff6a5a', '#3a0606', '#ffd84a'],
+      dinder: 'lefondateur', forme: 'medaillon', c: ['#8a1a1a', '#ff6a5a', '#3a0606', '#ffd84a'],
       indice: 'Vaincre Le Fondateur en moins d’une minute.',
       texte: 'Le sceau qu’il portait au cou. Multinder y a reconnu la marque des cinq éléments, retournée.' },
     { id: 'sceptre-karsovie', nom: 'Sceptre de Karsovie', jeu: 'founder', ou: 'exploit',

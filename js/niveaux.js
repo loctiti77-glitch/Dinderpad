@@ -60,6 +60,8 @@
         return t;
       },
       affiche: function (n) { return n + ' × 5–25'; } },
+    { id: 'founder', nom: 'Niveaux de The Founder War', pts: 150,
+      compte: function () { return DP.fwNiveau(); } },
     { id: 'failles', nom: 'Failles contenues', pts: 250,
       compte: function () { return DP.faillesContenues(); } },
     { id: 'artefacts', nom: 'Artefacts trouvés', pts: 120,

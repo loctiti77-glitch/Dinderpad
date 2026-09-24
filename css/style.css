@@ -2352,3 +2352,153 @@ body[data-phase="welcome"] .lock-welcome {
   .faille-titre, .pin.is-pirate, .pin.is-frappee, .pin.is-purgee,
   .faille-fete, .faille-fete.is-sortie { animation: none; }
 }
+
+
+/* ---------- La premiere Dindise Universelle, offerte ---------- */
+
+.dindise-prix.is-offerte {
+  color: #7dffb0;
+  font-weight: 700;
+  letter-spacing: calc(2 * var(--px));
+  text-shadow: 0 0 calc(14 * var(--px)) rgba(125, 255, 176, .6);
+  animation: offerte-bat 1.6s ease-in-out infinite;
+}
+
+@keyframes offerte-bat {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .55; }
+}
+
+
+/* ---------- Le niveau de combat, dans la collection ---------- */
+
+.slot-niveau {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: calc(5 * var(--px));
+  margin-left: calc(10 * var(--px));
+  font-family: "Courier New", Courier, ui-monospace, monospace;
+  line-height: 1;                    /* .pad impose line-height: 0 */
+}
+
+.slot-niveau-n {
+  font-size: calc(24 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(1 * var(--px));
+  color: rgba(255, 255, 255, .78);
+  text-shadow: 0 0 calc(10 * var(--px)) rgba(0, 241, 253, .5);
+}
+
+.slot-niveau-jauge {
+  display: block;
+  width: calc(96 * var(--px));
+  height: calc(9 * var(--px));
+  border-radius: calc(5 * var(--px));
+  background: rgba(0, 0, 0, .55);
+  box-shadow: inset 0 0 0 calc(2 * var(--px)) rgba(0, 241, 253, .35);
+  overflow: hidden;
+}
+
+.slot-niveau-plein {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #00f1fd, #7dffb0);
+  box-shadow: 0 0 calc(10 * var(--px)) rgba(0, 241, 253, .7);
+}
+
+
+/* ---------- Le niveau, sur la fiche d'un Dinder ---------- */
+
+.fiche-line--niveau {
+  align-items: flex-start;
+}
+
+.fiche-niveau {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--px));
+  line-height: 1.25;                 /* .pad impose line-height: 0 */
+}
+
+.fiche-niveau-haut {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--px));
+  flex-wrap: wrap;
+}
+
+.fiche-niveau-n {
+  font-size: calc(32 * var(--px));
+  letter-spacing: calc(1 * var(--px));
+  line-height: 1.15;
+}
+
+.fiche-niveau-force {
+  font-size: calc(22 * var(--px));
+  line-height: 1.2;
+  color: rgba(255, 255, 255, .6);
+}
+
+.fiche-niveau-jauge {
+  flex: 0 0 auto;
+  height: calc(12 * var(--px));
+  border-radius: calc(6 * var(--px));
+  background: rgba(0, 0, 0, .55);
+  box-shadow: inset 0 0 0 calc(2 * var(--px)) rgba(0, 241, 253, .35);
+  overflow: hidden;
+}
+
+.fiche-niveau-plein {
+  height: 100%;
+  background: linear-gradient(90deg, #00f1fd, #7dffb0);
+  box-shadow: 0 0 calc(12 * var(--px)) rgba(0, 241, 253, .7);
+  transition: width .4s ease;
+}
+
+.fiche-niveau-xp {
+  font-size: calc(20 * var(--px));
+  line-height: 1.35;
+  color: rgba(255, 255, 255, .55);
+}
+
+.fiche-attaques {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(8 * var(--px));
+  margin-top: calc(4 * var(--px));
+}
+
+.fiche-attaque {
+  display: inline-flex;
+  align-items: baseline;
+  gap: calc(6 * var(--px));
+  padding: calc(6 * var(--px)) calc(12 * var(--px));
+  border-radius: calc(10 * var(--px));
+  background: rgba(0, 241, 253, .12);
+  box-shadow: inset 0 0 0 calc(2 * var(--px)) rgba(0, 241, 253, .4);
+  font-size: calc(21 * var(--px));
+  line-height: 1.2;
+  color: rgba(255, 255, 255, .9);
+}
+
+.fiche-attaque.is-ultime {
+  background: rgba(255, 176, 46, .16);
+  box-shadow: inset 0 0 0 calc(2 * var(--px)) rgba(255, 176, 46, .6);
+  color: #ffd79a;
+}
+
+.fiche-attaque.is-ferme {
+  background: rgba(255, 255, 255, .05);
+  box-shadow: inset 0 0 0 calc(2 * var(--px)) rgba(255, 255, 255, .16);
+  color: rgba(255, 255, 255, .42);
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dindise-prix.is-offerte { animation: none; }
+}

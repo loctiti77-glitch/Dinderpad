@@ -5504,3 +5504,331 @@ body.is-locked .pad-titre { display: none; }
   .pe-lutte[data-chaud="1"], .pe-scene.is-lutte canvas, .pe-scene.is-tire canvas,
   .nv-dinder, .nv-dinder-img, .nv-dinder-rayons, .nv-dinder-eclat, .pin.is-relais { animation: none; }
 }
+
+/* ==========================================================
+   The Founder War : la campagne
+   ========================================================== */
+.fw-campagne {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--px));
+  padding: calc(4 * var(--px)) calc(10 * var(--px));
+  scrollbar-width: none;
+}
+.fw-campagne::-webkit-scrollbar { width: 0; }
+.fw-palier {
+  --r: #ff2a2a;
+  position: relative;
+  flex: none;
+  display: grid;
+  grid-template-columns: calc(84 * var(--px)) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: calc(12 * var(--px));
+  padding: calc(8 * var(--px)) calc(14 * var(--px));
+  border: calc(3 * var(--px)) solid var(--r);
+  border-radius: calc(14 * var(--px));
+  background: linear-gradient(90deg, rgba(20, 4, 6, .92), rgba(8, 4, 10, .92));
+  box-shadow: inset 0 0 calc(20 * var(--px)) rgba(0, 0, 0, .6);
+  color: #ffe8e8;
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+}
+.fw-palier.is-ferme { border-color: #2a2a32; color: #6a6a74; cursor: default; filter: grayscale(.85); }
+.fw-palier.is-fait { box-shadow: inset 0 0 calc(20 * var(--px)) rgba(0, 0, 0, .6), 0 0 calc(12 * var(--px)) rgba(124, 240, 168, .35); }
+.fw-palier--final { background: linear-gradient(90deg, rgba(40, 2, 6, .95), rgba(20, 2, 14, .95)); }
+.fw-palier-vignette {
+  display: grid;
+  place-items: center;
+  height: calc(76 * var(--px));
+}
+.fw-palier-img {
+  max-width: 100%;
+  max-height: calc(76 * var(--px));
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 calc(8 * var(--px)) rgba(255, 40, 40, .5));
+}
+.fw-palier-txt { display: flex; flex-direction: column; gap: calc(2 * var(--px)); min-width: 0; }
+.fw-palier-nom { font-size: calc(22 * var(--px)); }
+.fw-palier-sous { font-size: calc(15 * var(--px)); color: var(--r); }
+.fw-palier-quete { font-size: calc(14 * var(--px)); color: #c8b8b8; }
+.fw-palier-pv { font-size: calc(13 * var(--px)); color: #9a8a8a; }
+.fw-palier-fait { font-size: calc(30 * var(--px)); color: #7cf0a8; }
+
+/* ---------- Les fiches des Dinders ---------- */
+.fw-fiches {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(8 * var(--px));
+  padding: calc(4 * var(--px)) calc(10 * var(--px));
+  scrollbar-width: none;
+}
+.fw-fiches::-webkit-scrollbar { width: 0; }
+.fw-fiche {
+  display: grid;
+  grid-template-columns: calc(64 * var(--px)) minmax(0, 1fr);
+  gap: calc(10 * var(--px));
+  padding: calc(8 * var(--px)) calc(12 * var(--px));
+  border: calc(3 * var(--px)) solid rgba(255, 255, 255, .2);
+  border-radius: calc(12 * var(--px));
+  background: rgba(10, 8, 16, .88);
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.2;
+  color: #eaf2ff;
+}
+.fw-fiche[data-rarity="green"] { border-color: #4fd13a; }
+.fw-fiche[data-rarity="blue"]  { border-color: #45b0ff; }
+.fw-fiche[data-rarity="gold"]  { border-color: #f5c93a; }
+.fw-fiche[data-rarity="pink"]  { border-color: #ff6ad8; }
+.fw-fiche.is-verrou { opacity: .55; }
+.fw-fiche-sprite { width: 100%; image-rendering: pixelated; align-self: center; }
+.fw-fiche-txt { display: flex; flex-direction: column; gap: calc(3 * var(--px)); min-width: 0; }
+.fw-fiche-haut { display: flex; justify-content: space-between; gap: calc(8 * var(--px)); }
+.fw-fiche-nom { font-size: calc(18 * var(--px)); }
+.fw-fiche-niv { font-size: calc(15 * var(--px)); color: #ffd84a; }
+.fw-fiche-rarete { font-size: calc(12 * var(--px)); color: #9fb4c4; }
+.fw-fiche-jauge {
+  height: calc(10 * var(--px));
+  border: calc(2 * var(--px)) solid #000;
+  border-radius: calc(6 * var(--px));
+  background: rgba(0, 0, 0, .5);
+  overflow: hidden;
+}
+.fw-fiche-plein { height: 100%; background: linear-gradient(90deg, #45b0ff, #ffd84a); }
+.fw-fiche-xp { font-size: calc(11 * var(--px)); color: #8fa4b4; }
+.fw-fiche-attaques { display: flex; flex-wrap: wrap; gap: calc(4 * var(--px)); }
+.fw-fiche-attaque {
+  padding: calc(2 * var(--px)) calc(7 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(255, 255, 255, .25);
+  border-radius: 999px;
+  font-size: calc(11 * var(--px));
+}
+.fw-fiche-attaque.is-ultime { border-color: #ffd84a; color: #ffe7a0; }
+.fw-fiche-attaque.is-ferme { border-style: dashed; color: #7a8a96; }
+
+/* ---------- La quête, dans la forêt ---------- */
+.fw-quete {
+  position: absolute;
+  z-index: 6;
+  left: calc(10 * var(--px));
+  top: calc(44 * var(--px));
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--px));
+  padding: calc(7 * var(--px)) calc(12 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(255, 60, 60, .7);
+  border-radius: calc(10 * var(--px));
+  background: rgba(8, 2, 6, .82);
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.2;
+  color: #ffd8d8;
+  pointer-events: none;
+}
+.fw-quete-titre { font-size: calc(15 * var(--px)); color: #ff8a8a; }
+.fw-quete-lignes { display: flex; flex-direction: column; gap: calc(2 * var(--px)); }
+.fw-quete-ligne { font-size: calc(14 * var(--px)); }
+.fw-quete-ligne.is-fait { color: #7cf0a8; }
+.fw-quete-ligne.is-urgent { color: #ffd84a; animation: fw-urgent .6s steps(1, end) infinite; }
+@keyframes fw-urgent { 0%, 49% { opacity: 1; } 50%, 100% { opacity: .4; } }
+
+.fw-scene.is-repere::after,
+.fw-scene.is-eclat::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.fw-scene.is-repere::after { animation: fw-repere .7s ease-out; }
+.fw-scene.is-eclat::after { animation: fw-eclat .5s ease-out; }
+@keyframes fw-repere {
+  0%   { background: rgba(255, 30, 30, .5); }
+  100% { background: rgba(255, 30, 30, 0); }
+}
+@keyframes fw-eclat {
+  0%   { background: rgba(255, 90, 90, .35); }
+  100% { background: rgba(255, 90, 90, 0); }
+}
+
+/* ---------- Le face-à-face ---------- */
+.fw-dialogue {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(12 * var(--px));
+  padding: calc(14 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  color: #ffe8e8;
+}
+.fw-dial-scene {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: calc(40 * var(--px));
+}
+.fw-dial-boss {
+  height: calc(190 * var(--px));
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 calc(18 * var(--px)) rgba(255, 40, 40, .7));
+  transition: transform .2s ease;
+}
+.fw-dial-scene.is-boss .fw-dial-boss { transform: scale(1.06); }
+.fw-dial-troupe { display: flex; gap: calc(6 * var(--px)); align-items: flex-end; }
+.fw-dial-dinder { height: calc(96 * var(--px)); image-rendering: pixelated; }
+.fw-dial-scene.is-boss .fw-dial-troupe { opacity: .7; }
+.fw-bulle {
+  width: calc(660 * var(--px));
+  max-width: 94%;
+  padding: calc(12 * var(--px)) calc(18 * var(--px));
+  border: calc(3 * var(--px)) solid #7cf0c8;
+  border-radius: calc(14 * var(--px));
+  background: rgba(4, 16, 22, .94);
+  line-height: 1.35;
+}
+.fw-bulle.is-boss { border-color: #ff2a2a; background: rgba(22, 3, 6, .94); }
+.fw-bulle-qui { font-size: calc(15 * var(--px)); color: #7cf0c8; letter-spacing: calc(2 * var(--px)); }
+.fw-bulle.is-boss .fw-bulle-qui { color: #ff6a6a; }
+.fw-bulle-txt { margin: calc(4 * var(--px)) 0 0; font-size: calc(20 * var(--px)); }
+
+/* ---------- La fin d'un niveau ---------- */
+.fw-fin-xp {
+  display: flex;
+  flex-direction: column;
+  gap: calc(2 * var(--px));
+  margin-top: calc(8 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  color: #eaf2ff;
+}
+.fw-fin-xp-titre { font-size: calc(18 * var(--px)); color: #45b0ff; }
+.fw-fin-monte { font-size: calc(15 * var(--px)); color: #ffd84a; }
+.fw-fin-fondateur {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  margin-top: calc(10 * var(--px));
+  padding: calc(10 * var(--px)) calc(16 * var(--px));
+  border: calc(3 * var(--px)) solid #ff2a6a;
+  border-radius: calc(14 * var(--px));
+  background: rgba(24, 2, 10, .9);
+  box-shadow: 0 0 calc(26 * var(--px)) rgba(255, 42, 106, .55);
+  font-family: "Courier New", Courier, monospace;
+  color: #ffd8e4;
+  animation: fw-fondateur .6s cubic-bezier(.2, 1.5, .4, 1) both;
+}
+.fw-fin-fondateur-img {
+  width: calc(120 * var(--px));
+  height: calc(120 * var(--px));
+  object-fit: contain;
+  border-radius: calc(10 * var(--px));
+}
+.fw-fin-sous { font-size: calc(13 * var(--px)); color: #c89aa8; }
+@keyframes fw-fondateur { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+
+.fw-boss.is-final img { filter: drop-shadow(0 0 calc(20 * var(--px)) rgba(255, 40, 40, .8)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-quete-ligne.is-urgent, .fw-scene.is-repere::after, .fw-scene.is-eclat::after,
+  .fw-fin-fondateur { animation: none; }
+}
+
+
+/* ---------- Pas assez de Dinders pour partir ---------- */
+
+.fw-manque {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(14 * var(--px));
+  padding: calc(18 * var(--px));
+  text-align: center;
+  font-family: "Courier New", Courier, monospace;
+  color: #ffe8e8;
+}
+
+.fw-manque-titre {
+  margin: 0;
+  font-size: calc(30 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: #ff6b6b;
+  text-shadow: 0 0 calc(18 * var(--px)) rgba(255, 40, 40, .6);
+}
+
+.fw-manque-txt {
+  margin: 0;
+  max-width: calc(660 * var(--px));
+  font-size: calc(17 * var(--px));
+  line-height: 1.45;
+  color: rgba(255, 232, 232, .82);
+}
+
+.fw-manque-rang { display: flex; gap: calc(10 * var(--px)); }
+
+.fw-manque-case {
+  width:  calc(76 * var(--px));
+  height: calc(76 * var(--px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: calc(3 * var(--px)) dashed rgba(255, 232, 232, .28);
+  border-radius: calc(12 * var(--px));
+  background: rgba(4, 16, 22, .7);
+}
+
+.fw-manque-case.is-pris {
+  border-style: solid;
+  border-color: #7cf0c8;
+  box-shadow: 0 0 calc(14 * var(--px)) rgba(124, 240, 200, .4);
+}
+
+.fw-manque-img {
+  max-width: 82%;
+  max-height: 82%;
+  image-rendering: pixelated;
+}
+
+.fw-manque-vide {
+  font-size: calc(30 * var(--px));
+  color: rgba(255, 232, 232, .3);
+  line-height: 1;
+}
+
+.fw-manque-sous {
+  margin: 0;
+  font-size: calc(15 * var(--px));
+  color: #7cf0c8;
+  letter-spacing: calc(1 * var(--px));
+}
+
+.fw-manque-bandeau {
+  margin: calc(8 * var(--px)) auto 0;
+  max-width: calc(700 * var(--px));
+  padding: calc(8 * var(--px)) calc(14 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(255, 107, 107, .6);
+  border-radius: calc(10 * var(--px));
+  background: rgba(30, 4, 8, .8);
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(15 * var(--px));
+  line-height: 1.35;
+  text-align: center;
+  color: #ffb3b3;
+}
+
+/* Le sbire est moins imposant que Le Fondateur : il tient moins de place. */
+.fw-dial-boss--sbire {
+  height: calc(160 * var(--px));
+  filter: drop-shadow(0 0 calc(14 * var(--px)) rgba(255, 90, 40, .6));
+}

@@ -48,6 +48,22 @@
       var tag = el('span', 'slot-rarity', d.rarity);
       tag.dataset.rarity = DP.rarityKey(d.rarity);
       node.appendChild(tag);
+
+      // Son niveau de combat, gagne dans The Founder War.
+      var C = window.FWCAMP;
+      if (C) {
+        var e = C.etat(d.id);
+        var niv = el('span', 'slot-niveau');
+        niv.appendChild(el('span', 'slot-niveau-n', 'Niv. ' + e.niveau));
+        var j = el('span', 'slot-niveau-jauge');
+        var pl = el('span', 'slot-niveau-plein');
+        pl.style.width = (e.k * 100).toFixed(0) + '%';
+        j.appendChild(pl);
+        niv.appendChild(j);
+        niv.title = e.niveau >= e.max ? e.xp + ' XP · niveau maximum'
+                                      : e.xp + ' / ' + e.haut + ' XP';
+        node.appendChild(niv);
+      }
     }
     return node;
   }
@@ -112,6 +128,43 @@
 
     line('Rareté',  d.rarity, 'fiche-line--rarity');
     line('Univers', d.universe);
+
+    // Ce qu'il vaut au combat : son niveau, sa force, ses attaques.
+    var C = window.FWCAMP;
+    if (C) {
+      var e = C.etat(d.id);
+      var bloc = el('div', 'fiche-line fiche-line--niveau');
+      bloc.appendChild(el('span', 'fiche-label', 'Niveau'));
+      var col = el('div', 'fiche-niveau');
+      var haut = el('div', 'fiche-niveau-haut');
+      haut.appendChild(el('strong', 'fiche-niveau-n', 'Niv. ' + e.niveau + ' / ' + e.max));
+      haut.appendChild(el('span', 'fiche-niveau-force',
+        'force ×' + e.force.toFixed(2) + '  ·  ' + e.pv + ' PV'));
+      col.appendChild(haut);
+      var jauge = el('div', 'fiche-niveau-jauge');
+      var plein = el('div', 'fiche-niveau-plein');
+      plein.style.width = (e.k * 100).toFixed(1) + '%';
+      jauge.appendChild(plein);
+      col.appendChild(jauge);
+      col.appendChild(el('span', 'fiche-niveau-xp', e.niveau >= e.max
+        ? e.xp + ' XP  ·  niveau maximum'
+        : e.xp + ' / ' + e.haut + ' XP  ·  il monte en combattant dans The Founder War'));
+      var atk = el('div', 'fiche-attaques');
+      C.attaques(d.id).forEach(function (a) {
+        var b = el('span', 'fiche-attaque' + (a.ultime ? ' is-ultime' : ''));
+        b.appendChild(el('strong', null, a.nom));
+        b.appendChild(el('span', null, ' ' + a.degats[0] + '–' + a.degats[1]));
+        atk.appendChild(b);
+      });
+      var u = C.ultimeDe(d.id);
+      if (u && !C.aUltime(d.id)) {
+        atk.appendChild(el('span', 'fiche-attaque is-ferme',
+          u.nom + ' — niveau ' + C.NIVEAU_ULTIME));
+      }
+      col.appendChild(atk);
+      bloc.appendChild(col);
+      right.appendChild(bloc);
+    }
 
     var descRow = el('div', 'fiche-line fiche-line--desc');
     descRow.appendChild(el('span', 'fiche-label', 'Description'));
@@ -302,11 +355,16 @@
 
         btn.appendChild(el('span', 'dindise-nom', d.rarete));
 
-        var prix = el('span', 'dindise-prix');
-        var carte = el('img', 'dindise-carte');
-        carte.src = DP.creditImg(d.credit); carte.alt = '';
-        prix.appendChild(carte);
-        prix.appendChild(el('strong', null, '× ' + DP.PRICE[d.credit]));
+        var prix = el('span', 'dindise-prix' + (etat.offerte ? ' is-offerte' : ''));
+        if (etat.offerte) {
+          // La toute premiere : on ne montre pas de prix, on l'annonce.
+          prix.appendChild(el('strong', null, 'OFFERTE'));
+        } else {
+          var carte = el('img', 'dindise-carte');
+          carte.src = DP.creditImg(d.credit); carte.alt = '';
+          prix.appendChild(carte);
+          prix.appendChild(el('strong', null, '× ' + DP.PRICE[d.credit]));
+        }
         btn.appendChild(prix);
 
         btn.appendChild(el('span', 'dindise-reste',
@@ -334,8 +392,10 @@
 
     function ouvrir(d) {
       if (shop.dataset.state !== 'idle') return;
-      if (!DP.dindiseEtat(d).ouvrable) return;
-      if (!DP.spend(d.credit)) return;
+      var etatOuv = DP.dindiseEtat(d);
+      if (!etatOuv.ouvrable) return;
+      if (etatOuv.offerte) DP.consommerDindiseOfferte();
+      else if (!DP.spend(d.credit)) return;
       majSolde();
 
       var gagne = DP.draw(d.rarete);

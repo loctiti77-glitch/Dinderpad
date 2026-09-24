@@ -78,7 +78,10 @@
     { id: 'a',                                 name: 'A',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: 'Protecteur d’orbe.' },
     { id: 'h',                                 name: 'H',             form: '',                 rarity: 'Temporel',     universe: '???',    desc: 'Protecteur d’orbe.' },
     { id: 'multinder',                         name: 'Multinder',     form: '',                 rarity: 'Universel',    universe: 'SS-03',  desc: 'Multinder est le gardien des 5 éléments fondamentaux de la planète Terre.' },
-    { id: 'gart-kervelor-king-of-karsovia',    name: 'Gart Kervelor', form: 'King of Karsovia', rarity: 'Multiversel',  universe: 'SSt-03', desc: 'Gart Kervelor est le monarque du royaume de Karsovie.' }
+    { id: 'gart-kervelor-king-of-karsovia',    name: 'Gart Kervelor', form: 'King of Karsovia', rarity: 'Multiversel',  universe: 'SSt-03', desc: 'Gart Kervelor est le monarque du royaume de Karsovie.' },
+    // Il ne s'obtient pas dans une Dindise : il faut le battre au bout de
+    // The Founder War, a l'Effondrement Terminal.
+    { id: 'lefondateur',                       name: 'Le Fondateur',  form: '',                   rarity: 'Temporel',     universe: '???',    horsTirage: true, desc: 'Celui qui voulait remettre de l’ordre dans l’omnivers : un seul monde de chaque, à sa place, pour toujours. Vaincu, il suit désormais celui qui l’a battu.' }
   ];
 
   // ---------- Les items ----------
@@ -400,6 +403,7 @@
       credits: { green: 0, blue: 0, gold: 0, pink: 0 },
       illimite: true,
       creditsAvantInfini: null,
+      dindiseOfferte: false,
       owned: [],
       canne: false,
       peche: {},
@@ -440,7 +444,11 @@
       // Les artefacts trouves dans les mini-jeux, avec la date de la trouvaille.
       artefacts: {},
       // Les failles de securite du DinderTracker, jour par jour.
-      failles: {}
+      failles: {},
+      // The Founder War : le dernier niveau franchi, et l'experience de
+      // chaque Dinder.
+      fwNiveau: 0,
+      dinderXP: {}
     };
   }
 
@@ -476,9 +484,12 @@
     // Un leurre monte dont on n'a plus d'exemplaire ne vaut rien.
     if (p.equip.leurre && !(p.leurres[p.equip.leurre] > 0)) p.equip.leurre = '';
     if (typeof p.illimite !== 'boolean') p.illimite = true;
+    if (typeof p.dindiseOfferte !== 'boolean') p.dindiseOfferte = false;
     if (!Array.isArray(p.niveauxReclames)) p.niveauxReclames = [];
     if (!p.artefacts || typeof p.artefacts !== 'object') p.artefacts = {};
     if (!p.failles || typeof p.failles !== 'object') p.failles = {};
+    if (typeof p.fwNiveau !== 'number') p.fwNiveau = 0;
+    if (!p.dinderXP || typeof p.dinderXP !== 'object') p.dinderXP = {};
     if (typeof p.niveauVu !== 'number') p.niveauVu = 1;
     if (p.creditsAvantInfini === undefined) p.creditsAvantInfini = null;
     if (typeof p.arme !== 'boolean') p.arme = false;
@@ -683,6 +694,21 @@
     return true;
   }
 
+  // La premiere Dindise Universelle ne coute rien : elle lance la
+  // collection. Une seule par profil, et seulement si la capsule a
+  // encore quelque chose a donner.
+  function dindiseOfferte(d) {
+    return d.id === 'universel' && !me().dindiseOfferte;
+  }
+
+  function consommerDindiseOfferte() {
+    var p = me();
+    if (p.dindiseOfferte) return false;
+    p.dindiseOfferte = true;
+    save();
+    return true;
+  }
+
   // ---------- Collection ----------
 
   function owned()    { return me().owned.slice(); }
@@ -699,10 +725,17 @@
   function ofRarity(r)      { return DINDERS.filter(function (d) { return d.rarity === r; }); }
   function missingOf(r)     { return missing().filter(function (d) { return d.rarity === r; }); }
 
+  // Ceux qu'une Dindise peut encore rendre : Le Fondateur ne se tire pas,
+  // il se gagne au bout de The Founder War.
+  function tirables(r) {
+    return missingOf(r).filter(function (d) { return !d.horsTirage; });
+  }
+
   // Tire un Dinder de la rarete demandee, encore absent de la collection :
   // une Dindise ne donne jamais de doublon tant qu'il reste a decouvrir.
   function draw(rarete) {
-    var pool = rarete ? missingOf(rarete) : missing();
+    var pool = rarete ? tirables(rarete)
+                      : missing().filter(function (d) { return !d.horsTirage; });
     if (!pool.length) return null;
     return pool[Math.floor(Math.random() * pool.length)];
   }
@@ -710,12 +743,13 @@
   // Une Dindise est ouvrable si on peut la payer et si elle a de quoi
   // rendre quelque chose.
   function dindiseEtat(d) {
-    var reste = missingOf(d.rarete).length;
-    var total = ofRarity(d.rarete).length;
+    var reste = tirables(d.rarete).length;
+    var total = ofRarity(d.rarete).filter(function (x) { return !x.horsTirage; }).length;
     if (!total)             return { ouvrable: false, raison: 'aucun Dinder', reste: 0, total: 0 };
     if (!reste)             return { ouvrable: false, raison: 'tout trouvé', reste: 0, total: total };
+    if (dindiseOfferte(d)) return { ouvrable: true, raison: '', offerte: true, reste: reste, total: total };
     if (!canAfford(d.credit)) return { ouvrable: false, raison: 'crédits manquants', reste: reste, total: total };
-    return { ouvrable: true, raison: '', reste: reste, total: total };
+    return { ouvrable: true, raison: '', offerte: false, reste: reste, total: total };
   }
 
   // ---------- La peche ----------
@@ -1094,12 +1128,15 @@
       vider: function (p) { p.artefacts = {}; } },
     { id: 'failles', nom: 'Failles de sécurité', det: 'Les failles du DinderTracker contenues',
       vider: function (p) { p.failles = {}; } },
+    { id: 'founder', nom: 'The Founder War', det: 'Les niveaux franchis et l’expérience des Dinders',
+      vider: function (p) { p.fwNiveau = 0; p.dinderXP = {}; } },
     { id: 'niveaux', nom: 'Niveaux', det: 'Les récompenses de niveau déjà réclamées',
       vider: function (p) { p.niveauxReclames = []; p.niveauVu = 1; } },
     { id: 'credits', nom: 'Crédits', det: 'Le solde de crédits, et celui mis de côté',
       vider: function (p) {
         p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
         p.creditsAvantInfini = null;
+        p.dindiseOfferte = false;
       } }
   ];
 
@@ -1112,6 +1149,26 @@
     p.artefacts[id] = Date.now();
     save();
     return true;
+  }
+
+  // ---------- The Founder War ----------
+  function fwNiveau() { return me().fwNiveau || 0; }
+
+  function noterFwNiveau(n) {
+    var p = me();
+    if (n <= (p.fwNiveau || 0)) return false;
+    p.fwNiveau = n;
+    save();
+    return true;
+  }
+
+  function dinderXP(id) { return me().dinderXP[id] || 0; }
+
+  function gagnerDinderXP(id, n) {
+    var p = me();
+    p.dinderXP[id] = (p.dinderXP[id] || 0) + Math.max(0, Math.round(n || 0));
+    save();
+    return p.dinderXP[id];
   }
 
   function niveauxReclames() { return me().niveauxReclames.slice(); }
@@ -1174,11 +1231,13 @@
 
   window.DP = {
     CREDITS: CREDITS, ORDER: ORDER, PRICE: PRICE, DINDERS: DINDERS,
-    SLOTS: SLOTS, RARITIES: RARITIES,
+    SLOTS: SLOTS, RARITIES: RARITIES, tirables: tirables,
     illimite: illimite, passerIllimite: passerIllimite,
     creditsMisDeCote: creditsMisDeCote, creditPurse: creditPurse,
     DINDISES: DINDISES, ofRarity: ofRarity, missingOf: missingOf,
     dindiseEtat: dindiseEtat,
+    dindiseOfferte: dindiseOfferte,
+    consommerDindiseOfferte: consommerDindiseOfferte,
     ITEMS: ITEMS, items: items, CONTINENTS: CONTINENTS,
     aLaCanne: aLaCanne, prendreCanne: prendreCanne,
     prises: prises, aPeche: aPeche, noterPrise: noterPrise,
@@ -1219,6 +1278,8 @@
     PARTIES: PARTIES, viderParties: viderParties,
     niveauxReclames: niveauxReclames, reclamerNiveau: reclamerNiveau,
     artefacts: artefacts, aArtefact: aArtefact, noterArtefact: noterArtefact,
+    fwNiveau: fwNiveau, noterFwNiveau: noterFwNiveau,
+    dinderXP: dinderXP, gagnerDinderXP: gagnerDinderXP,
     maintenant: maintenant, decalerHorloge: decalerHorloge, faille: faille,
     etatFaille: etatFaille, purgerBalise: purgerBalise, contenirFaille: contenirFaille,
     faillesContenues: faillesContenues,
