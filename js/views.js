@@ -20,9 +20,22 @@
     var d = DP.DINDERS[index];
     var got = d && DP.has(d.id);
 
-    var node = el(got ? 'a' : 'div', 'slot' + (got ? '' : ' slot--locked'));
+    // La case de la fusion : tant qu'on ne l'a pas, elle garde son point
+    // d'interrogation, mais elle s'ouvre sur la piste a suivre — a
+    // condition d'avoir deja Dr.Islas Singularity. Une fois la fusion
+    // obtenue, c'est une case comme les autres.
+    var C = window.FWCAMP;
+    var piste = !got && C && d && d.id === C.FUSION && DP.has(C.ISLAS);
+
+    var node = el(got || piste ? 'a' : 'div',
+                  'slot' + (got ? '' : ' slot--locked') + (piste ? ' slot--piste' : ''));
     node.dataset.slot = String(index + 1).padStart(2, '0');
     if (got) { node.href = '#dinder/' + d.id; node.dataset.dinder = d.id; }
+    else if (piste) {
+      node.href = '#founder-war/faille';
+      node.dataset.piste = C.FUSION;
+      node.title = 'Quelque chose manque ici. Va voir.';
+    }
 
     if (got) {
       var img = el('img', 'slot-face');
@@ -42,6 +55,10 @@
     var name = el('span', 'slot-name' + (got && d.name.length > 11 ? ' slot-name--long' : ''));
     name.appendChild(el('span', 'slot-name-main', got ? d.name : '???'));
     if (got && d.form) name.appendChild(el('span', 'slot-name-sub', d.form));
+    // Le mystere reste entier : on dit seulement qu'il y a quelque chose
+    // a faire, pas ce qui se cache derriere.
+    if (piste) name.appendChild(el('span', 'slot-name-sub slot-piste-sous',
+                                   'Quelque chose manque ici'));
     node.appendChild(name);
 
     // La rarete, a droite. Seulement pour un Dinder obtenu : l'afficher

@@ -311,7 +311,7 @@
   //  La vue du jeu
   // ==========================================================
 
-  function viewFounderWar(view) {
+  function viewFounderWar(view, arg) {
     var C = window.FWCAMP;
     var jeu = el('div', 'fw');
     jeu.dataset.etape = 'campagne';
@@ -1628,13 +1628,37 @@
       tete.appendChild(el('p', 'fw-faille-txt', ef.faite
         ? 'Elle s’est refermée. Ce qui en est sorti ne porte plus tout à fait ' +
           'le nom du docteur, ni tout à fait celui du Fondateur.'
-        : 'La Singularity y a emporté Le Fondateur. Le vide ne rend rien sans ' +
-          'contrepartie : trois épreuves, et elle remonte.'));
+        : ef.ouverte
+          ? 'La Singularity y a emporté Le Fondateur. Le vide ne rend rien sans ' +
+            'contrepartie : trois épreuves, et elle remonte.'
+          : 'Il n’y a pas encore de faille. Elle s’ouvrira au bout de The Founder ' +
+            'War, sous ' + C.nomIslas() + ' et Le Fondateur. Voilà le chemin.'));
       box.appendChild(tete);
 
       var liste = el('div', 'fw-quetes');
+
+      // Avant tout : gagner l'Effondrement Terminal avec elle.
+      var entree = el('div', 'fw-quete-carte' + (ef.ouverte ? ' is-faite' : ''));
+      entree.appendChild(el('span', 'fw-quete-num', '0'));
+      var ec = el('div', 'fw-quete-corps');
+      ec.appendChild(el('strong', 'fw-quete-nom', 'L’Effondrement Terminal'));
+      ec.appendChild(el('p', 'fw-quete-det',
+        'Franchir les dix sbires, puis battre Le Fondateur avec ' + C.nomIslas() +
+        ' dans l’équipe. C’est là qu’elle ouvre la faille.'));
+      var ej = el('div', 'fw-quete-jauge');
+      var ep = el('div', 'fw-quete-plein');
+      ep.style.width = (Math.min(DP.fwNiveau(), C.DERNIER) / C.DERNIER * 100).toFixed(0) + '%';
+      ej.appendChild(ep);
+      ec.appendChild(ej);
+      ec.appendChild(el('span', 'fw-quete-compte',
+        Math.min(DP.fwNiveau(), C.DERNIER) + ' / ' + C.DERNIER + ' paliers franchis'));
+      entree.appendChild(ec);
+      entree.appendChild(el('span', 'fw-quete-etat', ef.ouverte ? '✓' : ''));
+      liste.appendChild(entree);
+
       ef.quetes.forEach(function (q, i) {
-        var n = el('div', 'fw-quete-carte' + (q.faite ? ' is-faite' : ''));
+        var n = el('div', 'fw-quete-carte' + (q.faite ? ' is-faite' : '') +
+                          (ef.ouverte ? '' : ' is-endormie'));
         n.appendChild(el('span', 'fw-quete-num', 'I'.repeat(i + 1)));
         var t = el('div', 'fw-quete-corps');
         t.appendChild(el('strong', 'fw-quete-nom', q.nom));
@@ -1666,6 +1690,9 @@
       retour.type = 'button';
       retour.addEventListener('click', ecranCampagne);
       boutons.appendChild(retour);
+      var carnet = el('a', 'fw-btn fw-btn--plat', 'Collection');
+      carnet.href = '#dinders';
+      boutons.appendChild(carnet);
       box.appendChild(boutons);
       jeu.appendChild(box);
     }
@@ -1898,6 +1925,12 @@
 
       box.appendChild(boutons);
       jeu.appendChild(box);
+    }
+
+    // "#founder-war/faille" mene droit a la piste du Dr. Islas : c'est la
+    // porte que la collection ouvre depuis la case de la fusion.
+    if (arg === 'faille' && C && C.etatFusion) {
+      return ecranFaille();
     }
 
     // Le jeu s'ouvre sur sa jaquette.

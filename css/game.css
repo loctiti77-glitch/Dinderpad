@@ -6088,6 +6088,12 @@ body.is-locked .pad-titre { display: none; }
   background: rgba(6, 26, 22, .86);
 }
 
+/* Tant que la faille n'existe pas, les trois epreuves dorment. */
+.fw-quete-carte.is-endormie {
+  opacity: .5;
+  border-style: dashed;
+}
+
 .fw-quete-num {
   flex: 0 0 auto;
   font-size: calc(22 * var(--px));

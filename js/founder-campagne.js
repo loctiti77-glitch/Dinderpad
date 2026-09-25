@@ -412,7 +412,7 @@
       id: 'sceaux',
       nom: 'Les Neuf Sceaux',
       det: 'Abattre les neuf gardiens de l’Odyssée. Chacun scelle une ' +
-           'part du vide où le docteur est tombé.',
+           'part du vide où la Singularity est tombée.',
       jauge: function () {
         var B = window.BOSS;
         if (!B) return { n: 0, sur: 9 };
@@ -423,7 +423,7 @@
     {
       id: 'rancon',
       nom: 'La Rançon du Vide',
-      det: 'Gagner ' + RANCON + ' fois de plus l’Effondrement Terminal avec lui ' +
+      det: 'Gagner ' + RANCON + ' fois de plus l’Effondrement Terminal avec elle ' +
            'dans l’équipe. La faille ne rend rien sans qu’on y retourne.',
       jauge: function () {
         var f = DP.fusion();

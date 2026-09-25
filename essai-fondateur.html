@@ -53,6 +53,18 @@
 
   // L'etape ou l'on veut se placer.
   var AVANT_FIN = /terminal/i.test(location.search);
+  var NEUF      = /neuf/i.test(location.search);
+
+  // "?neuf" : on repart de zero, rien de debloque. Seul l'ecran d'acces
+  // reste passe, pour ne pas avoir a ressortir l'application de codes.
+  if (NEUF) {
+    DP.reset();
+    try { sessionStorage.setItem('dinderpad.unlocked', '1'); } catch (e) {}
+    document.getElementById('etat').textContent =
+      'Profil remis à zéro — ouverture du DinderPad…';
+    setTimeout(function () { location.replace('/#accueil'); }, 700);
+    return;
+  }
 
   // La collection. Avant la fin, ni Le Fondateur ni la fusion : ce sont
   // eux que l'on va chercher.

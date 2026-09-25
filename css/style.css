@@ -238,6 +238,9 @@ html, body {
 
 .slot-name--long .slot-name-main { font-size: calc(40 * var(--px)); }
 
+
+}
+
 .slot-name-sub {
   font-size: calc(34 * var(--px));
   letter-spacing: calc(1 * var(--px));
@@ -2521,4 +2524,58 @@ body[data-phase="welcome"] .lock-welcome {
 
 @media (prefers-reduced-motion: reduce) {
   .dindise-prix.is-offerte { animation: none; }
+}
+
+
+/* ---------- La case qui cache une piste ---------- */
+/* Elle reste fermee — point d'interrogation, nom masque — mais elle mene
+   quelque part. Un halo violet, celui de la faille, la distingue des
+   cases simplement vides. Ces regles passent apres .slot--locked, qui
+   grise et desature tout le reste. */
+
+.slot.slot--piste {
+  cursor: pointer;
+  filter: none;
+  animation: slot-piste-bat 2.2s ease-in-out infinite;
+}
+
+.slot.slot--piste:hover,
+.slot.slot--piste:active { filter: none; }
+
+@keyframes slot-piste-bat {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 calc(11 * var(--px)) #8a3ccc,
+      inset 0 0 calc(18 * var(--px)) calc(12 * var(--px)) rgba(180, 92, 255, .35),
+      0 0 calc(10 * var(--px)) rgba(180, 92, 255, .3);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 calc(11 * var(--px)) #d8a0ff,
+      inset 0 0 calc(22 * var(--px)) calc(14 * var(--px)) rgba(180, 92, 255, .6),
+      0 0 calc(26 * var(--px)) rgba(180, 92, 255, .85);
+  }
+}
+
+.slot.slot--piste .slot-face--locked {
+  color: #f0d8ff;
+  border-color: rgba(216, 160, 255, .9);
+  background: rgba(30, 6, 48, .6);
+  text-shadow: 0 0 calc(16 * var(--px)) rgba(180, 92, 255, .95);
+}
+
+.slot.slot--piste .slot-name-main { color: #e8d0ff; }
+
+.slot-piste-sous {
+  color: #d8a0ff;
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot.slot--piste {
+    animation: none;
+    box-shadow:
+      inset 0 0 0 calc(11 * var(--px)) #b45cff,
+      0 0 calc(14 * var(--px)) rgba(180, 92, 255, .5);
+  }
 }

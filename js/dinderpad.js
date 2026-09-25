@@ -81,6 +81,9 @@
     { id: 'dr-islas-demicos-form',             name: 'Dr.Islas',      form: 'Demicos form',     rarity: 'Universel',    universe: 'SS-03',  desc: 'Après une expérience ayant mal tourné, le docteur dut transplanter son cerveau sur son épaule car l’intérieur de son crâne nécrosait.' },
     { id: 'dr-islas-final-form',               name: 'Dr.Islas',      form: 'Final Form',       rarity: 'Temporel',     universe: 'SS-03',  desc: 'Après avoir créé un trou de ver entre le système solaire et stellaire, le docteur fusionna avec ce dernier et devint l’être cosmique le plus puissant de l’univers.' },
     { id: 'dr-islas-singularity',              name: 'Dr.Islas',      form: 'Singularity',      rarity: 'Temporel',     universe: 'SS-03',  desc: '' },
+    // Juste en dessous de la Singularity : c'est de sa case que part la
+    // piste vers la fusion, tant qu'on ne l'a pas.
+    { id: 'dr-islas-the-founder',              name: 'Dr.Islas the Founder', form: '',            rarity: 'Threat',       universe: '???',    horsTirage: true, desc: '' },
     { id: 'calder-veyne-veinburner',           name: 'Calder Veyne',  form: 'Veinburner',       rarity: 'Universel',    universe: 'SS-03',  desc: 'Calder Veyne, enfant, fut arraché de son foyer pour vivre en maison d’Altérés, où il subit d’atroces expériences jusqu’à devenir Veinburner.' },
     { id: 'carl-sinars-cardinal-sin',          name: 'Carl Sinars',   form: 'Cardinal Sin',     rarity: 'Universel',    universe: 'SS-03',  desc: 'Carl Sinars, un adulte addict aux jeux d’argent, rejoint la quête du Dr. Islas, lui ayant donné accès aux pouvoirs des cartes.' },
     { id: 'edgar-marks-grincrusher',           name: 'Edgar Marks',   form: 'Grincrusher',      rarity: 'Universel',    universe: 'SS-03',  desc: 'Edgar Marks, enfant, fut arraché de son foyer pour vivre en maison d’Altérés, où il subit d’atroces expériences jusqu’à devenir Grincrusher.' },
@@ -99,10 +102,7 @@
     { id: 'william-batant',                    name: 'William Batant', form: '',                rarity: 'Omniversel',   universe: '???',    desc: '' },
     // Il ne s'obtient pas dans une Dindise : il faut le battre au bout de
     // The Founder War, a l'Effondrement Terminal.
-    { id: 'lefondateur',                       name: 'Le Fondateur',  form: '',                   rarity: 'Temporel',     universe: '???',    horsTirage: true, desc: 'Celui qui voulait remettre de l’ordre dans l’omnivers : un seul monde de chaque, à sa place, pour toujours. Vaincu, il suit désormais celui qui l’a battu.' },
-    // Ni l'un ni l'autre : ce qui est revenu de la faille. Aucune Dindise
-    // ne le donne — il faut avoir mene l'histoire jusqu'au bout.
-    { id: 'dr-islas-the-founder',              name: 'Dr.Islas the Founder', form: '',            rarity: 'Threat',       universe: '???',    horsTirage: true, desc: '' }
+    { id: 'lefondateur',                       name: 'Le Fondateur',  form: '',                   rarity: 'Temporel',     universe: '???',    horsTirage: true, desc: 'Celui qui voulait remettre de l’ordre dans l’omnivers : un seul monde de chaque, à sa place, pour toujours. Vaincu, il suit désormais celui qui l’a battu.' }
   ];
 
   // ---------- Les items ----------
