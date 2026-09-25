@@ -204,7 +204,7 @@
     17: [N(9)],
     18: [R(9)],
     19: [C('gold', 3)],
-    20: [T(20), V('etoile'), C('pink', 1)],
+    20: [T(20), V('etoile'), C('gold', 4)],
     21: [C('green', 10)],
     22: [N(12)],
     23: [R(12)],
@@ -219,8 +219,13 @@
 
   // Du 31 au 500 : une recompense qui tourne (credits, Noyaux, Roches,
   // Omniversels) et grossit avec le niveau ; un Dinder mystere aux niveaux
-  // en 5 (35, 45...), des Temporels aux dizaines, un titre de temps en
-  // temps, des revetements aux paliers, et une etoile tous les cent.
+  // en 5 (35, 45...), un titre de temps en temps, des revetements aux
+  // paliers, et une etoile tous les cent.
+  //
+  // Le Credit Temporel, lui, ne tombe qu'aux quarts de centaine — 50, 75,
+  // 100... — et jamais plus d'un a la fois. C'est la monnaie de la rarete
+  // la plus haute : elle doit se meriter. Les dizaines qui le donnaient
+  // rendent desormais des Omniversels.
   var REV_PALIERS = { 50: 'aurore', 75: 'singularite', 100: 'supreme',
                       200: 'nova', 300: 'constellation', 400: 'voie-lactee', 500: 'big-bang' };
   for (var nv = 31; nv <= MAX; nv++) {
@@ -228,7 +233,8 @@
     if (nv % 100 === 0) lot.push(E(nv / 100));
     if (TITRES[nv]) lot.push(T(nv));
     if (REV_PALIERS[nv]) lot.push(V(REV_PALIERS[nv]));
-    if (nv % 10 === 0) lot.push(C('pink', 1 + Math.floor(m / 40)));
+    if (nv % 25 === 0) lot.push(C('pink', 1));
+    else if (nv % 10 === 0) lot.push(C('gold', 5 + Math.floor(m / 30)));
     else if (nv % 10 === 5) { lot.push(D); lot.push(C('blue', 4 + Math.floor(m / 20))); }
     else if (nv % 4 === 1) lot.push(C('green', 10 + Math.round(m / 6)));
     else if (nv % 4 === 2) lot.push(N(12 + Math.round(m / 5)));

@@ -39,7 +39,10 @@
   };
 
   // Une chance sur cent : le Credit Temporel.
-  var CHANCE_CREDIT = 100;
+  // Un Credit Temporel au bout de la ligne : une prise sur quatre cents.
+  // C'etait une sur cent, ce qui en faisait la source la plus facile du
+  // jeu pour la monnaie la plus rare.
+  var CHANCE_CREDIT = 400;
 
   // La souche creuse, au fond du bois du nord-ouest. C'est la que dort le
   // Pistolet Lumithique. Rien ne la signale de loin : il faut y aller.

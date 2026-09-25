@@ -5,8 +5,10 @@
 // On barre une fiche d'un clic : elle vire au gris, une grande croix
 // rouge la traverse et le mot TERMINATED s'inscrit en travers. C'est
 // purement decoratif : rien dans le jeu n'en depend, aucune recompense,
-// aucun deblocage. Seul l'etat barre est retenu au profil, pour qu'une
-// fiche deja vue revienne barree si le tirage la ressort.
+// aucun deblocage.
+//
+// Rien n'est sauvegarde non plus : les marques vivent en memoire, le
+// temps de la page. On recharge, et le carnet repart vierge.
 (function () {
   var DP = window.DP;
   if (!DP) return;
@@ -19,6 +21,25 @@
   }
 
   var PAR_PAGE = 5;
+
+  // Ce qui est barre, par categorie. Volontairement en memoire seule :
+  // le profil ne doit rien en savoir.
+  var marques = { subjects: {}, universes: {} };
+
+  function marque(cat, id) { return !!(marques[cat] && marques[cat][id]); }
+
+  function basculer(cat, id) {
+    if (!marques[cat]) return false;
+    if (marques[cat][id]) { delete marques[cat][id]; return false; }
+    marques[cat][id] = true;
+    return true;
+  }
+
+  function comptees(cat) {
+    return marques[cat] ? Object.keys(marques[cat]).length : 0;
+  }
+
+  function oublier() { marques = { subjects: {}, universes: {} }; }
 
   // ==========================================================
   //  Le portrait d'un monde
@@ -316,7 +337,7 @@
   // ---------- Une fiche ----------
 
   function fiche(cat, sujet) {
-    var fini = DP.codanexFait(cat.id, sujet.id);
+    var fini = marque(cat.id, sujet.id);
     var n = el('button', 'cx-fiche' + (fini ? ' is-finie' : ''));
     n.type = 'button';
     n.dataset.sujet = sujet.id;
@@ -348,7 +369,7 @@
     n.appendChild(el('span', 'cx-terminated', 'TERMINATED'));
 
     n.addEventListener('click', function () {
-      var desormais = DP.basculerCodanex(cat.id, sujet.id);
+      var desormais = basculer(cat.id, sujet.id);
       n.classList.toggle('is-finie', desormais);
       n.setAttribute('aria-pressed', desormais ? 'true' : 'false');
       if (desormais) {
@@ -385,11 +406,10 @@
 
     majCompte = function () {
       var faits = sujets.filter(function (s) {
-        return DP.codanexFait(cat.id, s.id);
+        return marque(cat.id, s.id);
       }).length;
       compte.textContent = cat.nom + '  ·  ' + faits + ' / ' + sujets.length +
-                           ' terminées à l’écran  ·  ' +
-                           DP.codanexListe(cat.id).length + ' au total';
+                           ' terminées  ·  rien n’est gardé';
     };
     majCompte();
 
@@ -417,6 +437,7 @@
 
   window.CODANEX = {
     CATEGORIES: CATEGORIES, PAR_PAGE: PAR_PAGE,
-    categorie: categorie, tirer: tirer
+    categorie: categorie, tirer: tirer,
+    marque: marque, basculer: basculer, comptees: comptees, oublier: oublier
   };
 })();

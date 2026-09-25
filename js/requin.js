@@ -43,12 +43,12 @@
     { id: 'blanc', nom: 'Grand Blanc', palier: 4,
       pv: 2750, vitesse: 42, echelle: 1.92, duree: 44000, plonge: 8600,
       couleurs: ['#6d7885', '#a8b4c0', '#fbfdff'], oeil: '#d8452c',
-      credit: 'pink', credits: 1, noyaux: 8, poissons: 4,
+      credit: 'gold', credits: 4, noyaux: 8, poissons: 4,
       texte: 'Celui dont on parle. Il est plus gros que ce qu’on raconte.' },
     { id: 'megalodon', nom: 'Mégalodon', palier: 5,
       pv: 5600, vitesse: 34, echelle: 2.3, duree: 48000, plonge: 9400,
       couleurs: ['#3b3a4e', '#63627e', '#cfcde0'], oeil: '#ff2a1e',
-      credit: 'pink', credits: 2, noyaux: 12, poissons: 6,
+      credit: 'pink', credits: 1, noyaux: 12, poissons: 6,
       texte: 'Il n’aurait pas dû rester un seul de ces lacs assez profond pour lui.' }
   ];
 
