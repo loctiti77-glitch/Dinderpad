@@ -5882,3 +5882,433 @@ body.is-locked .pad-titre { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .ody-holo { animation: none; opacity: 1; }
 }
+
+
+/* ==========================================================
+   La faille du Dr. Islas
+   ========================================================== */
+
+/* ---------- Le sacrifice, a l'Effondrement Terminal ---------- */
+
+.fw-sacrifice {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: calc(24 * var(--px));
+  background: #05030a;
+  font-family: "Courier New", Courier, monospace;
+  color: #e8d8ff;
+}
+
+.fw-sac-ciel {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 62%, rgba(180, 92, 255, .22), transparent 62%),
+    #05030a;
+}
+
+.fw-sac-faille {
+  position: absolute;
+  left: 50%;
+  bottom: calc(96 * var(--px));
+  width: calc(10 * var(--px));
+  height: calc(6 * var(--px));
+  margin-left: calc(-5 * var(--px));
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, #ffffff, #c86aff 38%, #2a0140 74%, transparent);
+  box-shadow: 0 0 calc(30 * var(--px)) rgba(200, 106, 255, .9);
+  opacity: 0;
+  transition: width .9s ease, height .9s ease, margin-left .9s ease, opacity .6s ease;
+}
+
+.fw-sacrifice.is-ouverture .fw-sac-faille {
+  width: calc(300 * var(--px));
+  height: calc(120 * var(--px));
+  margin-left: calc(-150 * var(--px));
+  opacity: 1;
+}
+
+.fw-sacrifice.is-close .fw-sac-faille {
+  width: 0;
+  height: 0;
+  margin-left: 0;
+  opacity: 0;
+  transition: width 1.1s ease, height 1.1s ease, margin-left 1.1s ease, opacity 1.1s ease;
+}
+
+.fw-sac-duo {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: calc(28 * var(--px));
+  margin-bottom: calc(104 * var(--px));
+  transition: transform 1.8s cubic-bezier(.6, 0, .9, .4), opacity 1.6s ease;
+}
+
+.fw-sac-islas, .fw-sac-fondateur {
+  height: calc(150 * var(--px));
+  image-rendering: pixelated;
+}
+
+.fw-sac-islas     { filter: drop-shadow(0 0 calc(16 * var(--px)) rgba(180, 92, 255, .9)); }
+.fw-sac-fondateur { filter: drop-shadow(0 0 calc(14 * var(--px)) rgba(255, 42, 42, .8)); }
+
+.fw-sacrifice.is-chute .fw-sac-duo {
+  transform: translateY(calc(180 * var(--px))) scale(.35) rotate(14deg);
+  opacity: 0;
+}
+
+.fw-sac-mots {
+  position: relative;
+  min-height: calc(74 * var(--px));
+  width: calc(660 * var(--px));
+  max-width: 92%;
+}
+
+.fw-sac-bulle {
+  margin: 0;
+  padding: calc(10 * var(--px)) calc(16 * var(--px));
+  border: calc(3 * var(--px)) solid #b45cff;
+  border-radius: calc(12 * var(--px));
+  background: rgba(14, 4, 26, .94);
+  font-size: calc(19 * var(--px));
+  line-height: 1.35;
+  text-align: center;
+  animation: fw-sac-dit .45s ease both;
+}
+
+.fw-sac-bulle.is-boss { border-color: #ff2a2a; background: rgba(24, 3, 6, .94); }
+
+@keyframes fw-sac-dit {
+  from { opacity: 0; transform: translateY(calc(10 * var(--px))); }
+  to   { opacity: 1; transform: none; }
+}
+
+.fw-sac-fin {
+  margin: 0;
+  font-size: calc(21 * var(--px));
+  text-align: center;
+  color: #c9a8ff;
+  letter-spacing: calc(1 * var(--px));
+  animation: fw-sac-dit .9s ease both;
+}
+
+.fw-sac-btn {
+  position: relative;
+  margin-top: calc(14 * var(--px));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .6s ease;
+}
+
+.fw-sacrifice.is-suite .fw-sac-btn { opacity: 1; pointer-events: auto; }
+
+/* ---------- L'appel de la faille, sur la campagne ---------- */
+
+.fw-faille-appel {
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--px));
+  margin: calc(10 * var(--px)) auto 0;
+  max-width: calc(700 * var(--px));
+  padding: calc(10 * var(--px)) calc(16 * var(--px));
+  border: calc(3 * var(--px)) solid #b45cff;
+  border-radius: calc(12 * var(--px));
+  background: rgba(16, 4, 28, .9);
+  color: #e8d8ff;
+  font-family: "Courier New", Courier, monospace;
+  text-align: center;
+  cursor: pointer;
+}
+
+.fw-faille-appel-titre { font-size: calc(19 * var(--px)); letter-spacing: calc(3 * var(--px)); }
+.fw-faille-appel-sous  { font-size: calc(15 * var(--px)); color: #c9a8ff; }
+
+.fw-faille-appel.is-prete { animation: fw-faille-bat 1.5s ease-in-out infinite alternate; }
+
+@keyframes fw-faille-bat {
+  from { box-shadow: 0 0 calc(10 * var(--px)) rgba(180, 92, 255, .35); }
+  to   { box-shadow: 0 0 calc(30 * var(--px)) rgba(180, 92, 255, .95); }
+}
+
+.fw-faille-appel.is-close { border-color: #6a5a80; color: #b0a6c0; }
+
+/* ---------- Les trois quetes ---------- */
+
+.fw-faille {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: calc(12 * var(--px));
+  padding: calc(16 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  color: #e8d8ff;
+}
+
+.fw-faille-tete { text-align: center; }
+
+.fw-faille-titre {
+  margin: 0 0 calc(6 * var(--px));
+  font-size: calc(28 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: #c86aff;
+  text-shadow: 0 0 calc(20 * var(--px)) rgba(200, 106, 255, .6);
+}
+
+.fw-faille-txt {
+  margin: 0 auto;
+  max-width: calc(680 * var(--px));
+  font-size: calc(16 * var(--px));
+  line-height: 1.45;
+  color: rgba(232, 216, 255, .82);
+}
+
+.fw-quetes { display: flex; flex-direction: column; gap: calc(10 * var(--px)); }
+
+.fw-quete-carte {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(12 * var(--px));
+  padding: calc(10 * var(--px)) calc(14 * var(--px));
+  border: calc(3 * var(--px)) solid rgba(180, 92, 255, .45);
+  border-radius: calc(12 * var(--px));
+  background: rgba(12, 4, 22, .86);
+}
+
+.fw-quete-carte.is-faite {
+  border-color: #7cf0c8;
+  background: rgba(6, 26, 22, .86);
+}
+
+.fw-quete-num {
+  flex: 0 0 auto;
+  font-size: calc(22 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  color: #c86aff;
+}
+
+.fw-quete-carte.is-faite .fw-quete-num { color: #7cf0c8; }
+
+.fw-quete-corps { flex: 1 1 auto; min-width: 0; }
+.fw-quete-nom   { display: block; font-size: calc(19 * var(--px)); }
+
+.fw-quete-det {
+  margin: calc(4 * var(--px)) 0 calc(8 * var(--px));
+  font-size: calc(15 * var(--px));
+  line-height: 1.4;
+  color: rgba(232, 216, 255, .7);
+}
+
+.fw-quete-jauge {
+  height: calc(9 * var(--px));
+  border-radius: calc(5 * var(--px));
+  background: rgba(0, 0, 0, .55);
+  overflow: hidden;
+}
+
+.fw-quete-plein {
+  height: 100%;
+  background: linear-gradient(90deg, #6a2aa8, #c86aff);
+  transition: width .5s ease;
+}
+
+.fw-quete-carte.is-faite .fw-quete-plein { background: linear-gradient(90deg, #1a8a6a, #7cf0c8); }
+
+.fw-quete-compte { font-size: calc(14 * var(--px)); color: rgba(232, 216, 255, .6); }
+.fw-quete-etat   { font-size: calc(26 * var(--px)); color: #7cf0c8; }
+
+.fw-btn--fusion { border-color: #c86aff; color: #f0e0ff; }
+
+/* ---------- La fusion ---------- */
+
+.fw-fusion {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(16 * var(--px));
+  background: #05030a;
+  font-family: "Courier New", Courier, monospace;
+  color: #e8d8ff;
+}
+
+.fw-fus-vortex {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: calc(340 * var(--px));
+  height: calc(340 * var(--px));
+  margin: calc(-170 * var(--px)) 0 0 calc(-170 * var(--px));
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #2a0140, #b45cff, #2a0140, #c86aff, #2a0140);
+  opacity: .22;
+  filter: blur(calc(6 * var(--px)));
+  animation: fw-fus-tourne 7s linear infinite;
+}
+
+@keyframes fw-fus-tourne { to { transform: rotate(360deg); } }
+
+.fw-fus-halo {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 46%, rgba(200, 106, 255, .3), transparent 58%);
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+
+.fw-fusion.is-tourne .fw-fus-halo { opacity: 1; }
+
+.fw-fus-scene {
+  position: relative;
+  width: calc(420 * var(--px));
+  height: calc(240 * var(--px));
+}
+
+.fw-fus-a, .fw-fus-b, .fw-fus-ne {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  height: calc(160 * var(--px));
+  margin-left: calc(-52 * var(--px));
+  image-rendering: pixelated;
+  transition: transform 1.8s ease, opacity .6s ease;
+}
+
+.fw-fus-a {
+  transform: translate(calc(-120 * var(--px)), calc(60 * var(--px)));
+  opacity: 0;
+  filter: drop-shadow(0 0 calc(16 * var(--px)) rgba(180, 92, 255, .9));
+}
+
+.fw-fus-b {
+  transform: translate(calc(120 * var(--px)), calc(60 * var(--px)));
+  opacity: 0;
+  filter: drop-shadow(0 0 calc(14 * var(--px)) rgba(255, 42, 42, .8));
+}
+
+.fw-fus-ne {
+  opacity: 0;
+  transform: scale(.6);
+  filter: drop-shadow(0 0 calc(26 * var(--px)) rgba(200, 106, 255, 1));
+}
+
+.fw-fusion.is-montee .fw-fus-a { transform: translate(calc(-120 * var(--px)), 0); opacity: 1; }
+.fw-fusion.is-montee .fw-fus-b { transform: translate(calc(120 * var(--px)), 0); opacity: 1; }
+
+.fw-fusion.is-tourne .fw-fus-a { animation: fw-fus-orbe-a 2s ease-in-out infinite alternate; }
+.fw-fusion.is-tourne .fw-fus-b { animation: fw-fus-orbe-b 2s ease-in-out infinite alternate; }
+
+@keyframes fw-fus-orbe-a {
+  from { transform: translate(calc(-120 * var(--px)), 0) rotate(-6deg); }
+  to   { transform: translate(calc(-40 * var(--px)), calc(-18 * var(--px))) rotate(6deg); }
+}
+
+@keyframes fw-fus-orbe-b {
+  from { transform: translate(calc(120 * var(--px)), 0) rotate(6deg); }
+  to   { transform: translate(calc(40 * var(--px)), calc(-18 * var(--px))) rotate(-6deg); }
+}
+
+.fw-fusion.is-choc .fw-fus-a,
+.fw-fusion.is-choc .fw-fus-b {
+  animation: none;
+  transform: translate(0, 0) scale(1.1);
+  transition: transform .45s cubic-bezier(.7, -0.4, .9, .5);
+}
+
+.fw-fus-eclair {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fw-fusion.is-eclair .fw-fus-eclair { animation: fw-fus-flash .9s ease both; }
+
+@keyframes fw-fus-flash {
+  0%   { opacity: 0; }
+  18%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.fw-fusion.is-eclair .fw-fus-a,
+.fw-fusion.is-eclair .fw-fus-b { opacity: 0; }
+
+.fw-fusion.is-ne .fw-fus-ne {
+  opacity: 1;
+  transform: scale(1);
+  transition: transform 1s cubic-bezier(.2, 1.5, .4, 1), opacity .5s ease;
+}
+
+.fw-fus-mots {
+  position: relative;
+  margin: 0;
+  font-size: calc(19 * var(--px));
+  text-align: center;
+  color: #c9a8ff;
+  letter-spacing: calc(1 * var(--px));
+}
+
+.fw-fus-carte {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8 * var(--px));
+  padding: calc(14 * var(--px)) calc(24 * var(--px));
+  border: calc(3 * var(--px)) solid #c86aff;
+  border-radius: calc(14 * var(--px));
+  background: #120424;
+  box-shadow: 0 0 calc(34 * var(--px)) rgba(200, 106, 255, .55);
+  text-align: center;
+  animation: fw-sac-dit .7s ease both;
+}
+
+.fw-fus-carte-img {
+  width: calc(104 * var(--px));
+  height: calc(104 * var(--px));
+  object-fit: contain;
+  border-radius: calc(10 * var(--px));
+  background: radial-gradient(circle at 50% 45%, rgba(200, 106, 255, .35), rgba(8, 2, 16, .9));
+}
+
+.fw-fus-carte strong {
+  font-size: calc(18 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  color: #ffffff;
+  text-shadow: 0 0 calc(14 * var(--px)) rgba(200, 106, 255, .9);
+}
+
+.fw-fus-rarete { font-size: calc(15 * var(--px)); color: #e0b0ff; }
+
+/* Le texte et le bouton passent devant le halo. */
+.fw-fus-mots, .fw-fus-btn { z-index: 2; }
+
+.fw-fus-btn { position: relative; }
+
+/* ---------- Le Dinder exige dans l'equipe ---------- */
+
+.fw-compte.is-exige { color: #ffb3b3; }
+
+.fw-carte.is-exige { box-shadow: 0 0 calc(16 * var(--px)) rgba(180, 92, 255, .85); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-sac-bulle, .fw-sac-fin, .fw-fus-carte { animation: none; }
+  .fw-fus-vortex, .fw-faille-appel.is-prete { animation: none; }
+  .fw-fusion.is-tourne .fw-fus-a,
+  .fw-fusion.is-tourne .fw-fus-b { animation: none; }
+  .fw-sac-duo, .fw-sac-faille, .fw-fus-a, .fw-fus-b, .fw-fus-ne { transition: none; }
+}

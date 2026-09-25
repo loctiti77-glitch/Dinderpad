@@ -14,7 +14,7 @@ const IDS = [
   'calder-veyne-veinburner', 'carl-sinars-cardinal-sin', 'edgar-marks-grincrusher',
   'he-melt', 'v', 'a', 'h', 'multinder', 'gart-kervelor-king-of-karsovia',
   'harry-hargrove', 'marlon-coach', 'baron-zofiax', 'timeo-traveler',
-  'william-batant'
+  'william-batant', 'dr-islas-singularity', 'dr-islas-the-founder'
 ];
 
 function versHsv(r, g, b) {

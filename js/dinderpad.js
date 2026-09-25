@@ -21,16 +21,26 @@
   // au plus rare. Les Dindises par rarete s'appuieront la-dessus.
   var RARITIES = ['Universel', 'Multiversel', 'Omniversel', 'Temporel'];
 
+  // Threat se tient a part : aucune Dindise ne la vend, aucune monnaie ne
+  // lui correspond. On ne l'obtient qu'au bout d'une histoire. Elle n'est
+  // donc pas dans RARITIES, que les Dindises parcourent.
+  var MENACE = 'Threat';
+
   // Chaque rarete emprunte la couleur de la monnaie du meme nom : un
   // Dinder Universel s'affiche en vert, comme le credit Universel.
+  // Threat, elle, n'a pas de monnaie : elle prend le violet du vide.
   var RARITY_KEY = {
     'Universel':   'green',
     'Multiversel': 'blue',
     'Omniversel':  'gold',
-    'Temporel':    'pink'
+    'Temporel':    'pink',
+    'Threat':      'threat'
   };
 
   function rarityKey(r) { return RARITY_KEY[r] || 'green'; }
+
+  // Une rarete qu'aucune Dindise ne peut rendre.
+  function horsDindise(r) { return r === MENACE; }
 
   // ---------- Les Dindises ----------
   // Une Dindise par rarete. Elle se paie avec la monnaie du meme nom et ne
@@ -70,6 +80,7 @@
     { id: 'dr-islas-human-form',               name: 'Dr.Islas',      form: 'Human form',       rarity: 'Universel',    universe: 'SS-03',  desc: 'Un scientifique reconnu aux quatre coins du monde, sain de corps et d’esprit.' },
     { id: 'dr-islas-demicos-form',             name: 'Dr.Islas',      form: 'Demicos form',     rarity: 'Universel',    universe: 'SS-03',  desc: 'Après une expérience ayant mal tourné, le docteur dut transplanter son cerveau sur son épaule car l’intérieur de son crâne nécrosait.' },
     { id: 'dr-islas-final-form',               name: 'Dr.Islas',      form: 'Final Form',       rarity: 'Temporel',     universe: 'SS-03',  desc: 'Après avoir créé un trou de ver entre le système solaire et stellaire, le docteur fusionna avec ce dernier et devint l’être cosmique le plus puissant de l’univers.' },
+    { id: 'dr-islas-singularity',              name: 'Dr.Islas',      form: 'Singularity',      rarity: 'Temporel',     universe: 'SS-03',  desc: '' },
     { id: 'calder-veyne-veinburner',           name: 'Calder Veyne',  form: 'Veinburner',       rarity: 'Universel',    universe: 'SS-03',  desc: 'Calder Veyne, enfant, fut arraché de son foyer pour vivre en maison d’Altérés, où il subit d’atroces expériences jusqu’à devenir Veinburner.' },
     { id: 'carl-sinars-cardinal-sin',          name: 'Carl Sinars',   form: 'Cardinal Sin',     rarity: 'Universel',    universe: 'SS-03',  desc: 'Carl Sinars, un adulte addict aux jeux d’argent, rejoint la quête du Dr. Islas, lui ayant donné accès aux pouvoirs des cartes.' },
     { id: 'edgar-marks-grincrusher',           name: 'Edgar Marks',   form: 'Grincrusher',      rarity: 'Universel',    universe: 'SS-03',  desc: 'Edgar Marks, enfant, fut arraché de son foyer pour vivre en maison d’Altérés, où il subit d’atroces expériences jusqu’à devenir Grincrusher.' },
@@ -88,7 +99,10 @@
     { id: 'william-batant',                    name: 'William Batant', form: '',                rarity: 'Omniversel',   universe: '???',    desc: '' },
     // Il ne s'obtient pas dans une Dindise : il faut le battre au bout de
     // The Founder War, a l'Effondrement Terminal.
-    { id: 'lefondateur',                       name: 'Le Fondateur',  form: '',                   rarity: 'Temporel',     universe: '???',    horsTirage: true, desc: 'Celui qui voulait remettre de l’ordre dans l’omnivers : un seul monde de chaque, à sa place, pour toujours. Vaincu, il suit désormais celui qui l’a battu.' }
+    { id: 'lefondateur',                       name: 'Le Fondateur',  form: '',                   rarity: 'Temporel',     universe: '???',    horsTirage: true, desc: 'Celui qui voulait remettre de l’ordre dans l’omnivers : un seul monde de chaque, à sa place, pour toujours. Vaincu, il suit désormais celui qui l’a battu.' },
+    // Ni l'un ni l'autre : ce qui est revenu de la faille. Aucune Dindise
+    // ne le donne — il faut avoir mene l'histoire jusqu'au bout.
+    { id: 'dr-islas-the-founder',              name: 'Dr.Islas the Founder', form: '',            rarity: 'Threat',       universe: '???',    horsTirage: true, desc: '' }
   ];
 
   // ---------- Les items ----------
@@ -411,6 +425,7 @@
       illimite: true,
       creditsAvantInfini: null,
       dindiseOfferte: false,
+      fusion: { sacrifice: false, victoires: 0, quetes: [], faite: false },
       owned: [],
       canne: false,
       peche: {},
@@ -492,6 +507,13 @@
     if (p.equip.leurre && !(p.leurres[p.equip.leurre] > 0)) p.equip.leurre = '';
     if (typeof p.illimite !== 'boolean') p.illimite = true;
     if (typeof p.dindiseOfferte !== 'boolean') p.dindiseOfferte = false;
+    if (!p.fusion || typeof p.fusion !== 'object') {
+      p.fusion = { sacrifice: false, victoires: 0, quetes: [], faite: false };
+    }
+    if (typeof p.fusion.sacrifice !== 'boolean') p.fusion.sacrifice = false;
+    if (typeof p.fusion.victoires !== 'number') p.fusion.victoires = 0;
+    if (!Array.isArray(p.fusion.quetes)) p.fusion.quetes = [];
+    if (typeof p.fusion.faite !== 'boolean') p.fusion.faite = false;
     if (!Array.isArray(p.niveauxReclames)) p.niveauxReclames = [];
     if (!p.artefacts || typeof p.artefacts !== 'object') p.artefacts = {};
     if (!p.failles || typeof p.failles !== 'object') p.failles = {};
@@ -757,6 +779,43 @@
     if (dindiseOfferte(d)) return { ouvrable: true, raison: '', offerte: true, reste: reste, total: total };
     if (!canAfford(d.credit)) return { ouvrable: false, raison: 'crédits manquants', reste: reste, total: total };
     return { ouvrable: true, raison: '', offerte: false, reste: reste, total: total };
+  }
+
+  // ---------- La faille du Dr. Islas ----------
+  // Le sacrifice a l'Effondrement Terminal ouvre l'histoire ; trois
+  // quetes la ferment, et la fusion en sort.
+
+  function fusion() {
+    var f = me().fusion;
+    return { sacrifice: f.sacrifice, victoires: f.victoires,
+             quetes: f.quetes.slice(), faite: f.faite };
+  }
+
+  function noterSacrifice() {
+    var p = me();
+    if (p.fusion.sacrifice) { p.fusion.victoires++; save(); return false; }
+    p.fusion.sacrifice = true;
+    p.fusion.victoires++;
+    save();
+    return true;
+  }
+
+  function noterQuete(id) {
+    var p = me();
+    if (p.fusion.quetes.indexOf(id) !== -1) return false;
+    p.fusion.quetes.push(id);
+    save();
+    return true;
+  }
+
+  function aQuete(id) { return me().fusion.quetes.indexOf(id) !== -1; }
+
+  function noterFusion() {
+    var p = me();
+    if (p.fusion.faite) return false;
+    p.fusion.faite = true;
+    save();
+    return true;
   }
 
   // ---------- La peche ----------
@@ -1135,8 +1194,11 @@
       vider: function (p) { p.artefacts = {}; } },
     { id: 'failles', nom: 'Failles de sécurité', det: 'Les failles du DinderTracker contenues',
       vider: function (p) { p.failles = {}; } },
-    { id: 'founder', nom: 'The Founder War', det: 'Les niveaux franchis et l’expérience des Dinders',
-      vider: function (p) { p.fwNiveau = 0; p.dinderXP = {}; } },
+    { id: 'founder', nom: 'The Founder War', det: 'Les niveaux franchis, l’expérience des Dinders et la faille du Dr. Islas',
+      vider: function (p) {
+        p.fwNiveau = 0; p.dinderXP = {};
+        p.fusion = { sacrifice: false, victoires: 0, quetes: [], faite: false };
+      } },
     { id: 'niveaux', nom: 'Niveaux', det: 'Les récompenses de niveau déjà réclamées',
       vider: function (p) { p.niveauxReclames = []; p.niveauVu = 1; } },
     { id: 'credits', nom: 'Crédits', det: 'Le solde de crédits, et celui mis de côté',
@@ -1245,6 +1307,9 @@
     dindiseEtat: dindiseEtat,
     dindiseOfferte: dindiseOfferte,
     consommerDindiseOfferte: consommerDindiseOfferte,
+    MENACE: MENACE, horsDindise: horsDindise,
+    fusion: fusion, noterSacrifice: noterSacrifice,
+    noterQuete: noterQuete, aQuete: aQuete, noterFusion: noterFusion,
     ITEMS: ITEMS, items: items, CONTINENTS: CONTINENTS,
     aLaCanne: aLaCanne, prendreCanne: prendreCanne,
     prises: prises, aPeche: aPeche, noterPrise: noterPrise,

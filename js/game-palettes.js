@@ -27,15 +27,15 @@ window.FW_PALETTES = {
     "chaussures": "#221d2d"
   },
   "dr-islas-final-form": {
-    "peau": "#e7be99",
-    "peauOmbre": "#b49477",
-    "cheveux": "#fcf7fd",
-    "cheveuxClair": "#fdfafe",
-    "vetement": "#281d3e",
-    "vetementOmbre": "#1c142b",
-    "accent": "#1e0c50",
-    "bas": "#fdf8f7",
-    "basOmbre": "#b1aead",
+    "peau": "#f3b987",
+    "peauOmbre": "#be9069",
+    "cheveux": "#291a2e",
+    "cheveuxClair": "#6e6371",
+    "vetement": "#2b0f3e",
+    "vetementOmbre": "#1e0b2b",
+    "accent": "#3b1a50",
+    "bas": "#461666",
+    "basOmbre": "#310f48",
     "chaussures": "#15161b"
   },
   "calder-veyne-veinburner": {
@@ -205,6 +205,30 @@ window.FW_PALETTES = {
     "bas": "#261311",
     "basOmbre": "#1b0d0c",
     "chaussures": "#15161b"
+  },
+  "dr-islas-singularity": {
+    "peau": "#e7be99",
+    "peauOmbre": "#b49477",
+    "cheveux": "#451b59",
+    "cheveuxClair": "#81648e",
+    "vetement": "#2e113e",
+    "vetementOmbre": "#200c2b",
+    "accent": "#3f1750",
+    "bas": "#1d0a26",
+    "basOmbre": "#14071b",
+    "chaussures": "#15161b"
+  },
+  "dr-islas-the-founder": {
+    "peau": "#e7be99",
+    "peauOmbre": "#b49477",
+    "cheveux": "#2a0167",
+    "cheveuxClair": "#6e5298",
+    "vetement": "#27073e",
+    "vetementOmbre": "#1b052b",
+    "accent": "#362850",
+    "bas": "#180426",
+    "basOmbre": "#11031b",
+    "chaussures": "#1b1522"
   },
   "lefondateur": {
     "peau": "#f7c577",

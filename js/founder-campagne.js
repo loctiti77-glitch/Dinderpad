@@ -19,8 +19,11 @@
   var NIVEAU_MAX = 10;
 
   // Ce que vaut la rarete, au depart.
+  // Plus un Dinder est rare, plus il frappe fort. Threat est au-dessus de
+  // tout : c'est ce qui est remonte de la faille.
   var FORCE_RARETE = {
-    'Universel': 1, 'Multiversel': 1.14, 'Omniversel': 1.3, 'Temporel': 1.5
+    'Universel': 1, 'Multiversel': 1.14, 'Omniversel': 1.3, 'Temporel': 1.5,
+    'Threat': 1.8
   };
 
   function forceRarete(id) {
@@ -89,6 +92,10 @@
       { nom: 'Horizon Partagé', degats: [150, 195], ultime: true, soinTous: 45 },
     'multinder':
       { nom: 'Les Cinq Éléments', degats: [40, 56], coups: 5, ultime: true },
+    'dr-islas-singularity':
+      { nom: 'Point de Non-Retour', degats: [196, 248], ultime: true, etourdit: 0.85 },
+    'dr-islas-the-founder':
+      { nom: 'Ordre du Vide', degats: [240, 300], ultime: true, soinTous: 60 },
     'harry-hargrove':
       { nom: 'Arrêt sur Image', degats: [112, 146], ultime: true, etourdit: 0.75 },
     'marlon-coach':
@@ -373,6 +380,96 @@
   ];
 
   // L'Effondrement Terminal : Le Fondateur en personne, et ce qu'il a a dire.
+  // ==========================================================
+  //  La faille du Dr. Islas
+  // ==========================================================
+  // L'Effondrement Terminal ne se joue qu'avec la Singularity du Dr.
+  // Islas : c'est elle qui disparait dans la faille, emportant Le
+  // Fondateur. Trois quetes l'en ramenent — mais pas seule.
+
+  var ISLAS = 'dr-islas-singularity';
+  var FUSION = 'dr-islas-the-founder';
+
+  // Le nom affiche, pris au carnet : il suit le Dinder si celui-ci change.
+  function nomIslas() {
+    var d = DP.byId(ISLAS);
+    if (!d) return 'le Dinder exigé';
+    return d.name + (d.form ? ' ' + d.form : '');
+  }
+
+  // Combien de fois il faut retourner dans la faille, apres le sacrifice.
+  var RANCON = 3;
+
+  var QUETES = [
+    {
+      id: 'serment',
+      nom: 'Le Serment du Docteur',
+      det: 'Mener ' + nomIslas() + ' au niveau ' + NIVEAU_MAX + '. ' +
+           'Ce qui revient de la faille doit être au sommet de sa forme.',
+      jauge: function () { return { n: niveau(ISLAS), sur: NIVEAU_MAX }; }
+    },
+    {
+      id: 'sceaux',
+      nom: 'Les Neuf Sceaux',
+      det: 'Abattre les neuf gardiens de l’Odyssée. Chacun scelle une ' +
+           'part du vide où le docteur est tombé.',
+      jauge: function () {
+        var B = window.BOSS;
+        if (!B) return { n: 0, sur: 9 };
+        var faits = B.ORDRE.filter(function (id) { return B.vaincu(id); }).length;
+        return { n: faits, sur: B.ORDRE.length };
+      }
+    },
+    {
+      id: 'rancon',
+      nom: 'La Rançon du Vide',
+      det: 'Gagner ' + RANCON + ' fois de plus l’Effondrement Terminal avec lui ' +
+           'dans l’équipe. La faille ne rend rien sans qu’on y retourne.',
+      jauge: function () {
+        var f = DP.fusion();
+        return { n: Math.max(0, Math.min(RANCON, f.victoires - 1)), sur: RANCON };
+      }
+    }
+  ];
+
+  function quete(id) {
+    for (var i = 0; i < QUETES.length; i++) if (QUETES[i].id === id) return QUETES[i];
+    return null;
+  }
+
+  // Une quete est finie quand sa jauge est pleine — ou qu'on l'a deja
+  // inscrite au profil, pour qu'un Dinder remis a zero ne la reprenne pas.
+  function queteFaite(id) {
+    if (DP.aQuete(id)) return true;
+    var q = quete(id);
+    if (!q) return false;
+    var j = q.jauge();
+    if (j.n >= j.sur) { DP.noterQuete(id); return true; }
+    return false;
+  }
+
+  // L'etat de l'histoire, tel que l'ecran l'affiche.
+  function etatFusion() {
+    var f = DP.fusion();
+    var l = QUETES.map(function (q) {
+      var j = q.jauge();
+      return { id: q.id, nom: q.nom, det: q.det, n: Math.min(j.n, j.sur), sur: j.sur,
+               faite: queteFaite(q.id) };
+    });
+    return {
+      ouverte: f.sacrifice,
+      faite: f.faite || DP.has(FUSION),
+      victoires: f.victoires,
+      quetes: l,
+      pretes: l.filter(function (q) { return q.faite; }).length,
+      prete: f.sacrifice && !f.faite && l.every(function (q) { return q.faite; })
+    };
+  }
+
+  // La Singularity est-elle indispensable ici, et l'a-t-on ?
+  function exigeIslas(n) { return n === DERNIER; }
+  function aIslas() { return DP.has(ISLAS); }
+
   var FINAL = {
     n: 11, nom: 'Effondrement Terminal', titre: 'Le Fondateur',
     teinte: '#ff2a2a', pv: 4800, coup: [74, 98],
@@ -477,6 +574,10 @@
   }
 
   window.FWCAMP = {
+    ISLAS: ISLAS, FUSION: FUSION, RANCON: RANCON, QUETES: QUETES,
+    nomIslas: nomIslas,
+    quete: quete, queteFaite: queteFaite, etatFusion: etatFusion,
+    exigeIslas: exigeIslas, aIslas: aIslas,
     NIVEAUX: NIVEAUX, FINAL: FINAL, DERNIER: DERNIER, NIVEAU_MAX: NIVEAU_MAX,
     NIVEAU_ULTIME: NIVEAU_ULTIME, ULTIMES: ULTIMES, FORCE_RARETE: FORCE_RARETE,
     parNiveau: parNiveau, franchi: franchi, ouvert: ouvert, prochain: prochain,

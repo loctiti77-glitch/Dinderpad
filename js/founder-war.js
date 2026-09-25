@@ -86,6 +86,16 @@
       { nom: 'Décret Royal',        degats: [50, 68] },
       { nom: 'Bouclier de Karsovia', degats: [12, 18], bouclier: 40 }
     ],
+    // Les deux formes venues de la faille.
+    'dr-islas-singularity': [
+      { nom: 'Horizon des Événements', degats: [82, 108] },
+      { nom: 'Décalage', degats: [34, 46], etourdit: 0.6 }
+    ],
+    // Ni docteur ni Fondateur : ce qui est remonte frappe pour les deux.
+    'dr-islas-the-founder': [
+      { nom: 'Verdict du Vide',     degats: [96, 126] },
+      { nom: 'Reprise en Main',     degats: [44, 60], soinTous: 34 }
+    ],
     'harry-hargrove': [
       { nom: 'Heure Volée',         degats: [40, 54], etourdit: 0.35 },
       { nom: 'Montre à Gousset',    degats: [18, 26], bouclier: 34 }
@@ -333,6 +343,15 @@
       return bouts.join('  ·  ');
     }
 
+    // Pour les essais et les captures : les ecrans qui ne s'atteignent
+    // qu'au bout d'une partie.
+    jeu._fwtest = {
+      campagne: function () { ecranCampagne(); },
+      faille: function () { ecranFaille(); },
+      fusion: function () { ecranFusion(); },
+      sacrifice: function (apres) { ecranSacrifice(apres || function () {}); }
+    };
+
     function ecranCampagne() {
       // Sans le module de campagne, on retombe sur l'ancien parcours.
       if (!C) return ecranEquipe();
@@ -350,7 +369,10 @@
       var liste = el('div', 'fw-campagne');
       var tous = C ? C.NIVEAUX.concat([C.FINAL]) : [];
       tous.forEach(function (d) {
-        var ouvert = C.ouvert(d.n), fait = C.franchi(d.n);
+        // L'Effondrement Terminal ne s'ouvre pas sans le Dr.Islas Final
+        // Form : c'est lui que Le Fondateur attend.
+        var besoinIslas = C.exigeIslas && C.exigeIslas(d.n) && !C.aIslas();
+        var ouvert = C.ouvert(d.n) && !besoinIslas, fait = C.franchi(d.n);
         var n = el(ouvert ? 'button' : 'div',
                    'fw-palier' + (fait ? ' is-fait' : '') + (ouvert ? '' : ' is-ferme') +
                    (d.n === C.DERNIER ? ' fw-palier--final' : ''));
@@ -368,7 +390,9 @@
         var txt = el('span', 'fw-palier-txt');
         txt.appendChild(el('strong', 'fw-palier-nom',
           (d.n === C.DERNIER ? '' : 'Niveau ' + d.n + ' — ') + d.nom));
-        txt.appendChild(el('span', 'fw-palier-sous', ouvert || fait ? d.titre : 'Verrouillé'));
+        txt.appendChild(el('span', 'fw-palier-sous',
+          besoinIslas ? 'Il te faut ' + C.nomIslas()
+                      : (ouvert || fait ? d.titre : 'Verrouillé')));
         if (ouvert || fait) {
           txt.appendChild(el('span', 'fw-palier-quete', resumeQuete(d.quete)));
           txt.appendChild(el('span', 'fw-palier-pv', d.pv + ' PV'));
@@ -392,6 +416,23 @@
           'Il te faut cinq Dinders dans ta collection pour former une équipe — ' +
           'tu en as ' + DP.owned().length + '.');
         jeu.appendChild(alerte);
+      }
+
+      // La faille, une fois le docteur tombe dedans.
+      if (C.etatFusion) {
+        var ef = C.etatFusion();
+        if (ef.ouverte) {
+          var appel = el('button', 'fw-faille-appel' + (ef.prete ? ' is-prete' : '') +
+                                   (ef.faite ? ' is-close' : ''));
+          appel.type = 'button';
+          appel.appendChild(el('strong', 'fw-faille-appel-titre', 'LA FAILLE DU DR. ISLAS'));
+          appel.appendChild(el('span', 'fw-faille-appel-sous', ef.faite
+            ? 'Refermée. Ce qui en est sorti est à toi.'
+            : ef.prete ? 'Les trois quêtes sont faites. Va le chercher.'
+                       : ef.pretes + ' / ' + ef.quetes.length + ' quêtes accomplies'));
+          appel.addEventListener('click', ecranFaille);
+          jeu.appendChild(appel);
+        }
       }
 
       var pied = el('div', 'fw-pied');
@@ -553,12 +594,19 @@
       pied.appendChild(go);
       jeu.appendChild(pied);
 
+      // Pour l'Effondrement Terminal, la Singularity est obligatoire.
+      var exige = C && C.exigeIslas && C.exigeIslas(niveauEnCours);
+
       function rafraichir() {
-        compte.textContent = equipe.length + ' / 5 Dinders engagés';
-        go.disabled = equipe.length !== 5;
+        var manqueIslas = exige && equipe.indexOf(C.ISLAS) === -1;
+        compte.textContent = equipe.length + ' / 5 Dinders engagés' +
+          (manqueIslas ? '  ·  ' + C.nomIslas() + ' est exigée' : '');
+        compte.classList.toggle('is-exige', !!manqueIslas);
+        go.disabled = equipe.length !== 5 || manqueIslas;
         grille.querySelectorAll('.fw-carte').forEach(function (n) {
           var pris = equipe.indexOf(n.dataset.id) !== -1;
           n.classList.toggle('is-pris', pris);
+          n.classList.toggle('is-exige', !!exige && n.dataset.id === C.ISLAS);
           n.setAttribute('aria-pressed', pris ? 'true' : 'false');
           var rang = n.querySelector('.fw-rang');
           rang.textContent = pris ? (equipe.indexOf(n.dataset.id) + 1) : '';
@@ -1403,7 +1451,7 @@
         if (window.ARTEFACTS && window.ARTEFACTS.victoireNiveau) {
           window.ARTEFACTS.victoireNiveau(DP.fwNiveau());
         }
-        var fondateurNeuf = false;
+        var fondateurNeuf = false, sacrificeNeuf = false;
         if (final) {
           DP.compterExploit('fondateurVaincu');
           if (chrono > 0) DP.noterRecord('fondateurChrono', chrono, true);
@@ -1419,14 +1467,24 @@
             if (DP.markNew) DP.markNew('lefondateur');
             fondateurNeuf = true;
           }
+          // La Singularity etait du voyage : elle y reste.
+          if (C.ISLAS && equipe.indexOf(C.ISLAS) !== -1) {
+            sacrificeNeuf = DP.noterSacrifice();
+          }
         }
 
+        var bilan = { montees: montees, neuf: neuf, fondateur: fondateurNeuf,
+                      xp: base, sacrifice: sacrificeNeuf };
         dire((final ? 'LE FONDATEUR EST TOMBÉ' : adv.nom.toUpperCase() + ' EST TOMBÉ') +
              ' — ' + chrono + ' s.',
              function () {
-               ecranFin(true, gagne, chrono, {
-                 montees: montees, neuf: neuf, fondateur: fondateurNeuf, xp: base
-               });
+               // Le sacrifice se regarde avant le decompte des gains.
+               if (sacrificeNeuf) {
+                 return ecranSacrifice(function () {
+                   ecranFin(true, gagne, chrono, bilan);
+                 });
+               }
+               ecranFin(true, gagne, chrono, bilan);
              }, 1400);
       }
 
@@ -1557,6 +1615,188 @@
 
     // ---------- L'ecran de fin ----------
 
+    // Ce que la faille demande avant de rendre ce qu'elle a pris.
+    function ecranFaille() {
+      toutAnnuler();
+      jeu.textContent = '';
+      jeu.dataset.etape = 'faille';
+      var ef = C.etatFusion();
+
+      var box = el('div', 'fw-faille');
+      var tete = el('div', 'fw-faille-tete');
+      tete.appendChild(el('h2', 'fw-faille-titre', 'La faille du Dr. Islas'));
+      tete.appendChild(el('p', 'fw-faille-txt', ef.faite
+        ? 'Elle s’est refermée. Ce qui en est sorti ne porte plus tout à fait ' +
+          'le nom du docteur, ni tout à fait celui du Fondateur.'
+        : 'La Singularity y a emporté Le Fondateur. Le vide ne rend rien sans ' +
+          'contrepartie : trois épreuves, et elle remonte.'));
+      box.appendChild(tete);
+
+      var liste = el('div', 'fw-quetes');
+      ef.quetes.forEach(function (q, i) {
+        var n = el('div', 'fw-quete-carte' + (q.faite ? ' is-faite' : ''));
+        n.appendChild(el('span', 'fw-quete-num', 'I'.repeat(i + 1)));
+        var t = el('div', 'fw-quete-corps');
+        t.appendChild(el('strong', 'fw-quete-nom', q.nom));
+        t.appendChild(el('p', 'fw-quete-det', q.det));
+        var jauge = el('div', 'fw-quete-jauge');
+        var plein = el('div', 'fw-quete-plein');
+        plein.style.width = (q.n / q.sur * 100).toFixed(0) + '%';
+        jauge.appendChild(plein);
+        t.appendChild(jauge);
+        t.appendChild(el('span', 'fw-quete-compte', q.n + ' / ' + q.sur));
+        n.appendChild(t);
+        n.appendChild(el('span', 'fw-quete-etat', q.faite ? '✓' : ''));
+        liste.appendChild(n);
+      });
+      box.appendChild(liste);
+
+      var boutons = el('div', 'fw-fin-boutons');
+      if (ef.prete) {
+        var go = el('button', 'fw-btn fw-btn--go fw-btn--fusion', 'DESCENDRE DANS LA FAILLE');
+        go.type = 'button';
+        go.addEventListener('click', ecranFusion);
+        boutons.appendChild(go);
+      } else if (ef.faite) {
+        var voir = el('a', 'fw-btn fw-btn--go', 'Voir la fiche');
+        voir.href = '#dinder/' + C.FUSION;
+        boutons.appendChild(voir);
+      }
+      var retour = el('button', 'fw-btn', 'Niveaux');
+      retour.type = 'button';
+      retour.addEventListener('click', ecranCampagne);
+      boutons.appendChild(retour);
+      box.appendChild(boutons);
+      jeu.appendChild(box);
+    }
+
+    // La fusion : les deux silhouettes remontent de la faille, tournent
+    // l'une autour de l'autre, se percutent, et ce qui en sort n'est ni
+    // l'un ni l'autre.
+    function ecranFusion() {
+      toutAnnuler();
+      jeu.textContent = '';
+      jeu.dataset.etape = 'fusion';
+
+      var box = el('div', 'fw-fusion');
+      box.appendChild(el('div', 'fw-fus-vortex'));
+      box.appendChild(el('div', 'fw-fus-halo'));
+
+      var scene = el('div', 'fw-fus-scene');
+      var a = el('img', 'fw-fus-a');
+      a.src = DP.sprite(C.ISLAS, 'duel'); a.alt = '';
+      var b = el('img', 'fw-fus-b');
+      b.src = DP.sprite('lefondateur', 'duel'); b.alt = '';
+      var ne = el('img', 'fw-fus-ne');
+      ne.src = DP.sprite(C.FUSION, 'duel'); ne.alt = '';
+      scene.appendChild(a); scene.appendChild(b); scene.appendChild(ne);
+      box.appendChild(scene);
+
+      var eclair = el('div', 'fw-fus-eclair');
+      box.appendChild(eclair);
+
+      var mots = el('p', 'fw-fus-mots', 'Quelque chose remonte.');
+      box.appendChild(mots);
+      jeu.appendChild(box);
+
+      var etapes = [
+        [600,  'is-montee',  'Deux silhouettes, dans la même lumière.'],
+        [2600, 'is-tourne',  'Elles tournent l’une autour de l’autre.'],
+        [4600, 'is-choc',    ''],
+        [5200, 'is-eclair',  ''],
+        [6200, 'is-ne',      'Ce n’est plus le docteur. Ce n’est plus Le Fondateur.']
+      ];
+      etapes.forEach(function (e) {
+        plusTard(function () {
+          box.classList.add(e[1]);
+          if (e[2]) mots.textContent = e[2];
+        }, reduit ? 0 : e[0]);
+      });
+
+      plusTard(function () {
+        var neuf = DP.noterFusion();
+        if (!DP.has(C.FUSION)) {
+          DP.collect(C.FUSION);
+          if (DP.markNew) DP.markNew(C.FUSION);
+        }
+        var carte = el('div', 'fw-fus-carte');
+        var im = el('img', 'fw-fus-carte-img');
+        im.src = DP.dinderImg(C.FUSION); im.alt = '';
+        carte.appendChild(im);
+        var d = DP.byId(C.FUSION);
+        carte.appendChild(el('strong', null, (d ? d.name : 'La fusion').toUpperCase() +
+                                             ' REJOINT TA COLLECTION'));
+        carte.appendChild(el('span', 'fw-fus-rarete', 'Threat  ·  aucune Dindise ne le donne'));
+        box.appendChild(carte);
+        box.classList.add('is-carte');
+
+        var suite = el('button', 'fw-btn fw-btn--go fw-fus-btn', 'Continuer');
+        suite.type = 'button';
+        suite.addEventListener('click', ecranCampagne);
+        box.appendChild(suite);
+        return neuf;
+      }, reduit ? 40 : 8200);
+    }
+
+    // La Singularity ouvre une faille sous eux deux et s'y jette avec Le
+    // Fondateur. L'ecran se vide, la faille avale les deux silhouettes,
+    // puis se referme sur un ciel noir.
+    function ecranSacrifice(apres) {
+      toutAnnuler();
+      jeu.textContent = '';
+      jeu.dataset.etape = 'sacrifice';
+
+      var box = el('div', 'fw-sacrifice');
+      var ciel = el('div', 'fw-sac-ciel');
+      box.appendChild(ciel);
+
+      var faille = el('div', 'fw-sac-faille');
+      box.appendChild(faille);
+
+      var duo = el('div', 'fw-sac-duo');
+      var doc = el('img', 'fw-sac-islas');
+      doc.src = DP.sprite(C.ISLAS, 'duel');
+      doc.alt = '';
+      var fond = el('img', 'fw-sac-fondateur');
+      fond.src = DP.sprite('lefondateur', 'duel');
+      fond.alt = '';
+      duo.appendChild(doc);
+      duo.appendChild(fond);
+      box.appendChild(duo);
+
+      var mots = el('div', 'fw-sac-mots');
+      box.appendChild(mots);
+      jeu.appendChild(box);
+
+      var LIGNES = [
+        { t: 200,  qui: 'islas', txt: 'Tu voulais un seul monde de chaque. Tiens-toi tranquille.' },
+        { t: 2600, qui: 'boss',  txt: 'Lâche-moi. Tu n’as pas idée de ce qu’il y a là-dedans.' },
+        { t: 5000, qui: 'islas', txt: 'Si. C’est moi qui l’ai ouverte.' }
+      ];
+      LIGNES.forEach(function (l) {
+        plusTard(function () {
+          mots.textContent = '';
+          var b = el('p', 'fw-sac-bulle' + (l.qui === 'boss' ? ' is-boss' : ''), l.txt);
+          mots.appendChild(b);
+        }, reduit ? 0 : l.t);
+      });
+
+      plusTard(function () { box.classList.add('is-ouverture'); }, reduit ? 0 : 6600);
+      plusTard(function () { box.classList.add('is-chute'); }, reduit ? 0 : 7600);
+      plusTard(function () {
+        box.classList.add('is-close');
+        mots.textContent = '';
+        mots.appendChild(el('p', 'fw-sac-fin',
+          'La faille se referme. La Singularity n’en est pas ressortie.'));
+      }, reduit ? 0 : 9600);
+
+      var suite = el('button', 'fw-btn fw-btn--go fw-sac-btn', 'Continuer');
+      suite.type = 'button';
+      suite.addEventListener('click', apres);
+      box.appendChild(suite);
+      plusTard(function () { box.classList.add('is-suite'); }, reduit ? 0 : 10600);
+    }
+
     function ecranFin(gagne, cagnotte, chrono, bilan) {
       toutAnnuler();
       jeu.textContent = '';
@@ -1633,6 +1873,13 @@
         revanche.type = 'button';
         revanche.addEventListener('click', function () { ecranCombat(); });
         boutons.appendChild(revanche);
+      }
+
+      if (C.etatFusion && C.etatFusion().ouverte && !C.etatFusion().faite) {
+        var vers = el('button', 'fw-btn fw-btn--faille', 'La faille');
+        vers.type = 'button';
+        vers.addEventListener('click', ecranFaille);
+        boutons.appendChild(vers);
       }
 
       var niveaux = el('button', 'fw-btn', 'Niveaux');

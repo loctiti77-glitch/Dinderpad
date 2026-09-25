@@ -43,18 +43,54 @@
 // Page d'essai : elle ouvre tout — la collection, les artefacts, le
 // materiel, les armes, la campagne — puis renvoie sur le DinderPad.
 // Elle ne sert qu'a regarder ce que donne un profil complet.
+//
+// Avec "?terminal" dans l'adresse, elle s'arrete juste avant la fin :
+// tout est ouvert, mais l'Effondrement Terminal reste a gagner, et la
+// faille du Dr. Islas n'existe pas encore.
 (function () {
   var lignes = [];
   function note(t) { lignes.push(t); }
 
-  // La collection entiere, Le Fondateur compris.
-  DP.DINDERS.forEach(function (d) { DP.collect(d.id); });
-  note(DP.owned().length + ' Dinders');
+  // L'etape ou l'on veut se placer.
+  var AVANT_FIN = /terminal/i.test(location.search);
 
-  // La campagne bouclee, et de l'experience pour que les niveaux se voient.
-  DP.noterFwNiveau(11);
-  DP.DINDERS.forEach(function (d, i) { DP.gagnerDinderXP(d.id, 400 + i * 300); });
-  note('The Founder War : campagne bouclée');
+  // La collection. Avant la fin, ni Le Fondateur ni la fusion : ce sont
+  // eux que l'on va chercher.
+  var APRES = ['lefondateur', 'dr-islas-the-founder'];
+  DP.DINDERS.forEach(function (d) {
+    if (AVANT_FIN && APRES.indexOf(d.id) !== -1) return;
+    DP.collect(d.id);
+  });
+  note(DP.owned().length + ' Dinders sur ' + DP.DINDERS.length);
+
+  if (AVANT_FIN) {
+    // Dix paliers franchis : l'Effondrement Terminal est ouvert, et
+    // Dr.Islas Singularity est la, comme il l'exige.
+    DP.noterFwNiveau(10);
+    DP.DINDERS.forEach(function (d, i) { DP.gagnerDinderXP(d.id, 400 + i * 300); });
+    // Deux des trois quetes de la faille sont deja remplies d'avance : le
+    // niveau de la Singularity et les neuf gardiens. Il ne restera que la
+    // Rancon, qui se paie en rejouant l'Effondrement Terminal.
+    if (window.FWCAMP) {
+      DP.gagnerDinderXP(window.FWCAMP.ISLAS, window.FWCAMP.seuil(window.FWCAMP.NIVEAU_MAX) * 2);
+    }
+    note('The Founder War : 10 / 11 — l’Effondrement Terminal t’attend');
+  } else {
+    // La campagne bouclee, et de l'experience pour que les niveaux se voient.
+    DP.noterFwNiveau(11);
+
+    // La faille du Dr. Islas, jusqu'a la fusion : le sacrifice, les trois
+    // quetes, et ce qui en est remonte.
+    DP.noterSacrifice();
+    for (var v = 0; v < 3; v++) DP.noterSacrifice();
+    if (window.FWCAMP) {
+      window.FWCAMP.QUETES.forEach(function (q) { DP.noterQuete(q.id); });
+    }
+    DP.noterFusion();
+    note('la faille du Dr. Islas refermée, fusion obtenue');
+    DP.DINDERS.forEach(function (d, i) { DP.gagnerDinderXP(d.id, 400 + i * 300); });
+    note('The Founder War : campagne bouclée');
+  }
 
   // Les cinquante artefacts.
   if (window.ARTEFACTS) {
@@ -102,14 +138,18 @@
 
   try { sessionStorage.setItem('dinderpad.unlocked', '1'); } catch (e) {}
 
-  document.getElementById('etat').textContent = 'Profil complet — ouverture du DinderPad…';
+  document.getElementById('etat').textContent = AVANT_FIN
+    ? 'Tout est ouvert, sauf la fin — ouverture du DinderPad…'
+    : 'Profil complet — ouverture du DinderPad…';
   var ul = document.getElementById('detail');
   lignes.forEach(function (t) {
     var li = document.createElement('li');
     li.textContent = t;
     ul.appendChild(li);
   });
-  setTimeout(function () { location.replace('/#accueil'); }, 900);
+  setTimeout(function () {
+    location.replace(AVANT_FIN ? '/#founder-war' : '/#accueil');
+  }, 900);
 })();
 </script>
 </body>

@@ -113,6 +113,21 @@
       torse: '#5e1418', accent: '#c9a227', bas: '#3a0f12', chaussures: '#1d0a0c',
       couronne: '#f5c93a', couronneGemme: '#e0453a', cape: '#8e1f28'
     },
+    // Les deux formes venues de la faille : la capuche remplace le
+    // visage, et pour la fusion l'armure du Fondateur s'y ajoute.
+    'dr-islas-singularity': {
+      piques: 'court', cheveux: '#451b59', cheveuxClair: '#81648e',
+      peau: '#1a0626', visiere: null,
+      torse: '#2e113e', accent: '#b45cff', bas: '#1d0a26', chaussures: '#140718',
+      capuche: '#3a1450', capucheOmbre: '#220a30', galaxie: true, cape: '#2a0f3a'
+    },
+    'dr-islas-the-founder': {
+      piques: 'court', cheveux: '#2a0167', cheveuxClair: '#6e5298',
+      peau: '#160522', visiere: null,
+      torse: '#1e0730', accent: '#b45cff', bas: '#180426', chaussures: '#12041a',
+      capuche: '#31104a', capucheOmbre: '#1d0629', galaxie: true,
+      armure: '#3d2b5c', cape: '#26093a', gemme: '#c86aff'
+    },
     // Les cinq derniers arrives.
     'harry-hargrove': {
       piques: 'court', cheveux: '#141318', cheveuxClair: '#34323a',

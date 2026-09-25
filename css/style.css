@@ -1768,12 +1768,30 @@ body[data-phase="welcome"] .lock-welcome {
   --r-blue:  #45b0ff;   /* Multiversel */
   --r-gold:  #f5c93a;   /* Omniversel  */
   --r-pink:  #ff5c9d;   /* Temporel    */
+  --r-threat: #b45cff;  /* Threat : aucune monnaie, le violet du vide */
 }
 
 [data-rarity="green"] { --r: var(--r-green); }
 [data-rarity="blue"]  { --r: var(--r-blue); }
 [data-rarity="gold"]  { --r: var(--r-gold); }
 [data-rarity="pink"]  { --r: var(--r-pink); }
+[data-rarity="threat"] { --r: var(--r-threat); }
+
+/* Threat ne ressemble a rien d'autre : l'etiquette bat lentement. */
+.slot-rarity[data-rarity="threat"],
+.fiche-value[data-rarity="threat"] {
+  animation: menace-bat 2.4s ease-in-out infinite;
+}
+
+@keyframes menace-bat {
+  0%, 100% { text-shadow: 0 0 calc(10 * var(--px)) rgba(180, 92, 255, .5); }
+  50%      { text-shadow: 0 0 calc(24 * var(--px)) rgba(180, 92, 255, 1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot-rarity[data-rarity="threat"],
+  .fiche-value[data-rarity="threat"] { animation: none; }
+}
 
 /* ---------- L'encadre dans la collection ---------- */
 
