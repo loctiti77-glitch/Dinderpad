@@ -425,6 +425,8 @@
       illimite: true,
       creditsAvantInfini: null,
       dindiseOfferte: false,
+      evos: 0,
+      odysseeDinder: '',
       fusion: { sacrifice: false, victoires: 0, quetes: [], faite: false },
       owned: [],
       canne: false,
@@ -507,6 +509,8 @@
     if (p.equip.leurre && !(p.leurres[p.equip.leurre] > 0)) p.equip.leurre = '';
     if (typeof p.illimite !== 'boolean') p.illimite = true;
     if (typeof p.dindiseOfferte !== 'boolean') p.dindiseOfferte = false;
+    if (typeof p.evos !== 'number' || p.evos < 0) p.evos = 0;
+    if (typeof p.odysseeDinder !== 'string') p.odysseeDinder = '';
     if (!p.fusion || typeof p.fusion !== 'object') {
       p.fusion = { sacrifice: false, victoires: 0, quetes: [], faite: false };
     }
@@ -737,6 +741,51 @@
     var p = me();
     if (p.dindiseOfferte) return false;
     p.dindiseOfferte = true;
+    save();
+    return true;
+  }
+
+  // ---------- Les Credits Evolutifs ----------
+  // Une monnaie a part : aucune Dindise ne la prend, elle ne sert qu'a
+  // faire monter un Dinder d'un palier sans attendre son experience.
+  // Elle n'entre donc pas dans CREDITS, que la boutique parcourt.
+
+  var IMG_EVO = 'assets/credits/evo.webp';
+
+  function evos()          { return me().evos || 0; }
+  function evoImg()        { return IMG_EVO; }
+
+  function gagnerEvos(n) {
+    n = Math.max(0, Math.round(n || 0));
+    if (!n) return evos();
+    var p = me();
+    p.evos = (p.evos || 0) + n;
+    save();
+    return p.evos;
+  }
+
+  function depenserEvos(n) {
+    n = Math.max(0, Math.round(n || 0));
+    var p = me();
+    if ((p.evos || 0) < n) return false;
+    p.evos -= n;
+    save();
+    return true;
+  }
+
+  // Qui part en expedition dans l'Odyssee. On ne rend que ce qu'on
+  // possede encore : un profil vide, ou un Dinder relache, retombe sur
+  // le premier de la collection.
+  function odysseeDinder() {
+    var id = me().odysseeDinder;
+    if (id && has(id)) return id;
+    var l = owned();
+    return l.length ? l[0] : '';
+  }
+
+  function choisirOdysseeDinder(id) {
+    if (!has(id)) return false;
+    me().odysseeDinder = id;
     save();
     return true;
   }
@@ -1204,11 +1253,12 @@
       } },
     { id: 'niveaux', nom: 'Niveaux', det: 'Les récompenses de niveau déjà réclamées',
       vider: function (p) { p.niveauxReclames = []; p.niveauVu = 1; } },
-    { id: 'credits', nom: 'Crédits', det: 'Le solde de crédits, et celui mis de côté',
+    { id: 'credits', nom: 'Crédits', det: 'Le solde de crédits, celui mis de côté et les Crédits Évolutifs',
       vider: function (p) {
         p.credits = { green: 0, blue: 0, gold: 0, pink: 0 };
         p.creditsAvantInfini = null;
         p.dindiseOfferte = false;
+        p.evos = 0;
       } }
   ];
 
@@ -1311,6 +1361,8 @@
     dindiseOfferte: dindiseOfferte,
     consommerDindiseOfferte: consommerDindiseOfferte,
     MENACE: MENACE, horsDindise: horsDindise,
+    evos: evos, evoImg: evoImg, gagnerEvos: gagnerEvos, depenserEvos: depenserEvos,
+    odysseeDinder: odysseeDinder, choisirOdysseeDinder: choisirOdysseeDinder,
     fusion: fusion, noterSacrifice: noterSacrifice,
     noterQuete: noterQuete, aQuete: aQuete, noterFusion: noterFusion,
     ITEMS: ITEMS, items: items, CONTINENTS: CONTINENTS,

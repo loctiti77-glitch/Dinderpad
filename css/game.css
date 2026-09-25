@@ -6318,3 +6318,204 @@ body.is-locked .pad-titre { display: none; }
   .fw-fusion.is-tourne .fw-fus-b { animation: none; }
   .fw-sac-duo, .fw-sac-faille, .fw-fus-a, .fw-fus-b, .fw-fus-ne { transition: none; }
 }
+
+
+/* ==========================================================
+   Les Crédits Évolutifs
+   ========================================================== */
+
+.fw-evos {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(8 * var(--px));
+  margin-top: calc(10 * var(--px));
+  padding: calc(8 * var(--px)) calc(14 * var(--px));
+  border: calc(3 * var(--px)) solid #7cf0c8;
+  border-radius: calc(12 * var(--px));
+  background: rgba(4, 26, 22, .9);
+}
+
+.fw-evos-img {
+  width: calc(54 * var(--px));
+  height: calc(36 * var(--px));
+  object-fit: contain;
+}
+
+.fw-evos-txt { display: flex; align-items: baseline; gap: calc(4 * var(--px)); }
+.fw-evos-n   { font-size: calc(26 * var(--px)); color: #7cf0c8; }
+.fw-evos-nom { font-size: calc(16 * var(--px)); }
+
+.fw-evos-det {
+  flex: 1 1 100%;
+  font-size: calc(14 * var(--px));
+  color: rgba(216, 255, 240, .6);
+}
+
+/* ---------- Le bouton qui fait monter d'un cran ---------- */
+
+.fw-evo {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  margin-top: calc(8 * var(--px));
+  padding: calc(6 * var(--px)) calc(14 * var(--px));
+  border: calc(3 * var(--px)) solid #7cf0c8;
+  border-radius: calc(10 * var(--px));
+  background: rgba(6, 40, 34, .92);
+  color: #d8fff0;
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(15 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  cursor: pointer;
+}
+
+.fw-evo:hover:not(:disabled) { background: rgba(10, 60, 50, .95); }
+
+.fw-evo:disabled {
+  border-color: rgba(124, 240, 200, .3);
+  color: rgba(216, 255, 240, .4);
+  cursor: not-allowed;
+}
+
+.fw-evo-img {
+  width: calc(30 * var(--px));
+  height: calc(20 * var(--px));
+  object-fit: contain;
+}
+
+.fw-evo-cout { color: #7cf0c8; }
+.fw-evo:disabled .fw-evo-cout { color: rgba(124, 240, 200, .45); }
+
+.fw-evo-mot-passe {
+  margin: calc(6 * var(--px)) 0 0;
+  padding: calc(6 * var(--px)) calc(12 * var(--px));
+  border-radius: calc(10 * var(--px));
+  background: rgba(6, 40, 34, .92);
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(16 * var(--px));
+  text-align: center;
+  color: #7cf0c8;
+  animation: fw-evo-passe .5s ease both;
+}
+
+@keyframes fw-evo-passe {
+  from { opacity: 0; transform: translateY(calc(-6 * var(--px))); }
+  to   { opacity: 1; transform: none; }
+}
+
+.fw-fiche.is-monte { animation: fw-fiche-monte .8s ease both; }
+
+@keyframes fw-fiche-monte {
+  0%   { box-shadow: 0 0 0 rgba(124, 240, 200, 0); }
+  40%  { box-shadow: 0 0 calc(30 * var(--px)) rgba(124, 240, 200, .9); }
+  100% { box-shadow: 0 0 0 rgba(124, 240, 200, 0); }
+}
+
+/* La prime de fin de round : le bonus de niveaux, puis les Évolutifs. */
+
+.fw-prime-bonus {
+  margin: calc(-4 * var(--px)) 0 0;
+  font-size: calc(15 * var(--px));
+  text-align: center;
+  color: rgba(216, 255, 240, .65);
+}
+
+.fw-prime--evo { border-color: #7cf0c8; }
+.fw-prime--evo img { filter: drop-shadow(0 0 calc(8 * var(--px)) rgba(124, 240, 200, .6)); }
+
+/* ==========================================================
+   L'Odyssée : qui part en expédition
+   ========================================================== */
+
+.ody--equipier {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--px));
+  padding: calc(18 * var(--px));
+  overflow: auto;
+}
+
+.ody-eq-tete { text-align: center; }
+
+.ody-eq-titre {
+  margin: 0 0 calc(6 * var(--px));
+  font-size: calc(30 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: #7cf0c8;
+  text-shadow: 0 0 calc(18 * var(--px)) rgba(124, 240, 200, .5);
+}
+
+.ody-eq-txt {
+  margin: 0 auto;
+  max-width: calc(640 * var(--px));
+  font-size: calc(16 * var(--px));
+  line-height: 1.45;
+  color: rgba(216, 255, 240, .75);
+}
+
+.ody-roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(130 * var(--px)), 1fr));
+  gap: calc(10 * var(--px));
+}
+
+.ody-carte-dinder {
+  --r: #7cf0c8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  padding: calc(10 * var(--px)) calc(6 * var(--px));
+  border: calc(3 * var(--px)) solid rgba(124, 240, 200, .35);
+  border-radius: calc(12 * var(--px));
+  background: rgba(4, 22, 20, .88);
+  color: #d8fff0;
+  font-family: "Courier New", Courier, monospace;
+  cursor: pointer;
+}
+
+.ody-carte-dinder[data-rarity="green"]  { --r: #4fd13a; }
+.ody-carte-dinder[data-rarity="blue"]   { --r: #45b0ff; }
+.ody-carte-dinder[data-rarity="gold"]   { --r: #f5c93a; }
+.ody-carte-dinder[data-rarity="pink"]   { --r: #ff5c9d; }
+.ody-carte-dinder[data-rarity="threat"] { --r: #b45cff; }
+
+.ody-carte-dinder.is-choisi {
+  border-color: var(--r);
+  background: rgba(8, 44, 40, .95);
+  box-shadow: 0 0 calc(18 * var(--px)) color-mix(in srgb, var(--r) 60%, transparent);
+}
+
+.ody-dinder-sprite {
+  height: calc(92 * var(--px));
+  image-rendering: pixelated;
+}
+
+.ody-dinder-nom  { font-size: calc(17 * var(--px)); text-align: center; }
+.ody-dinder-sous { font-size: calc(13 * var(--px)); color: rgba(216, 255, 240, .55); }
+
+/* Le depart reste sous la main, meme quand la grille deborde. */
+.ody-eq-pied {
+  position: sticky;
+  bottom: calc(-18 * var(--px));
+  display: flex;
+  justify-content: center;
+  padding: calc(10 * var(--px)) 0 calc(4 * var(--px));
+  background: linear-gradient(0deg, rgba(2, 14, 12, .96) 55%, rgba(2, 14, 12, 0));
+}
+
+.ody-btn--equipier {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+}
+
+.ody-btn-sprite {
+  height: calc(26 * var(--px));
+  image-rendering: pixelated;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-evo-mot-passe, .fw-fiche.is-monte { animation: none; }
+}

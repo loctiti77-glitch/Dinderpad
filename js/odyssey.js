@@ -119,6 +119,7 @@
   // L'image du Telecommande, fournie par l'auteur ; le dessin ne sert plus
   // qu'en secours, si le fichier venait a manquer.
   var IMG_TP = 'assets/items/teleportail.webp';
+  var JAQUETTE = 'assets/games/icones/odyssey.webp';
 
   function visuel() { return IMG_TP; }
 
@@ -251,9 +252,9 @@
     });
   })();
 
+  // Celui qui marche sur les mondes : le Dinder choisi avant de partir.
   function voyageur() {
-    var owned = DP.owned();
-    return owned.length ? owned[0] : 'dr-islas-human-form';
+    return DP.odysseeDinder() || 'dr-islas-human-form';
   }
 
   // ==========================================================
@@ -618,7 +619,7 @@
     if (!DP.aLaTelecommande()) {
       if (window.INTRO) {
         return jeu.appendChild(window.INTRO.ecran({
-          icone: visuel(),
+          icone: JAQUETTE,
           titre: 'The Odyssey of Dinder',
           teinte: '#7cf0c8',
           bouton: 'CHAPITRE 1',
@@ -643,8 +644,78 @@
       });
     }
 
-    // Avec la telecommande : on la sort.
-    location.hash = '#teleportail';
+    // Avec la telecommande : on demande d'abord qui part, puis on la sort.
+    location.hash = '#odyssee-equipier';
+  }
+
+  // ==========================================================
+  //  Qui part en expedition
+  // ==========================================================
+  // On ne marche pas sur huit mondes avec le premier venu : le Dinder se
+  // choisit avant de sortir le Teleportail, et le choix se garde.
+
+  function viewEquipier(view) {
+    var box = el('div', 'ody ody--equipier');
+
+    var owned = DP.owned();
+    if (!owned.length) {
+      var vide = el('div', 'ody-carte');
+      vide.appendChild(el('p', 'ody-carte-titre', 'PERSONNE À ENVOYER'));
+      vide.appendChild(el('p', 'ody-carte-txt',
+        'Tu n’as encore aucun Dinder. Ouvre une Dindise, puis reviens : ' +
+        'c’est lui qui marchera sur les mondes.'));
+      var go = el('a', 'ody-btn', 'Win Dinders');
+      go.href = '#win-dinders';
+      vide.appendChild(go);
+      box.appendChild(vide);
+      view.appendChild(box);
+      return;
+    }
+
+    var tete = el('div', 'ody-eq-tete');
+    tete.appendChild(el('h2', 'ody-eq-titre', 'Qui part en expédition ?'));
+    tete.appendChild(el('p', 'ody-eq-txt',
+      'C’est lui que tu verras marcher sur les mondes. Tu pourras en ' +
+      'changer au Téléportail.'));
+    box.appendChild(tete);
+
+    var choisi = DP.odysseeDinder();
+
+    var grille = el('div', 'ody-roster');
+    owned.forEach(function (id) {
+      var d = DP.byId(id);
+      if (!d) return;
+      var n = el('button', 'ody-carte-dinder' + (id === choisi ? ' is-choisi' : ''));
+      n.type = 'button';
+      n.dataset.id = id;
+      n.dataset.rarity = DP.rarityKey(d.rarity);
+
+      var im = el('img', 'ody-dinder-sprite');
+      im.src = DP.sprite(id, 'duel');
+      im.alt = '';
+      n.appendChild(im);
+      n.appendChild(el('span', 'ody-dinder-nom', d.name));
+      n.appendChild(el('span', 'ody-dinder-sous', d.form || d.rarity));
+
+      n.addEventListener('click', function () {
+        DP.choisirOdysseeDinder(id);
+        choisi = id;
+        grille.querySelectorAll('.ody-carte-dinder').forEach(function (c) {
+          c.classList.toggle('is-choisi', c.dataset.id === id);
+        });
+        partir.disabled = false;
+      });
+      grille.appendChild(n);
+    });
+    box.appendChild(grille);
+
+    var pied = el('div', 'ody-eq-pied');
+    var partir = el('a', 'ody-btn ody-btn--go', 'OUVRIR LE TÉLÉPORTAIL');
+    partir.href = '#teleportail';
+    pied.appendChild(partir);
+    box.appendChild(pied);
+
+    view.appendChild(box);
   }
 
   // Le panneau qui annonce l'objet, apres l'intro.
@@ -660,8 +731,8 @@
       'DESTINATION : SS-[INITIALE][RANG]'));
     carte.appendChild(el('p', 'ody-carte-txt ody-carte-txt--sous',
       'Elle rejoint tes Items. À toi de trouver où aller.'));
-    var b = el('a', 'ody-btn', 'Ouvrir le Téléportail');
-    b.href = '#teleportail';
+    var b = el('a', 'ody-btn', 'Choisir ton Dinder');
+    b.href = '#odyssee-equipier';
     carte.appendChild(b);
     box.appendChild(carte);
     jeu.appendChild(box);
@@ -787,6 +858,18 @@
       arm.href = '#armurerie/odyssee';
       pied.appendChild(arm);
     }
+
+    // Qui marche sur les mondes, et de quoi en changer.
+    var eq = el('a', 'ody-btn ody-btn--plat ody-btn--equipier');
+    eq.href = '#odyssee-equipier';
+    var eqIm = el('img', 'ody-btn-sprite');
+    eqIm.src = DP.sprite(voyageur(), 'duel');
+    eqIm.alt = '';
+    eq.appendChild(eqIm);
+    var vd = DP.byId(voyageur());
+    eq.appendChild(el('span', null, vd ? vd.name : 'Choisir'));
+    pied.appendChild(eq);
+
     var items = el('a', 'ody-btn ody-btn--plat', 'Items');
     items.href = '#items';
     pied.appendChild(items);
@@ -2039,9 +2122,8 @@
     : -1;
   var entree = {
     id: 'odyssee', nom: 'The Odyssey of Dinder',
-    sous: 'Huit mondes à retrouver', vue: 'odyssee', pret: true,
-    // Faute de jaquette, la vignette est la telecommande elle-meme.
-    img: function () { return visuel(); }
+    sous: 'Neuf mondes à retrouver', vue: 'odyssee', pret: true,
+    img: JAQUETTE
   };
   if (place !== -1) window.MINIJEUX[place] = entree;
   else window.MINIJEUX.push(entree);
@@ -2067,6 +2149,7 @@
     }
   };
   window.VIEWS['teleportail'] = { title: 'Téléportail', render: viewTeleportail };
+  window.VIEWS['odyssee-equipier'] = { title: 'Expédition', render: viewEquipier };
   window.VIEWS['odyssee-carnet'] = { title: 'Carnet du scanner', render: viewCarnet };
 
   window.ODYSSEE = {

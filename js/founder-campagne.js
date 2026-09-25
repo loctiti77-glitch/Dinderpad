@@ -16,7 +16,7 @@
   // l'experience. Plus il est rare, plus il frappe fort a niveau egal —
   // et plus son ultime fait mal.
 
-  var NIVEAU_MAX = 10;
+  var NIVEAU_MAX = 30;
 
   // Ce que vaut la rarete, au depart.
   // Plus un Dinder est rare, plus il frappe fort. Threat est au-dessus de
@@ -55,16 +55,52 @@
   }
 
   // Le multiplicateur de degats : la rarete donne le socle, le niveau
-  // ajoute huit pour cent par cran.
+  // ajoute un peu moins de quatre pour cent par cran. Le palier compte
+  // trente crans desormais : le gain par niveau a ete resserre pour que
+  // le sommet reste a peine au-dessus de l'ancien maximum, et non trois
+  // fois au-dessus.
   function force(id, n) {
     n = n || niveau(id);
-    return forceRarete(id) * (1 + 0.08 * (n - 1));
+    return forceRarete(id) * (1 + 0.038 * (n - 1));
   }
 
   // Les points de vie suivent la meme logique, plus doucement.
   function pointsDeVie(id, n) {
     n = n || niveau(id);
-    return Math.round(100 * forceRarete(id) * (1 + 0.05 * (n - 1)));
+    return Math.round(100 * forceRarete(id) * (1 + 0.024 * (n - 1)));
+  }
+
+  // ==========================================================
+  //  Les Credits Evolutifs
+  // ==========================================================
+  // L'experience fait monter un Dinder toute seule, jusqu'au trentieme
+  // niveau. Les Credits Evolutifs, eux, permettent de ne pas attendre :
+  // un palier acheté est un palier gagne tout de suite. Plus le Dinder
+  // est haut, plus cela coute.
+
+  function coutEvolution(id) {
+    var n = niveau(id);
+    if (n >= NIVEAU_MAX) return 0;
+    return 1 + Math.floor(n / 5);
+  }
+
+  function peutEvoluer(id) {
+    var c = coutEvolution(id);
+    return c > 0 && DP.evos() >= c;
+  }
+
+  // Fait monter le Dinder d'un cran, contre paiement. Rend le detail de
+  // ce qui s'est passe, pour que l'ecran puisse l'annoncer.
+  function evoluer(id) {
+    var c = coutEvolution(id);
+    if (!c || !DP.depenserEvos(c)) return null;
+    var avant = niveau(id);
+    var vise = seuil(avant + 1);
+    var manque = Math.max(0, vise - xpDe(id));
+    if (manque) DP.gagnerDinderXP(id, manque);
+    var apres = niveau(id);
+    return { cout: c, avant: avant, apres: apres,
+             ultime: avant < NIVEAU_ULTIME && apres >= NIVEAU_ULTIME };
   }
 
   // L'ultime de chaque Dinder : une troisieme attaque, qui ne s'ouvre
@@ -582,6 +618,7 @@
     NIVEAU_ULTIME: NIVEAU_ULTIME, ULTIMES: ULTIMES, FORCE_RARETE: FORCE_RARETE,
     parNiveau: parNiveau, franchi: franchi, ouvert: ouvert, prochain: prochain,
     seuil: seuil, niveauDe: niveauDe, niveau: niveau, etat: etat, force: force,
+    coutEvolution: coutEvolution, peutEvoluer: peutEvoluer, evoluer: evoluer,
     pointsDeVie: pointsDeVie, attaques: attaques, ultimeDe: ultimeDe, aUltime: aUltime,
     gagnerXP: gagnerXP, feuilleSbire: feuilleSbire, urlSbire: urlSbire,
     chargerSbire: chargerSbire, IMG_SBIRE: IMG_SBIRE

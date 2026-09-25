@@ -349,7 +349,8 @@
       campagne: function () { ecranCampagne(); },
       faille: function () { ecranFaille(); },
       fusion: function () { ecranFusion(); },
-      sacrifice: function (apres) { ecranSacrifice(apres || function () {}); }
+      sacrifice: function (apres) { ecranSacrifice(apres || function () {}); },
+      prime: function (adv, final, troupe) { return calculerPrime(adv, final, troupe); }
     };
 
     function ecranCampagne() {
@@ -461,12 +462,40 @@
       jeu.textContent = '';
       jeu.dataset.etape = 'dinders';
 
+      // Un mot qui passe, quand un Dinder vient de monter.
+      var bandeau = el('p', 'fw-evo-mot-passe');
+      bandeau.hidden = true;
+      function dire2(t) {
+        bandeau.textContent = t;
+        bandeau.hidden = false;
+      }
+
       var tete = el('div', 'fw-tete');
       tete.appendChild(el('h2', 'fw-titre', 'Tes Dinders'));
       tete.appendChild(el('p', 'fw-compte',
-        'Ils montent en se battant. Plus un Dinder est rare, plus il frappe fort — ' +
-        'et au niveau ' + C.NIVEAU_ULTIME + ', il apprend son ultime.'));
+        'Ils montent en se battant, jusqu’au niveau ' + C.NIVEAU_MAX + '. Plus un ' +
+        'Dinder est rare, plus il frappe fort — et au niveau ' + C.NIVEAU_ULTIME +
+        ', il apprend son ultime.'));
+
+      // La bourse de Credits Evolutifs, et ce qu'elle permet.
+      var bourse = el('div', 'fw-evos');
+      var ie = el('img', 'fw-evos-img');
+      ie.src = DP.evoImg();
+      ie.alt = '';
+      bourse.appendChild(ie);
+      var bTxt = el('span', 'fw-evos-txt');
+      var bN = el('strong', 'fw-evos-n', String(DP.evos()));
+      bTxt.appendChild(bN);
+      bTxt.appendChild(el('span', 'fw-evos-nom', ' Crédits Évolutifs'));
+      bourse.appendChild(bTxt);
+      bourse.appendChild(el('span', 'fw-evos-det',
+        'Ils font monter un Dinder d’un cran sans attendre son expérience.'));
+      tete.appendChild(bourse);
       jeu.appendChild(tete);
+
+      function majBourse() { bN.textContent = String(DP.evos()); }
+
+      jeu.appendChild(bandeau);
 
       var liste = el('div', 'fw-fiches');
       DP.DINDERS.filter(function (d) { return DP.has(d.id); }).forEach(function (d) {
@@ -496,6 +525,40 @@
         col.appendChild(el('span', 'fw-fiche-xp', e.niveau >= e.max
           ? e.xp + ' XP  ·  niveau maximum'
           : e.xp + ' / ' + e.haut + ' XP'));
+
+        // Faire monter le Dinder d'un cran, contre paiement.
+        var evo = el('button', 'fw-evo');
+        evo.type = 'button';
+        function majEvo() {
+          var cout = C.coutEvolution(d.id);
+          if (!cout) {
+            evo.hidden = true;
+            return;
+          }
+          evo.hidden = false;
+          evo.disabled = !C.peutEvoluer(d.id);
+          evo.textContent = '';
+          evo.appendChild(el('span', 'fw-evo-mot', 'FAIRE ÉVOLUER'));
+          var ii = el('img', 'fw-evo-img');
+          ii.src = DP.evoImg();
+          ii.alt = '';
+          evo.appendChild(ii);
+          evo.appendChild(el('span', 'fw-evo-cout', '× ' + cout));
+        }
+        evo.addEventListener('click', function () {
+          var r = C.evoluer(d.id);
+          if (!r) return;
+          majBourse();
+          // La fiche se refait avec ses nouveaux chiffres.
+          n.classList.remove('is-monte');
+          void n.offsetWidth;
+          n.classList.add('is-monte');
+          dire2(d.name + ' passe niveau ' + r.apres +
+                (r.ultime ? ' — ultime débloqué !' : ''));
+          plusTard(ecranDinders, reduit ? 0 : 900);
+        });
+        majEvo();
+        col.appendChild(evo);
 
         var atk = el('div', 'fw-fiche-attaques');
         C.attaques(d.id).forEach(function (a) {
@@ -1431,8 +1494,12 @@
         boss.classList.add('is-vaincu');
         menu.textContent = '';
 
-        // La prime monte avec le niveau ; la finale paie en Temporel.
-        var gagne = final ? DP.earn('pink', 2) : DP.earn('green', 8 + adv.n * 2);
+        // La prime monte avec les niveaux : celui du palier, la moyenne
+        // de l'equipe engagee, et celui du joueur. Une equipe montee
+        // rapporte donc nettement plus qu'une equipe fraiche.
+        var prime = calculerPrime(adv, final, troupe);
+        var gagne = DP.earn(prime.cle, prime.n);
+        if (prime.evos) DP.gagnerEvos(prime.evos);
 
         var chrono = etat.depart ? Math.round((Date.now() - etat.depart) / 1000) : 0;
 
@@ -1474,7 +1541,7 @@
         }
 
         var bilan = { montees: montees, neuf: neuf, fondateur: fondateurNeuf,
-                      xp: base, sacrifice: sacrificeNeuf };
+                      xp: base, sacrifice: sacrificeNeuf, prime: prime };
         dire((final ? 'LE FONDATEUR EST TOMBÉ' : adv.nom.toUpperCase() + ' EST TOMBÉ') +
              ' — ' + chrono + ' s.',
              function () {
@@ -1824,6 +1891,34 @@
       plusTard(function () { box.classList.add('is-suite'); }, reduit ? 0 : 10600);
     }
 
+    // Ce que rapporte un palier. Le socle est celui d'avant ; par-dessus
+    // vient un bonus de niveaux, et des Credits Evolutifs qui permettent
+    // de faire monter les Dinders sans attendre.
+    function calculerPrime(adv, final, troupe) {
+      var cle = final ? 'pink' : 'green';
+      var socle = final ? 2 : 8 + adv.n * 2;
+
+      // La moyenne des niveaux engages, et le niveau du joueur.
+      var niv = 1;
+      if (C && troupe && troupe.length) {
+        niv = troupe.reduce(function (t, c) { return t + C.niveau(c.id); }, 0) / troupe.length;
+      }
+      var joueur = window.NIVEAUX ? window.NIVEAUX.etat().niveau : 1;
+
+      // Six pour cent par niveau moyen de l'equipe, deux pour cent par
+      // niveau du joueur. La finale, elle, paie en Temporel : on ne la
+      // laisse pas s'emballer.
+      var k = 1 + (niv - 1) * 0.06 + (joueur - 1) * 0.02;
+      var n = final ? socle + Math.floor((niv - 1) / 10) : Math.round(socle * k);
+
+      // Les Credits Evolutifs : un de plus tous les trois paliers, et le
+      // double a l'Effondrement Terminal.
+      var evos = (1 + Math.floor(adv.n / 3)) * (final ? 2 : 1);
+
+      return { cle: cle, n: n, evos: evos, socle: socle,
+               bonus: Math.max(0, n - socle), niveau: Math.round(niv * 10) / 10 };
+    }
+
     function ecranFin(gagne, cagnotte, chrono, bilan) {
       toutAnnuler();
       jeu.textContent = '';
@@ -1869,18 +1964,37 @@
       }
 
       if (gagne) {
-        var cle = estFinal ? 'pink' : 'green';
-        var combien = estFinal ? 2 : 8 + (d.n || 1) * 2;
+        var det = (bilan && bilan.prime) || { cle: estFinal ? 'pink' : 'green',
+                                              n: 0, evos: 0, socle: 0, bonus: 0, niveau: 1 };
         var prime = el('div', 'fw-prime');
         var img = el('img');
-        img.src = DP.creditImg(cle);
+        img.src = DP.creditImg(det.cle);
         img.alt = '';
         prime.appendChild(img);
-        var nomCredit = DP.CREDITS[cle].name;
-        if (combien > 1) nomCredit = nomCredit.replace(/^Crédit /, 'Crédits ') + 's';
-        prime.appendChild(el('strong', null, '+' + combien + ' ' + nomCredit));
+        var nomCredit = DP.CREDITS[det.cle].name;
+        if (det.n > 1) nomCredit = nomCredit.replace(/^Crédit /, 'Crédits ') + 's';
+        prime.appendChild(el('strong', null, '+' + det.n + ' ' + nomCredit));
         prime.appendChild(el('span', 'fw-prime-total', 'cagnotte : ' + cagnotte));
         box.appendChild(prime);
+
+        if (det.bonus) {
+          box.appendChild(el('p', 'fw-prime-bonus',
+            'dont +' + det.bonus + ' de bonus de niveaux — équipe niveau ' +
+            det.niveau + ' en moyenne'));
+        }
+
+        if (det.evos) {
+          var evo = el('div', 'fw-prime fw-prime--evo');
+          var ie = el('img');
+          ie.src = DP.evoImg();
+          ie.alt = '';
+          evo.appendChild(ie);
+          evo.appendChild(el('strong', null, '+' + det.evos + ' Crédit' +
+                                             (det.evos > 1 ? 's' : '') + ' Évolutif' +
+                                             (det.evos > 1 ? 's' : '')));
+          evo.appendChild(el('span', 'fw-prime-total', 'total : ' + DP.evos()));
+          box.appendChild(evo);
+        }
       }
 
       var boutons = el('div', 'fw-fin-boutons');
