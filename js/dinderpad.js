@@ -426,6 +426,7 @@
       creditsAvantInfini: null,
       dindiseOfferte: false,
       fusion: { sacrifice: false, victoires: 0, quetes: [], faite: false },
+      codanex: { subjects: [], universes: [] },
       owned: [],
       canne: false,
       peche: {},
@@ -514,6 +515,9 @@
     if (typeof p.fusion.victoires !== 'number') p.fusion.victoires = 0;
     if (!Array.isArray(p.fusion.quetes)) p.fusion.quetes = [];
     if (typeof p.fusion.faite !== 'boolean') p.fusion.faite = false;
+    if (!p.codanex || typeof p.codanex !== 'object') p.codanex = {};
+    if (!Array.isArray(p.codanex.subjects)) p.codanex.subjects = [];
+    if (!Array.isArray(p.codanex.universes)) p.codanex.universes = [];
     if (!Array.isArray(p.niveauxReclames)) p.niveauxReclames = [];
     if (!p.artefacts || typeof p.artefacts !== 'object') p.artefacts = {};
     if (!p.failles || typeof p.failles !== 'object') p.failles = {};
@@ -816,6 +820,31 @@
     p.fusion.faite = true;
     save();
     return true;
+  }
+
+  // ---------- Le Codanex ----------
+  // Un carnet de bord sans effet sur le jeu : on y barre les fiches que
+  // l'on considere terminees. Rien d'autre n'en depend.
+
+  var CODANEX = ['subjects', 'universes'];
+
+  function codanexListe(cat) {
+    var p = me();
+    return CODANEX.indexOf(cat) === -1 ? [] : p.codanex[cat].slice();
+  }
+
+  function codanexFait(cat, id) {
+    return codanexListe(cat).indexOf(id) !== -1;
+  }
+
+  // Bascule la fiche, et rend son nouvel etat.
+  function basculerCodanex(cat, id) {
+    if (CODANEX.indexOf(cat) === -1) return false;
+    var l = me().codanex[cat];
+    var i = l.indexOf(id);
+    if (i === -1) l.push(id); else l.splice(i, 1);
+    save();
+    return i === -1;
   }
 
   // ---------- La peche ----------
@@ -1199,6 +1228,8 @@
         p.fwNiveau = 0; p.dinderXP = {};
         p.fusion = { sacrifice: false, victoires: 0, quetes: [], faite: false };
       } },
+    { id: 'codanex', nom: 'Codanex', det: 'Les fiches marquées terminées',
+      vider: function (p) { p.codanex = { subjects: [], universes: [] }; } },
     { id: 'niveaux', nom: 'Niveaux', det: 'Les récompenses de niveau déjà réclamées',
       vider: function (p) { p.niveauxReclames = []; p.niveauVu = 1; } },
     { id: 'credits', nom: 'Crédits', det: 'Le solde de crédits, et celui mis de côté',
@@ -1308,6 +1339,8 @@
     dindiseOfferte: dindiseOfferte,
     consommerDindiseOfferte: consommerDindiseOfferte,
     MENACE: MENACE, horsDindise: horsDindise,
+    CODANEX: CODANEX, codanexListe: codanexListe,
+    codanexFait: codanexFait, basculerCodanex: basculerCodanex,
     fusion: fusion, noterSacrifice: noterSacrifice,
     noterQuete: noterQuete, aQuete: aQuete, noterFusion: noterFusion,
     ITEMS: ITEMS, items: items, CONTINENTS: CONTINENTS,

@@ -24,6 +24,11 @@
     session: 'dinderpad.unlocked'
   };
 
+  // Le code n'est plus demandé : on garde la carte qui s'insère, et le
+  // pad s'ouvre dans la foulée. Repasser ce reglage a true remet les huit
+  // cases et la verification — tout le reste du fichier est intact.
+  var DEMANDER_LE_CODE = false;
+
   // La longueur totale attendue a l'ecran : 6 + 2 = 8 cases.
   var TOTAL = CONFIG.digits + CONFIG.pin.length;
 
@@ -160,16 +165,35 @@
     boxes = document.getElementById('lockBoxes');
     msg   = document.getElementById('lockMsg');
 
-    for (var i = 0; i < TOTAL; i++) {
-      var b = document.createElement('span');
-      b.className = 'lock-box' + (i === CONFIG.digits ? ' is-split' : '');
-      boxes.appendChild(b);
+    if (DEMANDER_LE_CODE) {
+      for (var i = 0; i < TOTAL; i++) {
+        var b = document.createElement('span');
+        b.className = 'lock-box' + (i === CONFIG.digits ? ' is-split' : '');
+        boxes.appendChild(b);
+      }
+    } else {
+      // Sans code, le formulaire n'a plus lieu d'etre : la carte s'insere,
+      // le titre annonce l'ouverture, et c'est tout.
+      var form = lock.querySelector('.lock-form');
+      if (form) form.hidden = true;
+      var titre = lock.querySelector('.lock-title');
+      if (titre) titre.textContent = 'Carte reconnue';
     }
 
     // Deja identifie pendant cette session : on passe sans ceremonie.
     var done = false;
     try { done = sessionStorage.getItem(CONFIG.session) === '1'; } catch (e) {}
     if (done) { unlock(false); return; }
+
+    // La carte s'insere, puis le pad s'ouvre — sans rien demander.
+    var reduitVite = window.matchMedia &&
+                     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!DEMANDER_LE_CODE) {
+      setPhase('boot');
+      setTimeout(function () { setPhase('card'); }, reduitVite ? 0 : 500);
+      setTimeout(function () { unlock(true); }, reduitVite ? 0 : 2300);
+      return;
+    }
 
     input.addEventListener('input', function () {
       input.value = input.value.replace(/\D/g, '').slice(0, TOTAL);

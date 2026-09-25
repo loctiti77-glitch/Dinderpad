@@ -2579,3 +2579,250 @@ body[data-phase="welcome"] .lock-welcome {
       0 0 calc(14 * var(--px)) rgba(180, 92, 255, .5);
   }
 }
+
+
+/* ==========================================================
+   Le Codanex
+   ========================================================== */
+/* Cinq grandes cases cote a cote, deux onglets en bas. Une case barree
+   vire au gris, une croix rouge la traverse en entier et le mot
+   TERMINATED s'inscrit en travers. */
+
+.cx {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--px));
+  padding: calc(20 * var(--px)) calc(18 * var(--px)) calc(16 * var(--px));
+  font-family: "Courier New", Courier, ui-monospace, monospace;
+  line-height: 1.3;                  /* .pad impose line-height: 0 */
+  color: #d8f4ff;
+}
+
+.cx-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--px));
+  flex-wrap: wrap;
+}
+
+.cx-titre {
+  margin: 0;
+  font-size: calc(46 * var(--px));
+  letter-spacing: calc(6 * var(--px));
+  color: #00f1fd;
+  text-shadow: 0 0 calc(18 * var(--px)) rgba(0, 241, 253, .6);
+}
+
+.cx-compte {
+  font-size: calc(22 * var(--px));
+  color: rgba(216, 244, 255, .6);
+}
+
+/* ---------- Les cinq cases ---------- */
+
+.cx-rang {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: calc(12 * var(--px));
+}
+
+.cx-fiche {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  padding: 0;
+  border: calc(4 * var(--px)) solid #00f1fd;
+  border-radius: calc(16 * var(--px));
+  background: #041622;
+  box-shadow:
+    inset 0 0 calc(22 * var(--px)) rgba(0, 241, 253, .2),
+    0 0 calc(10 * var(--px)) rgba(0, 241, 253, .25);
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease;
+}
+
+.cx-fiche:hover { transform: translateY(calc(-3 * var(--px))); }
+
+/* Le portrait tient toute la case, quitte a deborder : on le rogne. */
+.cx-fiche-vignette {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.cx-fiche-img {
+  width: 100%;
+  height: 100%;
+  /* Une planche en pied est plus large que la case : on la centre et on
+     laisse les cotes deborder. */
+  object-fit: cover;
+  object-position: 50% 45%;
+}
+
+/* Le texte se lit par-dessus : un voile sombre en haut et en bas. */
+.cx-fiche-code {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 2;
+  padding: calc(8 * var(--px)) calc(6 * var(--px)) calc(16 * var(--px));
+  background: linear-gradient(180deg, rgba(2, 10, 16, .92), rgba(2, 10, 16, 0));
+  font-size: calc(18 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-align: center;
+  color: #7ef4ff;
+}
+
+.cx-fiche-txt {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--px));
+  padding: calc(22 * var(--px)) calc(8 * var(--px)) calc(10 * var(--px));
+  background: linear-gradient(0deg, rgba(2, 10, 16, .96) 40%, rgba(2, 10, 16, 0));
+  text-align: center;
+}
+
+.cx-fiche-nom {
+  font-size: calc(22 * var(--px));
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  text-shadow: 0 calc(2 * var(--px)) calc(6 * var(--px)) rgba(0, 0, 0, .9);
+}
+
+.cx-fiche-sous {
+  font-size: calc(16 * var(--px));
+  line-height: 1.2;
+  color: rgba(216, 244, 255, .68);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Une case terminee ---------- */
+
+.cx-fiche.is-finie {
+  border-color: #6b7580;
+  background: linear-gradient(180deg, rgba(58, 64, 70, .92), rgba(20, 23, 26, .95));
+  box-shadow: none;
+}
+
+.cx-fiche.is-finie .cx-fiche-vignette,
+.cx-fiche.is-finie .cx-fiche-txt,
+.cx-fiche.is-finie .cx-fiche-code {
+  filter: grayscale(1) brightness(.55);
+}
+
+/* La croix : deux barres en diagonale, d'un coin a l'autre. */
+.cx-croix {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cx-croix::before,
+.cx-croix::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: calc(7 * var(--px));
+  height: 100%;
+  margin-left: calc(-3.5 * var(--px));
+  background: #e8202c;
+  box-shadow: 0 0 calc(12 * var(--px)) rgba(232, 32, 44, .8);
+  transform-origin: 50% 50%;
+}
+
+/* Les barres suivent la diagonale de la case, quelle que soit sa forme. */
+.cx-croix::before { transform: rotate(32deg) scaleY(1.9); }
+.cx-croix::after  { transform: rotate(-32deg) scaleY(1.9); }
+
+.cx-fiche.is-finie .cx-croix { opacity: 1; }
+
+/* Le mot, en travers, par-dessus la croix. */
+.cx-terminated {
+  position: absolute;
+  z-index: 4;
+  left: calc(-6 * var(--px));
+  right: calc(-6 * var(--px));
+  top: 50%;
+  padding: calc(4 * var(--px)) 0;
+  transform: translateY(-50%);
+  background: rgba(10, 4, 6, .9);
+  border-top: calc(2 * var(--px)) solid #e8202c;
+  border-bottom: calc(2 * var(--px)) solid #e8202c;
+  font-size: calc(17 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-align: center;
+  color: #ff4a56;
+  text-shadow: 0 0 calc(10 * var(--px)) rgba(232, 32, 44, .9);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cx-fiche.is-finie .cx-terminated { opacity: 1; }
+
+/* Le trait se tire sous les yeux quand on vient de barrer la fiche. */
+.cx-fiche.is-barre .cx-croix { animation: cx-tracer .45s ease both; }
+.cx-fiche.is-barre .cx-terminated { animation: cx-tampon .5s .3s ease both; }
+
+@keyframes cx-tracer {
+  from { opacity: 0; transform: scale(.4) rotate(-12deg); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes cx-tampon {
+  0%   { opacity: 0; transform: translateY(-50%) scale(2.2); }
+  70%  { opacity: 1; transform: translateY(-50%) scale(.94); }
+  100% { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+
+/* ---------- Les deux onglets, en bas ---------- */
+
+.cx-onglets {
+  display: flex;
+  gap: calc(12 * var(--px));
+  justify-content: center;
+}
+
+.cx-onglet {
+  flex: 0 1 calc(300 * var(--px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2 * var(--px));
+  padding: calc(8 * var(--px)) calc(18 * var(--px));
+  border: calc(3 * var(--px)) solid rgba(0, 241, 253, .55);
+  border-radius: calc(14 * var(--px));
+  background: rgba(4, 22, 34, .9);
+  color: inherit;
+  text-decoration: none;
+  text-align: center;
+}
+
+.cx-onglet-nom  { font-size: calc(22 * var(--px)); letter-spacing: calc(2 * var(--px)); }
+.cx-onglet-sous { font-size: calc(17 * var(--px)); color: rgba(216, 244, 255, .6); }
+
+.cx-onglet.is-actif {
+  border-color: #00f1fd;
+  background: rgba(10, 58, 82, .95);
+  box-shadow: 0 0 calc(16 * var(--px)) rgba(0, 241, 253, .5);
+}
+
+.cx-onglet.is-actif .cx-onglet-sous { color: #00f1fd; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-fiche { transition: none; }
+  .cx-fiche.is-barre .cx-croix,
+  .cx-fiche.is-barre .cx-terminated { animation: none; }
+}
