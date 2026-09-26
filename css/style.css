@@ -1864,6 +1864,10 @@ body[data-phase="welcome"] .lock-welcome {
    format de cet ecran, donc elle le remplit sans etirement.
    ========================================================== */
 
+/* Aucun double-tap ne doit zoomer : on tape vite sur les boutons du jeu
+   (mouliner, tirer), et le navigateur prenait ca pour un geste de zoom. */
+html, body { touch-action: manipulation; }
+
 .view--tracker { position: relative; padding: 0; }
 
 .tracker-map {

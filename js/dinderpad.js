@@ -370,6 +370,16 @@
     return f.purges.length;
   }
 
+  // Rouvrir une faille deja contenue : le code de maintenance s'en sert
+  // pour relancer une purge autant de fois qu'on veut.
+  function rouvrirFaille(cle) {
+    var p = me();
+    if (!p.failles[cle]) return false;
+    delete p.failles[cle];
+    save();
+    return true;
+  }
+
   function contenirFaille(cle) {
     var p = me();
     var f = p.failles[cle] || (p.failles[cle] = { purges: [], contenue: false });
@@ -1408,7 +1418,7 @@
     fwNiveau: fwNiveau, noterFwNiveau: noterFwNiveau,
     dinderXP: dinderXP, gagnerDinderXP: gagnerDinderXP,
     maintenant: maintenant, decalerHorloge: decalerHorloge, faille: faille,
-    etatFaille: etatFaille, purgerBalise: purgerBalise, contenirFaille: contenirFaille,
+    etatFaille: etatFaille, purgerBalise: purgerBalise, rouvrirFaille: rouvrirFaille, contenirFaille: contenirFaille,
     faillesContenues: faillesContenues,
     niveauVu: niveauVu, voirNiveau: voirNiveau,
     markNew: markNew, takeNew: takeNew,

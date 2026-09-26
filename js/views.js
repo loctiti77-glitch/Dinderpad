@@ -911,13 +911,12 @@
         return;
       }
       dgChamp.value = '';
-      dgMot.textContent = 'Purge lancée.';
+      dgMot.textContent = enFaille ? 'Purge relancée.' : 'Purge lancée.';
       dg.classList.add('is-ok');
-      // Deja dans une purge : on ne la relance pas, on le dit.
-      if (enFaille) {
-        dgMot.textContent = 'Une purge est déjà en cours.';
-        return;
-      }
+      // On efface l'essai precedent, qu'il soit en cours ou deja contenu :
+      // sinon le tracker le retrouve tel quel et le code ne sert qu'une
+      // fois. Le code repart donc toujours d'une purge entiere.
+      DP.rouvrirFaille('essai');
       setTimeout(function () {
         if (window.location.hash === '#tracker/essai') {
           if (window.ROUTER) window.ROUTER.reload();
