@@ -66,6 +66,11 @@
     return;
   }
 
+  // On repart toujours d'un profil neuf : sinon une partie precedente
+  // laisse ses Dinders, sa campagne et sa faille en place, et le mode
+  // "avant la fin" arrive avec l'Effondrement Terminal deja gagne.
+  DP.reset();
+
   // La collection. Avant la fin, ni Le Fondateur ni la fusion : ce sont
   // eux que l'on va chercher.
   var APRES = ['lefondateur', 'dr-islas-the-founder'];

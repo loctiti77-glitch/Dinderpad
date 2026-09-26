@@ -5923,7 +5923,7 @@ body.is-locked .pad-titre { display: none; }
 .fw-sac-faille {
   position: absolute;
   left: 50%;
-  bottom: calc(96 * var(--px));
+  bottom: calc(190 * var(--px));      /* sous les pieds des deux */
   width: calc(10 * var(--px));
   height: calc(6 * var(--px));
   margin-left: calc(-5 * var(--px));
@@ -5954,7 +5954,7 @@ body.is-locked .pad-titre { display: none; }
   display: flex;
   align-items: flex-end;
   gap: calc(28 * var(--px));
-  margin-bottom: calc(104 * var(--px));
+  margin-bottom: calc(42 * var(--px));
   transition: transform 1.8s cubic-bezier(.6, 0, .9, .4), opacity 1.6s ease;
 }
 
@@ -6525,4 +6525,182 @@ body.is-locked .pad-titre { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .fw-evo-mot-passe, .fw-fiche.is-monte { animation: none; }
+}
+
+
+/* ==========================================================
+   Le sacrifice — version longue
+   ========================================================== */
+/* Huit temps, une vingtaine de secondes : le face-à-face, la prise, les
+   fissures, l'ouverture, la chute en spirale, l'éclair, l'onde de choc
+   et la fermeture. Tout se joue par classes posées sur .fw-sacrifice. */
+
+.fw-sac-poussiere {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fw-sac-grain {
+  position: absolute;
+  left: var(--x);
+  bottom: -6%;
+  width: calc(3 * var(--px));
+  height: calc(3 * var(--px));
+  border-radius: 50%;
+  background: rgba(200, 160, 255, .55);
+  animation: fw-sac-grain var(--v) linear infinite;
+  animation-delay: var(--d);
+}
+
+@keyframes fw-sac-grain {
+  0%   { transform: translateY(0) scale(.6); opacity: 0; }
+  20%  { opacity: .9; }
+  100% { transform: translateY(calc(-540 * var(--px))) scale(1.1); opacity: 0; }
+}
+
+/* ---- Le face-à-face : la caméra se rapproche ---- */
+
+.fw-sacrifice.is-face .fw-sac-duo { animation: fw-sac-approche 7s ease-out both; }
+
+@keyframes fw-sac-approche {
+  from { transform: scale(.88); }
+  to   { transform: scale(1.06); }
+}
+
+/* La prise : le docteur attrape Le Fondateur, ils se collent. */
+.fw-sacrifice.is-prise .fw-sac-islas { animation: fw-sac-prise-a 1.1s ease both; }
+.fw-sacrifice.is-prise .fw-sac-fondateur { animation: fw-sac-prise-b 1.1s ease both; }
+
+@keyframes fw-sac-prise-a {
+  from { transform: translateX(0) rotate(0); }
+  to   { transform: translateX(calc(16 * var(--px))) rotate(5deg); }
+}
+
+@keyframes fw-sac-prise-b {
+  0%   { transform: translateX(0) rotate(0); }
+  55%  { transform: translateX(calc(-22 * var(--px))) rotate(-9deg); }
+  100% { transform: translateX(calc(-14 * var(--px))) rotate(-5deg); }
+}
+
+/* ---- Les fissures, qui courent au sol ---- */
+
+.fw-sac-fissures {
+  position: absolute;
+  left: 50%;
+  bottom: calc(190 * var(--px));
+  width: 0;
+  height: 0;
+}
+
+.fw-sac-fissure {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(4 * var(--px));
+  height: 0;
+  background: linear-gradient(180deg, #ffffff, #c86aff 40%, rgba(120, 40, 200, 0));
+  box-shadow: 0 0 calc(10 * var(--px)) rgba(200, 106, 255, .8);
+  transform-origin: 50% 0;
+  transform: rotate(var(--a));
+}
+
+.fw-sacrifice.is-fissure .fw-sac-fissure {
+  animation: fw-sac-fissure 1.2s cubic-bezier(.2, .9, .3, 1) both;
+  animation-delay: var(--d);
+}
+
+@keyframes fw-sac-fissure {
+  from { height: 0; opacity: 0; }
+  to   { height: calc(210 * var(--px)); opacity: 1; }
+}
+
+.fw-sacrifice.is-ouverture .fw-sac-fissure { opacity: .35; }
+.fw-sacrifice.is-close .fw-sac-fissure { opacity: 0; transition: opacity .9s ease; }
+
+/* ---- La faille, qui s'ouvre plus large et plus longtemps ---- */
+
+.fw-sacrifice.is-ouverture .fw-sac-faille {
+  width: calc(420 * var(--px));
+  height: calc(150 * var(--px));
+  margin-left: calc(-210 * var(--px));
+  opacity: 1;
+  transition: width 1.6s cubic-bezier(.3, .9, .3, 1),
+              height 1.6s cubic-bezier(.3, .9, .3, 1),
+              margin-left 1.6s cubic-bezier(.3, .9, .3, 1),
+              opacity .8s ease;
+}
+
+/* ---- La chute : ils tournent en tombant ---- */
+
+.fw-sacrifice.is-chute .fw-sac-duo {
+  animation: fw-sac-chute 2.2s cubic-bezier(.55, 0, .9, .45) both;
+}
+
+@keyframes fw-sac-chute {
+  0%   { transform: translateY(0) scale(1.06) rotate(0); opacity: 1; }
+  40%  { transform: translateY(calc(70 * var(--px))) scale(.72) rotate(120deg); opacity: 1; }
+  100% { transform: translateY(calc(190 * var(--px))) scale(.18) rotate(400deg); opacity: 0; }
+}
+
+/* ---- L'éclair ---- */
+
+.fw-sac-eclair {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fw-sacrifice.is-eclair .fw-sac-eclair { animation: fw-sac-flash 1.1s ease both; }
+
+@keyframes fw-sac-flash {
+  0%   { opacity: 0; }
+  14%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ---- L'onde de choc ---- */
+
+.fw-sac-onde {
+  position: absolute;
+  left: 50%;
+  bottom: calc(190 * var(--px));
+  width: calc(20 * var(--px));
+  height: calc(8 * var(--px));
+  margin-left: calc(-10 * var(--px));
+  border: calc(4 * var(--px)) solid rgba(220, 180, 255, .9);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fw-sacrifice.is-onde .fw-sac-onde { animation: fw-sac-onde 1.5s ease-out both; }
+
+@keyframes fw-sac-onde {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(26); }
+}
+
+/* ---- Les répliques ---- */
+
+.fw-sac-qui {
+  display: block;
+  margin-bottom: calc(3 * var(--px));
+  font-size: calc(14 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  color: #c9a8ff;
+}
+
+.fw-sac-bulle.is-boss .fw-sac-qui { color: #ff8a8a; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-sac-grain, .fw-sac-fissure, .fw-sac-onde, .fw-sac-eclair { animation: none; }
+  .fw-sacrifice.is-face .fw-sac-duo,
+  .fw-sacrifice.is-prise .fw-sac-islas,
+  .fw-sacrifice.is-prise .fw-sac-fondateur,
+  .fw-sacrifice.is-chute .fw-sac-duo { animation: none; }
+  .fw-sacrifice.is-chute .fw-sac-duo { opacity: 0; }
 }

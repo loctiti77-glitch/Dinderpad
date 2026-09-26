@@ -243,15 +243,76 @@
       return;
     }
 
-    if (t === T.DALLE || t === T.MUR || t === T.PORTE) {
+    // Le sol de l'arene : du sable ratisse, pas des dalles. Le cercle de
+    // combat est trace au centre, et le sable se marque de traces.
+    if (t === T.DALLE) {
+      var A0 = opts && opts.arene;
+      x.fillStyle = '#b2884f'; x.fillRect(px, py, TS, TS);
+      // Le grain.
+      for (i = 0; i < 7; i++) {
+        n = bruit(tx, ty, 190 + i);
+        x.fillStyle = n > 0.5 ? 'rgba(255,240,205,.16)' : 'rgba(90,58,26,.16)';
+        x.fillRect(px + ((n * 20) | 0), py + ((bruit(tx, ty, 200 + i) * 20) | 0), 2, 1);
+      }
+      // Les raies du rateau.
+      x.fillStyle = 'rgba(120,80,40,.16)';
+      x.fillRect(px, py + 5, TS, 1);
+      x.fillRect(px, py + 15, TS, 1);
+      if (A0) {
+        // Le cercle de combat. On le trace en sous-cases de quatre pixels :
+        // sinon la case entiere se colore et l'ellipse tourne en patchwork.
+        var cxA = (A0.x0 + A0.x1 + 1) / 2, cyA = (A0.y0 + A0.y1 + 1) / 2;
+        var PAS = 4, SOUS = TS / PAS;
+        for (var sy2 = 0; sy2 < PAS; sy2++) {
+          for (var sx3 = 0; sx3 < PAS; sx3++) {
+            var ux = tx + (sx3 + 0.5) / PAS, uy = ty + (sy2 + 0.5) / PAS;
+            var dxA = ux - cxA, dyA = (uy - cyA) * 1.85;
+            var dA = Math.sqrt(dxA * dxA + dyA * dyA);
+            var qx = px + sx3 * SOUS, qy = py + sy2 * SOUS;
+            if (dA > 2.92 && dA < 3.12) {
+              x.fillStyle = 'rgba(86,50,18,.55)';
+              x.fillRect(qx, qy, SOUS, SOUS);
+            } else if (dA >= 3.12 && dA < 3.26) {
+              x.fillStyle = 'rgba(255,240,200,.16)';
+              x.fillRect(qx, qy, SOUS, SOUS);
+            } else if (dA < 0.92) {
+              // Le medaillon grave au centre.
+              x.fillStyle = dA < 0.55 ? 'rgba(178,52,44,.38)' : 'rgba(86,50,18,.40)';
+              x.fillRect(qx, qy, SOUS, SOUS);
+            }
+          }
+        }
+        // Des traces de lutte, ici et la.
+        if (bruit(tx, ty, 210) > 0.88) {
+          x.fillStyle = 'rgba(70,40,18,.30)';
+          x.fillRect(px + 3, py + 11, 14, 2);
+          x.fillRect(px + 5, py + 8, 9, 2);
+        }
+      }
+      return;
+    }
+
+    if (t === T.PORTE) {
       x.fillStyle = '#6b6f7d'; x.fillRect(px, py, TS, TS);
       x.fillStyle = '#7c8090';
       x.fillRect(px + 1, py + 1, TS - 3, 10);
       x.fillRect(px + 1, py + 13, TS - 3, 9);
-      x.fillStyle = 'rgba(0,0,0,.22)';
-      x.fillRect(px, py + 11, TS, 2);
-      x.fillRect(px + (ty % 2 ? 6 : 16), py, 2, 11);
-      x.fillRect(px + (ty % 2 ? 16 : 6), py + 13, 2, 9);
+      return;
+    }
+
+    if (t === T.MUR) {
+      // Le mur d'enceinte : de la pierre appareillee, sombre en bas.
+      var g1 = x.createLinearGradient(px, py, px, py + TS);
+      g1.addColorStop(0, '#7a7f90');
+      g1.addColorStop(1, '#4e5262');
+      x.fillStyle = g1; x.fillRect(px, py, TS, TS);
+      x.fillStyle = 'rgba(0,0,0,.26)';
+      x.fillRect(px, py + 10, TS, 2);
+      x.fillRect(px + (ty % 2 ? 6 : 16), py, 2, 10);
+      x.fillRect(px + (ty % 2 ? 16 : 6), py + 12, 2, 10);
+      x.fillStyle = 'rgba(255,255,255,.08)';
+      x.fillRect(px + 1, py + 1, TS - 4, 2);
+      x.fillRect(px + 1, py + 13, TS - 4, 2);
       return;
     }
 
@@ -417,13 +478,84 @@
 
     if (t === T.MUR && opts && opts.arene) {
       var AR = opts.arene;
+      var BANDEROLES = ['#c9303f', '#2f6fd0', '#c9a227', '#3f9c42'];
+
+      // Le chaperon du mur.
       x.fillStyle = '#4d5160'; x.fillRect(px, py, TS, 3);
+      x.fillStyle = 'rgba(255,255,255,.10)'; x.fillRect(px, py, TS, 1);
+
+      // ---- Le mur du fond : les gradins et leur public ----
       if (ty === AR.y0) {
-        x.fillStyle = '#878ca0';
-        x.fillRect(px + (tx % 2 ? 2 : 12), py - 6, 9, 7);
+        // Trois rangees de bancs, en hauteur, au-dessus de la case.
+        for (var r = 0; r < 3; r++) {
+          var by = py - 6 - r * 6;
+          x.fillStyle = ['#2d2448', '#261e3d', '#1f1932'][r];
+          x.fillRect(px, by, TS, 6);
+          x.fillStyle = 'rgba(0,0,0,.35)';
+          x.fillRect(px, by + 5, TS, 1);
+          // Deux spectateurs par case et par rangee.
+          for (var k = 0; k < 2; k++) {
+            var nn = bruit(tx, ty + r * 7 + k, 220);
+            if (nn < 0.18) continue;
+            var sx2 = px + 3 + k * 10 + ((bruit(tx, k + r, 221) * 3) | 0);
+            var haut2 = 5 + ((bruit(tx, k + r, 222) * 2) | 0);
+            x.fillStyle = ['#6d5c96', '#8a4f62', '#4f6a8a', '#7d6a4a',
+                           '#4c4070', '#84709f'][(nn * 6) | 0];
+            x.fillRect(sx2, by + 6 - haut2, 4, haut2);
+            x.fillStyle = ['#e8c9a0', '#c99a72', '#8d6244', '#f0d8b8'][(bruit(tx, k, 223) * 4) | 0];
+            x.fillRect(sx2, by + 6 - haut2 - 2, 4, 2);
+          }
+        }
+        // Une banderole tous les quatre pas, qui pend du chaperon.
+        if (tx % 4 === 1) {
+          var col = BANDEROLES[(tx / 4 | 0) % 4];
+          x.fillStyle = col; x.fillRect(px + 7, py + 2, 8, 15);
+          x.fillStyle = 'rgba(0,0,0,.30)'; x.fillRect(px + 12, py + 2, 3, 15);
+          x.fillStyle = col;
+          x.beginPath();
+          x.moveTo(px + 7, py + 17); x.lineTo(px + 11, py + 21);
+          x.lineTo(px + 15, py + 17); x.closePath(); x.fill();
+        }
+        return;
       }
+
+      // ---- Les cotes : colonnes et torches ----
+      var angle = (tx === AR.x0 || tx === AR.x1) && (ty === AR.y0 + 1);
+      if (tx === AR.x0 || tx === AR.x1) {
+        // Une colonne cannelee, tous les trois pas.
+        if (ty % 3 === 0) {
+          x.fillStyle = '#8f95a8'; x.fillRect(px + 2, py - 4, TS - 4, TS + 4);
+          x.fillStyle = 'rgba(0,0,0,.22)';
+          x.fillRect(px + 6, py - 4, 2, TS + 4);
+          x.fillRect(px + 13, py - 4, 2, TS + 4);
+          x.fillStyle = '#a9afc2'; x.fillRect(px, py - 7, TS, 4);
+          x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(px, py - 4, TS, 1);
+        }
+        // Une torche allumee entre deux colonnes.
+        if (ty % 3 === 1) {
+          x.fillStyle = '#4a3420'; x.fillRect(px + 10, py + 5, 3, 11);
+          x.fillStyle = '#2f2418'; x.fillRect(px + 7, py + 3, 9, 3);
+          x.fillStyle = 'rgba(255,170,70,.20)';
+          x.beginPath(); x.ellipse(px + 11, py + 4, 14, 12, 0, 0, 6.3); x.fill();
+          x.fillStyle = '#ff9b35'; x.fillRect(px + 8, py - 2, 7, 6);
+          x.fillStyle = '#ffe27a'; x.fillRect(px + 10, py - 1, 3, 4);
+          x.fillStyle = '#fff3c8'; x.fillRect(px + 11, py, 1, 2);
+        }
+        if (angle) {
+          // Une statue de gardien a l'angle du fond.
+          x.fillStyle = '#9aa0b4'; x.fillRect(px + 4, py - 14, 12, 18);
+          x.fillStyle = '#7f8598'; x.fillRect(px + 6, py - 20, 8, 7);
+          x.fillStyle = '#5d6274'; x.fillRect(px + 7, py - 18, 6, 2);
+          x.fillStyle = '#b4bacd'; x.fillRect(px + 2, py + 2, 16, 4);
+        }
+        return;
+      }
+
+      // ---- Le mur du bas : des torches de part et d'autre de la porte ----
       if (ty === AR.y1 && tx % 3 === 0) {
         x.fillStyle = '#4a3420'; x.fillRect(px + 10, py + 6, 3, 10);
+        x.fillStyle = 'rgba(255,170,70,.18)';
+        x.beginPath(); x.ellipse(px + 11, py + 4, 13, 11, 0, 0, 6.3); x.fill();
         x.fillStyle = '#ff9b35'; x.fillRect(px + 9, py + 1, 5, 6);
         x.fillStyle = '#ffe27a'; x.fillRect(px + 10, py + 2, 3, 3);
       }

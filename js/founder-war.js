@@ -383,7 +383,8 @@
 
         var vign = el('span', 'fw-palier-vignette');
         var im = el('img', 'fw-palier-img');
-        im.src = d.n === C.DERNIER ? DP.sprite('lefondateur', 'duel') : C.urlSbire(d.n);
+        if (d.n === C.DERNIER) im.src = DP.sprite('lefondateur', 'duel');
+        else C.poserSbire(im, d.n);
         im.alt = '';
         vign.appendChild(im);
         n.appendChild(vign);
@@ -937,11 +938,28 @@
         vivant: vivant,
         fige: function () { return arrive; },
 
-        // Le Fondateur attend au milieu de son arene, trie en profondeur
+        // Celui qui attend au milieu de son arene : le sbire du niveau,
+        // ou Le Fondateur lui-meme au dernier palier. Trie en profondeur
         // avec la troupe pour qu'il passe devant ou derriere comme il faut.
         extras: function (t) {
-          var sortie = [{ id: 'lefondateur', x: (AR.x0 + AR.x1 + 1) / 2 * TS,
-                    y: (AR.y0 + AR.y1 + 1) / 2 * TS, dir: DIRS.bas, fixe: true }];
+          var ax = (AR.x0 + AR.x1 + 1) / 2 * TS, ay = (AR.y0 + AR.y1 + 1) / 2 * TS;
+          var sortie = [];
+          if (!C || niveauEnCours === C.DERNIER) {
+            sortie.push({ id: 'lefondateur', x: ax, y: ay, dir: DIRS.bas, fixe: true });
+          } else {
+            // Le sbire n'est pas un Dinder : on pose sa planche a la main,
+            // reduite a la taille d'un personnage de la carte.
+            sortie.push({ x: ax, y: ay, dessin: function (ctx, sx, sy) {
+              var f = C.feuilleSbire(niveauEnCours);
+              // L'ombre au sol, qu'il soit dessine ou non.
+              ctx.fillStyle = 'rgba(10,6,4,.35)';
+              ctx.beginPath(); ctx.ellipse(sx, sy + 2, 13, 5, 0, 0, 6.3); ctx.fill();
+              if (!f) return;
+              var h = 46, w = Math.round(h * f.canvas.width / f.canvas.height);
+              ctx.imageSmoothingEnabled = false;
+              ctx.drawImage(f.canvas, Math.round(sx - w / 2), Math.round(sy - h + 3), w, h);
+            } });
+          }
 
           // Les eclats de fondation : des cristaux rouges qui tournent.
           eclats.forEach(function (e) {
@@ -1073,8 +1091,9 @@
       var box = el('div', 'fw-dialogue');
       var scene = el('div', 'fw-dial-scene');
       var lui = el('img', 'fw-dial-boss' + (final ? '' : ' fw-dial-boss--sbire'));
-      lui.src = final ? DP.sprite('lefondateur', 'duel') : C.urlSbire(d.n);
-      lui.alt = d.nom;
+      if (final) lui.src = DP.sprite('lefondateur', 'duel');
+      else C.poserSbire(lui, d.n);
+      lui.alt = final ? d.titre : d.nom;
       scene.appendChild(lui);
       var eux = el('div', 'fw-dial-troupe');
       equipe.forEach(function (id) {
@@ -1140,7 +1159,10 @@
 
       // Barre de vie du Fondateur
       var barreBoss = el('div', 'fw-boss-barre');
-      barreBoss.appendChild(el('span', 'fw-boss-nom', adv.nom.toUpperCase()));
+      // Le dernier palier s'appelle "Effondrement Terminal" ; celui qui
+      // se tient en face, lui, c'est Le Fondateur.
+      barreBoss.appendChild(el('span', 'fw-boss-nom',
+        (final ? adv.titre : adv.nom).toUpperCase()));
       var jaugeBoss = el('span', 'fw-jauge');
       var remplBoss = el('span', 'fw-jauge-plein');
       jaugeBoss.appendChild(remplBoss);
@@ -1151,8 +1173,9 @@
 
       var boss = el('div', 'fw-boss' + (final ? ' is-final' : ''));
       var bossImg = el('img');
-      bossImg.src = final ? DP.sprite('lefondateur', 'duel') : C.urlSbire(adv.n);
-      bossImg.alt = adv.nom;
+      if (final) bossImg.src = DP.sprite('lefondateur', 'duel');
+      else C.poserSbire(bossImg, adv.n);
+      bossImg.alt = final ? adv.titre : adv.nom;
       boss.appendChild(bossImg);
       scene.appendChild(boss);
 
@@ -1586,98 +1609,202 @@
     // ---------- Le decor de l'arene ----------
 
     function peindreArene(x, W, H) {
-      // Ciel de nuit au-dessus des gradins
-      var ciel = x.createLinearGradient(0, 0, 0, H);
-      ciel.addColorStop(0, '#120d22');
-      ciel.addColorStop(1, '#2a1630');
-      x.fillStyle = ciel; x.fillRect(0, 0, W, H);
-
       var i, j;
-      for (i = 0; i < 60; i++) {
-        x.fillStyle = 'rgba(255,255,255,' + (0.2 + bruit(i, 1, 300) * 0.5).toFixed(2) + ')';
-        x.fillRect((bruit(i, 2, 301) * W) | 0, (bruit(i, 3, 302) * 70) | 0, 1, 1);
+
+      // ---- Le ciel, et sa lune ----
+      var ciel = x.createLinearGradient(0, 0, 0, 170);
+      ciel.addColorStop(0, '#0b0818');
+      ciel.addColorStop(0.55, '#1b1130');
+      ciel.addColorStop(1, '#3a1d3c');
+      x.fillStyle = ciel; x.fillRect(0, 0, W, 170);
+
+      for (i = 0; i < 90; i++) {
+        var et = bruit(i, 1, 300);
+        x.fillStyle = 'rgba(255,255,255,' + (0.15 + et * 0.6).toFixed(2) + ')';
+        var ex = (bruit(i, 2, 301) * W) | 0, ey = (bruit(i, 3, 302) * 96) | 0;
+        x.fillRect(ex, ey, et > 0.9 ? 2 : 1, et > 0.9 ? 2 : 1);
       }
 
-      // Gradins : quatre rangees de public. Les silhouettes changent de
-      // taille, de teinte et de carnation, sinon la foule fait quilles.
-      var y0 = 62;
+      var lune = x.createRadialGradient(W - 78, 34, 2, W - 78, 34, 46);
+      lune.addColorStop(0, 'rgba(255,240,210,.95)');
+      lune.addColorStop(0.24, 'rgba(255,236,200,.55)');
+      lune.addColorStop(1, 'rgba(255,220,180,0)');
+      x.fillStyle = lune; x.fillRect(W - 140, 0, 140, 100);
+      x.fillStyle = '#f6ead0';
+      x.beginPath(); x.arc(W - 78, 34, 13, 0, 6.3); x.fill();
+      x.fillStyle = 'rgba(190,175,150,.5)';
+      x.beginPath(); x.arc(W - 82, 30, 4, 0, 6.3); x.fill();
+      x.beginPath(); x.arc(W - 73, 39, 3, 0, 6.3); x.fill();
+
+      // ---- Les arches du fond : le mur exterieur de l'arene ----
+      x.fillStyle = '#251b38';
+      x.fillRect(0, 44, W, 24);
+      for (i = 0; i < W; i += 40) {
+        x.fillStyle = '#100b1e';
+        x.beginPath();
+        x.moveTo(i + 8, 68);
+        x.lineTo(i + 8, 54);
+        x.quadraticCurveTo(i + 20, 42, i + 32, 54);
+        x.lineTo(i + 32, 68);
+        x.closePath();
+        x.fill();
+        // Une torche lointaine dans une arche sur trois.
+        if (i % 120 === 0) {
+          x.fillStyle = 'rgba(255,170,70,.55)';
+          x.beginPath(); x.arc(i + 20, 58, 5, 0, 6.3); x.fill();
+        }
+      }
+      x.fillStyle = '#332547'; x.fillRect(0, 66, W, 4);
+
+      // ---- Les gradins : cinq rangees, en perspective ----
+      var y0 = 70;
       var VETEMENTS = ['#6d5c96', '#4c4070', '#84709f', '#3d3459',
                        '#8a4f62', '#4f6a8a', '#7d6a4a', '#5a3f6b'];
       var PEAUX = ['#e8c9a0', '#c99a72', '#8d6244', '#f0d8b8', '#6b4630'];
-      for (j = 0; j < 4; j++) {
-        var yy = y0 + j * 16;
-        x.fillStyle = ['#1d1730', '#241c3a', '#2b2245', '#332851'][j];
-        x.fillRect(0, yy, W, 16);
-        x.fillStyle = 'rgba(0,0,0,.4)';
-        x.fillRect(0, yy + 14, W, 2);
-        for (i = 0; i < W; i += 7) {
+      for (j = 0; j < 5; j++) {
+        var yy = y0 + j * 13;
+        var haut = 13;
+        x.fillStyle = ['#191428', '#1f1932', '#261e3d', '#2d2448', '#342a53'][j];
+        x.fillRect(0, yy, W, haut);
+        x.fillStyle = 'rgba(0,0,0,.45)';
+        x.fillRect(0, yy + haut - 2, W, 2);
+
+        // Plus la rangee est loin, plus le public est petit et serre.
+        var pas = 6 + j;
+        for (i = -3; i < W; i += pas) {
           var n = bruit(i, j, 310);
-          if (n < 0.14) continue;                    // des places vides
-          var dec = (bruit(i, j, 311) * 3) | 0;      // un peu de desordre
-          var larg = 4 + ((bruit(i, j, 312) * 2) | 0);
-          var haut = 7 + ((bruit(i, j, 313) * 3) | 0);
-          var bx = i + dec, by = yy + 15 - haut;
+          if (n < 0.12) continue;
+          var dec = (bruit(i, j, 311) * 3) | 0;
+          var larg = 3 + j + ((bruit(i, j, 312) * 2) | 0);
+          var hs = 6 + j + ((bruit(i, j, 313) * 3) | 0);
+          var bx = i + dec, by = yy + haut - 1 - hs;
           x.fillStyle = VETEMENTS[(n * VETEMENTS.length) | 0];
-          x.fillRect(bx, by + 3, larg, haut - 3);
-          x.fillStyle = 'rgba(0,0,0,.28)';           // le pli de l'ombre
-          x.fillRect(bx + larg - 1, by + 3, 1, haut - 3);
+          x.fillRect(bx, by + 3, larg, hs - 3);
+          x.fillStyle = 'rgba(0,0,0,.30)';
+          x.fillRect(bx + larg - 1, by + 3, 1, hs - 3);
           x.fillStyle = PEAUX[(bruit(i, j, 314) * PEAUX.length) | 0];
           x.fillRect(bx + 1, by, larg - 2, 3);
-          // Un spectateur sur six leve les bras.
-          if (bruit(i, j, 315) > 0.84) {
+          if (bruit(i, j, 315) > 0.86) {
             x.fillStyle = PEAUX[(bruit(i, j, 314) * PEAUX.length) | 0];
             x.fillRect(bx - 1, by - 1, 1, 3);
             x.fillRect(bx + larg, by - 1, 1, 3);
           }
         }
+        // Un voile sombre sur les rangees du fond : la profondeur.
+        x.fillStyle = 'rgba(8,4,16,' + (0.30 - j * 0.06).toFixed(2) + ')';
+        x.fillRect(0, yy, W, haut);
       }
 
-      // Mur d'enceinte et banderoles
-      x.fillStyle = '#4a4356'; x.fillRect(0, 126, W, 26);
-      x.fillStyle = '#585167';
-      for (i = 0; i < W; i += 24) x.fillRect(i + 1, 128, 22, 10);
-      for (i = 12; i < W; i += 24) x.fillRect(i + 1, 140, 22, 10);
-      x.fillStyle = 'rgba(0,0,0,.3)'; x.fillRect(0, 150, W, 3);
+      // ---- Le mur d'enceinte, ses pierres et ses banderoles ----
+      var mur = x.createLinearGradient(0, 136, 0, 162);
+      mur.addColorStop(0, '#554d68');
+      mur.addColorStop(1, '#3a3349');
+      x.fillStyle = mur; x.fillRect(0, 136, W, 26);
+      for (j = 0; j < 2; j++) {
+        for (i = (j % 2) * 12; i < W; i += 24) {
+          x.fillStyle = 'rgba(255,255,255,.05)';
+          x.fillRect(i + 1, 138 + j * 12, 22, 10);
+          x.fillStyle = 'rgba(0,0,0,.22)';
+          x.fillRect(i + 1, 147 + j * 12, 22, 1);
+        }
+      }
+      x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(0, 160, W, 3);
 
-      [60, 180, 300, 420].forEach(function (bx, k) {
+      [52, 164, 292, 404].forEach(function (bx, k) {
         var col = ['#c9303f', '#2f6fd0', '#c9a227', '#3f9c42'][k];
-        x.fillStyle = col; x.fillRect(bx, 126, 14, 30);
-        x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(bx + 10, 126, 4, 30);
+        var g = x.createLinearGradient(bx, 136, bx + 16, 168);
+        g.addColorStop(0, col);
+        g.addColorStop(1, 'rgba(0,0,0,.55)');
+        x.fillStyle = g; x.fillRect(bx, 136, 16, 30);
+        x.fillStyle = 'rgba(255,255,255,.18)'; x.fillRect(bx + 1, 136, 3, 30);
         x.fillStyle = col;
         x.beginPath();
-        x.moveTo(bx, 156); x.lineTo(bx + 7, 164); x.lineTo(bx + 14, 156);
+        x.moveTo(bx, 166); x.lineTo(bx + 8, 175); x.lineTo(bx + 16, 166);
+        x.closePath(); x.fill();
+        x.fillStyle = 'rgba(0,0,0,.3)';
+        x.beginPath();
+        x.moveTo(bx + 8, 166); x.lineTo(bx + 8, 175); x.lineTo(bx + 16, 166);
         x.closePath(); x.fill();
       });
 
-      // L'arene elle-meme : sable clair, ellipse en perspective.
-      var sable = x.createLinearGradient(0, 152, 0, H);
-      sable.addColorStop(0, '#9c7a4e');
-      sable.addColorStop(1, '#c8a46c');
-      x.fillStyle = sable; x.fillRect(0, 152, W, H - 152);
+      // ---- Le sable, en perspective ----
+      var sable = x.createLinearGradient(0, 162, 0, H);
+      sable.addColorStop(0, '#7d6140');
+      sable.addColorStop(0.35, '#a8834f');
+      sable.addColorStop(1, '#d4b077');
+      x.fillStyle = sable; x.fillRect(0, 162, W, H - 162);
 
-      x.fillStyle = 'rgba(255,255,255,.06)';
-      for (i = 0; i < 400; i++) {
-        x.fillRect((bruit(i, 5, 320) * W) | 0, 154 + ((bruit(i, 6, 321) * (H - 156)) | 0), 2, 1);
+      // Les raies de ratissage, resserrees au fond.
+      x.strokeStyle = 'rgba(255,238,200,.08)';
+      x.lineWidth = 1;
+      for (i = 0; i < 26; i++) {
+        var yr = 164 + Math.pow(i / 26, 1.7) * (H - 166);
+        x.beginPath(); x.moveTo(0, yr); x.lineTo(W, yr); x.stroke();
       }
-      x.fillStyle = 'rgba(0,0,0,.12)';
-      for (i = 0; i < 160; i++) {
-        x.fillRect((bruit(i, 7, 322) * W) | 0, 154 + ((bruit(i, 8, 323) * (H - 156)) | 0), 2, 1);
+
+      // Le grain du sable.
+      for (i = 0; i < 520; i++) {
+        var gy = 164 + ((bruit(i, 6, 321) * (H - 166)) | 0);
+        var prof = (gy - 164) / (H - 164);
+        x.fillStyle = bruit(i, 9, 324) > 0.5
+          ? 'rgba(255,255,255,' + (0.03 + prof * 0.06).toFixed(3) + ')'
+          : 'rgba(0,0,0,' + (0.05 + prof * 0.08).toFixed(3) + ')';
+        x.fillRect((bruit(i, 5, 320) * W) | 0, gy, 1 + ((prof * 2) | 0), 1);
       }
 
-      // Le cercle de combat
-      x.strokeStyle = 'rgba(70,40,20,.5)'; x.lineWidth = 3;
-      x.beginPath(); x.ellipse(W / 2, 250, 190, 56, 0, 0, 6.3); x.stroke();
-      x.strokeStyle = 'rgba(255,235,190,.25)'; x.lineWidth = 1;
-      x.beginPath(); x.ellipse(W / 2, 250, 186, 53, 0, 0, 6.3); x.stroke();
+      // ---- Le cercle de combat, grave dans le sable ----
+      x.strokeStyle = 'rgba(64,38,18,.55)'; x.lineWidth = 4;
+      x.beginPath(); x.ellipse(W / 2, 252, 196, 58, 0, 0, 6.3); x.stroke();
+      x.strokeStyle = 'rgba(255,238,200,.26)'; x.lineWidth = 1;
+      x.beginPath(); x.ellipse(W / 2, 250, 192, 55, 0, 0, 6.3); x.stroke();
+      x.strokeStyle = 'rgba(64,38,18,.3)'; x.lineWidth = 2;
+      x.beginPath(); x.ellipse(W / 2, 252, 96, 28, 0, 0, 6.3); x.stroke();
 
-      // Torches de part et d'autre
-      [24, W - 34].forEach(function (tx) {
-        x.fillStyle = '#3a2c1c'; x.fillRect(tx, 150, 8, 40);
-        x.fillStyle = '#ff9b35'; x.fillRect(tx - 2, 138, 12, 14);
-        x.fillStyle = '#ffd766'; x.fillRect(tx + 1, 141, 6, 8);
-        x.fillStyle = 'rgba(255,160,60,.16)';
-        x.beginPath(); x.ellipse(tx + 4, 150, 42, 30, 0, 0, 6.3); x.fill();
+      // L'ombre portee de celui qui se tient au centre.
+      var ombre = x.createRadialGradient(W / 2, 214, 4, W / 2, 214, 74);
+      ombre.addColorStop(0, 'rgba(24,12,4,.42)');
+      ombre.addColorStop(1, 'rgba(24,12,4,0)');
+      x.fillStyle = ombre;
+      x.beginPath(); x.ellipse(W / 2, 214, 74, 18, 0, 0, 6.3); x.fill();
+
+      // ---- Les torches, et leurs faisceaux ----
+      [26, W - 36].forEach(function (tx, k) {
+        // Le faisceau qui descend sur le sable.
+        var f = x.createLinearGradient(tx + 4, 146, tx + (k ? -60 : 60), H);
+        f.addColorStop(0, 'rgba(255,176,80,.24)');
+        f.addColorStop(1, 'rgba(255,176,80,0)');
+        x.fillStyle = f;
+        x.beginPath();
+        x.moveTo(tx - 4, 150); x.lineTo(tx + 14, 150);
+        x.lineTo(tx + (k ? -78 : 96), H); x.lineTo(tx + (k ? -150 : 24), H);
+        x.closePath(); x.fill();
+
+        x.fillStyle = '#332616'; x.fillRect(tx, 152, 9, 42);
+        x.fillStyle = '#20180e'; x.fillRect(tx + 6, 152, 3, 42);
+        x.fillStyle = '#ff9b35'; x.fillRect(tx - 3, 138, 15, 16);
+        x.fillStyle = '#ffd766'; x.fillRect(tx + 1, 141, 7, 10);
+        x.fillStyle = '#fff3c0'; x.fillRect(tx + 3, 143, 3, 5);
+        var halo = x.createRadialGradient(tx + 4, 148, 3, tx + 4, 148, 52);
+        halo.addColorStop(0, 'rgba(255,180,80,.34)');
+        halo.addColorStop(1, 'rgba(255,180,80,0)');
+        x.fillStyle = halo;
+        x.beginPath(); x.arc(tx + 4, 148, 52, 0, 6.3); x.fill();
       });
+
+      // ---- La poussiere en suspension ----
+      for (i = 0; i < 70; i++) {
+        var px = (bruit(i, 11, 330) * W) | 0;
+        var py = 150 + ((bruit(i, 12, 331) * (H - 152)) | 0);
+        var r = bruit(i, 13, 332) > 0.82 ? 2 : 1;
+        x.fillStyle = 'rgba(255,226,170,' + (0.05 + bruit(i, 14, 333) * 0.14).toFixed(2) + ')';
+        x.fillRect(px, py, r, r);
+      }
+
+      // ---- Le vignettage : l'oeil revient au centre ----
+      var vig = x.createRadialGradient(W / 2, 176, 70, W / 2, 176, 300);
+      vig.addColorStop(0, 'rgba(0,0,0,0)');
+      vig.addColorStop(1, 'rgba(4,2,10,.62)');
+      x.fillStyle = vig; x.fillRect(0, 0, W, H);
     }
 
     // ---------- L'ecran de fin ----------
@@ -1841,11 +1968,33 @@
       jeu.dataset.etape = 'sacrifice';
 
       var box = el('div', 'fw-sacrifice');
-      var ciel = el('div', 'fw-sac-ciel');
-      box.appendChild(ciel);
+
+      // Les couches du decor, du fond vers l'avant.
+      box.appendChild(el('div', 'fw-sac-ciel'));
+      var poussiere = el('div', 'fw-sac-poussiere');
+      for (var g = 0; g < 26; g++) {
+        var grain = el('span', 'fw-sac-grain');
+        grain.style.setProperty('--x', (g * 3.9 % 100).toFixed(1) + '%');
+        grain.style.setProperty('--d', (g * 0.31 % 4).toFixed(2) + 's');
+        grain.style.setProperty('--v', (3.2 + (g % 5) * 0.6).toFixed(1) + 's');
+        poussiere.appendChild(grain);
+      }
+      box.appendChild(poussiere);
+
+      // Les fissures qui courent au sol avant l'ouverture.
+      var fissures = el('div', 'fw-sac-fissures');
+      for (var f = 0; f < 7; f++) {
+        var fi = el('span', 'fw-sac-fissure');
+        fi.style.setProperty('--a', (-70 + f * 23) + 'deg');
+        fi.style.setProperty('--d', (f * 90) + 'ms');
+        fissures.appendChild(fi);
+      }
+      box.appendChild(fissures);
 
       var faille = el('div', 'fw-sac-faille');
       box.appendChild(faille);
+      var onde = el('div', 'fw-sac-onde');
+      box.appendChild(onde);
 
       var duo = el('div', 'fw-sac-duo');
       var doc = el('img', 'fw-sac-islas');
@@ -1858,37 +2007,58 @@
       duo.appendChild(fond);
       box.appendChild(duo);
 
+      var eclair = el('div', 'fw-sac-eclair');
+      box.appendChild(eclair);
+
       var mots = el('div', 'fw-sac-mots');
       box.appendChild(mots);
       jeu.appendChild(box);
 
-      var LIGNES = [
-        { t: 200,  qui: 'islas', txt: 'Tu voulais un seul monde de chaque. Tiens-toi tranquille.' },
-        { t: 2600, qui: 'boss',  txt: 'Lâche-moi. Tu n’as pas idée de ce qu’il y a là-dedans.' },
-        { t: 5000, qui: 'islas', txt: 'Si. C’est moi qui l’ai ouverte.' }
-      ];
-      LIGNES.forEach(function (l) {
-        plusTard(function () {
-          mots.textContent = '';
-          var b = el('p', 'fw-sac-bulle' + (l.qui === 'boss' ? ' is-boss' : ''), l.txt);
-          mots.appendChild(b);
-        }, reduit ? 0 : l.t);
-      });
-
-      plusTard(function () { box.classList.add('is-ouverture'); }, reduit ? 0 : 6600);
-      plusTard(function () { box.classList.add('is-chute'); }, reduit ? 0 : 7600);
-      plusTard(function () {
-        box.classList.add('is-close');
+      function dire(qui, txt) {
         mots.textContent = '';
-        mots.appendChild(el('p', 'fw-sac-fin',
-          'La faille se referme. La Singularity n’en est pas ressortie.'));
-      }, reduit ? 0 : 9600);
+        var b = el('p', 'fw-sac-bulle' + (qui === 'boss' ? ' is-boss' : ''), txt);
+        var n = el('span', 'fw-sac-qui', qui === 'boss' ? 'Le Fondateur' : C.nomIslas());
+        b.insertBefore(n, b.firstChild);
+        mots.appendChild(b);
+      }
+
+      // ---- La partition ----
+      // t en millisecondes ; chaque temps ajoute sa classe ou sa replique.
+      var SCENE = [
+        [200,   function () { box.classList.add('is-face'); }],
+        [500,   function () { dire('islas', 'Tu as fini de ranger, je crois.'); }],
+        [3000,  function () { dire('boss', 'Il reste vous. C’est peu, et c’est de trop.'); }],
+        [6000,  function () { dire('islas', 'Alors viens compter avec moi.'); }],
+        [8200,  function () { box.classList.add('is-prise'); }],
+        [8600,  function () { dire('boss', 'Lâche-moi. Tu n’as pas idée de ce qu’il y a là-dedans.'); }],
+        [11400, function () { dire('islas', 'Si. C’est moi qui l’ai ouverte.'); }],
+        [13400, function () { box.classList.add('is-fissure'); }],
+        [14600, function () { box.classList.add('is-ouverture'); }],
+        [15000, function () { mots.textContent = ''; }],
+        [15800, function () { box.classList.add('is-chute'); }],
+        [17600, function () { box.classList.add('is-eclair'); }],
+        [18200, function () {
+          box.classList.remove('is-ouverture');
+          box.classList.add('is-onde');
+        }],
+        [19000, function () { box.classList.add('is-close'); }],
+        [20200, function () {
+          mots.textContent = '';
+          mots.appendChild(el('p', 'fw-sac-fin',
+            'La faille se referme sur eux deux. Le sable retombe. ' +
+            'La Singularity n’en est pas ressortie.'));
+        }],
+        [22400, function () { box.classList.add('is-suite'); }]
+      ];
+
+      SCENE.forEach(function (temps) {
+        plusTard(temps[1], reduit ? 0 : temps[0]);
+      });
 
       var suite = el('button', 'fw-btn fw-btn--go fw-sac-btn', 'Continuer');
       suite.type = 'button';
       suite.addEventListener('click', apres);
       box.appendChild(suite);
-      plusTard(function () { box.classList.add('is-suite'); }, reduit ? 0 : 10600);
     }
 
     // Ce que rapporte un palier. Le socle est celui d'avant ; par-dessus

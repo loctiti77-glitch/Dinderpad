@@ -2971,3 +2971,267 @@ html, body { touch-action: manipulation; }
 @media (prefers-reduced-motion: reduce) {
   .tracker-dg.is-refus { animation: none; }
 }
+
+
+/* ==========================================================
+   La reprise du réseau, à la fin d'une faille
+   ========================================================== */
+/* Une scène d'une douzaine de secondes, en couches : le voile qui passe
+   du rouge au vert, un balayage, l'adieu de SinAIster qui se décroche,
+   une grille qui se rallume case par case, puis la carte et sa prime. */
+
+.fete {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  overflow: hidden;
+  pointer-events: none;
+  font-family: "Courier New", Courier, ui-monospace, monospace;
+  line-height: 1.25;
+}
+
+.fete.is-sortie { animation: fete-sortie .7s ease forwards; }
+
+@keyframes fete-sortie {
+  to { opacity: 0; }
+}
+
+/* ---- 1. Le voile vert ---- */
+
+.fete-voile {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 55%, rgba(79, 209, 58, .22), transparent 70%),
+    rgba(2, 20, 8, .30);
+  animation: fete-voile 1.4s ease both;
+}
+
+@keyframes fete-voile {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ---- 2. Le balayage ---- */
+
+.fete-scan {
+  position: absolute;
+  left: -30%;
+  top: 0;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    rgba(79, 209, 58, 0), rgba(180, 255, 150, .55), rgba(79, 209, 58, 0));
+  box-shadow: 0 0 calc(40 * var(--px)) rgba(79, 209, 58, .6);
+  opacity: 0;
+}
+
+.fete.is-scan .fete-scan { animation: fete-scan 2.6s cubic-bezier(.4, 0, .2, 1) both; }
+
+@keyframes fete-scan {
+  0%   { left: -30%; opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* Une balise rendue au réseau : elle repasse au vert dans un éclat. */
+.pin.is-rendue { animation: pin-rendue .8s ease both; }
+
+@keyframes pin-rendue {
+  0%   { filter: none; transform: scale(1); }
+  35%  { filter: brightness(2.4) drop-shadow(0 0 calc(18 * var(--px)) #b6ffa8);
+         transform: scale(1.28); }
+  100% { filter: none; transform: scale(1); }
+}
+
+/* ---- 3. SinAIster décroche ---- */
+
+.fete-adieu {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(12 * var(--px)) calc(24 * var(--px));
+  border: calc(3 * var(--px)) solid #e8202c;
+  border-radius: calc(12 * var(--px));
+  background: rgba(20, 2, 4, .92);
+  color: #ff9b9b;
+  text-align: center;
+  opacity: 0;
+}
+
+.fete.is-adieu .fete-adieu { animation: fete-adieu-in .5s ease both; }
+
+@keyframes fete-adieu-in {
+  from { opacity: 0; transform: translate(-50%, -30%) scale(.9); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.fete-adieu-nom {
+  font-size: calc(24 * var(--px));
+  letter-spacing: calc(4 * var(--px));
+  color: #ff4a56;
+  text-shadow: calc(2 * var(--px)) 0 rgba(0, 255, 255, .5),
+               calc(-2 * var(--px)) 0 rgba(255, 0, 80, .5);
+  animation: fete-glitch 1.4s steps(2, end) infinite;
+}
+
+@keyframes fete-glitch {
+  0%, 100% { transform: translate(0, 0); }
+  20%      { transform: translate(calc(-2 * var(--px)), calc(1 * var(--px))); }
+  40%      { transform: translate(calc(2 * var(--px)), calc(-1 * var(--px))); }
+  60%      { transform: translate(calc(-1 * var(--px)), 0); }
+}
+
+.fete-adieu-txt { font-size: calc(17 * var(--px)); min-height: calc(22 * var(--px)); }
+
+/* La coupure : le panneau se déchire et disparaît. */
+.fete.is-coupe .fete-adieu { animation: fete-coupe .6s ease-in both; }
+
+@keyframes fete-coupe {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scaleY(1); filter: none; }
+  40%  { opacity: 1; transform: translate(-50%, -50%) scaleY(.06) scaleX(1.25);
+         filter: brightness(3); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scaleY(0) scaleX(1.6); }
+}
+
+/* ---- 4. La grille qui se rallume ---- */
+
+.fete-grille {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  opacity: 0;
+}
+
+.fete.is-grille .fete-grille { opacity: 1; }
+
+.fete-case {
+  border: calc(1 * var(--px)) solid rgba(79, 209, 58, .28);
+  background: rgba(79, 209, 58, .10);
+  opacity: 0;
+}
+
+.fete.is-grille .fete-case {
+  animation: fete-case .9s ease both;
+  animation-delay: calc(var(--i) * 38ms);
+}
+
+@keyframes fete-case {
+  0%   { opacity: 0; transform: scale(.7); }
+  45%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+/* ---- 5. La carte de fin ---- */
+
+.fete-carte {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(18 * var(--px)) calc(30 * var(--px));
+  border: calc(5 * var(--px)) solid #4fd13a;
+  border-radius: calc(18 * var(--px));
+  background: rgba(2, 20, 8, .97);
+  box-shadow: 0 0 calc(44 * var(--px)) rgba(79, 209, 58, .7);
+  color: #eafff0;
+  text-align: center;
+  opacity: 0;
+}
+
+.fete.is-carte .fete-carte {
+  animation: fete-carte-in .6s cubic-bezier(.2, 1.5, .4, 1) both;
+}
+
+@keyframes fete-carte-in {
+  from { opacity: 0; transform: translate(-50%, -40%) scale(.82); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.fete-sceau {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(58 * var(--px));
+  height: calc(58 * var(--px));
+  border: calc(4 * var(--px)) solid #4fd13a;
+  border-radius: 50%;
+  font-size: calc(32 * var(--px));
+  color: #b6ffa8;
+  opacity: 0;
+}
+
+.fete-sceau.is-frappe { animation: fete-sceau .55s cubic-bezier(.3, 1.8, .4, 1) both; }
+
+@keyframes fete-sceau {
+  0%   { opacity: 0; transform: scale(2.6) rotate(-18deg); }
+  60%  { opacity: 1; transform: scale(.92) rotate(3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+.fete-titre {
+  font-size: calc(34 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: #b6ffa8;
+  text-shadow: 0 0 calc(20 * var(--px)) rgba(79, 209, 58, .8);
+}
+
+.fete-txt {
+  max-width: calc(520 * var(--px));
+  font-size: calc(17 * var(--px));
+  color: rgba(234, 255, 240, .82);
+}
+
+.fete-compte {
+  font-size: calc(15 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  color: rgba(182, 255, 168, .8);
+}
+
+.fete-prime {
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--px));
+  margin-top: calc(4 * var(--px));
+}
+
+.fete-prime-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8 * var(--px));
+  font-size: calc(18 * var(--px));
+  animation: fete-prime .45s cubic-bezier(.2, 1.6, .4, 1) both;
+}
+
+@keyframes fete-prime {
+  from { opacity: 0; transform: translateY(calc(10 * var(--px))) scale(.9); }
+  to   { opacity: 1; transform: none; }
+}
+
+.fete-prime-img {
+  width: calc(44 * var(--px));
+  height: calc(29 * var(--px));
+  object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fete-voile, .fete-scan, .fete-adieu-nom, .fete-case,
+  .fete-sceau, .fete-prime-ligne, .pin.is-rendue { animation: none; }
+  .fete.is-carte .fete-carte,
+  .fete.is-adieu .fete-adieu { animation: none; opacity: 1; }
+  .fete.is-coupe .fete-adieu { display: none; }
+  .fete-sceau { opacity: 1; }
+}

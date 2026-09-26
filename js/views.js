@@ -1101,17 +1101,114 @@
       var neuf = DP.contenirFaille(F.cle);
       if (neuf) { DP.earn('gold', 3); DP.earn('pink', 1); }
       majBandeau();
-      var fete = el('div', 'faille-fete');
-      fete.appendChild(el('strong', 'faille-fete-titre', 'FAILLE CONTENUE'));
-      fete.appendChild(el('span', 'faille-fete-txt',
-        'Toutes les balises sont rendues au réseau. SinAIster décroche.'));
-      if (neuf) {
-        fete.appendChild(el('span', 'faille-fete-prime',
-          '+3 Crédits Omniversels  ·  +1 Crédit Temporel'));
+      jouerFete(neuf);
+    }
+
+    // ---- La reprise du réseau ----
+    // Une scene en six temps, d'une dizaine de secondes : le balayage qui
+    // repasse sur la carte, les balises rendues une a une, SinAIster qui
+    // se decroche, puis la carte de fin et sa prime.
+    function jouerFete(neuf) {
+      var reduitFaille = window.matchMedia &&
+                         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var scene = el('div', 'fete');
+      var minuteurs = [];
+      function plusTard(fn, ms) { minuteurs.push(setTimeout(fn, reduitFaille ? 0 : ms)); }
+
+      // 1. Le voile vert qui remplace le rouge.
+      scene.appendChild(el('div', 'fete-voile'));
+
+      // 2. Le balayage : une barre de scan qui traverse la carte.
+      var scan = el('div', 'fete-scan');
+      scene.appendChild(scan);
+
+      // 3. Le mot de SinAIster, qui se decroche.
+      var adieu = el('div', 'fete-adieu');
+      adieu.appendChild(el('span', 'fete-adieu-nom', 'SinAIster'));
+      var ligne = el('span', 'fete-adieu-txt', '');
+      adieu.appendChild(ligne);
+      scene.appendChild(adieu);
+
+      // 4. La grille de reprise, qui se remplit case par case.
+      var grille = el('div', 'fete-grille');
+      for (var g = 0; g < 24; g++) {
+        var cel = el('span', 'fete-case');
+        cel.style.setProperty('--i', String(g));
+        grille.appendChild(cel);
       }
-      carte.appendChild(fete);
-      setTimeout(function () { fete.classList.add('is-sortie'); }, 2600);
-      setTimeout(function () { if (fete.parentNode) fete.remove(); }, 3100);
+      scene.appendChild(grille);
+
+      // 5. La carte de fin.
+      var carteF = el('div', 'fete-carte');
+      var sceau = el('span', 'fete-sceau', '✓');
+      carteF.appendChild(sceau);
+      carteF.appendChild(el('strong', 'fete-titre', 'FAILLE CONTENUE'));
+      carteF.appendChild(el('span', 'fete-txt',
+        'Toutes les balises sont rendues au réseau. SinAIster décroche.'));
+      var compte = el('span', 'fete-compte', '');
+      carteF.appendChild(compte);
+      var prime = el('div', 'fete-prime');
+      carteF.appendChild(prime);
+      scene.appendChild(carteF);
+
+      carte.appendChild(scene);
+
+      // --- La mise en scene ---
+      plusTard(function () { scene.classList.add('is-scan'); }, 120);
+
+      // Les balises repassent au vert, de la gauche vers la droite.
+      var pins = [].slice.call(carte.querySelectorAll('.pin'));
+      pins.sort(function (a, b) { return a.offsetLeft - b.offsetLeft; });
+      pins.forEach(function (pin, i) {
+        plusTard(function () {
+          pin.classList.remove('is-purgee');
+          pin.classList.add('is-rendue');
+        }, 700 + i * 180);
+      });
+
+      plusTard(function () { scene.classList.add('is-adieu'); }, 2600);
+      var MOTS = ['Vous avez de la chance.', 'Ce n’est que partie remise.',
+                  'Je connais le chemin, maintenant.'];
+      MOTS.forEach(function (m, i) {
+        plusTard(function () { ligne.textContent = m; }, 2900 + i * 900);
+      });
+      plusTard(function () {
+        scene.classList.remove('is-adieu');
+        scene.classList.add('is-coupe');
+      }, 5700);
+
+      plusTard(function () { scene.classList.add('is-grille'); }, 6000);
+      plusTard(function () { scene.classList.add('is-carte'); }, 7200);
+      plusTard(function () { sceau.classList.add('is-frappe'); }, 7600);
+
+      // La prime se compte, piece par piece.
+      if (neuf) {
+        plusTard(function () {
+          compte.textContent = 'RÉSEAU RENDU  ·  8 / 8 BALISES';
+        }, 7900);
+        [['gold', 3], ['pink', 1]].forEach(function (pr, i) {
+          plusTard(function () {
+            var l = el('span', 'fete-prime-ligne');
+            var im = el('img', 'fete-prime-img');
+            im.src = DP.creditImg(pr[0]);
+            im.alt = '';
+            l.appendChild(im);
+            l.appendChild(el('strong', null, '+' + pr[1] + ' ' +
+              DP.CREDITS[pr[0]].name + (pr[1] > 1 ? 's' : '')));
+            prime.appendChild(l);
+          }, 8300 + i * 500);
+        });
+      } else {
+        plusTard(function () {
+          compte.textContent = 'Faille déjà contenue — pas de nouvelle prime.';
+        }, 7900);
+      }
+
+      plusTard(function () { scene.classList.add('is-sortie'); }, reduitFaille ? 200 : 11500);
+      plusTard(function () {
+        if (scene.parentNode) scene.remove();
+        minuteurs.forEach(clearTimeout);
+      }, reduitFaille ? 400 : 12200);
     }
 
     function majBandeau() {
