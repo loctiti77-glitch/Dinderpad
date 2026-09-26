@@ -874,6 +874,10 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
   min-height: calc(30 * var(--px));
 }
 
+/* Le monde de la peche ne laisse aucun geste au navigateur : ni zoom a
+   deux doigts, ni double-tap, pendant qu'on mouline. */
+.pe-scene { touch-action: none; }
+
 .pe-stick {
   position: absolute;
   left: calc(26 * var(--px));
@@ -907,6 +911,9 @@ body.is-locked .pad-arcade { opacity: 0; pointer-events: none; }
   position: absolute;
   right: calc(30 * var(--px));
   bottom: calc(46 * var(--px));
+  /* Mouliner, c'est taper vite : sans cela le navigateur prend deux
+     appuis rapproches pour un double-tap et zoome sur la page. */
+  touch-action: manipulation;
   padding: calc(14 * var(--px)) calc(26 * var(--px));
   border: calc(4 * var(--px)) solid #7ce0ff;
   border-radius: calc(10 * var(--px));

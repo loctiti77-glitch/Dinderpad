@@ -945,6 +945,14 @@
         if (rev) { DP.acquerirRevetement(rev); out.revetement = A2.revetement(rev); }
       }
 
+      // Les grosses pieces laissent de quoi faire monter les Dinders :
+      // rien pour les deux premiers paliers, jusqu'a trois credits pour
+      // un Megalodon.
+      if (f.palier >= 3) {
+        out.evos = f.palier - 2;
+        DP.gagnerEvos(out.evos);
+      }
+
       DP.noterRequin(f.id, {
         brillant: bete.variante === 'brillant',
         irradie: bete.variante === 'irradie'
@@ -997,6 +1005,17 @@
           pp.className = 'rq-gain rq-gain--poissons';
           pp.textContent = '🐟 × ' + r.poissons.length;
           butin.appendChild(pp);
+        }
+        if (r.evos) {
+          var ev = document.createElement('span');
+          ev.className = 'rq-gain rq-gain--evo';
+          var evi = document.createElement('img');
+          evi.className = 'rq-gain-img';
+          evi.src = DP.evoImg();
+          evi.alt = '';
+          ev.appendChild(evi);
+          ev.appendChild(document.createTextNode('× ' + r.evos));
+          butin.appendChild(ev);
         }
         carte.appendChild(butin);
 

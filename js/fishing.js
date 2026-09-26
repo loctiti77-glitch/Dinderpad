@@ -1182,7 +1182,20 @@
         else if (r === 'entrer') entrerBoutique();
         else if (r === 'fouiller') fouiller();
       }
-      action.addEventListener('click', agir);
+      // Mouliner, c'est taper vite sur le meme bouton. Un "click" demande
+      // un appui ET un relachement, et deux appuis rapproches passent pour
+      // un double-tap : le navigateur zoome au lieu de moulinier. On agit
+      // donc des l'appui, et on ignore le "click" qui suit.
+      var vuPointeur = false;
+      action.addEventListener('pointerdown', function (e) {
+        vuPointeur = true;
+        e.preventDefault();
+        agir();
+      });
+      action.addEventListener('click', function () {
+        if (vuPointeur) return;    // repli : navigateurs sans pointerdown
+        agir();
+      });
 
       // ---------- La bagarre ----------
       // Une grosse piece ne se remonte pas d'un geste : il faut mouliner,
@@ -1208,7 +1221,10 @@
           fuite: (0.05 + 0.15 * charge) * (1 - 0.55 * puis),
           gain: 0.062 + 0.05 * puis,
           chauffe: 0.16 - 0.07 * puis,
-          repos: 0.42 + 0.22 * puis,
+          // La ligne se refroidit assez vite pour qu'on puisse mouliner a
+          // un rythme humain : sans cela, meme une piece moyenne demandait
+          // une cadence de machine.
+          repos: 0.50 + 0.22 * puis,
           coup: maintenant()
         };
         etat = 'lutte';
@@ -1242,7 +1258,7 @@
         // Il finit toujours par se decrocher si l'on ne fait rien, et la
         // bagarre ne s'eternise pas : au bout de dix-huit secondes, il gagne.
         if (lutte.progres <= 0 && t - lutte.coup > 2600) return finirLutte(false, 'decroche');
-        if (t - lutte.t0 > 18000) return finirLutte(false, 'epuise');
+        if (t - lutte.t0 > 22000) return finirLutte(false, 'epuise');
         majLutte();
       }
 
@@ -1270,9 +1286,13 @@
         lutte = null;
         bouchon = null;
         majAction();
-        dire(cause === 'casse' ? 'La ligne a cassé ! Il est parti avec.'
-           : cause === 'epuise' ? 'Il file vers le fond… tes bras lâchent avant lui.'
-           : 'Il s’est décroché… trop lourd pour toi.');
+        // Quand la canne est en cause, on le dit : sinon on croit a un
+        // bug plutot qu'a une piece trop lourde pour son materiel.
+        var faible = forceCanne() < 0.3 && l.charge >= 0.55;
+        dire((cause === 'casse' ? 'La ligne a cassé ! Il est parti avec.'
+            : cause === 'epuise' ? 'Il file vers le fond… tes bras lâchent avant lui.'
+            : 'Il s’est décroché… trop lourd pour toi.') +
+           (faible ? ' Il te faut une meilleure canne pour celui-là.' : ''));
         plusTard(function () { if (etat === 'rate') ranger(); }, 1800);
       }
 

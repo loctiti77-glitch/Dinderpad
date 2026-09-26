@@ -643,6 +643,10 @@
       DP.compterExploit(exploitDe(G));
       DP.noterScan(G.id, G.astre);
       DP.gagnerRoches(R.roches);
+      // Un gardien laisse aussi de quoi faire monter les Dinders : deux
+      // credits pour le premier, dix pour celui de Neptune.
+      var evos = 1 + Math.round(G.rang || 1);
+      DP.gagnerEvos(evos);
       var cle = R.credit ? R.credit[0] : 'pink', n = R.credit ? R.credit[1] : (R.temporel || 0);
       if (n) DP.earn(cle, n);
       var rev = null;
@@ -650,7 +654,8 @@
         DP.acquerirRevetement(R.revetement);
         rev = window.ARME ? window.ARME.revetement(R.revetement) : null;
       }
-      return { roches: R.roches, credit: cle, n: n, temporel: cle === 'pink' ? n : 0, revetement: rev };
+      return { roches: R.roches, credit: cle, n: n, temporel: cle === 'pink' ? n : 0,
+               revetement: rev, evos: evos };
     }
 
     function montrerFin(vaincu, r) {
@@ -678,6 +683,8 @@
         var gains = [['☀ × ' + r.roches + ' Roches Solaires', 'roche']];
         if (r.n) gains.push([(DP.CREDITS[r.credit] ? DP.CREDITS[r.credit].name : 'Crédit') +
                              ' × ' + r.n, 'credit']);
+        if (r.evos) gains.push([r.evos + ' Crédit' + (r.evos > 1 ? 's' : '') +
+                                ' Évolutif' + (r.evos > 1 ? 's' : ''), 'evo']);
         gains.forEach(function (g) {
             var s = document.createElement('span');
             s.className = 'bs-gain bs-gain--' + g[1];

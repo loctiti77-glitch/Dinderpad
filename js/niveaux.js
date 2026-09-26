@@ -178,6 +178,8 @@
   };
 
   function C(key, n) { return { type: 'credit', key: key, n: n }; }
+  // Les Credits Evolutifs : la monnaie qui fait monter les Dinders.
+  function EV(n) { return { type: 'evo', n: n }; }
   function N(n) { return { type: 'noyaux', n: n }; }
   function R(n) { return { type: 'roches', n: n }; }
   function V(id) { return { type: 'revetement', id: id }; }
@@ -189,32 +191,32 @@
     2:  [C('green', 3)],
     3:  [N(3)],
     4:  [R(3)],
-    5:  [T(5), C('blue', 2)],
+    5:  [T(5), C('blue', 2), EV(1)],
     6:  [C('green', 5)],
     7:  [N(5)],
     8:  [R(5)],
     9:  [C('gold', 1)],
-    10: [T(10), V('galon'), C('blue', 3)],
+    10: [T(10), V('galon'), C('blue', 3), EV(2)],
     11: [C('green', 6)],
     12: [N(7)],
     13: [R(7)],
     14: [C('gold', 2)],
-    15: [T(15), D],
+    15: [T(15), D, EV(2)],
     16: [C('green', 8)],
     17: [N(9)],
     18: [R(9)],
     19: [C('gold', 3)],
-    20: [T(20), V('etoile'), C('gold', 4)],
+    20: [T(20), V('etoile'), C('gold', 4), EV(3)],
     21: [C('green', 10)],
     22: [N(12)],
     23: [R(12)],
     24: [C('gold', 4)],
-    25: [T(25), D],
+    25: [T(25), D, EV(3)],
     26: [C('blue', 6)],
     27: [N(15)],
     28: [R(15)],
     29: [C('gold', 5)],
-    30: [T(30), V('couronne'), C('pink', 2)]
+    30: [T(30), V('couronne'), C('pink', 2), EV(4)]
   };
 
   // Du 31 au 500 : une recompense qui tourne (credits, Noyaux, Roches,
@@ -233,6 +235,9 @@
     if (nv % 100 === 0) lot.push(E(nv / 100));
     if (TITRES[nv]) lot.push(T(nv));
     if (REV_PALIERS[nv]) lot.push(V(REV_PALIERS[nv]));
+    // Un Credit Evolutif tous les cinq niveaux, qui grossit avec le
+    // chemin parcouru : c'est la source la plus reguliere.
+    if (nv % 5 === 0) lot.push(EV(2 + Math.floor(m / 60)));
     if (nv % 25 === 0) lot.push(C('pink', 1));
     else if (nv % 10 === 0) lot.push(C('gold', 5 + Math.floor(m / 30)));
     else if (nv % 10 === 5) { lot.push(D); lot.push(C('blue', 4 + Math.floor(m / 20))); }
@@ -247,6 +252,9 @@
     if (r.type === 'credit') {
       var nom = DP.CREDITS[r.key].name;
       return r.n + ' ' + (r.n > 1 ? nom.replace(/^Crédit /, 'Crédits ') + 's' : nom);
+    }
+    if (r.type === 'evo') {
+      return r.n + ' Crédit' + (r.n > 1 ? 's' : '') + ' Évolutif' + (r.n > 1 ? 's' : '');
     }
     if (r.type === 'noyaux') return r.n + ' Noyaux Lumithiques';
     if (r.type === 'roches') return r.n + ' Roches Solaires';
@@ -264,6 +272,7 @@
   // mystere retombe sur des credits quand la collection est complete).
   function donner(r) {
     if (r.type === 'credit') { DP.earn(r.key, r.n); return libelle(r); }
+    if (r.type === 'evo') { DP.gagnerEvos(r.n); return libelle(r); }
     if (r.type === 'noyaux') { DP.gagnerNoyaux(r.n); return libelle(r); }
     if (r.type === 'roches') { DP.gagnerRoches(r.n); return libelle(r); }
     if (r.type === 'revetement') { DP.acquerirRevetement(r.id); return libelle(r); }
