@@ -866,6 +866,67 @@
     // Le compte a rebours avant que les balises ne se deplacent.
     var rebours = el('p', 'tracker-rebours');
 
+    // ---- Le code de maintenance ----
+    // Une ligne discrete au bas de l'appareil. Le bon code declenche une
+    // purge tout de suite, sans attendre le jour de la faille : de quoi
+    // l'essayer quand on veut. Un mauvais code ne dit rien d'utile.
+    var DG_CODE = '33071407';
+
+    var dg = el('form', 'tracker-dg');
+    dg.setAttribute('autocomplete', 'off');
+    var dgLabel = el('label', 'tracker-dg-nom', 'DG CODE');
+    dgLabel.setAttribute('for', 'trackerDg');
+    dg.appendChild(dgLabel);
+
+    var dgChamp = el('input', 'tracker-dg-champ');
+    dgChamp.id = 'trackerDg';
+    dgChamp.type = 'text';
+    dgChamp.inputMode = 'numeric';
+    dgChamp.maxLength = 8;
+    dgChamp.placeholder = '– – – – – – – –';
+    dgChamp.setAttribute('aria-label', 'Code de maintenance');
+    dg.appendChild(dgChamp);
+
+    var dgBouton = el('button', 'tracker-dg-btn', 'OK');
+    dgBouton.type = 'submit';
+    dg.appendChild(dgBouton);
+
+    var dgMot = el('span', 'tracker-dg-mot', '');
+    dg.appendChild(dgMot);
+
+    dgChamp.addEventListener('input', function () {
+      dgChamp.value = dgChamp.value.replace(/\D/g, '').slice(0, 8);
+      dg.classList.remove('is-refus');
+      dgMot.textContent = '';
+    });
+
+    dg.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (dgChamp.value !== DG_CODE) {
+        dg.classList.remove('is-refus');
+        void dg.offsetWidth;
+        dg.classList.add('is-refus');
+        dgMot.textContent = 'Code refusé.';
+        dgChamp.value = '';
+        return;
+      }
+      dgChamp.value = '';
+      dgMot.textContent = 'Purge lancée.';
+      dg.classList.add('is-ok');
+      // Deja dans une purge : on ne la relance pas, on le dit.
+      if (enFaille) {
+        dgMot.textContent = 'Une purge est déjà en cours.';
+        return;
+      }
+      setTimeout(function () {
+        if (window.location.hash === '#tracker/essai') {
+          if (window.ROUTER) window.ROUTER.reload();
+        } else {
+          window.location.hash = '#tracker/essai';
+        }
+      }, 400);
+    });
+
     // Le voile rouge qui bat une fois par seconde, et le bandeau d'alerte.
     var voile = el('div', 'faille-voile');
     voile.hidden = !enFaille;
@@ -1101,6 +1162,7 @@
     view.appendChild(carte);
     view.appendChild(bandeau);
     view.appendChild(rebours);
+    carte.appendChild(dg);
 
     poser();
     majBandeau();

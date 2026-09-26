@@ -2880,3 +2880,90 @@ body[data-phase="welcome"] .lock-welcome {
 
 .fiche-evo-cout { color: #7cf0c8; }
 .fiche-evo:disabled .fiche-evo-cout { color: rgba(124, 240, 200, .45); }
+
+
+/* ---------- Le code de maintenance du DinderTracker ---------- */
+
+/* La carte occupe tout l'ecran du tracker : comme le compte a rebours,
+   la ligne de code se pose par-dessus. En bas a gauche, pour ne pas
+   passer sous le bandeau d'alerte des jours de faille. */
+.tracker-dg {
+  position: absolute;
+  z-index: 5;
+  left: calc(10 * var(--px));
+  bottom: calc(54 * var(--px));      /* au-dessus du compte a rebours */
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: calc(8 * var(--px));
+  padding: calc(6 * var(--px)) calc(12 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(0, 241, 253, .35);
+  border-radius: calc(10 * var(--px));
+  background: rgba(2, 14, 22, .7);
+  font-family: "Courier New", Courier, ui-monospace, monospace;
+  line-height: 1.2;                  /* .pad impose line-height: 0 */
+}
+
+.tracker-dg-nom {
+  font-size: calc(16 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: rgba(0, 241, 253, .75);
+}
+
+.tracker-dg-champ {
+  flex: 0 0 calc(170 * var(--px));
+  width: calc(170 * var(--px));
+  padding: calc(4 * var(--px)) calc(8 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(0, 241, 253, .4);
+  border-radius: calc(6 * var(--px));
+  background: rgba(0, 0, 0, .5);
+  color: #d8f4ff;
+  font-family: inherit;
+  font-size: calc(18 * var(--px));
+  letter-spacing: calc(4 * var(--px));
+  text-align: center;
+}
+
+.tracker-dg-champ:focus {
+  outline: none;
+  border-color: #00f1fd;
+  box-shadow: 0 0 calc(12 * var(--px)) rgba(0, 241, 253, .5);
+}
+
+.tracker-dg-btn {
+  padding: calc(4 * var(--px)) calc(14 * var(--px));
+  border: calc(2 * var(--px)) solid #00f1fd;
+  border-radius: calc(6 * var(--px));
+  background: rgba(6, 40, 62, .9);
+  color: #d8f4ff;
+  font-family: inherit;
+  font-size: calc(16 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.tracker-dg-mot {
+  font-size: calc(15 * var(--px));
+  white-space: nowrap;
+  color: rgba(216, 244, 255, .7);
+}
+
+.tracker-dg.is-ok .tracker-dg-mot { color: #7cf0c8; }
+
+.tracker-dg.is-refus {
+  border-color: #ff5c5c;
+  animation: dg-refus .4s ease;
+}
+
+.tracker-dg.is-refus .tracker-dg-mot { color: #ff9b9b; }
+
+@keyframes dg-refus {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(calc(-6 * var(--px))); }
+  75%      { transform: translateX(calc(6 * var(--px))); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tracker-dg.is-refus { animation: none; }
+}
