@@ -2826,3 +2826,57 @@ body[data-phase="welcome"] .lock-welcome {
   .cx-fiche.is-barre .cx-croix,
   .cx-fiche.is-barre .cx-terminated { animation: none; }
 }
+
+
+/* ---------- Faire évoluer, depuis la fiche du Dinder ---------- */
+
+.fiche-evo-rang {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(10 * var(--px));
+  margin-top: calc(8 * var(--px));
+}
+
+.fiche-evo-sac {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  font-size: calc(19 * var(--px));
+}
+
+.fiche-evo-sac-n   { color: #7cf0c8; }
+.fiche-evo-sac-nom { font-size: calc(17 * var(--px)); color: rgba(255, 255, 255, .6); }
+
+.fiche-evo-img {
+  width: calc(38 * var(--px));
+  height: calc(25 * var(--px));
+  object-fit: contain;
+}
+
+.fiche-evo {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(6 * var(--px)) calc(14 * var(--px));
+  border: calc(3 * var(--px)) solid #7cf0c8;
+  border-radius: calc(10 * var(--px));
+  background: rgba(6, 40, 34, .92);
+  color: #d8fff0;
+  font-family: "Courier New", Courier, ui-monospace, monospace;
+  font-size: calc(18 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.fiche-evo:hover:not(:disabled) { background: rgba(10, 60, 50, .95); }
+
+.fiche-evo:disabled {
+  border-color: rgba(124, 240, 200, .3);
+  color: rgba(216, 255, 240, .4);
+  cursor: not-allowed;
+}
+
+.fiche-evo-cout { color: #7cf0c8; }
+.fiche-evo:disabled .fiche-evo-cout { color: rgba(124, 240, 200, .45); }

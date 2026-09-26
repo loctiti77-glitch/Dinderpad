@@ -168,6 +168,49 @@
       col.appendChild(el('span', 'fiche-niveau-xp', e.niveau >= e.max
         ? e.xp + ' XP  ·  niveau maximum'
         : e.xp + ' / ' + e.haut + ' XP  ·  il monte en combattant dans The Founder War'));
+
+      // Le faire monter d'un cran tout de suite, contre Credits Evolutifs.
+      if (C.coutEvolution) {
+        var rang = el('div', 'fiche-evo-rang');
+
+        var sac = el('span', 'fiche-evo-sac');
+        var si = el('img', 'fiche-evo-img');
+        si.src = DP.evoImg(); si.alt = '';
+        sac.appendChild(si);
+        var sn = el('strong', 'fiche-evo-sac-n', String(DP.evos()));
+        sac.appendChild(sn);
+        sac.appendChild(el('span', 'fiche-evo-sac-nom', 'Crédits Évolutifs'));
+        rang.appendChild(sac);
+
+        var bouton = el('button', 'fiche-evo');
+        bouton.type = 'button';
+        function majEvo() {
+          sn.textContent = String(DP.evos());
+          var cout = C.coutEvolution(d.id);
+          if (!cout) {
+            bouton.hidden = true;
+            return;
+          }
+          bouton.hidden = false;
+          bouton.disabled = !C.peutEvoluer(d.id);
+          bouton.textContent = '';
+          bouton.appendChild(el('span', null, 'FAIRE ÉVOLUER'));
+          var bi = el('img', 'fiche-evo-img');
+          bi.src = DP.evoImg(); bi.alt = '';
+          bouton.appendChild(bi);
+          bouton.appendChild(el('span', 'fiche-evo-cout', '× ' + cout));
+        }
+        bouton.addEventListener('click', function () {
+          var r = C.evoluer(d.id);
+          if (!r) return;
+          // La fiche se relit d'elle-meme : c'est le plus sur.
+          location.hash = '#dinders';
+          setTimeout(function () { location.hash = '#dinder/' + d.id; }, 30);
+        });
+        majEvo();
+        rang.appendChild(bouton);
+        col.appendChild(rang);
+      }
       var atk = el('div', 'fiche-attaques');
       C.attaques(d.id).forEach(function (a) {
         var b = el('span', 'fiche-attaque' + (a.ultime ? ' is-ultime' : ''));
