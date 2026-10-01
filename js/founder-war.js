@@ -140,10 +140,11 @@
       { nom: 'Ruée du Couloir',     degats: [74, 96], recul: 14 },
       { nom: 'Crochet Rouillé',     degats: [34, 46], brulure: 10 }
     ],
-    // Le secret : il n'est jamais vraiment la, et ca se paie.
+    // Le secret : il n'est jamais vraiment la, et ca se paie. Les plus
+    // grosses attaques du roster.
     'golden-freddy': [
-      { nom: 'Hallucination',       degats: [70, 92], etourdit: 0.5 },
-      { nom: 'Costume Vide',        degats: [36, 48], faiblesse: 0.5 }
+      { nom: 'Hallucination',       degats: [180, 230], etourdit: 0.8 },
+      { nom: 'Costume Vide',        degats: [110, 140], faiblesse: 0.8, drain: true }
     ]
   };
 

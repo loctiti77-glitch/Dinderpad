@@ -26,7 +26,13 @@
     'Threat': 1.8, 'Exclusif': 1.4
   };
 
+  // Quelques Dinders sortent du lot de leur rarete. Golden Freddy, le
+  // secret de Spookinder, ecrase tout : pres du double de Threat, en
+  // degats comme en points de vie.
+  var FORCE_DINDER = { 'golden-freddy': 3 };
+
   function forceRarete(id) {
+    if (FORCE_DINDER[id]) return FORCE_DINDER[id];
     var d = DP.byId(id);
     return (d && FORCE_RARETE[d.rarity]) || 1;
   }
@@ -155,7 +161,7 @@
     'foxy-the-fox-pirate':
       { nom: 'Pirate’s Cove', degats: [200, 255], ultime: true, faiblesse: 0.5 },
     'golden-freddy':
-      { nom: 'IT’S ME', degats: [220, 280], ultime: true, etourdit: 0.9 }
+      { nom: 'IT’S ME', degats: [520, 650], ultime: true, etourdit: 1, soinTous: 80 }
   };
 
   var NIVEAU_ULTIME = 6;
