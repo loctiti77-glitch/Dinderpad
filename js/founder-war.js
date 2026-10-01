@@ -93,8 +93,9 @@
     ],
     // Ni docteur ni Fondateur : ce qui est remonte frappe pour les deux.
     'dr-islas-the-founder': [
-      { nom: 'Verdict du Vide',     degats: [96, 126] },
-      { nom: 'Reprise en Main',     degats: [44, 60], soinTous: 34 }
+      // Environ 80 % de Golden Freddy, une fois sa force appliquee.
+      { nom: 'Verdict du Vide',     degats: [240, 307] },
+      { nom: 'Reprise en Main',     degats: [147, 187], soinTous: 34 }
     ],
     'harry-hargrove': [
       { nom: 'Heure Volée',         degats: [40, 54], etourdit: 0.35 },

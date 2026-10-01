@@ -137,7 +137,7 @@
     'dr-islas-singularity':
       { nom: 'Point de Non-Retour', degats: [196, 248], ultime: true, etourdit: 0.85 },
     'dr-islas-the-founder':
-      { nom: 'Ordre du Vide', degats: [240, 300], ultime: true, soinTous: 60 },
+      { nom: 'Ordre du Vide', degats: [693, 867], ultime: true, soinTous: 60 },
     'harry-hargrove':
       { nom: 'Arrêt sur Image', degats: [112, 146], ultime: true, etourdit: 0.75 },
     'marlon-coach':
