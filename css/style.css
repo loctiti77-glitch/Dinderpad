@@ -1772,6 +1772,7 @@ body[data-phase="welcome"] .lock-welcome {
   --r-gold:  #f5c93a;   /* Omniversel  */
   --r-pink:  #ff5c9d;   /* Temporel    */
   --r-threat: #b45cff;  /* Threat : aucune monnaie, le violet du vide */
+  --r-exclusif: #ff8a1e; /* Exclusif : l'orange citrouille des evenements */
 }
 
 [data-rarity="green"] { --r: var(--r-green); }
@@ -1779,6 +1780,96 @@ body[data-phase="welcome"] .lock-welcome {
 [data-rarity="gold"]  { --r: var(--r-gold); }
 [data-rarity="pink"]  { --r: var(--r-pink); }
 [data-rarity="threat"] { --r: var(--r-threat); }
+[data-rarity="exclusif"] { --r: var(--r-exclusif); }
+
+/* ---------- Les collections speciales ----------
+   Un Dinder d'evenement (Spookinder...) a sa case en violet plutot qu'en
+   bleu : on voit d'un coup d'oeil ce qui ne se retrouvera plus. */
+
+.slot.slot--special {
+  box-shadow:
+    inset 0 0 0 calc(11 * var(--px)) #c77dff,
+    inset 0 0 calc(18 * var(--px)) calc(12 * var(--px)) rgba(199, 125, 255, .45),
+    0 0 calc(10 * var(--px)) rgba(199, 125, 255, .3);
+  background:
+    linear-gradient(115deg,
+      transparent 18%,
+      rgba(255, 255, 255, .11) 20%, rgba(255, 255, 255, .11) 33%,
+      transparent 35%, transparent 43%,
+      rgba(255, 255, 255, .07) 45%, rgba(255, 255, 255, .07) 51%,
+      transparent 53%),
+    linear-gradient(180deg, #6a2bb0 0%, #5a1f9e 55%, #461585 100%);
+}
+
+.slot.slot--special .slot-name {
+  text-shadow:
+    0 calc(3 * var(--px)) calc(5 * var(--px)) rgba(0, 0, 0, .75),
+    0 0 calc(12 * var(--px)) rgba(199, 125, 255, .55);
+}
+
+/* L'etiquette Exclusif luit comme une braise. */
+.slot-rarity[data-rarity="exclusif"],
+.fiche-value[data-rarity="exclusif"] {
+  animation: exclusif-luit 2s ease-in-out infinite;
+}
+
+@keyframes exclusif-luit {
+  0%, 100% { text-shadow: 0 0 calc(8 * var(--px)) rgba(255, 138, 30, .5); }
+  50%      { text-shadow: 0 0 calc(22 * var(--px)) rgba(255, 138, 30, 1); }
+}
+
+/* Un Dinder d'evenement encore a gagner : violet, en ombre chinoise, et
+   il respire doucement pour attirer l'oeil. Ces regles passent apres
+   .slot--locked, qui grise tout le reste. */
+
+.slot.slot--manquant {
+  filter: none;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 calc(11 * var(--px)) #7a3cb8,
+    inset 0 0 calc(18 * var(--px)) calc(12 * var(--px)) rgba(199, 125, 255, .3),
+    0 0 calc(10 * var(--px)) rgba(199, 125, 255, .25);
+  background:
+    linear-gradient(180deg, #3a1868 0%, #2e1258 55%, #240c48 100%);
+  animation: slot-manquant 2.6s ease-in-out infinite;
+}
+
+div.slot.slot--manquant { cursor: default; }
+
+.slot.slot--manquant:hover,
+.slot.slot--manquant:active { filter: brightness(1.15); }
+
+@keyframes slot-manquant {
+  0%, 100% { box-shadow:
+      inset 0 0 0 calc(11 * var(--px)) #7a3cb8,
+      inset 0 0 calc(18 * var(--px)) calc(12 * var(--px)) rgba(199, 125, 255, .3),
+      0 0 calc(10 * var(--px)) rgba(199, 125, 255, .25); }
+  50%      { box-shadow:
+      inset 0 0 0 calc(11 * var(--px)) #c77dff,
+      inset 0 0 calc(22 * var(--px)) calc(14 * var(--px)) rgba(199, 125, 255, .5),
+      0 0 calc(24 * var(--px)) rgba(255, 138, 30, .45); }
+}
+
+.slot-face--ombre {
+  filter: brightness(0) drop-shadow(0 0 calc(10 * var(--px)) rgba(255, 138, 30, .75));
+  opacity: .9;
+}
+
+.slot.slot--manquant .slot-name-main { color: rgba(240, 220, 255, .75); }
+
+.slot-manquant-sous {
+  color: #ffb060;
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot.slot--manquant { animation: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot-rarity[data-rarity="exclusif"],
+  .fiche-value[data-rarity="exclusif"] { animation: none; }
+}
 
 /* Threat ne ressemble a rien d'autre : l'etiquette bat lentement. */
 .slot-rarity[data-rarity="threat"],

@@ -26,6 +26,10 @@
   // donc pas dans RARITIES, que les Dindises parcourent.
   var MENACE = 'Threat';
 
+  // Exclusif non plus : ces Dinders-la ne sortent que d'un evenement, et
+  // ne s'obtiennent plus une fois l'evenement passe.
+  var EXCLUSIF = 'Exclusif';
+
   // Chaque rarete emprunte la couleur de la monnaie du meme nom : un
   // Dinder Universel s'affiche en vert, comme le credit Universel.
   // Threat, elle, n'a pas de monnaie : elle prend le violet du vide.
@@ -34,13 +38,14 @@
     'Multiversel': 'blue',
     'Omniversel':  'gold',
     'Temporel':    'pink',
-    'Threat':      'threat'
+    'Threat':      'threat',
+    'Exclusif':    'exclusif'
   };
 
   function rarityKey(r) { return RARITY_KEY[r] || 'green'; }
 
   // Une rarete qu'aucune Dindise ne peut rendre.
-  function horsDindise(r) { return r === MENACE; }
+  function horsDindise(r) { return r === MENACE || r === EXCLUSIF; }
 
   // ---------- Les Dindises ----------
   // Une Dindise par rarete. Elle se paie avec la monnaie du meme nom et ne
@@ -102,8 +107,22 @@
     { id: 'william-batant',                    name: 'William Batant', form: '',                rarity: 'Omniversel',   universe: '???',    desc: '' },
     // Il ne s'obtient pas dans une Dindise : il faut le battre au bout de
     // The Founder War, a l'Effondrement Terminal.
-    { id: 'lefondateur',                       name: 'Le Fondateur',  form: '',                   rarity: 'Temporel',     universe: '???',    horsTirage: true, desc: 'Celui qui voulait remettre de l’ordre dans l’omnivers : un seul monde de chaque, à sa place, pour toujours. Vaincu, il suit désormais celui qui l’a battu.' }
+    { id: 'lefondateur',                       name: 'Le Fondateur',  form: '',                   rarity: 'Temporel',     universe: '???',    horsTirage: true, desc: 'Celui qui voulait remettre de l’ordre dans l’omnivers : un seul monde de chaque, à sa place, pour toujours. Vaincu, il suit désormais celui qui l’a battu.' },
+    // La collection Spookinder : on ne les gagne que dans le pass de
+    // l'evenement, jusqu'au 1er novembre a 0 h. "collection" les distingue dans la
+    // page Dinders. Leur description reste a ecrire par l'auteur.
+    { id: 'chica-the-chicken',                 name: 'Chica',          form: 'the Chicken',      rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' },
+    { id: 'bonnie-the-bunny',                  name: 'Bonnie',         form: 'the Bunny',        rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' },
+    { id: 'foxy-the-fox-pirate',               name: 'Foxy',           form: 'the Fox Pirate',   rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' },
+    { id: 'freddy-fazbear',                    name: 'Freddy Fazbear', form: '',                 rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' }
   ];
+
+  // Le palier du pass Spookinder qui rend chacun d'eux. js/spookinder.js
+  // place ses recompenses d'apres cette table.
+  var SPOOK_DINDERS = {
+    'chica-the-chicken': 5, 'bonnie-the-bunny': 10,
+    'foxy-the-fox-pirate': 15, 'freddy-fazbear': 20
+  };
 
   // ---------- Les items ----------
   // "acquis" dit a quelle condition l'item apparait dans l'inventaire.
@@ -482,7 +501,10 @@
       // The Founder War : le dernier niveau franchi, et l'experience de
       // chaque Dinder.
       fwNiveau: 0,
-      dinderXP: {}
+      dinderXP: {},
+      // Spookinder : l'experience du pass, les nuits tenues jusqu'a 6 h,
+      // et les paliers deja reclames.
+      spookinder: { xp: 0, nuits: [], reclames: [] }
     };
   }
 
@@ -491,6 +513,18 @@
   // ce qui evite d'avoir a versionner la sauvegarde.
   function completer(p) {
     if (typeof p.canne !== 'boolean') p.canne = false;
+    if (!p.spookinder || typeof p.spookinder !== 'object') p.spookinder = {};
+    if (typeof p.spookinder.xp !== 'number') p.spookinder.xp = 0;
+    if (!Array.isArray(p.spookinder.nuits)) p.spookinder.nuits = [];
+    if (!Array.isArray(p.spookinder.reclames)) p.spookinder.reclames = [];
+    // Un Dinder Spookinder ne vaut que gagne au pass : celui qu'une page
+    // d'essai aurait distribue retourne a l'etat de case manquante.
+    if (Array.isArray(p.owned)) {
+      p.owned = p.owned.filter(function (id) {
+        var n = SPOOK_DINDERS[id];
+        return !n || p.spookinder.reclames.indexOf(n) !== -1;
+      });
+    }
     if (!p.peche || typeof p.peche !== 'object') p.peche = {};
     if (!p.exploits || typeof p.exploits !== 'object') p.exploits = {};
     if (!Array.isArray(p.vus)) p.vus = [];
@@ -1345,6 +1379,51 @@
     } catch (e) { return null; }
   }
 
+  // ---------- Spookinder ----------
+  // L'evenement d'Halloween. Il s'ouvre le 1er octobre et se ferme le
+  // 1er novembre a 0 h : passe cette date, le pass ne donne plus rien. Les
+  // bornes se lisent sur l'horloge du pad, que les essais peuvent decaler.
+  var SPOOK_DEBUT = new Date(2026, 9, 1, 0, 0, 0).getTime();
+  var SPOOK_FIN   = new Date(2026, 10, 1, 0, 0, 0).getTime();
+
+  function spookinderEtat() {
+    var t = maintenant();
+    return { ouvert: t >= SPOOK_DEBUT && t < SPOOK_FIN, passe: t >= SPOOK_FIN,
+             fin: SPOOK_FIN, reste: Math.max(0, SPOOK_FIN - t) };
+  }
+
+  function spookinder() {
+    var s = me().spookinder;
+    return { xp: s.xp, nuits: s.nuits.slice(), reclames: s.reclames.slice() };
+  }
+
+  // L'experience ne compte plus une fois l'evenement ferme.
+  function gagnerSpookXP(n) {
+    n = Math.max(0, Math.round(n || 0));
+    if (!n || !spookinderEtat().ouvert) return me().spookinder.xp;
+    var p = me();
+    p.spookinder.xp += n;
+    save();
+    return p.spookinder.xp;
+  }
+
+  function noterNuit(n) {
+    var p = me();
+    if (p.spookinder.nuits.indexOf(n) !== -1) return false;
+    p.spookinder.nuits.push(n);
+    save();
+    return true;
+  }
+
+  function reclamerPalier(n) {
+    if (!spookinderEtat().ouvert) return false;
+    var p = me();
+    if (p.spookinder.reclames.indexOf(n) !== -1) return false;
+    p.spookinder.reclames.push(n);
+    save();
+    return true;
+  }
+
   // ---------- Chemins ----------
   // Tout le site tient dans index.html, a la racine.
 
@@ -1370,7 +1449,9 @@
     dindiseEtat: dindiseEtat,
     dindiseOfferte: dindiseOfferte,
     consommerDindiseOfferte: consommerDindiseOfferte,
-    MENACE: MENACE, horsDindise: horsDindise,
+    MENACE: MENACE, EXCLUSIF: EXCLUSIF, horsDindise: horsDindise,
+    spookinderEtat: spookinderEtat, spookinder: spookinder, SPOOK_DINDERS: SPOOK_DINDERS,
+    gagnerSpookXP: gagnerSpookXP, noterNuit: noterNuit, reclamerPalier: reclamerPalier,
     evos: evos, evoImg: evoImg, gagnerEvos: gagnerEvos, depenserEvos: depenserEvos,
     odysseeDinder: odysseeDinder, choisirOdysseeDinder: choisirOdysseeDinder,
     fusion: fusion, noterSacrifice: noterSacrifice,

@@ -170,6 +170,33 @@
       visiereLueur: true,
       torse: '#191c26', accent: '#2a6ea8', bas: '#12141b', chaussures: '#0b0d12',
       armure: '#2a3140', gemme: '#ff3a1e'
+    },
+    // La collection Spookinder. Ce ne sont pas des Dinders a visiere mais
+    // des animatroniques : une tete de peluche, un museau, de grands yeux
+    // et une rangee de dents (voir animatronique() plus bas).
+    'freddy-fazbear': {
+      anim: 'ours', fourrure: '#a8582a', museau: '#d89a62', yeux: '#7fd0e8',
+      chapeau: '#1c1416', noeud: '#141016',
+      torse: '#a8582a', ventre: '#d89a62', accent: '#d89a62',
+      bas: '#9a4f25', chaussures: '#7a3c1a', peau: '#a8582a'
+    },
+    'bonnie-the-bunny': {
+      anim: 'lapin', fourrure: '#5a5ab8', museau: '#a8a8e6', yeux: '#e0306a',
+      noeud: '#c41e2a',
+      torse: '#5a5ab8', ventre: '#a8a8e6', accent: '#a8a8e6',
+      bas: '#4e4ea6', chaussures: '#3c3c86', peau: '#5a5ab8'
+    },
+    'chica-the-chicken': {
+      anim: 'poule', fourrure: '#e0c22a', museau: '#f08a1a', yeux: '#d84aa8',
+      bavoir: '#f4f2ea', bavoirTexte: '#c838a0',
+      torse: '#e0c22a', ventre: '#e0c22a', accent: '#f4f2ea',
+      bas: '#f08a1a', chaussures: '#e07a10', peau: '#e0c22a'
+    },
+    'foxy-the-fox-pirate': {
+      anim: 'renard', fourrure: '#b8302a', museau: '#d8a080', yeux: '#f0c020',
+      cache: '#141016', crochet: '#b8bcc4',
+      torse: '#b8302a', ventre: '#8a2420', accent: '#d8a080',
+      bas: '#4a3a30', chaussures: '#2a2226', peau: '#b8302a'
     }
   };
 
@@ -337,6 +364,20 @@
       p(19, 24, 1, 3, '#7f8a99');
       p(21, 24, 1, 2, '#7f8a99');
     }
+    // Les animatroniques : un ventre plus clair, un noeud papillon, le
+    // bavoir "Let's Eat!!!" de Chica.
+    if (c.anim && !dos) {
+      if (c.ventre) p(8, 21, 8, 5, c.ventre);
+      if (c.bavoir) {
+        p(7, 20, 10, 6, c.bavoir);
+        p(8, 22, 8, 1, c.bavoirTexte);
+        p(9, 24, 6, 1, c.bavoirTexte);
+      }
+      if (c.noeud) {
+        p(9, 19, 6, 2, c.noeud);
+        p(11, 19, 2, 2, ombre(c.noeud, 1.6));
+      }
+    }
   }
 
   // Un alphabet minuscule, juste ce qu'il faut pour V, A et H.
@@ -364,6 +405,92 @@
     p(17, bd, 3, 5, c.torse);
     p(4, bg + 5, 3, 2, c.peau);
     p(17, bd + 5, 3, 2, c.peau);
+    // Le crochet de Foxy, a la place de la main droite.
+    if (c.crochet) {
+      p(17, bd + 5, 3, 2, ombre(c.torse, 0.6));
+      p(18, bd + 7, 1, 2, c.crochet);
+      p(19, bd + 8, 1, 1, c.crochet);
+      p(20, bd + 7, 1, 1, c.crochet);
+    }
+  }
+
+  // La tete d'un animatronique : peluche, oreilles de l'espece, grands
+  // yeux ronds, museau et dents. C'est elle qui fait reconnaitre Freddy,
+  // Bonnie, Chica et Foxy a vingt-quatre pixels de large.
+  function animatronique(p, c, dos, profil) {
+    var f = c.fourrure, fo = ombre(f, 0.72), fc = ombre(f, 1.22);
+    var NEZ = '#1a1214', BLANC = '#f4f0e8';
+
+    // Les oreilles, posees avant la tete pour s'y rattacher.
+    if (c.anim === 'ours') {
+      p(4, 5, 4, 4, f); p(16, 5, 4, 4, f);
+      if (!dos) { p(5, 6, 2, 2, c.museau); p(17, 6, 2, 2, c.museau); }
+    } else if (c.anim === 'lapin') {
+      p(6, 0, 3, 9, f); p(15, 0, 3, 9, f);
+      p(6, 0, 3, 1, fc); p(15, 0, 3, 1, fc);
+      if (!dos) { p(7, 1, 1, 6, c.museau); p(16, 1, 1, 6, c.museau); }
+    } else if (c.anim === 'renard') {
+      p(5, 3, 2, 2, f); p(5, 5, 4, 3, f);
+      p(17, 3, 2, 2, f); p(15, 5, 4, 3, f);
+      if (!dos) { p(6, 5, 2, 2, c.museau); p(16, 5, 2, 2, c.museau); }
+    } else if (c.anim === 'poule') {
+      p(10, 3, 1, 4, f); p(12, 2, 1, 5, f); p(14, 3, 1, 4, f);
+    }
+
+    // La tete, ronde et un peu large.
+    var haut = c.anim === 'poule' ? 6 : 8;
+    p(6, haut - 1, 12, 1, f);
+    p(5, haut, 14, 18 - haut, f);
+    p(7, haut, 6, 1, fc);
+    p(17, haut + 1, 2, 17 - haut, fo);
+    p(5, 17, 14, 1, fo);
+
+    if (c.chapeau) {
+      p(9, 2, 6, 5, c.chapeau);
+      p(9, 5, 6, 1, ombre(c.chapeau, 1.8));
+      p(8, 7, 8, 1, c.chapeau);
+    }
+    if (dos) return;
+
+    if (profil) {
+      // Un seul oeil, et le museau qui pointe vers l'avant.
+      p(13, 10, 3, 3, BLANC);
+      p(15, 11, 1, 1, c.yeux);
+      p(14, 13, 6, 4, c.museau);
+      p(19, 13, 1, 1, c.anim === 'poule' ? ombre(c.museau, 0.7) : NEZ);
+      p(14, 16, 6, 1, BOUCHE);
+      p(15, 15, 4, 1, DENT);
+      if (c.cache) p(13, 9, 4, 4, c.cache);
+      return;
+    }
+
+    // Les yeux, ronds et fixes : ce regard-la fait tout le malaise.
+    p(7, 10, 4, 3, BLANC); p(13, 10, 4, 3, BLANC);
+    p(8, 11, 2, 1, c.yeux); p(14, 11, 2, 1, c.yeux);
+    if (c.anim === 'ours' || c.anim === 'poule') {
+      p(7, 9, 4, 1, NEZ); p(13, 9, 4, 1, NEZ);   // les sourcils
+    }
+    if (c.cache) {
+      p(13, 9, 5, 4, c.cache);
+      p(5, 9, 8, 1, c.cache);                     // le cordon
+    }
+
+    if (c.anim === 'poule') {
+      // Le bec, ouvert sur une rangee de dents.
+      p(8, 13, 8, 2, c.museau);
+      p(9, 15, 6, 1, DENT);
+      p(9, 16, 6, 2, ombre(c.museau, 0.8));
+      return;
+    }
+    p(8, 13, 8, 4, c.museau);
+    p(11, 13, 2, 1, NEZ);
+    p(8, 16, 8, 1, BOUCHE);
+    for (var i = 0; i < 6; i += 2) p(9 + i, 15, 1, 1, DENT);
+    if (c.anim === 'renard') {
+      // La machoire de Foxy pend, grande ouverte.
+      p(9, 17, 6, 1, BOUCHE);
+      p(9, 17, 1, 1, DENT); p(14, 17, 1, 1, DENT);
+    }
   }
 
   // De grandes oreilles, de part et d'autre du crane. Elles se posent
@@ -393,6 +520,7 @@
 
   function tete(p, c, dos, profil) {
     p(11, 18, 3, 2, ombre(c.peau, 0.78));         // le cou
+    if (c.anim) return animatronique(p, c, dos, profil);
     if (c.oreilles) oreilles(p, c);
 
     if (c.capuche) {

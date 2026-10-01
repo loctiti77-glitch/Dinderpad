@@ -76,6 +76,8 @@
   var APRES = ['lefondateur', 'dr-islas-the-founder'];
   DP.DINDERS.forEach(function (d) {
     if (AVANT_FIN && APRES.indexOf(d.id) !== -1) return;
+    // Les Dinders d'evenement ne se donnent pas : ils se gagnent au pass.
+    if (d.collection) return;
     DP.collect(d.id);
   });
   note(DP.owned().length + ' Dinders sur ' + DP.DINDERS.length);

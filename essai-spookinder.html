@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Essai : Spookinder débloqué</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center;
+         justify-content: center; background: #07030c; color: #ffb060;
+         font-family: "Courier New", Courier, monospace; font-size: 17px;
+         line-height: 1.6; text-align: center; }
+</style>
+</head>
+<body>
+<p id="etat">Préparation du profil…</p>
+<script src="js/dinderpad.js"></script>
+<script>
+// Page d'essai : elle donne les quatre Dinders de Spookinder au profil
+// courant, comme s'ils avaient ete gagnes au pass — sans quoi le DinderPad
+// les retirerait au chargement. Le reste du profil n'est pas touche.
+(function () {
+  if (!DP.spookinderEtat().ouvert) {
+    document.getElementById('etat').textContent = 'L’événement est terminé : rien à débloquer.';
+    return;
+  }
+  var s = DP.spookinder();
+  if (s.xp < 2000) DP.gagnerSpookXP(2000 - s.xp);
+  Object.keys(DP.SPOOK_DINDERS).forEach(function (id) {
+    DP.reclamerPalier(DP.SPOOK_DINDERS[id]);
+    DP.collect(id);
+  });
+  try { sessionStorage.setItem('dinderpad.unlocked', '1'); } catch (e) {}
+  document.getElementById('etat').textContent =
+    'Freddy, Bonnie, Chica et Foxy débloqués — ouverture du DinderPad…';
+  setTimeout(function () { location.replace('/#dinders'); }, 900);
+})();
+</script>
+</body>
+</html>

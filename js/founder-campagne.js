@@ -23,7 +23,7 @@
   // tout : c'est ce qui est remonte de la faille.
   var FORCE_RARETE = {
     'Universel': 1, 'Multiversel': 1.14, 'Omniversel': 1.3, 'Temporel': 1.5,
-    'Threat': 1.8
+    'Threat': 1.8, 'Exclusif': 1.4
   };
 
   function forceRarete(id) {
@@ -145,7 +145,15 @@
     'gart-kervelor-king-of-karsovia':
       { nom: 'Couronnement', degats: [165, 210], ultime: true, bouclier: 55 },
     'lefondateur':
-      { nom: 'Remise en Ordre', degats: [210, 260], ultime: true, etourdit: 0.6 }
+      { nom: 'Remise en Ordre', degats: [210, 260], ultime: true, etourdit: 0.6 },
+    'freddy-fazbear':
+      { nom: 'Lumières Éteintes', degats: [190, 240], ultime: true, etourdit: 0.8 },
+    'bonnie-the-bunny':
+      { nom: 'Solo d’Outre-Tombe', degats: [38, 52], coups: 5, ultime: true },
+    'chica-the-chicken':
+      { nom: 'Grande Tablée', degats: [150, 196], ultime: true, soinTous: 50 },
+    'foxy-the-fox-pirate':
+      { nom: 'Pirate’s Cove', degats: [200, 255], ultime: true, faiblesse: 0.5 }
   };
 
   var NIVEAU_ULTIME = 6;

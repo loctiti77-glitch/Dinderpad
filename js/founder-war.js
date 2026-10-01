@@ -121,6 +121,24 @@
     'lefondateur': [
       { nom: 'Ordre Établi',        degats: [78, 104] },
       { nom: 'Mise au Pas',         degats: [40, 54], faiblesse: 0.45 }
+    ],
+    // La collection Spookinder : quatre animatroniques, quatre facons de
+    // faire peur.
+    'freddy-fazbear': [
+      { nom: 'Rire dans le Noir',   degats: [64, 84], etourdit: 0.4 },
+      { nom: 'Boîte à Musique',     degats: [22, 30], soinTous: 28 }
+    ],
+    'bonnie-the-bunny': [
+      { nom: 'Riff Strident',       degats: [12, 18], coups: 4 },
+      { nom: 'Sans Visage',         degats: [30, 40], faiblesse: 0.45 }
+    ],
+    'chica-the-chicken': [
+      { nom: 'Let’s Eat!!!',        degats: [36, 50], drain: true },
+      { nom: 'Cupcake',             degats: [14, 20], soin: 60 }
+    ],
+    'foxy-the-fox-pirate': [
+      { nom: 'Ruée du Couloir',     degats: [74, 96], recul: 14 },
+      { nom: 'Crochet Rouillé',     degats: [34, 46], brulure: 10 }
     ]
   };
 

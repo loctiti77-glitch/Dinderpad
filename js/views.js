@@ -27,14 +27,27 @@
     var C = window.FWCAMP;
     var piste = !got && C && d && d.id === C.FUSION && DP.has(C.ISLAS);
 
-    var node = el(got || piste ? 'a' : 'div',
-                  'slot' + (got ? '' : ' slot--locked') + (piste ? ' slot--piste' : ''));
+    // Un Dinder d'evenement pas encore gagne se montre comme manquant :
+    // sa silhouette, en violet, pour dire qu'il y a la quelque chose a
+    // aller chercher. Tant que l'evenement dure, la case y mene.
+    var manquant = !got && d && d.collection === 'spookinder';
+    var evOuvert = manquant && DP.spookinderEtat().ouvert;
+
+    var node = el(got || piste || evOuvert ? 'a' : 'div',
+                  'slot' + (got ? '' : ' slot--locked') + (piste ? ' slot--piste' : '') +
+                  // Une collection speciale (Spookinder...) se lit a son
+                  // fond violet.
+                  (got && d.collection ? ' slot--special' : '') +
+                  (manquant ? ' slot--manquant' : ''));
     node.dataset.slot = String(index + 1).padStart(2, '0');
     if (got) { node.href = '#dinder/' + d.id; node.dataset.dinder = d.id; }
     else if (piste) {
       node.href = '#founder-war/faille';
       node.dataset.piste = C.FUSION;
       node.title = 'Quelque chose manque ici. Va voir.';
+    } else if (evOuvert) {
+      node.href = '#spookinder';
+      node.title = 'À gagner dans le pass Spookinder';
     }
 
     if (got) {
@@ -44,6 +57,13 @@
       img.width = 400; img.height = 400;
       img.loading = 'lazy'; img.decoding = 'async';
       node.appendChild(img);
+    } else if (manquant) {
+      var ombre = el('img', 'slot-face slot-face--ombre');
+      ombre.src = DP.dinderImg(d.id);
+      ombre.alt = '';
+      ombre.width = 400; ombre.height = 400;
+      ombre.loading = 'lazy'; ombre.decoding = 'async';
+      node.appendChild(ombre);
     } else {
       var mark = el('span', 'slot-face slot-face--locked', '?');
       mark.setAttribute('aria-hidden', 'true');
@@ -59,6 +79,8 @@
     // a faire, pas ce qui se cache derriere.
     if (piste) name.appendChild(el('span', 'slot-name-sub slot-piste-sous',
                                    'Quelque chose manque ici'));
+    if (manquant) name.appendChild(el('span', 'slot-name-sub slot-manquant-sous',
+      evOuvert ? 'Manquant · Spookinder' : 'Manquant · événement terminé'));
     node.appendChild(name);
 
     // La rarete, a droite. Seulement pour un Dinder obtenu : l'afficher
