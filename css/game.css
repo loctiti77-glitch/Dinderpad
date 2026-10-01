@@ -7398,6 +7398,223 @@ body.is-locked .pad-titre { display: none; }
 .spk.is-fin .spk-hud,
 .spk.is-fin .spk-plan { display: none; }
 
+/* Pendant le secret, plus d'interface : rien que la camera. */
+.spk.is-secret .spk-cmd,
+.spk.is-secret .spk-hud,
+.spk.is-secret .spk-plan,
+.spk.is-secret .spk-muet { display: none; }
+
+/* ==========================================================
+   Spookinder — Golden Freddy, le Dinder secret
+   Tout se joue sur une seule frise : IT'S ME clignote dans le noir
+   (0 a 2,4 s), une onde d'or part du centre (2,4 s), les rayons et la
+   poussiere doree s'installent, la tete fonce sur l'ecran (2,5 s), puis
+   le nom monte (3,4 s).
+   ========================================================== */
+
+.spk-gold {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8 * var(--px));
+  overflow: hidden;
+  background: #000;
+  animation: spk-gold-fond 6s ease forwards;
+}
+
+@keyframes spk-gold-fond {
+  0%, 40% { background: #000; }
+  42%     { background: #fff4c8; }
+  48%     { background: radial-gradient(circle at 50% 42%, #5a3a06, #120800 70%); }
+  100%    { background: radial-gradient(circle at 50% 42%, #3a2404, #0a0500 72%); }
+}
+
+.spk-gold.is-sortie { animation: spk-sortie .5s ease forwards; }
+
+/* ---------- IT'S ME ---------- */
+
+.spk-gold-itsme { position: absolute; inset: 0; pointer-events: none; }
+
+.spk-gold-itsme span {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: calc(54 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(6 * var(--px));
+  color: #fff;
+  white-space: nowrap;
+  opacity: 0;
+  text-shadow:
+    calc(3 * var(--px)) 0 #ff1a1a,
+    calc(-3 * var(--px)) 0 #1affff;
+  animation: spk-itsme .34s steps(1, end) calc(var(--i) * .38s) 2;
+}
+
+.spk-gold-itsme span:nth-child(5) {
+  font-size: calc(96 * var(--px));
+  animation: spk-itsme .5s steps(1, end) 1.7s 1;
+}
+
+@keyframes spk-itsme {
+  0%   { opacity: 1; transform: translate(-50%, -50%) skewX(-8deg); }
+  30%  { opacity: 0; }
+  45%  { opacity: 1; transform: translate(-46%, -52%) skewX(10deg); }
+  70%  { opacity: .4; }
+  100% { opacity: 0; }
+}
+
+/* ---------- L'eclat d'or ---------- */
+
+.spk-gold-onde {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: calc(40 * var(--px));
+  height: calc(40 * var(--px));
+  margin: calc(-20 * var(--px)) 0 0 calc(-20 * var(--px));
+  border: calc(6 * var(--px)) solid #ffd860;
+  border-radius: 50%;
+  opacity: 0;
+  box-shadow: 0 0 calc(40 * var(--px)) #ffb020, inset 0 0 calc(30 * var(--px)) #ffb020;
+  animation: spk-onde 1.2s 2.45s ease-out forwards;
+}
+
+@keyframes spk-onde {
+  0%   { opacity: 1; transform: scale(.2); }
+  100% { opacity: 0; transform: scale(34); }
+}
+
+.spk-gold-rayons {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 260%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 200, 70, .3) 0deg 7deg,
+    transparent 7deg 18deg);
+  -webkit-mask-image: radial-gradient(circle, #000 8%, transparent 55%);
+          mask-image: radial-gradient(circle, #000 8%, transparent 55%);
+  opacity: 0;
+  animation:
+    spk-rayons-in .8s 2.5s ease forwards,
+    spk-rayons-tour 16s 2.5s linear infinite;
+}
+
+@keyframes spk-rayons-in  { to { opacity: 1; } }
+@keyframes spk-rayons-tour { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+/* La poussiere d'or qui remonte. */
+.spk-gold-p {
+  position: absolute;
+  left: var(--x);
+  bottom: calc(-12 * var(--px));
+  width: calc(6 * var(--px) * var(--s));
+  height: calc(6 * var(--px) * var(--s));
+  background: #ffe08a;
+  box-shadow: 0 0 calc(10 * var(--px)) #ffb020;
+  opacity: 0;
+  animation: spk-poussiere var(--t) var(--d) linear infinite;
+}
+
+@keyframes spk-poussiere {
+  0%   { opacity: 0; transform: translateY(0) rotate(0); }
+  15%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(calc(-720 * var(--px))) rotate(270deg); }
+}
+
+/* ---------- La tete ---------- */
+
+.spk-gold-tete {
+  position: relative;
+  width: calc(300 * var(--px));
+  height: calc(300 * var(--px));
+  object-fit: contain;
+  opacity: 0;
+  animation:
+    spk-gold-tete .9s 2.5s cubic-bezier(.15, 1.5, .35, 1) forwards,
+    spk-gold-flotte 3.2s 3.4s ease-in-out infinite;
+}
+
+@keyframes spk-gold-tete {
+  0%   { opacity: 0; transform: scale(.08) rotate(-24deg);
+         filter: brightness(4) blur(calc(8 * var(--px))); }
+  45%  { opacity: 1; transform: scale(1.22) rotate(6deg);
+         filter: brightness(1.8) blur(0); }
+  100% { opacity: 1; transform: scale(1) rotate(0);
+         filter: drop-shadow(0 0 calc(34 * var(--px)) rgba(255, 190, 50, .95)); }
+}
+
+@keyframes spk-gold-flotte {
+  0%, 100% { transform: translateY(0) rotate(-2deg);
+             filter: drop-shadow(0 0 calc(26 * var(--px)) rgba(255, 190, 50, .8)); }
+  50%      { transform: translateY(calc(-8 * var(--px))) rotate(2deg);
+             filter: drop-shadow(0 0 calc(46 * var(--px)) rgba(255, 210, 90, 1)); }
+}
+
+/* ---------- Le nom ---------- */
+
+.spk-gold-txt {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  opacity: 0;
+  animation: spk-monte .7s 3.4s ease both;
+}
+
+.spk-gold-haut {
+  font-size: calc(17 * var(--px));
+  letter-spacing: calc(10 * var(--px));
+  text-transform: uppercase;
+  color: #ffe9b0;
+}
+
+/* L'or du nom, avec un reflet qui le traverse en boucle. */
+.spk-gold-nom {
+  font-size: calc(54 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  background: linear-gradient(100deg,
+    #8a5a10 0%, #f8d060 30%, #fff8dc 45%, #f8d060 60%, #8a5a10 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 calc(3 * var(--px)) 0 #3a2000)
+          drop-shadow(0 0 calc(16 * var(--px)) rgba(255, 180, 40, .7));
+  animation: spk-reflet 2.4s 3.6s linear infinite;
+}
+
+@keyframes spk-reflet {
+  from { background-position: 100% 0; }
+  to   { background-position: -150% 0; }
+}
+
+.spk-gros-btn--or {
+  margin-top: calc(8 * var(--px));
+  border-color: #ffd060;
+  background: rgba(60, 36, 4, .92);
+  color: #fff2c8;
+  animation: spk-monte .5s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spk-gold, .spk-gold-itsme span, .spk-gold-onde, .spk-gold-rayons,
+  .spk-gold-p, .spk-gold-tete, .spk-gold-txt, .spk-gold-nom {
+    animation-duration: .01s;
+    animation-delay: 0s;
+    animation-iteration-count: 1;
+  }
+  .spk-gold-itsme, .spk-gold-p { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .spk-titre, .spk-energie.is-bas, .spk-palier.is-pret,
   .spk-carton.is-perdu, .spk-peur.is-on { animation: none; }

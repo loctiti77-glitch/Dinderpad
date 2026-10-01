@@ -153,7 +153,9 @@
     'chica-the-chicken':
       { nom: 'Grande Tablée', degats: [150, 196], ultime: true, soinTous: 50 },
     'foxy-the-fox-pirate':
-      { nom: 'Pirate’s Cove', degats: [200, 255], ultime: true, faiblesse: 0.5 }
+      { nom: 'Pirate’s Cove', degats: [200, 255], ultime: true, faiblesse: 0.5 },
+    'golden-freddy':
+      { nom: 'IT’S ME', degats: [220, 280], ultime: true, etourdit: 0.9 }
   };
 
   var NIVEAU_ULTIME = 6;

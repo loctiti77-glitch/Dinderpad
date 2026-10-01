@@ -30,7 +30,7 @@
     // Un Dinder d'evenement pas encore gagne se montre comme manquant :
     // sa silhouette, en violet, pour dire qu'il y a la quelque chose a
     // aller chercher. Tant que l'evenement dure, la case y mene.
-    var manquant = !got && d && d.collection === 'spookinder';
+    var manquant = !got && d && d.collection === 'spookinder' && !d.secret;
     var evOuvert = manquant && DP.spookinderEtat().ouvert;
 
     var node = el(got || piste || evOuvert ? 'a' : 'div',

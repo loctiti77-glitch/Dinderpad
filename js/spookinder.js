@@ -338,6 +338,65 @@
           ton(t + i * 0.42, 1.0, 'triangle', f * 2, 0.04);
         });
       },
+      // Un doigt contre une porte de cabine.
+      toc: function () {
+        if (!ok()) return;
+        var t = ac.currentTime;
+        bruit(t, 0.07, 'bandpass', 900, 0.3, 3);
+        ton(t, 0.09, 'sine', 180, 0.18, 120);
+      },
+      // Une porte qui s'ouvre toute seule, longuement.
+      grince: function () {
+        if (!ok()) return;
+        var t = ac.currentTime;
+        var o = ac.createOscillator(); o.type = 'sawtooth';
+        o.frequency.setValueAtTime(260, t);
+        o.frequency.linearRampToValueAtTime(410, t + 0.6);
+        o.frequency.linearRampToValueAtTime(330, t + 1.4);
+        var f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1300; f.Q.value = 9;
+        var g = ac.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.16, t + 0.2);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+        o.connect(f); f.connect(g); g.connect(maitre);
+        o.start(t); o.stop(t + 1.6);
+      },
+      // IT'S ME : une voix d'outre-tombe, faite de deux voyelles graves
+      // qui tremblent, et un souffle par-dessus.
+      itsMe: function () {
+        if (!ok()) return;
+        var t = ac.currentTime;
+        [0, 0.55, 1.1, 1.65].forEach(function (d, i) {
+          var o = ac.createOscillator(); o.type = 'sawtooth';
+          o.frequency.setValueAtTime(i % 2 ? 72 : 82, t + d);
+          o.frequency.linearRampToValueAtTime(i % 2 ? 60 : 70, t + d + 0.45);
+          var trem = ac.createOscillator(); trem.frequency.value = 23;
+          var tg = ac.createGain(); tg.gain.value = 6;
+          trem.connect(tg); tg.connect(o.frequency);
+          var f = ac.createBiquadFilter(); f.type = 'bandpass';
+          f.frequency.value = i % 2 ? 380 : 620; f.Q.value = 5;
+          var g = ac.createGain();
+          g.gain.setValueAtTime(0.0001, t + d);
+          g.gain.exponentialRampToValueAtTime(0.35, t + d + 0.05);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.5);
+          o.connect(f); f.connect(g); g.connect(maitre);
+          o.start(t + d); trem.start(t + d);
+          o.stop(t + d + 0.55); trem.stop(t + d + 0.55);
+          bruit(t + d, 0.4, 'highpass', 5000, 0.04);
+        });
+      },
+      // L'or qui eclate : un coup sourd, puis une pluie de notes claires.
+      dore: function () {
+        if (!ok()) return;
+        var t = ac.currentTime;
+        ton(t, 1.6, 'sine', 55, 0.6, 30);
+        bruit(t, 0.8, 'lowpass', 400, 0.5);
+        [523, 659, 784, 988, 1175, 1319, 1568, 2093].forEach(function (f, i) {
+          ton(t + 0.25 + i * 0.07, 1.8, 'triangle', f, 0.06);
+          ton(t + 0.25 + i * 0.07, 1.2, 'sine', f * 2, 0.025);
+        });
+        [262, 330, 392, 523].forEach(function (f) { ton(t + 0.2, 3, 'sawtooth', f, 0.025); });
+      },
       palier: function () {
         if (!ok()) return;
         var t = ac.currentTime;
@@ -521,7 +580,15 @@
       im.src = DP.sprite(PERSOS[k].id);
       IMG[k] = im;
     });
+    if (!IMG.golden) {
+      IMG.golden = new Image();
+      IMG.golden.src = DP.sprite('golden-freddy');
+    }
   }
+
+  // Le code des toilettes : deux coups sur la porte 4, trois sur la 3,
+  // sept sur la 2. Rien a l'ecran ne le suggere.
+  var CODE = [4, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2];
 
   function pret(im) { return im && im.complete && im.naturalWidth > 0; }
 
@@ -849,7 +916,10 @@
       cam: false, camVue: '1A', glitch: 0,
       panne: false, panneT: 0, panneFin: 0,
       vusG: false, vusD: false,
-      coupsFoxy: 0
+      coupsFoxy: 0,
+      // Le secret : les derniers coups frappes aux cabines, et la pause
+      // de la nuit pendant que Golden Freddy se montre.
+      code: [], toc: [-9, -9, -9, -9], pause: false, secretT: 0
     };
 
     var A = {};
@@ -921,7 +991,7 @@
     }
 
     function auClavier(ev) {
-      if (e.fini) return;
+      if (e.fini || e.pause) return;
       var k = (ev.key || '').toLowerCase();
       if (k === 'a') porte('g');
       else if (k === 'q') lumiere('g');
@@ -932,6 +1002,110 @@
       ev.preventDefault();
     }
     window.addEventListener('keydown', auClavier);
+
+    // ---------- Les cabines des toilettes ----------
+
+    function surToile(ev) {
+      if (!e.cam || e.camVue !== '7' || e.fini || e.pause) return;
+      var b = cv.getBoundingClientRect();
+      var X = (ev.clientX - b.left) / b.width * W;
+      var Y = (ev.clientY - b.top) / b.height * H;
+      if (Y < 20 || Y > 130) return;
+      for (var i = 0; i < 4; i++) {
+        if (X >= 30 + i * 70 && X <= 90 + i * 70) { frapper(i + 1); return; }
+      }
+    }
+    cv.addEventListener('pointerdown', surToile);
+
+    function frapper(n) {
+      e.toc[n - 1] = e.t;
+      SON.toc();
+      e.code.push(n);
+      if (e.code.length > CODE.length) e.code.shift();
+      if (e.code.join() !== CODE.join()) return;
+      e.code = [];
+      // Deja trouve, ou l'evenement passe : la porte reste une porte.
+      if (DP.has('golden-freddy') || !DP.spookinderEtat().ouvert) return;
+      secret();
+    }
+
+    function secret() {
+      e.pause = true;
+      e.secretT = 0;
+      e.glitch = 0.9;
+      e.trouve = true;
+      hote.classList.add('is-secret');
+      if (musique) musique.arreter(0.4);
+      SON.grince();
+      setTimeout(function () { if (!arrete) apparition(); }, reduit ? 300 : 1500);
+    }
+
+    // La grande scene : noir, IT'S ME qui clignote, puis l'or qui eclate.
+    function apparition() {
+      var d = DP.byId('golden-freddy');
+      var g = el('div', 'spk-gold');
+      var it = el('div', 'spk-gold-itsme');
+      [[18, 22], [62, 30], [30, 70], [70, 74], [44, 48]].forEach(function (pos, i) {
+        var m = el('span', null, 'IT’S ME');
+        m.style.left = pos[0] + '%';
+        m.style.top = pos[1] + '%';
+        m.style.setProperty('--i', i);
+        it.appendChild(m);
+      });
+      g.appendChild(it);
+      g.appendChild(el('div', 'spk-gold-rayons'));
+      g.appendChild(el('div', 'spk-gold-onde'));
+      for (var i = 0; i < 28; i++) {
+        var p = el('span', 'spk-gold-p');
+        p.style.setProperty('--x', Math.round(hasard(4, 96)) + '%');
+        p.style.setProperty('--d', hasard(2.4, 5).toFixed(2) + 's');
+        p.style.setProperty('--t', hasard(2.4, 4.4).toFixed(2) + 's');
+        p.style.setProperty('--s', hasard(0.6, 1.6).toFixed(2));
+        g.appendChild(p);
+      }
+      var tete = el('img', 'spk-gold-tete');
+      tete.src = DP.dinderImg(d.id);
+      tete.alt = '';
+      g.appendChild(tete);
+      var txt = el('div', 'spk-gold-txt');
+      txt.appendChild(el('span', 'spk-gold-haut', 'Dinder secret'));
+      txt.appendChild(el('strong', 'spk-gold-nom', d.name));
+      var rar = el('span', 'spk-revel-rar', d.rarity);
+      rar.dataset.rarity = DP.rarityKey(d.rarity);
+      txt.appendChild(rar);
+      g.appendChild(txt);
+      hote.appendChild(g);
+
+      SON.itsMe();
+      setTimeout(function () { SON.dore(); }, reduit ? 100 : 2600);
+      setTimeout(function () {
+        var b = el('button', 'spk-gros-btn spk-gros-btn--or', 'CONTINUER LA NUIT');
+        b.type = 'button';
+        b.addEventListener('click', function () { reprendre(g); });
+        txt.appendChild(b);
+        b.focus();
+      }, reduit ? 400 : 5200);
+    }
+
+    // Le Dinder n'entre dans la collection qu'a la fin de la scene : les
+    // annonces du pad (badge, experience) ne viennent pas la couvrir. Si
+    // l'on quitte l'ecran avant, arreter() le donne quand meme.
+    function accorder() {
+      if (!e.trouve) return;
+      e.trouve = false;
+      if (DP.trouverGolden() && DP.markNew) DP.markNew('golden-freddy');
+    }
+
+    function reprendre(g) {
+      accorder();
+      g.classList.add('is-sortie');
+      setTimeout(function () { g.remove(); }, 500);
+      hote.classList.remove('is-secret');
+      e.pause = false;
+      e.glitch = 0.8;
+      avant = 0;
+      if (!arrete) musique = SON.musique();
+    }
 
     // ---------- L'IA ----------
 
@@ -1222,6 +1396,7 @@
       } else if (k === '1C') {
         dessinerCrique();
       } else {
+        if (k === '7') dessinerCabines();
         var poses = POSES[k] || {};
         ['bonnie', 'chica', 'freddy'].forEach(function (q) {
           if (A[q].lieu !== k || !poses[q]) return;
@@ -1260,6 +1435,35 @@
       }
       ctx.fillStyle = '#f0f0f0';
       ctx.fillText('CAM ' + k + '  ' + CAMS[k].nom.toUpperCase(), 22, 43);
+    }
+
+    // Les quatre portes de cabine : celle qu'on vient de frapper tressaille ;
+    // pendant le secret, la deuxieme s'ouvre sur une lueur doree.
+    function dessinerCabines() {
+      for (var i = 0; i < 4; i++) {
+        if (e.t - e.toc[i] < 0.22) {
+          var x0 = 30 + i * 70;
+          r(ctx, x0, 20, 60, 110, '#526268');
+          r(ctx, x0 + 1, 20, 60, 3, '#6a7a80');
+          r(ctx, x0 + 57, 20, 4, 110, '#0a0c10');
+          r(ctx, x0 + 51, 72, 4, 4, '#c8d0d8');
+        }
+      }
+      if (!e.pause) return;
+      var k = Math.min(1, e.secretT / 1.2);
+      var ouv = Math.round(56 * k);
+      r(ctx, 100, 20, ouv, 110, '#060402');
+      ctx.save();
+      ctx.beginPath(); ctx.rect(100, 20, ouv, 110); ctx.clip();
+      var g = ctx.createRadialGradient(130, 90, 4, 130, 90, 70);
+      g.addColorStop(0, 'rgba(255,210,90,' + (0.55 * k) + ')');
+      g.addColorStop(1, 'rgba(255,160,20,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(100, 20, 60, 110);
+      if (pret(IMG.golden)) ctx.drawImage(IMG.golden, 98, 52, 64, 80);
+      ctx.restore();
+      // La porte, rabattue sur la droite.
+      r(ctx, 100 + ouv, 20, Math.max(4, 60 - ouv), 110, '#3a484e');
     }
 
     function dessinerCrique() {
@@ -1315,7 +1519,11 @@
       if (!document.body.contains(hote)) { arreter(); return; }
       var dt = avant ? Math.min(0.1, (ms - avant) / 1000) : 0;
       avant = ms;
-      if (!e.fini) {
+      if (!e.fini && e.pause) {
+        // La nuit retient son souffle : rien ne bouge, seul le secret avance.
+        e.secretT += dt;
+        e.glitch = Math.max(0.15, e.glitch - dt * 0.8);
+      } else if (!e.fini) {
         e.t += dt;
         e.glitch = Math.max(0, e.glitch - dt * 1.6);
         e.animG += ((e.porteG ? 1 : 0) - e.animG) * Math.min(1, dt * 14);
@@ -1356,6 +1564,8 @@
       brut = 0;
       SON.couper();
       window.removeEventListener('keydown', auClavier);
+      cv.removeEventListener('pointerdown', surToile);
+      accorder();
     }
 
     // Le carton d'ouverture : "12 AM — Nuit 1", puis on y est.

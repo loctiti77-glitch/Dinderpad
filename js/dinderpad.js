@@ -114,7 +114,11 @@
     { id: 'chica-the-chicken',                 name: 'Chica',          form: 'the Chicken',      rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' },
     { id: 'bonnie-the-bunny',                  name: 'Bonnie',         form: 'the Bunny',        rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' },
     { id: 'foxy-the-fox-pirate',               name: 'Foxy',           form: 'the Fox Pirate',   rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' },
-    { id: 'freddy-fazbear',                    name: 'Freddy Fazbear', form: '',                 rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' }
+    { id: 'freddy-fazbear',                    name: 'Freddy Fazbear', form: '',                 rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' },
+    // Le secret de Spookinder : il ne sort d'aucun pass, il se trouve dans
+    // la camera des toilettes. "secret" le garde hors des cases marquees
+    // manquantes : on ne doit pas savoir qu'il existe.
+    { id: 'golden-freddy',                     name: 'Golden Freddy', form: '',                  rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', secret: true, desc: '' }
   ];
 
   // Le palier du pass Spookinder qui rend chacun d'eux. js/spookinder.js
@@ -519,8 +523,11 @@
     if (!Array.isArray(p.spookinder.reclames)) p.spookinder.reclames = [];
     // Un Dinder Spookinder ne vaut que gagne au pass : celui qu'une page
     // d'essai aurait distribue retourne a l'etat de case manquante.
+    // Golden Freddy, lui, ne vaut que si le code a ete trouve.
+    if (typeof p.spookinder.golden !== 'boolean') p.spookinder.golden = false;
     if (Array.isArray(p.owned)) {
       p.owned = p.owned.filter(function (id) {
+        if (id === 'golden-freddy') return p.spookinder.golden;
         var n = SPOOK_DINDERS[id];
         return !n || p.spookinder.reclames.indexOf(n) !== -1;
       });
@@ -1415,6 +1422,18 @@
     return true;
   }
 
+  // Le code des toilettes : rend true la premiere fois seulement, et
+  // seulement tant que l'evenement dure.
+  function trouverGolden() {
+    if (!spookinderEtat().ouvert) return false;
+    var p = me();
+    if (p.spookinder.golden && has('golden-freddy')) return false;
+    p.spookinder.golden = true;
+    save();
+    collect('golden-freddy');
+    return true;
+  }
+
   function reclamerPalier(n) {
     if (!spookinderEtat().ouvert) return false;
     var p = me();
@@ -1452,6 +1471,7 @@
     MENACE: MENACE, EXCLUSIF: EXCLUSIF, horsDindise: horsDindise,
     spookinderEtat: spookinderEtat, spookinder: spookinder, SPOOK_DINDERS: SPOOK_DINDERS,
     gagnerSpookXP: gagnerSpookXP, noterNuit: noterNuit, reclamerPalier: reclamerPalier,
+    trouverGolden: trouverGolden,
     evos: evos, evoImg: evoImg, gagnerEvos: gagnerEvos, depenserEvos: depenserEvos,
     odysseeDinder: odysseeDinder, choisirOdysseeDinder: choisirOdysseeDinder,
     fusion: fusion, noterSacrifice: noterSacrifice,

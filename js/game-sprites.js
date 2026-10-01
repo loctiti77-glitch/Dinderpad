@@ -197,6 +197,13 @@
       cache: '#141016', crochet: '#b8bcc4',
       torse: '#b8302a', ventre: '#8a2420', accent: '#d8a080',
       bas: '#4a3a30', chaussures: '#2a2226', peau: '#b8302a'
+    },
+    // Golden Freddy : Freddy en or terni, et deux orbites vides.
+    'golden-freddy': {
+      anim: 'ours', fourrure: '#b8902a', museau: '#d8b850', yeux: '#f4f0e8',
+      orbites: true, chapeau: '#1c1416', noeud: '#141016',
+      torse: '#b8902a', ventre: '#d8b850', accent: '#d8b850',
+      bas: '#a8822a', chaussures: '#7a5e1a', peau: '#b8902a'
     }
   };
 
@@ -454,7 +461,7 @@
 
     if (profil) {
       // Un seul oeil, et le museau qui pointe vers l'avant.
-      p(13, 10, 3, 3, BLANC);
+      p(13, 10, 3, 3, c.orbites ? '#050405' : BLANC);
       p(15, 11, 1, 1, c.yeux);
       p(14, 13, 6, 4, c.museau);
       p(19, 13, 1, 1, c.anim === 'poule' ? ombre(c.museau, 0.7) : NEZ);
@@ -464,9 +471,12 @@
       return;
     }
 
-    // Les yeux, ronds et fixes : ce regard-la fait tout le malaise.
-    p(7, 10, 4, 3, BLANC); p(13, 10, 4, 3, BLANC);
-    p(8, 11, 2, 1, c.yeux); p(14, 11, 2, 1, c.yeux);
+    // Les yeux, ronds et fixes : ce regard-la fait tout le malaise. Des
+    // orbites vides n'ont qu'un point de lumiere tout au fond.
+    var fond = c.orbites ? '#050405' : BLANC;
+    p(7, 10, 4, 3, fond); p(13, 10, 4, 3, fond);
+    if (c.orbites) { p(9, 11, 1, 1, c.yeux); p(15, 11, 1, 1, c.yeux); }
+    else { p(8, 11, 2, 1, c.yeux); p(14, 11, 2, 1, c.yeux); }
     if (c.anim === 'ours' || c.anim === 'poule') {
       p(7, 9, 4, 1, NEZ); p(13, 9, 4, 1, NEZ);   // les sourcils
     }
