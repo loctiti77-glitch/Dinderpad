@@ -38,6 +38,9 @@
                   // Une collection speciale (Spookinder...) se lit a son
                   // fond violet.
                   (got && d.collection ? ' slot--special' : '') +
+                  // Les personnages d'une serie (Gaming Legends...) ont une
+                  // case violette vivante.
+                  (got && d.collection && d.serie ? ' slot--anime' : '') +
                   (manquant ? ' slot--manquant' : ''));
     node.dataset.slot = String(index + 1).padStart(2, '0');
     if (got) { node.href = '#dinder/' + d.id; node.dataset.dinder = d.id; }
@@ -81,6 +84,13 @@
                                    'Quelque chose manque ici'));
     if (manquant) name.appendChild(el('span', 'slot-name-sub slot-manquant-sous',
       evOuvert ? 'Manquant · Spookinder' : 'Manquant · événement terminé'));
+    // La serie d'ou vient le personnage, en etiquette sous son nom.
+    if ((got || manquant) && d.serie) {
+      var serie = el('span', 'slot-serie');
+      serie.appendChild(el('span', 'slot-serie-mot', 'Série'));
+      serie.appendChild(document.createTextNode(d.serie));
+      name.appendChild(serie);
+    }
     node.appendChild(name);
 
     // La rarete, a droite. Seulement pour un Dinder obtenu : l'afficher
@@ -169,6 +179,7 @@
 
     line('Rareté',  d.rarity, 'fiche-line--rarity');
     line('Univers', d.universe);
+    if (d.serie) line('Série', d.serie, 'fiche-line--serie');
 
     // Ce qu'il vaut au combat : son niveau, sa force, ses attaques.
     var C = window.FWCAMP;

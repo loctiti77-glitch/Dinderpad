@@ -109,16 +109,18 @@
     // The Founder War, a l'Effondrement Terminal.
     { id: 'lefondateur',                       name: 'Le Fondateur',  form: '',                   rarity: 'Temporel',     universe: '???',    horsTirage: true, desc: 'Celui qui voulait remettre de l’ordre dans l’omnivers : un seul monde de chaque, à sa place, pour toujours. Vaincu, il suit désormais celui qui l’a battu.' },
     // La collection Spookinder : on ne les gagne que dans le pass de
-    // l'evenement, jusqu'au 1er novembre a 0 h. "collection" les distingue dans la
-    // page Dinders. Leur description reste a ecrire par l'auteur.
-    { id: 'chica-the-chicken',                 name: 'Chica',          form: 'the Chicken',      rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' },
-    { id: 'bonnie-the-bunny',                  name: 'Bonnie',         form: 'the Bunny',        rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' },
-    { id: 'foxy-the-fox-pirate',               name: 'Foxy',           form: 'the Fox Pirate',   rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' },
-    { id: 'freddy-fazbear',                    name: 'Freddy Fazbear', form: '',                 rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', desc: '' },
+    // l'evenement, jusqu'au 1er novembre a 0 h. "collection" les distingue
+    // dans la page Dinders ; "serie" dit de quelle saga vient le personnage,
+    // et s'affiche en etiquette. Leur description reste a ecrire par
+    // l'auteur.
+    { id: 'chica-the-chicken',                 name: 'Chica',          form: 'the Chicken',      rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', serie: 'Gaming Legends', desc: '' },
+    { id: 'bonnie-the-bunny',                  name: 'Bonnie',         form: 'the Bunny',        rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', serie: 'Gaming Legends', desc: '' },
+    { id: 'foxy-the-fox-pirate',               name: 'Foxy',           form: 'the Fox Pirate',   rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', serie: 'Gaming Legends', desc: '' },
+    { id: 'freddy-fazbear',                    name: 'Freddy Fazbear', form: '',                 rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', serie: 'Gaming Legends', desc: '' },
     // Le secret de Spookinder : il ne sort d'aucun pass, il se trouve dans
     // la camera des toilettes. "secret" le garde hors des cases marquees
     // manquantes : on ne doit pas savoir qu'il existe.
-    { id: 'golden-freddy',                     name: 'Golden Freddy', form: '',                  rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', secret: true, desc: '' }
+    { id: 'golden-freddy',                     name: 'Golden Freddy', form: '',                  rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', serie: 'Gaming Legends', secret: true, desc: '' }
   ];
 
   // Le palier du pass Spookinder qui rend chacun d'eux. js/spookinder.js

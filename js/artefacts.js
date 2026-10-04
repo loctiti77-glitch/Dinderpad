@@ -1,5 +1,5 @@
-// Les artefacts : cinquante reliques de l'histoire des Dinders, cachees
-// dans les trois mini-jeux. Une categorie a part dans les Items : on ne
+// Les artefacts : des reliques de l'histoire des Dinders, cachees
+// dans les mini-jeux. Une categorie a part dans les Items : on ne
 // les utilise pas, on les collectionne.
 //
 // Trois facons d'en trouver :
@@ -25,7 +25,7 @@
                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ==========================================================
-  //  Les cinquante artefacts
+  //  Les artefacts
   // ==========================================================
   // jeu : 'founder' | 'peche' | 'odyssee' ; ou : 'cache', 'exploit' ou
   // 'ligne' ; carte : pour une cache de l'Odyssee, le monde ; dinder :
@@ -34,7 +34,8 @@
   var JEUX = {
     founder: 'The Founder War',
     peche: 'Fish n’Der',
-    odyssee: 'The Odyssey of Dinder'
+    odyssee: 'The Odyssey of Dinder',
+    spookinder: 'Spookinder'
   };
 
   var LISTE = [
@@ -244,7 +245,43 @@
     { id: 'singularite-islas', nom: 'Singularité du docteur', jeu: 'odyssee', ou: 'exploit', gardien: 'leviathan-abysses',
       dinder: 'dr-islas-final-form', forme: 'orbe', c: ['#1a0a2a', '#c86aff', '#050008', '#ffffff'],
       indice: 'Laissée par le Léviathan des Abysses.',
-      texte: 'Ce qu’il reste de l’instant où le docteur a fusionné avec le trou de ver. Elle regarde en arrière.' }
+      texte: 'Ce qu’il reste de l’instant où le docteur a fusionné avec le trou de ver. Elle regarde en arrière.' },
+
+    // ---------- Spookinder : a reperer sur les cameras ----------
+    // ou: 'camera' — l'objet se cache dans une piece, a certaines
+    // conditions ; un clic sur la camera le ramasse (js/spookinder.js).
+    { id: 'cupcake-chica', nom: 'Cupcake de Chica', jeu: 'spookinder', ou: 'camera',
+      dinder: 'chica-the-chicken', forme: 'cupcake', c: ['#e84a8a', '#f4f0e8', '#8a2a52', '#5a3a2a'],
+      indice: 'Oublié sur une table de la salle, quand elle n’y est pas.',
+      texte: 'La bougie brûle encore. Personne ne se souvient de l’avoir allumée, ni de l’avoir posée là.' },
+    { id: 'micro-freddy', nom: 'Micro de Freddy', jeu: 'spookinder', ou: 'camera',
+      dinder: 'freddy-fazbear', forme: 'micro', c: ['#8a8a92', '#e8e8f0', '#2a2a30', '#1a1416'],
+      indice: 'Sur la scène, une fois qu’il l’a quittée.',
+      texte: 'Il chantait avec, tous les après-midi. La nuit, quand on le porte à l’oreille, on entend respirer.' },
+    { id: 'crochet-foxy', nom: 'Crochet de rechange', jeu: 'spookinder', ou: 'camera',
+      dinder: 'foxy-the-fox-pirate', forme: 'crochet', c: ['#b8bcc4', '#ffffff', '#7a3a1a', '#4a3a30'],
+      indice: 'Au pied du rideau de la Crique, quand il s’ouvre.',
+      texte: 'Le crochet d’avant. On l’a remplacé après « l’incident » : la pizzeria n’en a jamais dit plus.' },
+    { id: 'corde-bonnie', nom: 'Corde de guitare', jeu: 'spookinder', ou: 'camera',
+      dinder: 'bonnie-the-bunny', forme: 'corde', c: ['#c8ccd4', '#8a8e98', '#3a3a42', '#c41e2a'],
+      indice: 'Dans les coulisses, quand Bonnie s’est absenté.',
+      texte: 'Une corde cassée, encore tendue en spirale. Elle a lâché en plein milieu d’une chanson. La chanson, elle, a continué.' },
+    { id: 'badge-gardien', nom: 'Badge de gardien', jeu: 'spookinder', ou: 'camera',
+      dinder: 'freddy-fazbear', forme: 'badge', c: ['#3a5a9a', '#f0d060', '#1a2a4a', '#ffffff'],
+      indice: 'Sur une étagère du placard, passé 3 h du matin.',
+      texte: 'Le badge du gardien d’avant toi. Il n’a jamais rendu son uniforme, et personne ne l’a revu.' },
+    { id: 'cassette-telephone', nom: 'Cassette du téléphone', jeu: 'spookinder', ou: 'camera',
+      dinder: 'bonnie-the-bunny', forme: 'cassette', c: ['#2a2a30', '#f0e8d0', '#101014', '#c41e2a'],
+      indice: 'Dans le couloir ouest, à partir de la troisième nuit.',
+      texte: '« Salut, salut ! Si tu écoutes ça, c’est que tu as tenu jusqu’ici… » La bande s’arrête toujours au même endroit.' },
+    { id: 'coupure-journal', nom: 'Coupure de journal', jeu: 'spookinder', ou: 'camera',
+      dinder: 'chica-the-chicken', forme: 'journal', c: ['#e8e0c8', '#6a6458', '#a89e86', '#1a1814'],
+      indice: 'Punaisée au coin est, après 4 h, dès la deuxième nuit.',
+      texte: '« La pizzeria fermera ses portes à la fin de l’année. » Quelqu’un a entouré la date au feutre rouge.' },
+    { id: 'masque-freddy', nom: 'Masque de Freddy', jeu: 'spookinder', ou: 'exploit',
+      dinder: 'freddy-fazbear', forme: 'masque', c: ['#a8582a', '#d89a62', '#3a1a0a', '#7fd0e8'],
+      indice: 'Tenir la sixième nuit jusqu’à 6 h.',
+      texte: 'Une tête vide, à enfiler. Ils ne s’en prennent pas à ce qui leur ressemble. Du moins, c’est ce qu’on raconte.' }
   ];
 
   var PAR_ID = {};
@@ -471,6 +508,58 @@
       for (var y = 0; y < 8; y++) { var w = 6 - Math.floor(y * 0.7); d.p(12 - w, 4 + y, w * 2, 1, c[1]); d.p(12 - w, 19 - y, w * 2, 1, c[1]); }
       for (y = 0; y < 3; y++) d.p(10 + y, 16 + y - 2, 4 - y * 2 > 0 ? 4 - y * 2 : 1, 1, c[3]);
       d.p(9, 17, 6, 2, c[3]); d.p(11, 11, 2, 2, c[3]);
+    },
+
+    // ---------- Spookinder ----------
+    // Un cupcake rose, sa bougie, et deux yeux qui ne clignent pas.
+    cupcake: function (d, c) {
+      d.p(11, 2, 2, 3, '#ffd040'); d.p(11, 5, 2, 4, c[3]);
+      d.disque(12, 12, 6, c[0]); d.p(6, 12, 13, 2, c[0]);
+      d.p(8, 10, 2, 2, '#ffffff'); d.p(14, 10, 2, 2, '#ffffff');
+      d.p(9, 11, 1, 1, '#1a1014'); d.p(15, 11, 1, 1, '#1a1014');
+      for (var i = 0; i < 6; i++) d.p(6 + i * 2, 14, 2, 7, i % 2 ? c[2] : c[1]);
+      d.p(6, 21, 12, 1, c[2]);
+    },
+    // Un micro a l'ancienne, grille ronde et manche.
+    micro: function (d, c) {
+      d.disque(14, 7, 5, c[2]); d.disque(14, 7, 4, c[0]);
+      for (var i = 0; i < 3; i++) d.p(11 + i * 2, 5, 1, 5, c[2]);
+      d.p(13, 4, 2, 1, c[1]);
+      d.ligne(11, 11, 5, 20, 3, c[3]); d.ligne(11, 11, 6, 19, 1, c[1]);
+    },
+    // Un crochet de pirate, rouille au creux de la courbe.
+    crochet: function (d, c) {
+      d.p(8, 17, 9, 5, c[3]); d.p(8, 17, 9, 1, c[2]);
+      d.p(11, 5, 3, 12, c[0]);
+      d.p(7, 3, 6, 2, c[0]); d.p(5, 5, 3, 6, c[0]); d.p(7, 10, 2, 2, c[0]);
+      d.p(12, 6, 1, 8, c[1]); d.p(7, 11, 1, 1, c[1]); d.p(6, 4, 2, 2, c[2]);
+    },
+    // Une corde de guitare enroulee, et son mediator rouge.
+    corde: function (d, c) {
+      d.anneau(11, 11, 8, 7, c[0]); d.anneau(11, 11, 6, 5, c[1]);
+      d.ligne(17, 6, 21, 2, 1, c[0]);
+      d.p(14, 14, 6, 6, c[3]); d.p(15, 19, 4, 2, c[3]); d.p(15, 15, 2, 2, '#ffffff');
+    },
+    // Le badge du gardien de nuit, une etoile sur un ecusson.
+    badge: function (d, c) {
+      d.p(5, 3, 14, 15, c[2]); d.p(6, 4, 12, 13, c[0]);
+      d.p(8, 17, 8, 2, c[2]); d.p(10, 19, 4, 2, c[2]);
+      d.p(11, 6, 2, 9, c[1]); d.p(7, 9, 10, 2, c[1]); d.p(9, 12, 2, 3, c[1]); d.p(13, 12, 2, 3, c[1]);
+      d.p(7, 5, 2, 1, '#ffffff');
+    },
+    // Une cassette, ses deux bobines et l'etiquette griffonnee.
+    cassette: function (d, c) {
+      d.p(2, 6, 20, 13, c[2]); d.p(3, 7, 18, 11, c[0]);
+      d.p(5, 8, 14, 5, c[1]);
+      d.anneau(8, 11, 2, 1, c[3]); d.anneau(16, 11, 2, 1, c[3]);
+      d.p(6, 15, 12, 2, c[2]); d.p(6, 9, 5, 1, c[3]);
+    },
+    // Une coupure de journal, pliee, au titre noirci.
+    journal: function (d, c) {
+      d.p(4, 3, 16, 19, c[2]); d.p(4, 3, 15, 18, c[0]);
+      d.p(6, 5, 11, 3, c[3]);
+      for (var i = 0; i < 5; i++) d.p(6, 10 + i * 2, i === 2 ? 6 : 11, 1, c[1]);
+      d.p(13, 13, 4, 5, c[1]); d.p(15, 3, 4, 4, c[2]);
     }
   };
 
@@ -739,7 +828,7 @@
     var n = trouves().length;
     var tete = el('div', 'art-tete');
     tete.appendChild(el('p', 'art-intro',
-      'Des reliques de l’histoire des Dinders, cachées dans les trois mini-jeux.'));
+      'Des reliques de l’histoire des Dinders, cachées dans les mini-jeux.'));
     var jauge = el('div', 'art-jauge');
     var plein = el('div', 'art-jauge-plein');
     plein.style.width = (n / LISTE.length * 100).toFixed(1) + '%';

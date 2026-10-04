@@ -1807,6 +1807,85 @@ body[data-phase="welcome"] .lock-welcome {
     0 0 calc(12 * var(--px)) rgba(199, 125, 255, .55);
 }
 
+/* ---------- Les series ----------
+   Une case de personnage de serie (Gaming Legends...) ne tient pas en
+   place : un reflet la traverse sans fin, et son cadre respire entre le
+   violet et l'orange. */
+
+.slot.slot--anime {
+  background:
+    linear-gradient(115deg,
+      transparent 30%,
+      rgba(255, 255, 255, .16) 42%, rgba(255, 220, 255, .26) 47%, rgba(255, 255, 255, .16) 52%,
+      transparent 64%) 0 0 / 260% 100% no-repeat,
+    radial-gradient(120% 140% at 15% 50%, rgba(255, 138, 30, .22), transparent 60%),
+    linear-gradient(180deg, #6a2bb0 0%, #5a1f9e 55%, #461585 100%);
+  animation:
+    slot-reflet 3.6s ease-in-out infinite,
+    slot-respire 2.8s ease-in-out infinite;
+}
+
+@keyframes slot-reflet {
+  0%   { background-position: 160% 0, 0 0, 0 0; }
+  60%  { background-position: -60% 0, 0 0, 0 0; }
+  100% { background-position: -60% 0, 0 0, 0 0; }
+}
+
+@keyframes slot-respire {
+  0%, 100% { box-shadow:
+      inset 0 0 0 calc(11 * var(--px)) #c77dff,
+      inset 0 0 calc(18 * var(--px)) calc(12 * var(--px)) rgba(199, 125, 255, .45),
+      0 0 calc(10 * var(--px)) rgba(199, 125, 255, .3); }
+  50%      { box-shadow:
+      inset 0 0 0 calc(11 * var(--px)) #ffb060,
+      inset 0 0 calc(24 * var(--px)) calc(14 * var(--px)) rgba(255, 138, 30, .4),
+      0 0 calc(26 * var(--px)) rgba(255, 138, 30, .55); }
+}
+
+/* La tete flotte un peu, elle aussi. */
+.slot.slot--anime .slot-face { animation: slot-flotte 3.2s ease-in-out infinite; }
+
+@keyframes slot-flotte {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(calc(-6 * var(--px))) rotate(2deg); }
+}
+
+/* L'etiquette de serie, sous le nom. */
+.slot-serie {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--px));
+  align-self: flex-start;
+  margin-top: calc(2 * var(--px));
+  padding: calc(4 * var(--px)) calc(12 * var(--px));
+  border: calc(3 * var(--px)) solid rgba(255, 176, 96, .85);
+  border-radius: calc(10 * var(--px));
+  background: rgba(30, 6, 40, .7);
+  font-size: calc(22 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(1 * var(--px));
+  line-height: 1;
+  white-space: nowrap;
+  color: #ffd8a8;
+  text-shadow: 0 0 calc(8 * var(--px)) rgba(255, 138, 30, .6);
+}
+
+.slot-serie-mot {
+  font-size: calc(15 * var(--px));
+  font-weight: 400;
+  letter-spacing: calc(2 * var(--px));
+  text-transform: uppercase;
+  color: rgba(255, 216, 168, .65);
+}
+
+.slot--manquant .slot-serie { opacity: .7; }
+
+.fiche-line--serie .fiche-value { color: #ffb060; }
+
+@media (prefers-reduced-motion: reduce) {
+  .slot.slot--anime, .slot.slot--anime .slot-face { animation: none; }
+}
+
 /* L'etiquette Exclusif luit comme une braise. */
 .slot-rarity[data-rarity="exclusif"],
 .fiche-value[data-rarity="exclusif"] {

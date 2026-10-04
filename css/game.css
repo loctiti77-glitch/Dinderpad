@@ -7106,12 +7106,13 @@ body.is-locked .pad-titre { display: none; }
   background: #000;
 }
 
+/* La toile est dessinee a trois fois la resolution du decor : on la
+   laisse se lisser normalement, le pixel du decor y est deja grossi. */
 .spk-cv {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  image-rendering: pixelated;
 }
 
 /* ---------- Le bandeau ---------- */
@@ -7372,10 +7373,74 @@ body.is-locked .pad-titre { display: none; }
 .spk-peur.is-on { display: flex; animation: spk-secousse .09s linear infinite; }
 
 .spk-peur-img {
+  position: absolute;
   width: 70%;
   height: 120%;
   object-fit: contain;
   animation: spk-fonce 1.5s cubic-bezier(.1, .9, .2, 1) forwards;
+}
+
+/* Les deux fantomes de couleur, decales et qui tremblent a contretemps. */
+.spk-peur-img--r, .spk-peur-img--c {
+  mix-blend-mode: screen;
+  opacity: .75;
+}
+
+.spk-peur-img--r {
+  filter: sepia(1) saturate(8) hue-rotate(-50deg) brightness(.9);
+  animation: spk-fonce 1.5s cubic-bezier(.1, .9, .2, 1) forwards,
+             spk-decale-r .07s steps(2, end) infinite;
+}
+
+.spk-peur-img--c {
+  filter: sepia(1) saturate(6) hue-rotate(140deg) brightness(.8);
+  animation: spk-fonce 1.5s cubic-bezier(.1, .9, .2, 1) forwards,
+             spk-decale-c .09s steps(2, end) infinite;
+}
+
+@keyframes spk-decale-r {
+  0%   { translate: calc(-14 * var(--px)) calc(4 * var(--px)); }
+  100% { translate: calc(-6 * var(--px)) calc(-6 * var(--px)); }
+}
+
+@keyframes spk-decale-c {
+  0%   { translate: calc(12 * var(--px)) calc(-4 * var(--px)); }
+  100% { translate: calc(5 * var(--px)) calc(7 * var(--px)); }
+}
+
+/* Le sang qui degouline du haut de l'ecran, pendant que la tete arrive. */
+.spk-peur-sang {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  transform-origin: 50% 0;
+  transform: scaleY(0);
+  animation: spk-degouline 1.3s .12s cubic-bezier(.3, .1, .6, 1) forwards;
+}
+
+@keyframes spk-degouline {
+  0%   { transform: scaleY(0); }
+  100% { transform: scaleY(1.15); }
+}
+
+/* La neige qui avale tout, une fois la tete arrivee. */
+.spk-peur-neige {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .09) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .25) 0 2px, transparent 2px 5px);
+  mix-blend-mode: overlay;
+  opacity: 0;
+  animation: spk-neige-peur 1.5s steps(6, end) forwards;
+}
+
+@keyframes spk-neige-peur {
+  0%, 50% { opacity: 0; }
+  60%     { opacity: .9; }
+  70%     { opacity: .4; }
+  100%    { opacity: 1; background-color: rgba(120, 120, 120, .6); }
 }
 
 @keyframes spk-fonce {

@@ -151,7 +151,8 @@
       return true;
     }
 
-    function bruit(t0, duree, filtre, freq, vol, q) {
+    // sortie : ou brancher le son (le maitre par defaut, ou un panoramique).
+    function bruit(t0, duree, filtre, freq, vol, q, sortie) {
       var s = ac.createBufferSource();
       s.buffer = bruitBuf;
       s.loop = true;
@@ -161,12 +162,12 @@
       g.gain.setValueAtTime(0.0001, t0);
       g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + duree);
-      s.connect(f); f.connect(g); g.connect(maitre);
+      s.connect(f); f.connect(g); g.connect(sortie || maitre);
       s.start(t0, Math.random()); s.stop(t0 + duree + 0.05);
       return { f: f, g: g };
     }
 
-    function ton(t0, duree, type, freq, vol, glisse) {
+    function ton(t0, duree, type, freq, vol, glisse, sortie) {
       var o = ac.createOscillator();
       o.type = type; o.frequency.setValueAtTime(freq, t0);
       if (glisse) o.frequency.exponentialRampToValueAtTime(glisse, t0 + duree);
@@ -174,8 +175,18 @@
       g.gain.setValueAtTime(0.0001, t0);
       g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + duree);
-      o.connect(g); g.connect(maitre);
+      o.connect(g); g.connect(sortie || maitre);
       o.start(t0); o.stop(t0 + duree + 0.05);
+    }
+
+    // Un son place a gauche (-1) ou a droite (1) : on entend de quel cote
+    // ca vient, et c'est bien pire.
+    function cote(pan) {
+      if (!pan || !ac.createStereoPanner) return maitre;
+      var p = ac.createStereoPanner();
+      p.pan.value = pan;
+      p.connect(maitre);
+      return p;
     }
 
     function ok() { return pret() && ac.state !== 'closed'; }
@@ -225,27 +236,52 @@
         if (!ok()) return;
         ton(ac.currentTime, 0.03, 'square', 2600, 0.04);
       },
-      pas: function (vol) {
+      pas: function (vol, pan) {
         if (!ok()) return;
-        var t = ac.currentTime;
+        var t = ac.currentTime, o = cote(pan);
         for (var i = 0; i < 3; i++) {
-          bruit(t + i * 0.42, 0.14, 'lowpass', 300, 0.25 * (vol || 1));
-          ton(t + i * 0.42, 0.14, 'sine', 70, 0.25 * (vol || 1), 50);
+          bruit(t + i * 0.42, 0.14, 'lowpass', 300, 0.25 * (vol || 1), 1, o);
+          ton(t + i * 0.42, 0.14, 'sine', 70, 0.25 * (vol || 1), 50, o);
         }
       },
-      souffle: function () {
+      // Une respiration mecanique, tout pres, derriere le mur.
+      souffle: function (pan) {
         if (!ok()) return;
-        var t = ac.currentTime;
-        var n = bruit(t, 1.6, 'bandpass', 700, 0.18, 2);
-        n.f.frequency.linearRampToValueAtTime(380, t + 1.6);
+        var t = ac.currentTime, o = cote(pan);
+        [0, 1.9].forEach(function (d) {
+          var n = bruit(t + d, 1.6, 'bandpass', 700, 0.2, 2, o);
+          n.f.frequency.setValueAtTime(700, t + d);
+          n.f.frequency.linearRampToValueAtTime(360, t + d + 1.6);
+        });
+        ton(t, 3.4, 'sawtooth', 46, 0.05, 40, o);
       },
-      coups: function () {
+      coups: function (pan) {
         if (!ok()) return;
-        var t = ac.currentTime;
+        var t = ac.currentTime, o = cote(pan);
         for (var i = 0; i < 4; i++) {
-          bruit(t + i * 0.2, 0.16, 'lowpass', 600, 0.6);
-          ton(t + i * 0.2, 0.2, 'sine', 80, 0.5, 45);
+          bruit(t + i * 0.2, 0.16, 'lowpass', 600, 0.6, 1, o);
+          ton(t + i * 0.2, 0.2, 'sine', 80, 0.5, 45, o);
         }
+      },
+      // Des ongles de metal contre le rideau de fer, de haut en bas.
+      griffe: function (pan) {
+        if (!ok()) return;
+        var t = ac.currentTime, o = cote(pan);
+        for (var i = 0; i < 3; i++) {
+          var n = bruit(t + i * 0.5, 0.42, 'bandpass', 3200, 0.22, 14, o);
+          n.f.frequency.setValueAtTime(hasard(2600, 3600), t + i * 0.5);
+          n.f.frequency.linearRampToValueAtTime(hasard(900, 1400), t + i * 0.5 + 0.4);
+        }
+        ton(t, 0.2, 'sine', 70, 0.3, 45, o);
+      },
+      // Le coup de poignard sonore d'une vision : un accord faux et un cri
+      // de metal, tres court.
+      vision: function () {
+        if (!ok()) return;
+        var t = ac.currentTime;
+        [311, 330, 466, 622].forEach(function (f) { ton(t, 0.35, 'sawtooth', f, 0.07, f * 0.94); });
+        bruit(t, 0.3, 'highpass', 2500, 0.3);
+        ton(t, 0.5, 'sine', 48, 0.4, 30);
       },
       course: function () {
         if (!ok()) return;
@@ -572,23 +608,170 @@
     freddy: { id: 'freddy-fazbear',      nom: 'Freddy', tous: 3.02 }
   };
 
+  // Les animatroniques ne sont pas des sprites : ce sont les rendus en pied
+  // (800 x 1200), plonges dans le noir et eclaires par la piece.
   var IMG = {};
   function charger() {
-    Object.keys(PERSOS).forEach(function (k) {
+    Object.keys(PERSOS).concat(['golden']).forEach(function (k) {
       if (IMG[k]) return;
       var im = new Image();
-      im.src = DP.sprite(PERSOS[k].id);
+      im.src = DP.dinderFull(k === 'golden' ? 'golden-freddy' : PERSOS[k].id);
       IMG[k] = im;
     });
-    if (!IMG.golden) {
-      IMG.golden = new Image();
-      IMG.golden.src = DP.sprite('golden-freddy');
-    }
   }
 
-  // Le code des toilettes : deux coups sur la porte 4, trois sur la 3,
-  // sept sur la 2. Rien a l'ecran ne le suggere.
-  var CODE = [4, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2];
+  // Ou sont les yeux sur chaque rendu, en pixels de l'image : c'est la
+  // qu'on allume la lueur qui transperce le noir. Foxy n'en a qu'un, l'autre
+  // est sous le bandeau.
+  var YEUX = {
+    freddy: { pts: [[424, 200], [486, 200]], col: '220,240,255' },
+    bonnie: { pts: [[344, 256], [416, 256]], col: '255,40,80' },
+    chica:  { pts: [[366, 190], [466, 190]], col: '255,90,210' },
+    foxy:   { pts: [[460, 206]],             col: '255,200,40' }
+  };
+
+  // La bouche de chaque rendu : x du milieu, y, largeur. C'est de la que
+  // le sang coule.
+  var BOUCHES = {
+    freddy: [450, 276, 110], bonnie: [395, 372, 150],
+    chica: [425, 282, 100], foxy: [425, 312, 100]
+  };
+
+  // Un hasard qui rend toujours la meme suite pour une meme graine : les
+  // taches de sang d'un animatronique restent les memes d'une nuit a l'autre.
+  function graine(n) {
+    n = n >>> 0;
+    return function () {
+      n = (n * 1664525 + 1013904223) >>> 0;
+      return n / 4294967296;
+    };
+  }
+
+  // Une coulure : une trainee qui s'amincit en descendant, en ondulant un
+  // peu, et une goutte ronde au bout.
+  function coulure(x, X, Y, larg, long, hz) {
+    var pas = 6, w = larg;
+    x.beginPath();
+    x.moveTo(X - w / 2, Y);
+    var pts = [];
+    for (var d = 0; d <= long; d += pas) {
+      var k = d / long;
+      pts.push([X + Math.sin(d / 40 + hz) * 3 * k, Y + d, w * (1 - k * 0.55)]);
+    }
+    pts.forEach(function (p) { x.lineTo(p[0] - p[2] / 2, p[1]); });
+    for (var i = pts.length - 1; i >= 0; i--) x.lineTo(pts[i][0] + pts[i][2] / 2, pts[i][1]);
+    x.closePath();
+    x.fill();
+    var bout = pts[pts.length - 1];
+    x.beginPath();
+    x.ellipse(bout[0], bout[1] + bout[2] * 0.4, bout[2] * 0.75, bout[2] * 0.95, 0, 0, Math.PI * 2);
+    x.fill();
+  }
+
+  // Le sang d'un animatronique, peint une fois a la taille du rendu
+  // (800 x 1200) : des larmes rouges sous les yeux, la bouche qui deborde,
+  // et des eclaboussures sur le torse. On le pose ensuite sur la seule
+  // silhouette.
+  var SANG = {};
+  function sang(qui) {
+    if (SANG[qui]) return SANG[qui];
+    var Y_ = YEUX[qui], B = BOUCHES[qui];
+    if (!Y_ || !B) return null;
+    var c = document.createElement('canvas');
+    c.width = 800; c.height = 1200;
+    var x = c.getContext('2d');
+    var h = graine(qui.length * 7919 + qui.charCodeAt(0));
+
+    // La bouche : une flaque sombre, des dents trempees, des coulures.
+    x.fillStyle = 'rgba(70,0,0,.85)';
+    x.beginPath();
+    x.ellipse(B[0], B[1] + 6, B[2] * 0.62, 24, 0, 0, Math.PI * 2);
+    x.fill();
+    x.fillStyle = 'rgba(110,4,4,.9)';
+    for (var i = 0; i < 7; i++) {
+      coulure(x, B[0] - B[2] / 2 + h() * B[2], B[1] + 4, 6 + h() * 12, 80 + h() * 320, h() * 6);
+    }
+
+    // Les yeux : des larmes, deux ou trois par oeil.
+    Y_.pts.forEach(function (p) {
+      x.fillStyle = 'rgba(90,0,0,.7)';
+      x.beginPath(); x.ellipse(p[0], p[1] + 4, 22, 14, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = 'rgba(120,6,6,.92)';
+      var n = 2 + Math.floor(h() * 2);
+      for (var j = 0; j < n; j++) {
+        coulure(x, p[0] - 10 + h() * 20, p[1] + 10, 4 + h() * 6, 60 + h() * 200, h() * 6);
+      }
+    });
+
+    // Les eclaboussures, sur le torse surtout.
+    for (var s = 0; s < 46; s++) {
+      var ex = B[0] + (h() - 0.5) * 420, ey = B[1] + 60 + h() * 520;
+      var rr = 2 + Math.pow(h(), 2.4) * 22;
+      x.fillStyle = 'rgba(' + (80 + Math.floor(h() * 60)) + ',0,0,' + (0.55 + h() * 0.4).toFixed(2) + ')';
+      x.beginPath(); x.ellipse(ex, ey, rr, rr * (0.6 + h() * 0.8), h() * 3, 0, Math.PI * 2); x.fill();
+      if (rr > 10) coulure(x, ex, ey, rr * 0.5, 30 + h() * 120, h() * 6);
+    }
+
+    // Un reflet humide sur les coulures, pour qu'elles aient l'air fraiches.
+    x.globalCompositeOperation = 'source-atop';
+    var g = x.createLinearGradient(0, 0, 800, 0);
+    g.addColorStop(0, 'rgba(255,90,90,0)');
+    g.addColorStop(0.48, 'rgba(255,90,90,.18)');
+    g.addColorStop(0.52, 'rgba(255,90,90,0)');
+    x.fillStyle = g;
+    x.fillRect(0, 0, 800, 1200);
+
+    SANG[qui] = c;
+    return c;
+  }
+
+  // Une empreinte de main, a plat : la paume et quatre doigts qui glissent.
+  function empreinte(x, X, Y, ech, angle, coul) {
+    x.save();
+    x.translate(X, Y);
+    x.rotate(angle);
+    x.scale(ech, ech);
+    x.fillStyle = coul;
+    x.beginPath(); x.ellipse(0, 0, 5, 6, 0, 0, Math.PI * 2); x.fill();
+    [[-4.5, -7, 1.4, 6], [-1.6, -9, 1.5, 7], [1.4, -8.6, 1.5, 7], [4.2, -6.4, 1.3, 5.5], [6, 0, 1.4, 4]]
+      .forEach(function (d, i) {
+        x.beginPath();
+        x.ellipse(d[0], d[1], d[2], d[3] / 2, i === 4 ? 1.1 : 0, 0, Math.PI * 2);
+        x.fill();
+      });
+    // Les doigts qui ont glisse vers le bas.
+    x.fillRect(-5, 4, 1.2, 9); x.fillRect(-1.5, 5, 1.1, 13); x.fillRect(2, 4, 1.2, 7);
+    x.restore();
+  }
+
+  // Le rideau de sang du jumpscare : des coulures qui partent du haut de
+  // l'ecran. Peint une fois, garde en memoire.
+  var RIDEAU = '';
+  function rideauDeSang() {
+    if (RIDEAU) return RIDEAU;
+    var c = document.createElement('canvas');
+    c.width = 640; c.height = 420;
+    var x = c.getContext('2d');
+    var h = graine(666);
+    x.fillStyle = 'rgba(110,0,0,.95)';
+    x.fillRect(0, 0, 640, 18);
+    for (var i = 0; i < 46; i++) {
+      x.fillStyle = 'rgba(' + (90 + Math.floor(h() * 70)) + ',0,0,.92)';
+      coulure(x, h() * 640, 10, 6 + h() * 22, 40 + Math.pow(h(), 1.6) * 360, h() * 6);
+    }
+    RIDEAU = c.toDataURL('image/png');
+    return RIDEAU;
+  }
+
+  // Le cadrage serre sur la tete et les epaules, pris dans le rendu en pied.
+  var GROS_PLAN = [160, 0, 480, 480];
+
+  // Le code des toilettes : un coup sur la porte 1, neuf sur la 2, huit sur
+  // la 3, cinq sur la 4. Rien a l'ecran ne le suggere.
+  var CODE = [1].concat(
+    [2, 2, 2, 2, 2, 2, 2, 2, 2],
+    [3, 3, 3, 3, 3, 3, 3, 3],
+    [4, 4, 4, 4, 4]);
 
   function pret(im) { return im && im.complete && im.naturalWidth > 0; }
 
@@ -757,13 +940,22 @@
     return t;
   }
 
+  // ==========================================================
+  //  L'image, en vraie resolution
+  //  Le decor reste peint a 320 x 210, mais la toile affichee est trois
+  //  fois plus fine : les animatroniques, la lumiere et le grain y gagnent
+  //  leur realisme. On dessine en coordonnees de decor, mises a l'echelle.
+  // ==========================================================
+
+  var S = 3, CW = W * S, CH = H * S;
+
   // Le grain de la camera : quelques planches de bruit tirees d'avance.
   var GRAINS = [];
   function grains() {
     if (GRAINS.length) return GRAINS;
     for (var g = 0; g < 4; g++) {
-      var t = toile(W, H);
-      var img = t.x.createImageData(W, H);
+      var t = toile(CW / 2, CH / 2);
+      var img = t.x.createImageData(CW / 2, CH / 2);
       for (var i = 0; i < img.data.length; i += 4) {
         var v = Math.random() * 255;
         img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
@@ -775,25 +967,151 @@
     return GRAINS;
   }
 
+  // Les lignes de balayage et le vignettage, a la resolution de l'ecran.
+  var VOILES = null;
+  function voiles() {
+    if (VOILES) return VOILES;
+    var lignes = toile(CW, CH);
+    lignes.x.fillStyle = 'rgba(0,0,0,.28)';
+    for (var y = 0; y < CH; y += 3) lignes.x.fillRect(0, y, CW, 1);
+    var vig = toile(CW, CH);
+    var g = vig.x.createRadialGradient(CW / 2, CH / 2, CH * 0.3, CW / 2, CH / 2, CW * 0.62);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,.92)');
+    vig.x.fillStyle = g;
+    vig.x.fillRect(0, 0, CW, CH);
+    VOILES = { lignes: lignes.c, vig: vig.c };
+    return VOILES;
+  }
+
   // Ou se tiennent les animatroniques dans chaque piece : x du centre,
-  // y des pieds, echelle du sprite (64 x 80).
+  // y du bas, hauteur, et 'tete' pour un gros plan qui fixe l'objectif.
+  // Plus on est pres de la porte, plus ils sont pres de la camera.
   var POSES = {
-    '1A': { bonnie: [90, 136, 1.15], freddy: [160, 132, 1.25], chica: [230, 136, 1.15] },
-    '1B': { bonnie: [70, 178, 1.0], chica: [250, 182, 1.05], freddy: [160, 150, 0.9] },
-    '5':  { bonnie: [150, 230, 2.6] },
-    '7':  { chica: [130, 190, 1.4], freddy: [210, 186, 1.3] },
-    '3':  { bonnie: [160, 210, 2.0] },
-    '2A': { bonnie: [160, 150, 0.85] },
-    '4A': { chica: [150, 150, 0.85], freddy: [175, 148, 0.8] },
-    '2B': { bonnie: [200, 250, 2.9] },
-    '4B': { chica: [120, 250, 2.9], freddy: [210, 240, 2.6] }
+    '1A': { bonnie: [95, 140, 104], freddy: [160, 138, 112], chica: [226, 140, 104] },
+    '1B': { bonnie: [62, 196, 96], chica: [258, 200, 100], freddy: [160, 158, 66] },
+    '5':  { bonnie: [168, 236, 250, 'tete'] },
+    '7':  { chica: [118, 206, 122], freddy: [214, 202, 118] },
+    '3':  { bonnie: [168, 290, 280] },
+    '2A': { bonnie: [160, 146, 56] },
+    '4A': { chica: [148, 146, 56], freddy: [176, 144, 54] },
+    '2B': { bonnie: [206, 262, 250, 'tete'] },
+    '4B': { chica: [112, 262, 240, 'tete'], freddy: [218, 252, 220, 'tete'] }
   };
 
-  function sprite(x, qui, cx, pied, ech) {
+  // D'ou vient la lumiere dans chaque piece : x, y, portee. Hors de ce
+  // halo, le noir mange tout.
+  var LUMIERES = {
+    '1A': [160, 30, 190], '1B': [150, 60, 170], '1C': [160, 70, 150],
+    '5': [120, 40, 140], '7': [160, 20, 170], '3': [150, 10, 110],
+    '2A': [160, 60, 120], '4A': [160, 60, 120], '2B': [90, 30, 150], '4B': [230, 30, 150]
+  };
+
+  var tampon = document.createElement('canvas');
+
+  // Un animatronique dans la piece : son rendu, assombri de haut en bas
+  // comme s'il etait eclaire d'au-dessus, et ses yeux qui luisent.
+  // o : { lum (0 a 1), yeux (0 a 1), tic ({ dx, dy, a }), cadre: [sx, sy, sw, sh] }
+  function perso(x, qui, cx, bas, h, o) {
     var im = IMG[qui];
     if (!pret(im)) return;
-    var w = Math.round(64 * ech), h = Math.round(80 * ech);
-    x.drawImage(im, Math.round(cx - w / 2), Math.round(pied - h), w, h);
+    o = o || {};
+    var src = o.cadre || [0, 0, im.naturalWidth, im.naturalHeight];
+    var w = h * src[2] / src[3];
+    var pw = Math.max(1, Math.round(w * S)), ph = Math.max(1, Math.round(h * S));
+    tampon.width = pw; tampon.height = ph;
+    var t = tampon.getContext('2d');
+    t.drawImage(im, src[0], src[1], src[2], src[3], 0, 0, pw, ph);
+    // Le sang, pose sur la seule silhouette. o.sang : de 0 (propre) a 1.
+    var sg = o.sang == null ? 0.75 : o.sang;
+    var couche = sg > 0 && sang(qui);
+    if (couche) {
+      t.globalCompositeOperation = 'source-atop';
+      t.globalAlpha = sg;
+      t.drawImage(couche, src[0], src[1], src[2], src[3], 0, 0, pw, ph);
+      t.globalAlpha = 1;
+    }
+    // L'ombre, posee seulement sur la silhouette.
+    var lum = o.lum == null ? 0.5 : o.lum;
+    t.globalCompositeOperation = 'source-atop';
+    var g = t.createLinearGradient(0, 0, 0, ph);
+    g.addColorStop(0, 'rgba(4,6,10,' + (0.55 - lum * 0.45).toFixed(2) + ')');
+    g.addColorStop(0.55, 'rgba(4,6,10,' + (0.8 - lum * 0.45).toFixed(2) + ')');
+    g.addColorStop(1, 'rgba(2,3,6,.96)');
+    t.fillStyle = g;
+    t.fillRect(0, 0, pw, ph);
+    t.globalCompositeOperation = 'source-over';
+
+    var X = cx - w / 2, Y = bas - h;
+    x.save();
+    if (o.tic) {
+      x.translate(cx + o.tic.dx, bas - h * 0.6 + o.tic.dy);
+      x.rotate(o.tic.a);
+      x.translate(-cx, -(bas - h * 0.6));
+    }
+    x.imageSmoothingEnabled = true;
+    x.drawImage(tampon, X, Y, w, h);
+    x.imageSmoothingEnabled = false;
+
+    // o.gouttes (le temps qui passe) : des gouttes qui se detachent de la
+    // machoire et tombent, sans fin.
+    var B = BOUCHES[qui];
+    if (o.gouttes != null && B && B[1] >= src[1] && B[1] <= src[1] + src[3]) {
+      var bx = X + (B[0] - src[0]) / src[2] * w, by = Y + (B[1] + 20 - src[1]) / src[3] * h;
+      var rg = Math.max(0.5, 6 / src[2] * w);
+      for (var i = 0; i < 4; i++) {
+        var ph = (o.gouttes * 0.7 + i * 0.29) % 1;
+        var gx = bx + (i - 1.5) * (B[2] / src[2] * w) * 0.28;
+        var gy = by + ph * ph * h * 0.45;
+        x.fillStyle = 'rgba(150,6,6,' + (0.95 - ph * 0.6).toFixed(2) + ')';
+        x.beginPath();
+        x.ellipse(gx, gy, rg * 0.7, rg * (1 + ph), 0, 0, Math.PI * 2);
+        x.fill();
+      }
+    }
+
+    // Les yeux : deux points de lumiere qui ne clignent pas. Avec
+    // o.lueurs, on les met de cote pour les poser plus tard, par-dessus le
+    // traitement de l'image.
+    var Y_ = YEUX[qui], force = o.yeux == null ? 0.7 : o.yeux;
+    if (Y_ && force > 0) {
+      x.globalCompositeOperation = 'lighter';
+      Y_.pts.forEach(function (p) {
+        if (p[0] < src[0] || p[0] > src[0] + src[2] || p[1] < src[1] || p[1] > src[1] + src[3]) return;
+        var ex = X + (p[0] - src[0]) / src[2] * w, ey = Y + (p[1] - src[1]) / src[3] * h;
+        // La taille d'une pupille sur le rendu (une dizaine de pixels),
+        // ramenee a l'echelle : un point qui luit, pas un phare.
+        var rr = Math.max(0.6, 9 / src[2] * w);
+        if (o.lueurs) {
+          o.lueurs.push({ x: ex + (o.tic ? o.tic.dx : 0), y: ey + (o.tic ? o.tic.dy : 0),
+                          r: rr, f: force, col: Y_.col });
+          return;
+        }
+        lueur(x, { x: ex, y: ey, r: rr, f: force, col: Y_.col });
+      });
+    }
+    x.restore();
+  }
+
+  // Un oeil qui luit : un coeur blanc, la couleur de l'animatronique autour,
+  // et un halo court. A poser en mode 'lighter'.
+  function lueur(x, l) {
+    var gl = x.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r * 2.2);
+    gl.addColorStop(0, 'rgba(255,255,255,' + l.f + ')');
+    gl.addColorStop(0.3, 'rgba(' + l.col + ',' + (l.f * 0.8).toFixed(2) + ')');
+    gl.addColorStop(0.6, 'rgba(' + l.col + ',' + (l.f * 0.22).toFixed(2) + ')');
+    gl.addColorStop(1, 'rgba(' + l.col + ',0)');
+    x.fillStyle = gl;
+    x.fillRect(l.x - l.r * 2.2, l.y - l.r * 2.2, l.r * 4.4, l.r * 4.4);
+  }
+
+  // Le noir autour d'une source de lumiere : clair au centre, opaque loin.
+  function obscurite(x, lx, ly, portee, fond) {
+    var g = x.createRadialGradient(lx, ly, portee * 0.15, lx, ly, portee);
+    g.addColorStop(0, 'rgba(0,0,0,' + (fond * 0.25).toFixed(2) + ')');
+    g.addColorStop(1, 'rgba(0,0,0,' + fond.toFixed(2) + ')');
+    x.fillStyle = g;
+    x.fillRect(0, 0, W, H);
   }
 
   // ==========================================================
@@ -835,7 +1153,7 @@
   function partie(hote, nuit, quitter) {
     charger();
     var cv = el('canvas', 'spk-cv');
-    cv.width = W; cv.height = H;
+    cv.width = CW; cv.height = CH;
     var ctx = cv.getContext('2d');
     ctx.imageSmoothingEnabled = false;
     hote.appendChild(cv);
@@ -899,9 +1217,19 @@
 
     // Le jumpscare : la tete, en grand, qui fonce sur l'ecran.
     var peur = el('div', 'spk-peur');
-    var peurImg = el('img', 'spk-peur-img');
-    peurImg.alt = '';
-    peur.appendChild(peurImg);
+    // Trois fois la meme tete : une rouge, une cyan, decalees et
+    // tremblantes, et la vraie par-dessus. Puis de la neige.
+    var peurImgs = ['spk-peur-img spk-peur-img--r', 'spk-peur-img spk-peur-img--c', 'spk-peur-img']
+      .map(function (cls) {
+        var im = el('img', cls);
+        im.alt = '';
+        peur.appendChild(im);
+        return im;
+      });
+    var coulee = el('div', 'spk-peur-sang');
+    coulee.style.backgroundImage = 'url(' + rideauDeSang() + ')';
+    peur.appendChild(coulee);
+    peur.appendChild(el('div', 'spk-peur-neige'));
     hote.appendChild(peur);
 
     var carton = el('div', 'spk-carton');
@@ -919,7 +1247,14 @@
       coupsFoxy: 0,
       // Le secret : les derniers coups frappes aux cabines, et la pause
       // de la nuit pendant que Golden Freddy se montre.
-      code: [], toc: [-9, -9, -9, -9], pause: false, secretT: 0
+      code: [], toc: [-9, -9, -9, -9], pause: false, secretT: 0,
+      // Les visions : un visage qui surgit une fraction de seconde.
+      vision: null, prochaineVision: hasard(40, 70),
+      // Les tics nerveux des animatroniques, et le vacillement des neons.
+      tics: {}, vacille: 0,
+      // Le sang laisse a chaque porte par ceux qui y sont venus, et le
+      // prochain grattement contre un rideau ferme.
+      traces: { g: false, d: false }, griffe: { g: 0, d: 0 }
     };
 
     var A = {};
@@ -1006,11 +1341,13 @@
     // ---------- Les cabines des toilettes ----------
 
     function surToile(ev) {
-      if (!e.cam || e.camVue !== '7' || e.fini || e.pause) return;
+      if (!e.cam || e.fini || e.pause) return;
       var b = cv.getBoundingClientRect();
       var X = (ev.clientX - b.left) / b.width * W;
       var Y = (ev.clientY - b.top) / b.height * H;
-      if (Y < 20 || Y > 130) return;
+      // D'abord un artefact, s'il y en a un sous le doigt.
+      if (ramasserCache(X, Y)) return;
+      if (e.camVue !== '7' || Y < 20 || Y > 130) return;
       for (var i = 0; i < 4; i++) {
         if (X >= 30 + i * 70 && X <= 90 + i * 70) { frapper(i + 1); return; }
       }
@@ -1122,10 +1459,13 @@
       if (e.cam && (e.camVue === avant || e.camVue === vers)) e.glitch = 1.2;
       if (k === 'freddy') SON.rire();
       if (vers === 'PG' || vers === 'PD') {
-        SON.souffle();
+        SON.souffle(vers === 'PG' ? -0.9 : 0.9);
+        e.traces[vers === 'PG' ? 'g' : 'd'] = true;
         if (vers === 'PG') e.vusG = false; else e.vusD = false;
       } else if (vers === '2B' || vers === '4B') {
-        SON.pas(0.9);
+        SON.pas(0.9, vers === '2B' ? -0.7 : 0.7);
+      } else if (vers === '2A' || vers === '4A') {
+        SON.pas(0.35, vers === '2A' ? -0.5 : 0.5);
       } else if (vers === '6' || vers === '7') {
         if (Math.random() < 0.5) SON.casseroles();
       }
@@ -1163,7 +1503,7 @@
         if (e.t < f.courseFin) return;
         f.course = false;
         if (e.porteG) {
-          SON.coups();
+          SON.coups(-0.9);
           e.energie = Math.max(0, e.energie - (2 + e.coupsFoxy * 4));
           e.coupsFoxy++;
           f.etape = Math.random() < 0.5 ? 0 : 1;
@@ -1229,7 +1569,7 @@
       hote.classList.remove('is-cam');
       majBoutons();
       var d = DP.byId(PERSOS[k].id);
-      peurImg.src = DP.dinderImg(d.id);
+      peurImgs.forEach(function (im) { im.src = DP.dinderImg(d.id); });
       peur.classList.add('is-on');
       if (musique) musique.arreter(0.05);
       SON.cri();
@@ -1261,6 +1601,8 @@
       arreter();
       var ouvert = DP.spookinderEtat().ouvert;
       var premiere = DP.noterNuit(nuit.n);
+      // Tenir la sixieme nuit rapporte le masque.
+      if (nuit.n === 6 && window.ARTEFACTS) window.ARTEFACTS.trouver('masque-freddy');
       var gain = ouvert ? nuit.xp : 0;
       if (gain) DP.gagnerSpookXP(gain);
       if (musique) musique.arreter(1.2);
@@ -1305,45 +1647,188 @@
     // ---------- Le dessin ----------
 
     var grain = grains();
+    var voile = voiles();
+
+    // Un tic : de temps en temps, la tete part de travers une fraction de
+    // seconde. Rien de plus derangeant qu'une machine qui sursaute.
+    function tic(k) {
+      var t = e.tics[k];
+      if (t && e.t < t.fin) return t;
+      if (Math.random() < 0.012) {
+        e.tics[k] = { fin: e.t + hasard(0.08, 0.22),
+                      dx: hasard(-2, 2), dy: hasard(-1.5, 1), a: hasard(-0.05, 0.05) };
+      }
+      return null;
+    }
+
+    // A la porte, la tete ne tient jamais droite : un lent balancement,
+    // une respiration qui n'a rien a faire dans une machine, et les tics.
+    function balance(k) {
+      var t = tic(k) || { dx: 0, dy: 0, a: 0 };
+      return { dx: t.dx + Math.sin(e.t * 0.9) * 1.4,
+               dy: t.dy + Math.sin(e.t * 1.7) * 0.8,
+               a: t.a + Math.sin(e.t * 0.55) * 0.06 };
+    }
+
+    // La trainee rouge sur le carrelage du couloir, jusqu'a la porte.
+    function trainee(x0, y0, w, h) {
+      var hz = graine(x0 * 31 + 7);
+      ctx.fillStyle = 'rgba(80,4,4,.75)';
+      for (var i = 0; i < 9; i++) {
+        var k = i / 8;
+        ctx.beginPath();
+        ctx.ellipse(x0 + w * (0.35 + hz() * 0.3), y0 + h * k, 3 + hz() * 5, 1.4 + k * 2.5,
+                    hz() - 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillRect(x0 + w * 0.45, y0, 2, h);
+    }
+
+    // Les lueurs des yeux, mises de cote pour etre posees apres le
+    // traitement de l'image : elles doivent garder leur couleur.
+    function lueurs(liste) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      liste.forEach(function (l) { lueur(ctx, l); });
+      ctx.restore();
+    }
+
+    // ---------- Les artefacts caches sur les cameras ----------
+    // Chacun n'apparait qu'a certaines conditions ; un clic sur la camera
+    // le ramasse. Ils sont dans l'ombre comme le reste : il faut chercher.
+
+    var ART = window.ARTEFACTS;
+    var CACHES = [
+      { id: 'cupcake-chica', cam: '1B', x: 152, y: 116, t: 9,
+        si: function () { return A.chica.lieu !== '1B'; } },
+      { id: 'micro-freddy', cam: '1A', x: 172, y: 134, t: 9,
+        si: function () { return A.freddy.lieu !== '1A'; } },
+      { id: 'crochet-foxy', cam: '1C', x: 232, y: 176, t: 10,
+        si: function () { return A.foxy.course || A.foxy.etape >= 2; } },
+      { id: 'corde-bonnie', cam: '5', x: 244, y: 114, t: 9,
+        si: function () { return A.bonnie.lieu !== '5'; } },
+      { id: 'badge-gardien', cam: '3', x: 118, y: 25, t: 8,
+        si: function () { return heuresTenues() >= 3; } },
+      { id: 'cassette-telephone', cam: '2A', x: 64, y: 182, t: 10,
+        si: function () { return nuit.n >= 3; } },
+      { id: 'coupure-journal', cam: '4B', x: 298, y: 98, t: 11,
+        si: function () { return nuit.n >= 2 && heuresTenues() >= 4; } }
+    ];
+
+    function cachesVisibles(k) {
+      if (!ART) return [];
+      return CACHES.filter(function (c) { return c.cam === k && !ART.aTrouve(c.id) && c.si(); });
+    }
+
+    function dessinerCaches(k) {
+      cachesVisibles(k).forEach(function (c) {
+        var f = ART.feuille(c.id);
+        if (f) ctx.drawImage(f, c.x - c.t / 2, c.y - c.t / 2, c.t, c.t);
+      });
+    }
+
+    // Un reflet furtif sur l'objet, toutes les quelques secondes : assez
+    // pour qui regarde bien, pas assez pour qui passe vite.
+    function refletsCaches(k) {
+      cachesVisibles(k).forEach(function (c, i) {
+        var ph = (e.t * 0.7 + i * 0.37) % 3;
+        if (ph > 0.35) return;
+        var a = Math.sin(ph / 0.35 * Math.PI) * 0.8;
+        ctx.fillStyle = 'rgba(255,250,220,' + a.toFixed(2) + ')';
+        ctx.fillRect(c.x - 3, c.y - c.t / 2, 6, 0.6);
+        ctx.fillRect(c.x - 0.3, c.y - c.t / 2 - 3, 0.6, 6);
+      });
+    }
+
+    function ramasserCache(X, Y) {
+      var k = e.camVue;
+      var l = cachesVisibles(k);
+      for (var i = 0; i < l.length; i++) {
+        var c = l[i];
+        if (Math.abs(X - c.x) <= c.t / 2 + 3 && Math.abs(Y - c.y) <= c.t / 2 + 3) {
+          if (ART.trouver(c.id)) { SON.palier(); e.glitch = 0.5; }
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // ---------- Le bureau ----------
 
     function dessinerPorte(x0, cote, ouverte, anim, lum, present) {
       var y0 = 40, h = 112, w = 54;
+      var la = present.length > 0;
       if (lum && !e.panne) {
-        r(ctx, x0, y0, w, h, '#4a4234');
-        // Le sol du couloir, eclaire sur quelques metres.
-        for (var Y = y0 + 70; Y < y0 + h; Y += 6) {
-          for (var X = x0; X < x0 + w; X += 6) {
-            r(ctx, X, Y, 6, 6, ((X + Y) / 6) % 2 ? '#6a6458' : '#2a2620');
+        // Le couloir sous un neon froid, qui ne porte pas loin. Quand
+        // quelqu'un s'y tient, le neon gresille, rougit, et lache par
+        // moments : on le perd une fraction de seconde, et il est toujours la.
+        var lache = la && Math.random() < 0.09;
+        r(ctx, x0, y0, w, h, lache ? '#040303' : (la ? '#2a1814' : '#22221e'));
+        if (!lache) {
+          for (var Y = y0 + 70; Y < y0 + h; Y += 6) {
+            for (var X = x0; X < x0 + w; X += 6) {
+              r(ctx, X, Y, 6, 6, ((X + Y) / 6) % 2 ? (la ? '#4a3430' : '#47433a') : (la ? '#170c0a' : '#161410'));
+            }
           }
+          ctx.save();
+          ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip();
+          // La trainee sur le carrelage, la ou il est passe.
+          if (e.traces[cote]) trainee(x0, y0 + 70, w, h - 70);
+          // Celui qui attend dans l'embrasure : la tete remplit l'encadrement,
+          // elle oscille, la machoire degoutte.
+          present.forEach(function (k, i) {
+            perso(ctx, k, x0 + w / 2 + (cote === 'g' ? 2 : -2) + i * 14, y0 + 245, 250,
+                  { lum: 0.8, yeux: 1, sang: 1, gouttes: e.t, tic: balance(k) });
+          });
+          var g = ctx.createLinearGradient(0, y0, 0, y0 + h);
+          g.addColorStop(0, 'rgba(220,235,255,.10)');
+          g.addColorStop(0.6, 'rgba(0,0,0,.25)');
+          g.addColorStop(1, 'rgba(0,0,0,.75)');
+          ctx.fillStyle = g;
+          ctx.fillRect(x0, y0, w, h);
+          if (la) {
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.fillStyle = 'rgb(255,' + Math.round(hasard(120, 160)) + ',' + Math.round(hasard(110, 140)) + ')';
+            ctx.fillRect(x0, y0, w, h);
+            ctx.globalCompositeOperation = 'source-over';
+          }
+          ctx.restore();
         }
-        // Celui qui attend dans l'embrasure, cadre par le chambranle.
-        ctx.save();
-        ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip();
-        present.forEach(function (k, i) {
-          sprite(ctx, k, x0 + w / 2 + i * 8, y0 + h + 6, 1.5);
-        });
-        ctx.restore();
       } else {
-        r(ctx, x0, y0, w, h, '#030304');
+        r(ctx, x0, y0, w, h, '#020203');
+        // Sans lumiere, on ne voit rien. Presque rien.
+        if (present.length && !e.panne && (e.t * 0.9) % 7 < 0.5) {
+          var col = YEUX[present[0]].col;
+          r(ctx, x0 + w / 2 - 5, y0 + 30, 1.4, 1, 'rgba(' + col + ',.35)');
+          r(ctx, x0 + w / 2 + 4, y0 + 30, 1.4, 1, 'rgba(' + col + ',.35)');
+        }
       }
       // Le rideau de fer, qui descend.
       var hp = Math.round(h * anim);
       if (hp > 0) {
-        r(ctx, x0, y0, w, hp, '#5a5c66');
-        for (var s = y0 + 4; s < y0 + hp; s += 8) r(ctx, x0, s, w, 2, '#3a3c44');
-        r(ctx, x0, y0 + hp - 3, w, 3, '#2a2c34');
-        r(ctx, x0 + 4, y0 + hp - 8, 8, 3, '#e0c020');
-        r(ctx, x0 + w - 12, y0 + hp - 8, 8, 3, '#e0c020');
+        r(ctx, x0, y0, w, hp, '#3a3c44');
+        for (var s = y0 + 4; s < y0 + hp; s += 8) r(ctx, x0, s, w, 2, '#26282e');
+        r(ctx, x0, y0 + hp - 3, w, 3, '#1a1c22');
+        r(ctx, x0 + 4, y0 + hp - 8, 8, 3, '#8a7418');
+        r(ctx, x0 + w - 12, y0 + hp - 8, 8, 3, '#8a7418');
+        // Des mains rouges sur le rideau : il a essaye de passer.
+        if (e.traces[cote] && hp > 40) {
+          ctx.save();
+          ctx.beginPath(); ctx.rect(x0, y0, w, hp); ctx.clip();
+          empreinte(ctx, x0 + 16, y0 + hp - 34, 1, -0.2, 'rgba(90,6,6,.8)');
+          empreinte(ctx, x0 + 36, y0 + hp - 52, 0.9, 0.25, 'rgba(70,4,4,.75)');
+          ctx.restore();
+        }
       }
       // Le chambranle.
-      r(ctx, x0 - 3, y0 - 3, w + 6, 3, '#18181e');
-      r(ctx, x0 - 3, y0, 3, h, '#18181e');
-      r(ctx, x0 + w, y0, 3, h, '#18181e');
+      r(ctx, x0 - 3, y0 - 3, w + 6, 3, '#0e0e12');
+      r(ctx, x0 - 3, y0, 3, h, '#0e0e12');
+      r(ctx, x0 + w, y0, 3, h, '#0e0e12');
       // Le boitier des deux boutons, a cote de la porte.
       var bx = cote === 'g' ? x0 + w + 6 : x0 - 16;
-      r(ctx, bx, 78, 10, 30, '#2a2a30');
-      r(ctx, bx + 2, 82, 6, 8, ouverte ? '#5a1a1a' : '#ff3030');
-      r(ctx, bx + 2, 94, 6, 8, lum ? '#f0f0e0' : '#4a4a44');
+      r(ctx, bx, 78, 10, 30, '#1a1a20');
+      r(ctx, bx + 2, 82, 6, 8, ouverte ? '#3a1010' : '#ff3030');
+      r(ctx, bx + 2, 94, 6, 8, lum ? '#f0f0e0' : '#2a2a26');
     }
 
     function dessinerBureau() {
@@ -1358,15 +1843,30 @@
              r(ctx, 232, 118, 2, 2, '#8a8a92'); r(ctx, 246, 118, 2, 2, '#8a8a92');
              r(ctx, 234, 108, 12, 10, '#6a6a72'); }
 
-      // La lampe qui grisaille, et parfois vacille.
-      var vac = Math.random() < 0.02 ? 0.25 : 0;
-      ctx.fillStyle = 'rgba(0,0,0,' + (0.35 + vac) + ')';
+      // Les mains rouges sur le mur, a cote de chaque porte ou quelqu'un
+      // est deja venu. Elles ne partent plus de la nuit.
+      if (e.traces.g) {
+        empreinte(ctx, 72, 66, 1.1, 0.3, 'rgba(110,8,8,.85)');
+        empreinte(ctx, 80, 112, 0.9, -0.4, 'rgba(90,6,6,.7)');
+        ctx.fillStyle = 'rgba(90,6,6,.6)';
+        ctx.fillRect(62, 70, 2, 46);
+      }
+      if (e.traces.d) {
+        empreinte(ctx, 246, 74, 1.1, -0.3, 'rgba(110,8,8,.85)');
+        empreinte(ctx, 238, 120, 0.85, 0.5, 'rgba(90,6,6,.7)');
+        ctx.fillStyle = 'rgba(90,6,6,.6)';
+        ctx.fillRect(256, 60, 2, 58);
+      }
+
+      // La lampe du bureau, seule vraie lumiere de la piece. Elle vacille,
+      // et parfois s'eteint une demi-seconde.
+      if (e.t > e.vacille && Math.random() < 0.004) e.vacille = e.t + hasard(0.06, 0.45);
+      var noir = e.t < e.vacille ? 0.97 : 0.86;
+      obscurite(ctx, W / 2, 132, 150, noir);
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.fillStyle = 'rgb(214,192,160)';
       ctx.fillRect(0, 0, W, H);
-      var grad = ctx.createRadialGradient(W / 2, 120, 20, W / 2, 120, 220);
-      grad.addColorStop(0, 'rgba(0,0,0,0)');
-      grad.addColorStop(1, 'rgba(0,0,0,.75)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'source-over';
 
       // Les portes passent apres la penombre : une lumiere allumee doit
       // trancher sur le reste du bureau.
@@ -1374,18 +1874,34 @@
       dessinerPorte(260, 'd', !e.porteD, e.animD, e.lumD, qui('PD'));
 
       if (e.panne) {
-        ctx.fillStyle = 'rgba(0,0,0,.82)';
+        ctx.fillStyle = 'rgba(0,0,0,.9)';
         ctx.fillRect(0, 0, W, H);
-        // Deux yeux qui s'allument et s'eteignent dans l'embrasure.
-        if (e.t > e.panneT && Math.floor(e.t * 3) % 2) {
-          r(ctx, 26, 82, 4, 3, '#f0f0f0'); r(ctx, 40, 82, 4, 3, '#f0f0f0');
-          r(ctx, 27, 83, 2, 1, '#7fd0e8'); r(ctx, 41, 83, 2, 1, '#7fd0e8');
+        // Freddy dans l'embrasure, le visage qui s'allume et s'eteint au
+        // rythme de la boite a musique.
+        if (e.t > e.panneT) {
+          var allume = Math.floor(e.t * 3.2) % 2 === 0;
+          ctx.save();
+          ctx.beginPath(); ctx.rect(6, 40, 54, 112); ctx.clip();
+          perso(ctx, 'freddy', 34, 236, 230, { lum: allume ? 0.45 : 0.02, yeux: allume ? 1 : 0.5,
+                                               sang: 1, gouttes: e.t });
+          ctx.restore();
         }
       }
+
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 0.06;
+      ctx.drawImage(grain[Math.floor(e.t * 20) % grain.length], 0, 0, CW, CH);
+      ctx.globalAlpha = 1;
+      ctx.drawImage(voile.vig, 0, 0);
+      ctx.restore();
     }
+
+    // ---------- Les cameras ----------
 
     function dessinerCamera() {
       var k = e.camVue;
+      var yeux = [];
       ctx.drawImage(piece(k).c, 0, 0);
 
       if (k === '6') {
@@ -1393,47 +1909,74 @@
         ctx.fillText('CAMÉRA DÉSACTIVÉE', W / 2, 98);
         ctx.font = '8px monospace';
         ctx.fillText('— AUDIO SEULEMENT —', W / 2, 114);
-      } else if (k === '1C') {
-        dessinerCrique();
       } else {
-        if (k === '7') dessinerCabines();
-        var poses = POSES[k] || {};
-        ['bonnie', 'chica', 'freddy'].forEach(function (q) {
-          if (A[q].lieu !== k || !poses[q]) return;
-          var p = poses[q];
-          sprite(ctx, q, p[0], p[1], p[2]);
-        });
-        // Foxy qui file dans le couloir ouest.
-        if (k === '2A' && A.foxy.course) {
-          var reste = Math.max(0, A.foxy.courseFin - e.t) / 3.2;
-          sprite(ctx, 'foxy', 160 + (1 - reste) * 30, 150 + (1 - reste) * 80, 0.8 + (1 - reste) * 2);
+        dessinerCaches(k);
+        if (k === '1C') {
+          dessinerCrique(yeux);
+        } else {
+          if (k === '7') dessinerCabines();
+          var poses = POSES[k] || {};
+          ['bonnie', 'chica', 'freddy'].forEach(function (q) {
+            if (A[q].lieu !== k || !poses[q]) return;
+            var p = poses[q];
+            perso(ctx, q, p[0], p[1], p[2], {
+              lum: p[3] ? 0.6 : 0.55, yeux: p[3] ? 0.85 : 0.8, tic: tic(q),
+              sang: p[3] ? 1 : 0.85, gouttes: p[3] ? e.t : null,
+              cadre: p[3] === 'tete' ? GROS_PLAN : null, lueurs: yeux });
+          });
+          // Foxy qui file dans le couloir ouest, droit sur l'objectif.
+          if (k === '2A' && A.foxy.course) {
+            var v = 1 - Math.max(0, A.foxy.courseFin - e.t) / 3.2;
+            perso(ctx, 'foxy', 160 + v * 16, 150 + v * 190, 60 + v * 300, {
+              lum: 0.55, yeux: 1, lueurs: yeux,
+              tic: { dx: hasard(-3, 3), dy: hasard(-2, 2), a: hasard(-0.06, 0.06) } });
+          }
+        }
+        var L = LUMIERES[k];
+        if (L) obscurite(ctx, L[0], L[1], L[2], 0.94);
+      }
+
+      // L'image de surveillance : delavee, verdatre. Pendant le secret,
+      // on laisse passer l'or.
+      if (!e.pause) {
+        ctx.globalCompositeOperation = 'saturation';
+        ctx.fillStyle = 'rgba(128,128,128,.66)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.fillStyle = '#a4ccb0';
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      lueurs(yeux);
+      refletsCaches(k);
+
+      // Le grain, plus fort quand la camera vient d'etre derangee, les
+      // lignes qui se dechirent, le balayage et les coins noirs.
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 0.09 + Math.min(0.85, e.glitch);
+      ctx.drawImage(grain[Math.floor(e.t * 20) % grain.length], 0, 0, CW, CH);
+      ctx.globalAlpha = 1;
+      if (e.glitch > 0.25) {
+        for (var i = 0; i < 5; i++) {
+          var y = Math.random() * CH, hh = 4 + Math.random() * 40;
+          ctx.drawImage(cv, 0, y, CW, hh, (Math.random() - 0.5) * 80 * e.glitch, y, CW, hh);
         }
       }
-
-      // L'obscurite d'une salle vide la nuit.
-      ctx.fillStyle = 'rgba(4,6,10,.38)';
-      ctx.fillRect(0, 0, W, H);
-
-      // Le grain, plus fort quand la camera vient d'etre derangee.
-      ctx.save();
-      ctx.globalAlpha = 0.1 + Math.min(0.85, e.glitch);
-      ctx.drawImage(grain[Math.floor(e.t * 20) % grain.length], 0, 0);
+      ctx.drawImage(voile.lignes, 0, 0);
+      ctx.drawImage(voile.vig, 0, 0);
       ctx.restore();
-      if (e.glitch > 0.5) {
-        for (var i = 0; i < 6; i++) r(ctx, 0, Math.random() * H, W, 1 + Math.random() * 3, 'rgba(255,255,255,.25)');
-      }
 
-      // Le liseré, le nom de la piece, le point rouge qui clignote.
-      ctx.strokeStyle = 'rgba(255,255,255,.55)';
-      ctx.lineWidth = 1;
+      // Le lisere, le nom de la piece, le point rouge qui clignote.
+      ctx.strokeStyle = 'rgba(255,255,255,.4)';
+      ctx.lineWidth = 0.5;
       ctx.strokeRect(4.5, 4.5, W - 9, H - 9);
-      ctx.fillStyle = '#f0f0f0'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
-      // Sous le bandeau de l'energie, pour ne pas s'y melanger.
+      ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
       if (Math.floor(e.t * 2) % 2) {
         ctx.fillStyle = '#ff2a2a';
         ctx.beginPath(); ctx.arc(14, 40, 3, 0, Math.PI * 2); ctx.fill();
       }
-      ctx.fillStyle = '#f0f0f0';
+      ctx.fillStyle = '#e8f0e8';
       ctx.fillText('CAM ' + k + '  ' + CAMS[k].nom.toUpperCase(), 22, 43);
     }
 
@@ -1456,39 +1999,63 @@
       ctx.save();
       ctx.beginPath(); ctx.rect(100, 20, ouv, 110); ctx.clip();
       var g = ctx.createRadialGradient(130, 90, 4, 130, 90, 70);
-      g.addColorStop(0, 'rgba(255,210,90,' + (0.55 * k) + ')');
+      g.addColorStop(0, 'rgba(255,210,90,' + (0.7 * k) + ')');
       g.addColorStop(1, 'rgba(255,160,20,0)');
       ctx.fillStyle = g;
       ctx.fillRect(100, 20, 60, 110);
-      if (pret(IMG.golden)) ctx.drawImage(IMG.golden, 98, 52, 64, 80);
+      perso(ctx, 'golden', 130, 134, 92, { lum: 0.7 * k, yeux: 0 });
       ctx.restore();
       // La porte, rabattue sur la droite.
       r(ctx, 100 + ouv, 20, Math.max(4, 60 - ouv), 110, '#3a484e');
     }
 
-    function dessinerCrique() {
+    function dessinerCrique(yeux) {
       var et = A.foxy.course ? 4 : A.foxy.etape;
-      // Le rideau mauve a etoiles, plus ou moins tire.
+      // Le rideau mauve a etoiles, plus ou moins tire. Derriere, d'abord un
+      // oeil dans la fente, puis la tete, puis lui tout entier.
       var ouv = [0, 14, 46, 90, 90][et];
-      if (et >= 1 && et < 4) {
-        sprite(ctx, 'foxy', 160, 160 + (et === 1 ? 20 : 0), et === 1 ? 1.4 : 1.6);
+      if (et === 1) {
+        perso(ctx, 'foxy', 156, 150, 120, { lum: 0.3, yeux: 1, cadre: GROS_PLAN, lueurs: yeux, tic: tic('foxy') });
+      } else if (et >= 2 && et < 4) {
+        perso(ctx, 'foxy', 160, 176, et === 2 ? 132 : 150, { lum: 0.5, yeux: 1, lueurs: yeux, tic: tic('foxy') });
       }
       [-1, 1].forEach(function (s) {
         var x0 = s < 0 ? 70 : 160 + ouv / 2;
         var w = 90 - ouv / 2;
-        r(ctx, x0, 30, w, 120, '#5a2a8a');
-        for (var X = x0; X < x0 + w; X += 10) r(ctx, X, 30, 3, 120, '#4a1f78');
-        for (var i = 0; i < 6; i++) r(ctx, x0 + ((i * 23) % Math.max(1, w - 4)), 40 + i * 17, 3, 3, '#f0d060');
+        r(ctx, x0, 30, w, 120, '#4a2272');
+        for (var X = x0; X < x0 + w; X += 10) r(ctx, X, 30, 3, 120, '#3a1a5e');
+        for (var i = 0; i < 6; i++) r(ctx, x0 + ((i * 23) % Math.max(1, w - 4)), 40 + i * 17, 3, 3, '#c8b050');
       });
       // Le panneau, accroche devant.
-      r(ctx, 110, 150, 100, 18, '#e8d8a0');
-      ctx.fillStyle = '#5a1a1a'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+      r(ctx, 110, 150, 100, 18, '#c8b888');
+      ctx.fillStyle = '#4a1010'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
       ctx.fillText(et >= 4 ? 'IL N’EST PLUS LÀ' : 'DÉSOLÉ ! HORS SERVICE', 160, 162);
     }
 
+    // ---------- Les visions ----------
+    // Une fraction de seconde, un visage plein ecran, lave de rouge. Elles
+    // viennent plus souvent a mesure que la nuit avance.
+
+    function dessinerVision() {
+      var v = e.vision;
+      if (!v || e.t > v.fin) return;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, W, H);
+      perso(ctx, v.k, W / 2 + hasard(-5, 5), H + 30, 330,
+            { lum: 0.7, yeux: 1, sang: 1, gouttes: e.t, cadre: GROS_PLAN,
+              tic: { dx: hasard(-4, 4), dy: hasard(-3, 3), a: hasard(-0.08, 0.08) } });
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.fillStyle = '#c02020';
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
     function dessiner() {
+      ctx.setTransform(S, 0, 0, S, 0, 0);
+      ctx.imageSmoothingEnabled = false;
       if (e.cam) dessinerCamera();
       else dessinerBureau();
+      dessinerVision();
     }
 
     // ---------- Le bandeau ----------
@@ -1538,6 +2105,22 @@
           SON.boite(e.panneFin - e.panneT);
         } else if (e.t >= e.panneFin) {
           attaque('freddy');
+        }
+
+        // Celui qui attend derriere un rideau ferme gratte, de temps en temps.
+        [['g', 'PG', 'porteG', -0.9], ['d', 'PD', 'porteD', 0.9]].forEach(function (p) {
+          if (!e[p[2]] || !qui(p[1]).length || e.t < e.griffe[p[0]]) return;
+          if (e.griffe[p[0]]) SON.griffe(p[3]);
+          e.griffe[p[0]] = e.t + hasard(4, 9);
+        });
+
+        // Les visions : jamais la premiere heure de la premiere nuit, puis
+        // de plus en plus souvent.
+        if (e.vision && e.t > e.vision.fin) e.vision = null;
+        if (!e.vision && e.t > e.prochaineVision && (nuit.n > 1 || e.t > HEURE * 2)) {
+          e.vision = { k: choix(['freddy', 'bonnie', 'chica', 'foxy']), fin: e.t + hasard(0.09, 0.2) };
+          e.prochaineVision = e.t + hasard(30, 75) / (1 + nuit.n * 0.15 + heuresTenues() * 0.1);
+          SON.vision();
         }
 
         if (!e.fini && e.t >= HEURE * 6) victoire();
