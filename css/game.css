@@ -7469,6 +7469,81 @@ body.is-locked .pad-titre { display: none; }
 .spk.is-secret .spk-plan,
 .spk.is-secret .spk-muet { display: none; }
 
+/* ---------- Les quatre d'un coup ----------
+   Noir complet, puis les quatre tetes sortent de l'ombre l'une apres
+   l'autre, chacune dans son eclair. */
+
+.spk-quatre {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(22 * var(--px));
+  background: radial-gradient(circle at 50% 45%, #2a0a3a, #050208 70%);
+  animation: spk-revel-noir 1.2s steps(1, end) both;
+}
+
+.spk-quatre.is-sortie { animation: spk-sortie .5s ease forwards; }
+
+.spk-quatre-rang {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(20 * var(--px));
+}
+
+.spk-quatre-case {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8 * var(--px));
+  opacity: 0;
+  animation: spk-quatre-in .7s calc(1.2s + var(--i) * .7s) cubic-bezier(.2, 1.6, .4, 1) both;
+}
+
+@keyframes spk-quatre-in {
+  0%   { opacity: 0; transform: scale(2.4) translateY(calc(-30 * var(--px))); filter: brightness(0); }
+  40%  { opacity: 1; filter: brightness(2.2); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+
+.spk-quatre-img {
+  width: calc(190 * var(--px));
+  height: calc(190 * var(--px));
+  object-fit: contain;
+  filter: drop-shadow(0 0 calc(22 * var(--px)) rgba(255, 138, 30, .8));
+  animation: slot-flotte 3.2s calc(var(--i) * .4s) ease-in-out infinite;
+}
+
+.spk-quatre-nom { font-size: calc(19 * var(--px)); color: #ffe2c4; }
+
+.spk-quatre-txt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8 * var(--px));
+  opacity: 0;
+  animation: spk-monte .7s 4.2s ease both;
+}
+
+.spk-quatre-titre {
+  font-size: calc(44 * var(--px));
+  letter-spacing: calc(4 * var(--px));
+  text-transform: uppercase;
+  color: #ff8a1e;
+  text-shadow: 0 0 calc(20 * var(--px)) rgba(255, 138, 30, .8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spk-quatre, .spk-quatre-case, .spk-quatre-img, .spk-quatre-txt {
+    animation-duration: .01s;
+    animation-delay: 0s;
+    animation-iteration-count: 1;
+  }
+}
+
 /* ==========================================================
    Spookinder — Golden Freddy, le Dinder secret
    Tout se joue sur une seule frise : IT'S ME clignote dans le noir

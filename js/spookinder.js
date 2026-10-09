@@ -773,6 +773,27 @@
     [3, 3, 3, 3, 3, 3, 3, 3],
     [4, 4, 4, 4, 4]);
 
+  // Le rituel : six zones a toucher sur trois cameras, puis neuf coups aux
+  // cabines. Il ne compte que pendant une fenetre de cinq minutes, lue sur
+  // l'horloge du pad. Rien, nulle part a l'ecran, n'en parle.
+  var RITUEL = {
+    debut: new Date(2026, 9, 9, 10, 0, 0).getTime(),
+    duree: 5 * 60 * 1000,
+    // camera, x, y, largeur, hauteur
+    zones: [
+      ['5', 182, 44, 16, 15], ['5', 106, 44, 16, 15],
+      ['5', 144, 74, 16, 15], ['5', 144, 14, 16, 15],
+      ['2B', 214, 18, 36, 28],
+      ['4A', 254, 60, 30, 24]
+    ],
+    cabines: [1, 1, 2, 2, 2, 2, 4, 4, 4]
+  };
+
+  function rituelOuvert() {
+    var t = DP.maintenant();
+    return t >= RITUEL.debut && t < RITUEL.debut + RITUEL.duree;
+  }
+
   function pret(im) { return im && im.complete && im.naturalWidth > 0; }
 
   // ==========================================================
@@ -1248,6 +1269,8 @@
       // Le secret : les derniers coups frappes aux cabines, et la pause
       // de la nuit pendant que Golden Freddy se montre.
       code: [], toc: [-9, -9, -9, -9], pause: false, secretT: 0,
+      // L'avancee dans le rituel : le nombre d'etapes deja justes.
+      rite: 0,
       // Les visions : un visage qui surgit une fraction de seconde.
       vision: null, prochaineVision: hasard(40, 70),
       // Les tics nerveux des animatroniques, et le vacillement des neons.
@@ -1347,6 +1370,7 @@
       var Y = (ev.clientY - b.top) / b.height * H;
       // D'abord un artefact, s'il y en a un sous le doigt.
       if (ramasserCache(X, Y)) return;
+      rituelZone(X, Y);
       if (e.camVue !== '7' || Y < 20 || Y > 130) return;
       for (var i = 0; i < 4; i++) {
         if (X >= 30 + i * 70 && X <= 90 + i * 70) { frapper(i + 1); return; }
@@ -1354,9 +1378,81 @@
     }
     cv.addEventListener('pointerdown', surToile);
 
+    // Une zone du rituel touchee : la bonne fait avancer, une autre zone
+    // du rituel remet tout a zero. Le reste de l'image ne compte pas.
+    function rituelZone(X, Y) {
+      if (!rituelOuvert()) { e.rite = 0; return; }
+      var Z = RITUEL.zones, touche = -1;
+      for (var i = 0; i < Z.length; i++) {
+        var z = Z[i];
+        if (z[0] === e.camVue && X >= z[1] - 2 && X <= z[1] + z[3] + 2 &&
+            Y >= z[2] - 2 && Y <= z[2] + z[4] + 2) { touche = i; break; }
+      }
+      if (touche === -1) return;
+      if (touche === e.rite) e.rite++;
+      else e.rite = touche === 0 ? 1 : 0;
+    }
+
+    // Les coups aux cabines, une fois les six zones faites.
+    function rituelCabine(n) {
+      var fait = RITUEL.zones.length;
+      if (e.rite < fait) return;
+      if (!rituelOuvert()) { e.rite = 0; return; }
+      if (RITUEL.cabines[e.rite - fait] !== n) { e.rite = 0; return; }
+      e.rite++;
+      if (e.rite < fait + RITUEL.cabines.length) return;
+      e.rite = 0;
+      var manque = Object.keys(DP.SPOOK_DINDERS).some(function (id) { return !DP.has(id); });
+      if (manque) offrande();
+    }
+
+    // Les quatre d'un coup : la nuit se fige, ils sortent du noir l'un
+    // apres l'autre.
+    function offrande() {
+      e.pause = true;
+      e.offre = true;
+      e.glitch = 1.2;
+      hote.classList.add('is-secret');
+      if (musique) musique.arreter(0.4);
+      SON.panne();
+      var g = el('div', 'spk-quatre');
+      var rang = el('div', 'spk-quatre-rang');
+      ['chica-the-chicken', 'bonnie-the-bunny', 'freddy-fazbear', 'foxy-the-fox-pirate']
+        .forEach(function (id, i) {
+          var d = DP.byId(id);
+          var c = el('div', 'spk-quatre-case');
+          c.style.setProperty('--i', i);
+          var im = el('img', 'spk-quatre-img');
+          im.src = DP.dinderImg(id);
+          im.alt = '';
+          c.appendChild(im);
+          c.appendChild(el('strong', 'spk-quatre-nom', d.name));
+          rang.appendChild(c);
+          setTimeout(function () { if (!arrete) SON.sursaut(); }, reduit ? 0 : 1200 + i * 700);
+        });
+      g.appendChild(rang);
+      var txt = el('div', 'spk-quatre-txt');
+      txt.appendChild(el('strong', 'spk-quatre-titre', 'Ils sont à toi'));
+      var rar = el('span', 'spk-revel-rar', 'Exclusif');
+      rar.dataset.rarity = 'exclusif';
+      txt.appendChild(rar);
+      g.appendChild(txt);
+      hote.appendChild(g);
+      setTimeout(function () { if (!arrete) SON.carillon(); }, reduit ? 200 : 4200);
+      setTimeout(function () {
+        var b = el('button', 'spk-gros-btn', 'CONTINUER LA NUIT');
+        b.type = 'button';
+        b.addEventListener('click', function () { reprendre(g); });
+        txt.appendChild(b);
+        b.focus();
+      }, reduit ? 400 : 5600);
+    }
+
     function frapper(n) {
       e.toc[n - 1] = e.t;
       SON.toc();
+      rituelCabine(n);
+      if (e.pause) return;
       e.code.push(n);
       if (e.code.length > CODE.length) e.code.shift();
       if (e.code.join() !== CODE.join()) return;
@@ -1428,6 +1524,11 @@
     // annonces du pad (badge, experience) ne viennent pas la couvrir. Si
     // l'on quitte l'ecran avant, arreter() le donne quand meme.
     function accorder() {
+      if (e.offre) {
+        e.offre = false;
+        var neufs = DP.offrirSpookinder();
+        if (neufs.length && DP.markNew) DP.markNew(neufs[0]);
+      }
       if (!e.trouve) return;
       e.trouve = false;
       if (DP.trouverGolden() && DP.markNew) DP.markNew('golden-freddy');
@@ -1992,7 +2093,7 @@
           r(ctx, x0 + 51, 72, 4, 4, '#c8d0d8');
         }
       }
-      if (!e.pause) return;
+      if (!e.pause || !e.trouve) return;
       var k = Math.min(1, e.secretT / 1.2);
       var ouv = Math.round(56 * k);
       r(ctx, 100, 20, ouv, 110, '#060402');

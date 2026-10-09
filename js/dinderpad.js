@@ -527,11 +527,12 @@
     // d'essai aurait distribue retourne a l'etat de case manquante.
     // Golden Freddy, lui, ne vaut que si le code a ete trouve.
     if (typeof p.spookinder.golden !== 'boolean') p.spookinder.golden = false;
+    if (typeof p.spookinder.offerts !== 'boolean') p.spookinder.offerts = false;
     if (Array.isArray(p.owned)) {
       p.owned = p.owned.filter(function (id) {
         if (id === 'golden-freddy') return p.spookinder.golden;
         var n = SPOOK_DINDERS[id];
-        return !n || p.spookinder.reclames.indexOf(n) !== -1;
+        return !n || p.spookinder.offerts || p.spookinder.reclames.indexOf(n) !== -1;
       });
     }
     if (!p.peche || typeof p.peche !== 'object') p.peche = {};
@@ -1436,6 +1437,17 @@
     return true;
   }
 
+  // Les quatre du pass, donnes d'un coup hors du pass. Rend la liste de
+  // ceux qui viennent d'entrer dans la collection.
+  function offrirSpookinder() {
+    var p = me();
+    p.spookinder.offerts = true;
+    save();
+    var neufs = Object.keys(SPOOK_DINDERS).filter(function (id) { return !has(id); });
+    neufs.forEach(collect);
+    return neufs;
+  }
+
   function reclamerPalier(n) {
     if (!spookinderEtat().ouvert) return false;
     var p = me();
@@ -1473,7 +1485,7 @@
     MENACE: MENACE, EXCLUSIF: EXCLUSIF, horsDindise: horsDindise,
     spookinderEtat: spookinderEtat, spookinder: spookinder, SPOOK_DINDERS: SPOOK_DINDERS,
     gagnerSpookXP: gagnerSpookXP, noterNuit: noterNuit, reclamerPalier: reclamerPalier,
-    trouverGolden: trouverGolden,
+    trouverGolden: trouverGolden, offrirSpookinder: offrirSpookinder,
     evos: evos, evoImg: evoImg, gagnerEvos: gagnerEvos, depenserEvos: depenserEvos,
     odysseeDinder: odysseeDinder, choisirOdysseeDinder: choisirOdysseeDinder,
     fusion: fusion, noterSacrifice: noterSacrifice,
