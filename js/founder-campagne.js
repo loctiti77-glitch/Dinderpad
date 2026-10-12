@@ -783,8 +783,15 @@
       jauge: function () {
         var B = window.BOSS;
         if (!B) return { n: 0, sur: 9 };
-        var faits = B.ORDRE.filter(function (id) { return B.vaincu(id); }).length;
-        return { n: faits, sur: B.ORDRE.length };
+        // Les neuf du systeme solaire : ceux du systeme stellaire ne
+        // scellent rien ici.
+        var V = window.ODYVIE;
+        var neuf = B.ORDRE.filter(function (id) {
+          var a = V && V.astre(B.GARDIENS[id].astre);
+          return !a || a.systeme !== 'stellaire';
+        });
+        var faits = neuf.filter(function (id) { return B.vaincu(id); }).length;
+        return { n: faits, sur: neuf.length };
       }
     },
     {

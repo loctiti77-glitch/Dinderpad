@@ -90,7 +90,16 @@
           return t + (B.vaincu(id) ? B.GARDIENS[id].xp || 0 : 0);
         }, 0) : 0;
       },
-      sur: function () { return window.BOSS ? window.BOSS.ORDRE.length : 0; } },
+      // Les gardiens du systeme stellaire ne comptent au total qu'une
+      // fois ce systeme ouvert : avant, rien ne doit les annoncer.
+      sur: function () {
+        var B = window.BOSS, V = window.ODYVIE;
+        if (!B) return 0;
+        return B.ORDRE.filter(function (id) {
+          var a = V && V.astre(B.GARDIENS[id].astre);
+          return !a || a.systeme !== 'stellaire' || V.stellaireOuvert();
+        }).length;
+      } },
     { id: 'badges', nom: 'Badges obtenus', pts: 50,
       compte: function () { return window.BADGES ? window.BADGES.obtenus().length : 0; } },
     { id: 'revetements', nom: 'Revêtements gagnés', pts: 40,

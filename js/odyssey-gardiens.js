@@ -652,6 +652,10 @@
     });
   });
 
+  // Les gardiens du systeme stellaire se batissent avec les memes outils.
+  B.arene = arene;
+  B.sourcil = sourcil;
+
   // Le Selenophage a aussi ses textes de reveil et d'indice.
   var S = B.GARDIENS.selenophage;
   S.textes.reveil = 'Le sol tremble. Quelque chose remonte de la grotte…';

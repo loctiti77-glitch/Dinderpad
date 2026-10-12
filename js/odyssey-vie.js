@@ -666,9 +666,16 @@
     p(x, y, 1, 1, '#141826');
   }
 
+  // Les creatures dessinees une par une : leur identifiant mene a leur
+  // propre dessin, et la carrure ne sert alors plus a rien. Le systeme
+  // stellaire remplit cette table (js/odyssey-stellaire.js).
+  var DESSINS = {};
+
   function dessinerVie(p, v) {
     var a = v.c[0], b = v.c[1], d = v.c[2];
     var cx = 20, cy = 18, i, ang;
+
+    if (DESSINS[v.id]) { DESSINS[v.id](p, a, b, d); return; }
 
     if (v.carrure === 'rampant') {
       // Un corps bas sur pattes, museau en avant.
@@ -1290,6 +1297,7 @@
     objets: objets,
     astre: astre, vies: vies, curiosite: curiosite, parId: parId,
     scannables: scannables, tout: tout,
+    DESSINS: DESSINS, ovale: ovale, oeil: oeil,
     feuille: feuille, url: url, L: L, H: H,
     vider: function () { cache = {}; }
   };
