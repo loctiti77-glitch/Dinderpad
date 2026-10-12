@@ -23,28 +23,31 @@
   // prend le triple. "cadence" est le temps de recharge entre deux tirs :
   // monter en niveau, c'est frapper plus fort ET plus souvent.
   // "cout" se paie en Noyaux Lumithiques, que les requins laissent.
+  // "coutOdyssee" se paie en Roches Solaires : les gardiens et les
+  // hologrammes en donnent par dizaines, le tarif est donc bien plus
+  // haut, et le Mk X se merite.
   var NIVEAUX = [
-    { n: 1, nom: 'Mk I — Prototype', degats: 6,  cadence: 620, cout: 0,
+    { n: 1, nom: 'Mk I — Prototype', degats: 6,  cadence: 620, cout: 0, coutOdyssee: 0,
       texte: 'Sorti d’une souche, il fonctionne encore. C’est déjà beaucoup.' },
-    { n: 2, nom: 'Mk II — Focalisé', degats: 11, cadence: 560, cout: 3,
+    { n: 2, nom: 'Mk II — Focalisé', degats: 11, cadence: 560, cout: 3, coutOdyssee: 12,
       texte: 'Le faisceau ne se disperse plus : il perce.' },
-    { n: 3, nom: 'Mk III — Prisme',  degats: 19, cadence: 500, cout: 7,
+    { n: 3, nom: 'Mk III — Prisme',  degats: 19, cadence: 500, cout: 7, coutOdyssee: 30,
       texte: 'Trois cristaux en ligne, et la lumière sort en lame.' },
-    { n: 4, nom: 'Mk IV — Solstice', degats: 32, cadence: 440, cout: 13,
+    { n: 4, nom: 'Mk IV — Solstice', degats: 32, cadence: 440, cout: 13, coutOdyssee: 60,
       texte: 'De quoi discuter d’égal à égal avec un Grand Blanc.' },
-    { n: 5, nom: 'Mk V — Supernova', degats: 52, cadence: 380, cout: 22,
+    { n: 5, nom: 'Mk V — Supernova', degats: 52, cadence: 380, cout: 22, coutOdyssee: 110,
       texte: 'Ce n’est plus une arme, c’est une petite étoile tenue à bout de bras.' },
     // Au-dela du Mk V : de quoi tenir tete aux gardiens des planetes
     // lointaines, de Mars a Neptune.
-    { n: 6, nom: 'Mk VI — Pulsar', degats: 80, cadence: 350, cout: 32,
+    { n: 6, nom: 'Mk VI — Pulsar', degats: 80, cadence: 350, cout: 32, coutOdyssee: 180,
       texte: 'Il bat comme un cœur d’étoile morte, et chaque battement perce.' },
-    { n: 7, nom: 'Mk VII — Quasar', degats: 118, cadence: 330, cout: 45,
+    { n: 7, nom: 'Mk VII — Quasar', degats: 118, cadence: 330, cout: 45, coutOdyssee: 280,
       texte: 'Le faisceau se voit depuis l’orbite. Les gardiens aussi le voient venir.' },
-    { n: 8, nom: 'Mk VIII — Magnétar', degats: 165, cadence: 310, cout: 60,
+    { n: 8, nom: 'Mk VIII — Magnétar', degats: 165, cadence: 310, cout: 60, coutOdyssee: 420,
       texte: 'Il tord le métal à dix pas. Mieux vaut ne pas le poser près d’une montre.' },
-    { n: 9, nom: 'Mk IX — Horizon', degats: 225, cadence: 290, cout: 80,
+    { n: 9, nom: 'Mk IX — Horizon', degats: 225, cadence: 290, cout: 80, coutOdyssee: 600,
       texte: 'La lumière qui en sort a l’air de ne pas vouloir revenir.' },
-    { n: 10, nom: 'Mk X — Singularité', degats: 300, cadence: 270, cout: 105,
+    { n: 10, nom: 'Mk X — Singularité', degats: 300, cadence: 270, cout: 105, coutOdyssee: 850,
       texte: 'Au bout du canon, l’espace se plie. Neptune n’a qu’à bien se tenir.' }
   ];
 
@@ -260,8 +263,8 @@
 
   // Deux progressions, deux monnaies : a Fish n'Der, le pistolet monte
   // avec les Noyaux Lumithiques arraches aux requins ; dans l'Odyssee, il
-  // repart du Mk I et monte avec les Roches Solaires des creatures. Le
-  // tarif est le meme ; les revetements, eux, sont communs.
+  // repart du Mk I et monte avec les Roches Solaires des creatures. Chacun
+  // son tarif ; les revetements, eux, sont communs.
   var MONNAIES = {
     noyaux: { nom: 'Noyaux Lumithiques', court: 'noyaux', signe: '◈', jeu: 'peche',
               solde: function () { return DP.noyaux(); },
@@ -273,17 +276,22 @@
 
   function monnaie(cle) { return MONNAIES[cle] || MONNAIES.noyaux; }
 
+  // Ce que coute un niveau dans une monnaie donnee.
+  function cout(nv, cle) {
+    return monnaie(cle).jeu === 'odyssee' ? nv.coutOdyssee : nv.cout;
+  }
+
   function peutMonter(cle) {
     var p = prochain(cle);
-    return !!p && monnaie(cle).solde() >= p.cout;
+    return !!p && monnaie(cle).solde() >= cout(p, cle);
   }
 
   function monter(cle) {
     var m = monnaie(cle);
     var p = prochain(cle);
     if (!p) return { ok: false, raison: 'déjà au maximum' };
-    if (m.solde() < p.cout) return { ok: false, raison: 'pas assez de ' + m.court };
-    m.depenser(p.cout);
+    if (m.solde() < cout(p, cle)) return { ok: false, raison: 'pas assez de ' + m.court };
+    m.depenser(cout(p, cle));
     DP.monterArme(m.jeu);
     cache = {};
     return { ok: true, niveau: p };
@@ -369,7 +377,7 @@
       var c = el('span', 'ar-cran' + (x.n <= nAtteint ? ' is-atteint' : ''),
                  'Mk ' + ROMAIN[x.n - 1]);
       c.title = x.nom + '  ·  ' + x.degats + ' dégâts' +
-                (x.cout ? '  ·  ' + x.cout + ' ' + caisse.court : '');
+                (cout(x, caisse.court) ? '  ·  ' + cout(x, caisse.court) + ' ' + caisse.court : '');
       echelle.appendChild(c);
     });
     gauche.appendChild(echelle);
@@ -388,7 +396,7 @@
       monte.disabled = true;
     } else {
       monte.textContent = 'Monter en ' + suite.nom.split(' — ')[0] +
-                          '  ·  ' + suite.cout + ' ' + caisse.signe;
+                          '  ·  ' + cout(suite, caisse.court) + ' ' + caisse.signe;
       monte.disabled = !peutMonter(caisse.court);
       monte.addEventListener('click', function () {
         var r = monter(caisse.court);

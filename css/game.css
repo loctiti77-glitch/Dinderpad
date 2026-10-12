@@ -3913,8 +3913,6 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 
 .ody-retour:hover { background: rgba(14, 44, 40, .95); }
 
-.ody-scene.is-scan .ody-canvas { filter: saturate(1.3) brightness(1.06); }
-
 /* ---------- La fiche d'un scan ---------- */
 
 .ody-panneau[hidden] { display: none; }
@@ -7878,4 +7876,62 @@ body.is-locked .pad-titre { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .ody-fiche-coord { animation: none; }
+}
+
+/* ==========================================================
+   The Odyssey of Dinder — le scan
+   Le balayage lui-meme se peint sur la toile (js/odyssey.js). Ici : le
+   voile qui assombrit le monde autour du sujet, et la fiche dont
+   l'image se revele comme elle a ete lue, de haut en bas.
+   ========================================================== */
+
+.ody-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(124, 240, 200, .07) 0, rgba(124, 240, 200, .07) calc(1 * var(--px)),
+                              transparent calc(1 * var(--px)), transparent calc(5 * var(--px))),
+    radial-gradient(ellipse at center, rgba(2, 20, 16, 0) 35%, rgba(2, 20, 16, .72) 100%);
+  transition: opacity .25s ease;
+}
+
+.ody-scene.is-scan::before {
+  opacity: 1;
+  animation: ody-scan-trame .5s linear infinite;
+}
+
+.ody-scene.is-scan .ody-canvas { filter: saturate(.75) brightness(.92) contrast(1.08); }
+
+@keyframes ody-scan-trame {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 0 calc(5 * var(--px)), 0 0; }
+}
+
+/* L'image de la fiche : elle sort du blanc du scanner, ligne par ligne. */
+.ody-fiche-img { animation: ody-fiche-lecture .75s .12s steps(14, end) both; }
+
+.ody-fiche.is-neuf .ody-fiche-img {
+  animation: ody-fiche-lecture .75s .12s steps(14, end) both,
+             ody-fiche-eclat 1.1s .9s ease-out both;
+}
+
+@keyframes ody-fiche-lecture {
+  0%   { clip-path: inset(0 0 100% 0); filter: brightness(4) saturate(0) drop-shadow(0 0 calc(12 * var(--px)) rgba(124, 240, 200, .9)); }
+  70%  { filter: brightness(2.2) saturate(.4) drop-shadow(0 0 calc(12 * var(--px)) rgba(124, 240, 200, .9)); }
+  100% { clip-path: inset(0 0 0 0); filter: drop-shadow(0 0 calc(12 * var(--px)) rgba(124, 240, 200, .5)); }
+}
+
+@keyframes ody-fiche-eclat {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.14); filter: drop-shadow(0 0 calc(22 * var(--px)) rgba(255, 209, 102, 1)); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ody-scene.is-scan::before { animation: none; }
+  .ody-fiche-img, .ody-fiche.is-neuf .ody-fiche-img { animation: none; }
 }

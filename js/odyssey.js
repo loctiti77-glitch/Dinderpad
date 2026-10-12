@@ -1404,6 +1404,7 @@
     var balade = null;
     var cible = null, cibleTir = null;
     var scan = null, tirs = [], chiffres = [];
+    var SCAN_DUREE = 2000;
     var surgi = null;                  // le monstre qui sort de sa grotte
     var duel = null;
     var dernierTir = -99999;
@@ -1495,7 +1496,17 @@
       if (etat !== 'libre' || !cible) return;
       etat = 'scan';
       var sujet = cible.sujet, ref = cible.ref;
-      scan = { t0: maintenant(), x: ref.x, y: ref.y, sujet: sujet };
+      // La boite du sujet a l'ecran : chaque sorte se dessine a sa taille,
+      // les pieds sur son point d'attache. Le scan suit la bete si elle
+      // bouge, d'ou la reference gardee plutot que sa position.
+      var fs = V.feuille(sujet.id);
+      var ech = sujet.objet ? 1.1 : sujet.forme ? 2.2 : (sujet.taille || 1);
+      var sw = (fs ? fs.L : 40) * ech, sh = (fs ? fs.H : 32) * ech;
+      scan = {
+        t0: maintenant(), ref: ref, sujet: sujet, w: sw, h: sh,
+        dy: (sujet.objet ? 2 : sujet.forme ? 0 : 6) - sh / 2,
+        holo: hologramme(fs)
+      };
       scene.classList.add('is-scan');
       dire('Analyse en cours…');
       majBoutons();
@@ -1513,7 +1524,22 @@
           if (revele) DP.noterAstre(revele.id);
         }
         montrerFiche(sujet, r.neuf, r.entree, revele);
-      }, reduit ? 200 : 1500);
+      }, reduit ? 200 : SCAN_DUREE);
+    }
+
+    // La silhouette du sujet en lumiere du scanner : la meme planche,
+    // repeinte d'une seule teinte. Le balayage la revele par-dessus.
+    function hologramme(f) {
+      if (!f) return null;
+      var cv2 = document.createElement('canvas');
+      cv2.width = f.L; cv2.height = f.H;
+      var x = cv2.getContext('2d');
+      if (!x) return null;
+      x.drawImage(f.canvas, 0, 0);
+      x.globalCompositeOperation = 'source-in';
+      x.fillStyle = '#7cf0c8';
+      x.fillRect(0, 0, f.L, f.H);
+      return cv2;
     }
 
     function montrerFiche(sujet, neuf, entree, revele) {
@@ -1948,6 +1974,131 @@
       return out;
     }
 
+    // Le scan, en trois temps : les crochets se referment sur le sujet,
+    // le faisceau le balaie de haut en bas puis de bas en haut en
+    // revelant sa silhouette, et l'eclat final renvoie le releve vers le
+    // Teleportail.
+    function dessinerScan(ctx, cam, t) {
+      var k = Math.min(1, (t - scan.t0) / (reduit ? 200 : SCAN_DUREE));
+      var w = scan.w, h = scan.h;
+      var bx = scan.ref.x - cam.x, by = scan.ref.y - cam.y + scan.dy;
+      var ox = balade.chef.x - cam.x, oy = balade.chef.y - cam.y - 16;
+      var verrou = Math.min(1, k / 0.14);
+      var lect = Math.max(0, Math.min(1, (k - 0.14) / 0.68));
+      var fin = Math.max(0, (k - 0.82) / 0.18);
+      var aller = lect * 2 <= 1;
+      var ping = aller ? lect * 2 : 2 - lect * 2;
+      var gauche = bx - w / 2, haut = by - h / 2, ly = haut + h * ping;
+      var VERT = '124,240,200', i;
+
+      ctx.save();
+
+      // Le faisceau : un cone qui part du Teleportail et s'ouvre sur la
+      // ligne de lecture. Il tremble un peu, comme une lampe.
+      if (lect > 0 && fin < 1) {
+        var g = ctx.createLinearGradient(ox, oy, bx, ly);
+        g.addColorStop(0, 'rgba(' + VERT + ',.6)');
+        g.addColorStop(1, 'rgba(' + VERT + ',.08)');
+        ctx.globalAlpha = (1 - fin) * (0.75 + 0.25 * Math.sin(t / 38));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(ox, oy); ctx.lineTo(gauche - 3, ly); ctx.lineTo(gauche + w + 3, ly);
+        ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      // La silhouette, revelee par le balayage : a l'aller, seulement ce
+      // que la ligne a deja couvert ; au retour, tout, et plus net.
+      if (scan.holo && lect > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(gauche - 2, haut - 2, w + 4, aller ? h * ping + 2 : h + 4);
+        ctx.clip();
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = (aller ? 0.45 : 0.45 + 0.3 * (1 - ping)) * (1 - fin * 0.5) + fin * 0.5;
+        ctx.drawImage(scan.holo, Math.round(gauche), Math.round(haut), w, h);
+        ctx.globalCompositeOperation = 'source-over';
+        // La trame : des lignes fines qui defilent sur la silhouette.
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = '#04201a';
+        for (var yy = Math.floor(haut) + (Math.floor(t / 60) % 3); yy < haut + h; yy += 3) {
+          ctx.fillRect(gauche, yy, w, 1);
+        }
+        ctx.restore();
+      }
+
+      // La ligne de lecture, et son halo.
+      if (lect > 0 && lect < 1) {
+        ctx.fillStyle = 'rgba(' + VERT + ',.25)';
+        ctx.fillRect(gauche - 5, ly - 3, w + 10, 6);
+        ctx.fillStyle = '#eafff8';
+        ctx.fillRect(gauche - 5, Math.round(ly), w + 10, 1);
+      }
+
+      // Les quatre crochets : ils arrivent de loin et se serrent.
+      var marge = 4 + (1 - verrou) * (1 - verrou) * 30 + Math.sin(t / 130) * (verrou >= 1 ? 1 : 0);
+      var cl = gauche - marge, ct = haut - marge, cw = w + marge * 2, chh = h + marge * 2, L = 7;
+      ctx.globalAlpha = Math.min(1, verrou * 1.5) * (1 - fin);
+      ctx.strokeStyle = verrou < 1 ? '#eafff8' : 'rgb(' + VERT + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cl, ct + L); ctx.lineTo(cl, ct); ctx.lineTo(cl + L, ct);
+      ctx.moveTo(cl + cw - L, ct); ctx.lineTo(cl + cw, ct); ctx.lineTo(cl + cw, ct + L);
+      ctx.moveTo(cl + cw, ct + chh - L); ctx.lineTo(cl + cw, ct + chh); ctx.lineTo(cl + cw - L, ct + chh);
+      ctx.moveTo(cl + L, ct + chh); ctx.lineTo(cl, ct + chh); ctx.lineTo(cl, ct + chh - L);
+      ctx.stroke();
+
+      // L'anneau de mesure : des graduations qui tournent, et l'arc de
+      // progression qui se ferme.
+      var ray = Math.max(w, h) * 0.5 + 12;
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(' + VERT + ',.55)';
+      ctx.setLineDash([2, 5]);
+      ctx.lineDashOffset = -t / 28;
+      ctx.beginPath(); ctx.arc(bx, by, ray, 0, 6.283); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgb(' + VERT + ')';
+      ctx.beginPath(); ctx.arc(bx, by, ray + 4, -1.571, -1.571 + Math.min(1, k / 0.82) * 6.283); ctx.stroke();
+
+      // Le releve : le pourcentage, et trois lignes de mesures qui defilent.
+      ctx.globalAlpha = (1 - fin) * Math.min(1, verrou * 2);
+      ctx.font = 'bold 9px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#eafff8';
+      ctx.fillText('ANALYSE ' + Math.round(Math.min(1, k / 0.82) * 100) + ' %', bx, by + ray + 16);
+      ctx.textAlign = 'left';
+      ctx.font = '7px "Courier New", monospace';
+      ctx.fillStyle = 'rgba(' + VERT + ',.9)';
+      var pas = Math.floor(t / 90), HEX = '0123456789ABCDEF';
+      for (i = 0; i < 3; i++) {
+        if (lect < i / 3) continue;
+        var mot = '';
+        for (var c = 0; c < 6; c++) mot += HEX[(pas * (7 + i * 3) + c * 11 + i * 5) % 16];
+        ctx.fillText(mot, bx + ray + 9, by - 8 + i * 9);
+      }
+
+      // L'eclat final : un anneau qui s'ouvre, la silhouette qui blanchit,
+      // et le releve qui file vers le Teleportail.
+      if (fin > 0) {
+        ctx.globalAlpha = 1 - fin;
+        ctx.strokeStyle = '#eafff8';
+        ctx.lineWidth = 3 - fin * 2;
+        ctx.beginPath(); ctx.arc(bx, by, ray + fin * 34, 0, 6.283); ctx.stroke();
+        ctx.fillStyle = '#eafff8';
+        for (i = 0; i < 9; i++) {
+          var dep = i / 9 * 6.283, u = Math.min(1, fin * 1.25);
+          var px = bx + Math.cos(dep) * ray * (1 - u), py = by + Math.sin(dep) * ray * (1 - u);
+          ctx.globalAlpha = 1 - fin * 0.4;
+          ctx.fillRect(Math.round(px + (ox - bx) * u * u) - 1, Math.round(py + (oy - by) * u * u) - 1, 2, 2);
+        }
+      }
+
+      ctx.restore();
+      ctx.textAlign = 'left';
+    }
+
     // --- Par-dessus tout : les tirs, le scan, les chiffres, le monstre ---
     function apres(ctx, cam, t) {
       var i;
@@ -1966,18 +2117,7 @@
         ctx.stroke();
       }
 
-      if (scan) {
-        var k = Math.min(1, (t - scan.t0) / 1500);
-        var sx = scan.x - cam.x, sy = scan.y - cam.y;
-        ctx.strokeStyle = 'rgba(124,240,200,.9)';
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(sx, sy, 10 + k * 26, -1.57, -1.57 + k * 6.283); ctx.stroke();
-        ctx.strokeStyle = 'rgba(124,240,200,' + (0.5 * (1 - k)).toFixed(2) + ')';
-        ctx.beginPath();
-        ctx.moveTo(balade.chef.x - cam.x, balade.chef.y - cam.y - 16);
-        ctx.lineTo(sx, sy);
-        ctx.stroke();
-      }
+      if (scan) dessinerScan(ctx, cam, t);
 
       ctx.textAlign = 'center';
       ctx.font = 'bold 11px "Courier New", monospace';

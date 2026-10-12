@@ -789,9 +789,11 @@
   // ==========================================================
   //  Les huit gardiens du systeme stellaire
   // ==========================================================
-  // Un par monde, comme dans le systeme solaire, mais ils reprennent la
-  // ou Neptune s'arrete : il faut le Mk X pour en venir a bout, et de
-  // plus en plus d'adresse en s'eloignant de l'etoile.
+  // Un par monde, comme dans le systeme solaire, mais d'une autre
+  // trempe : le plus faible, sur Cryos, a presque le double des points de
+  // vie du Leviathan de Neptune, et le dernier plus de cinq fois. Ils
+  // frappent plus fort, plus souvent, et laissent moins de temps pour les
+  // interrompre : passe Ferron, seule une touche dans la gueule y suffit.
   if (!B || !B.definir || !B.arene) return;
 
   var ovale = B.ovale, sourcil = B.sourcil;
@@ -806,9 +808,9 @@
       texte: 'Un miroir de glace noire, grand comme un lac, qui s’est ' +
              'dressé. On y voit les étoiles, on y voit le ciel, on n’y ' +
              'voit jamais celui qui regarde.',
-      pv: 24000, cadence: [2600, 2000, 1400], coup: [19, 25, 31],
-      prepare: 900, etourdi: 950, interrompre: 4, xp: 1600,
-      recompense: { roches: 170, credit: ['pink', 3] },
+      pv: 40000, cadence: [2400, 1800, 1300], coup: [22, 29, 36],
+      prepare: 850, etourdi: 900, interrompre: 5, xp: 2200,
+      recompense: { roches: 200, credit: ['pink', 3] },
       corps: { rx: 54, ry: 44, dy: 0 },
       faibles: [{ x: 52, y: 48, r: 8 }, { x: 98, y: 48, r: 8 }, { x: 75, y: 20, r: 8 }],
       gorge: { x: 75, y: 82, r: 11 },
@@ -884,9 +886,9 @@
       texte: 'Toutes les perles des mers d’Opaline viennent d’elle. Une ' +
              'coquille grande comme une colline, qui ne s’ouvre que pour ' +
              'frapper — et l’on voit alors ce qu’elle couve.',
-      pv: 27000, cadence: [2550, 1950, 1400], coup: [19, 25, 32],
-      prepare: 900, etourdi: 950, interrompre: 4, xp: 1800,
-      recompense: { roches: 190, credit: ['pink', 3] },
+      pv: 48000, cadence: [2350, 1750, 1250], coup: [23, 30, 37],
+      prepare: 830, etourdi: 880, interrompre: 5, xp: 2600,
+      recompense: { roches: 230, credit: ['pink', 3] },
       corps: { rx: 58, ry: 42, dy: 2 },
       faibles: [{ x: 50, y: 46, r: 8 }, { x: 100, y: 46, r: 8 }, { x: 75, y: 15, r: 8 }],
       gorge: { x: 75, y: 78, r: 11 },
@@ -957,9 +959,9 @@
       texte: 'Chez toi, il n’y a pas d’épouvantail au fond du jardin. Ici, ' +
              'si. Il porte un manteau à ta taille, et il garde la maison de ' +
              'quelqu’un qui n’est jamais rentré.',
-      pv: 30000, cadence: [2500, 1900, 1350], coup: [20, 26, 32],
-      prepare: 880, etourdi: 930, interrompre: 4, xp: 2000,
-      recompense: { roches: 210, credit: ['pink', 4] },
+      pv: 57000, cadence: [2300, 1700, 1200], coup: [24, 31, 38],
+      prepare: 810, etourdi: 860, interrompre: 5, xp: 3000,
+      recompense: { roches: 260, credit: ['pink', 4] },
       corps: { rx: 50, ry: 46, dy: 2 },
       faibles: [{ x: 60, y: 42, r: 8 }, { x: 90, y: 42, r: 8 }, { x: 75, y: 90, r: 8 }],
       gorge: { x: 75, y: 62, r: 10 },
@@ -1029,9 +1031,9 @@
       texte: 'La plus belle fleur de Viridia, et la seule qui ne fane ' +
              'pas. Elle s’ouvre au passage de tout ce qui a du sang, et la ' +
              'jungle, autour, fait silence pour l’écouter mâcher.',
-      pv: 34000, cadence: [2450, 1900, 1350], coup: [20, 26, 33],
-      prepare: 860, etourdi: 920, interrompre: 5, xp: 2300,
-      recompense: { roches: 235, credit: ['pink', 4] },
+      pv: 67000, cadence: [2250, 1650, 1150], coup: [25, 32, 40],
+      prepare: 790, etourdi: 840, interrompre: 5, xp: 3500,
+      recompense: { roches: 300, credit: ['pink', 4] },
       corps: { rx: 58, ry: 46, dy: 0 },
       faibles: [{ x: 46, y: 22, r: 8 }, { x: 104, y: 22, r: 8 }, { x: 75, y: 10, r: 8 }],
       gorge: { x: 75, y: 60, r: 12 },
@@ -1111,9 +1113,9 @@
       texte: 'Personne n’a bâti de four sur Ferron. Celui-ci s’est fait ' +
              'tout seul, comme le reste, et il s’est allumé le jour où la ' +
              'foudre est tombée dedans. Il a faim de tout ce qui n’est pas en fer.',
-      pv: 38000, cadence: [2400, 1850, 1300], coup: [21, 27, 33],
-      prepare: 850, etourdi: 900, interrompre: 5, xp: 2600,
-      recompense: { roches: 260, credit: ['pink', 4] },
+      pv: 78000, cadence: [2200, 1600, 1100], coup: [26, 34, 42],
+      prepare: 770, etourdi: 820, interrompre: 6, xp: 4000,
+      recompense: { roches: 340, credit: ['pink', 4] },
       corps: { rx: 56, ry: 44, dy: 6 },
       faibles: [{ x: 52, y: 52, r: 9 }, { x: 98, y: 52, r: 9 }, { x: 75, y: 34, r: 7 }],
       gorge: { x: 75, y: 82, r: 11 },
@@ -1187,9 +1189,9 @@
       texte: 'Huit éclats qui se souviennent d’avoir été un visage. Ils ' +
              'se rapprochent quand on vient, à peu près dans le bon ordre, ' +
              'autour d’un morceau du cœur qu’ils se sont gardé.',
-      pv: 43000, cadence: [2400, 1800, 1300], coup: [21, 27, 34],
-      prepare: 840, etourdi: 900, interrompre: 5, xp: 2900,
-      recompense: { roches: 285, credit: ['pink', 5] },
+      pv: 90000, cadence: [2150, 1550, 1050], coup: [27, 35, 43],
+      prepare: 750, etourdi: 800, interrompre: 6, xp: 4600,
+      recompense: { roches: 380, credit: ['pink', 5] },
       corps: { rx: 58, ry: 46, dy: 0 },
       faibles: [{ x: 43, y: 26, r: 8 }, { x: 107, y: 26, r: 8 }, { x: 75, y: 14, r: 7 }],
       gorge: { x: 75, y: 60, r: 12 },
@@ -1260,9 +1262,9 @@
       texte: 'Le vent l’a soufflé dans le sable, il y a si longtemps que ' +
              'personne ne sait s’il a eu un sculpteur. Il pose une seule ' +
              'question, et ne laisse pas le temps d’y répondre.',
-      pv: 49000, cadence: [2350, 1800, 1250], coup: [22, 28, 34],
-      prepare: 830, etourdi: 890, interrompre: 5, xp: 3300,
-      recompense: { roches: 310, credit: ['pink', 5] },
+      pv: 104000, cadence: [2100, 1500, 1000], coup: [28, 36, 45],
+      prepare: 730, etourdi: 780, interrompre: 6, xp: 5300,
+      recompense: { roches: 430, credit: ['pink', 5] },
       corps: { rx: 58, ry: 48, dy: 0 },
       faibles: [{ x: 58, y: 46, r: 8 }, { x: 92, y: 46, r: 8 }, { x: 75, y: 12, r: 7 }],
       gorge: { x: 75, y: 76, r: 10 },
@@ -1334,9 +1336,9 @@
       texte: 'Toute la chaleur que l’étoile a bue, c’est ici qu’elle ' +
              'finit. Elle s’est amassée au fond de la mer de lave, elle a ' +
              'pris un visage, et elle attend qu’on vienne la lui reprendre.',
-      pv: 56000, cadence: [2300, 1750, 1250], coup: [22, 28, 35],
-      prepare: 820, etourdi: 880, interrompre: 5, xp: 4000,
-      recompense: { roches: 340, credit: ['pink', 6] },
+      pv: 120000, cadence: [2000, 1450, 950], coup: [30, 38, 47],
+      prepare: 700, etourdi: 750, interrompre: 6, xp: 6500,
+      recompense: { roches: 500, credit: ['pink', 6] },
       corps: { rx: 58, ry: 46, dy: 2 },
       faibles: [{ x: 56, y: 56, r: 8 }, { x: 94, y: 56, r: 8 }, { x: 75, y: 24, r: 7 },
                 { x: 44, y: 82, r: 7 }, { x: 106, y: 82, r: 7 }],
