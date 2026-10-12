@@ -79,7 +79,16 @@
     jupiter:  { bandes: 7, tache: true },
     saturne:  { bandes: 5, anneaux: 1 },
     uranus:   { bandes: 3, anneaux: 0.55, couche: true },
-    neptune:  { bandes: 4, tache: true, geysers: 5 }
+    neptune:  { bandes: 4, tache: true, geysers: 5 },
+    // Le systeme stellaire.
+    cryos:    { crateres: 5, calotte: 0.3, geysers: 4 },
+    opaline:  { continents: 3, calotte: 0.1 },
+    altera:   { continents: 6, nuages: 5, calotte: 0.12 },
+    viridia:  { continents: 9, nuages: 9, voile: 0.12 },
+    ferron:   { crateres: 9, bandes: 2 },
+    brisure:  { continents: 4, crateres: 12, tache: true },
+    pyrrhe:   { bandes: 6, poussiere: true },
+    ignis:    { continents: 7, tache: true, geysers: 8 }
   };
 
   function peindreMonde(a) {
@@ -314,7 +323,12 @@
       pioche: function () {
         var V = window.ODYVIE;
         if (!V) return [];
-        return V.ASTRES.map(function (a) {
+        // Le systeme stellaire n'entre au carnet qu'une fois ouvert, et
+        // monde par monde : le Codanex ne doit pas souffler des
+        // coordonnees qu'on n'a pas encore relevees.
+        return (V.connus ? V.connus() : V.ASTRES).filter(function (a) {
+          return a.systeme !== 'stellaire' || DP.aVuAstre(a.id);
+        }).map(function (a) {
           return {
             id: a.id,
             nom: a.nom,

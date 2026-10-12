@@ -853,8 +853,21 @@
     }).join('');
   }
 
+  // Ce que le tracker doit feter en arrivant sur la carte d'Altera : le
+  // passage vient de s'achever. Retenu le temps d'un changement d'ecran.
+  var arriveeStellaire = null;
+
   function viewTracker(view, arg) {
     view.classList.add('view--tracker');
+
+    // "#tracker/stellaire" montre Altera, la Terre du systeme stellaire.
+    // L'adresse ne suffit pas : il faut que le code ait ete entre.
+    var S = window.STELLAIRE;
+    var stellaire = arg === 'stellaire' && !!S && DP.stellaire();
+    view.classList.toggle('view--stellaire', stellaire);
+    function lesSpots() { return stellaire ? S.spots() : DP.spots(); }
+    function heureDe(s) { return stellaire ? S.heure(s) : DP.heureLocale(s.tz); }
+    function dateDe(s) { return stellaire ? S.date(s) : DP.dateLocale(s.tz); }
 
     // La faille du jour : SinAIster remplace PropAItious sur toutes les
     // balises, et l'ecran clignote en rouge tant qu'on ne l'a pas purgee.
@@ -866,6 +879,9 @@
       F = { active: true, cle: 'essai', reste: 86400000,
             jour: F.jour, prochaine: F.prochaine, prochainJour: F.prochainJour };
     }
+    // SinAIster ne tient que le reseau de la Terre : sur Altera, pas de
+    // faille.
+    if (stellaire) F = { active: false, cle: 'hors-systeme', reste: 0 };
     var etatF = DP.etatFaille(F.cle);
     var purgees = etatF.purges.slice();
     var enFaille = F.active && !etatF.contenue;
@@ -874,8 +890,8 @@
 
     var carte = el('div', 'tracker-map');
     var fond = el('img', 'tracker-img');
-    fond.src = 'assets/items/worldmap.png';
-    fond.alt = 'Carte du monde';
+    fond.src = stellaire ? S.carte() : 'assets/items/worldmap.png';
+    fond.alt = stellaire ? 'Carte d’Altéra' : 'Carte du monde';
     carte.appendChild(fond);
 
     // Le panneau d'information, cache tant qu'on n'a clique nulle part.
@@ -904,6 +920,9 @@
     // purge tout de suite, sans attendre le jour de la faille : de quoi
     // l'essayer quand on veut. Un mauvais code ne dit rien d'utile.
     var DG_CODE = '33071407';
+    // Un second code, plus long d'un chiffre : il decroche le tracker de
+    // la Terre et le cale sur le systeme stellaire. Rien ne l'annonce.
+    var CODE_STELLAIRE = '123444266';
 
     var dg = el('form', 'tracker-dg');
     dg.setAttribute('autocomplete', 'off');
@@ -915,7 +934,7 @@
     dgChamp.id = 'trackerDg';
     dgChamp.type = 'text';
     dgChamp.inputMode = 'numeric';
-    dgChamp.maxLength = 8;
+    dgChamp.maxLength = 9;
     dgChamp.placeholder = '– – – – – – – –';
     dgChamp.setAttribute('aria-label', 'Code de maintenance');
     dg.appendChild(dgChamp);
@@ -928,13 +947,21 @@
     dg.appendChild(dgMot);
 
     dgChamp.addEventListener('input', function () {
-      dgChamp.value = dgChamp.value.replace(/\D/g, '').slice(0, 8);
+      dgChamp.value = dgChamp.value.replace(/\D/g, '').slice(0, 9);
       dg.classList.remove('is-refus');
       dgMot.textContent = '';
     });
 
     dg.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (dgChamp.value === CODE_STELLAIRE && S) {
+        dgChamp.value = '';
+        dg.classList.remove('is-refus');
+        dg.classList.add('is-ok');
+        if (stellaire) { dgMot.textContent = 'Signal déjà verrouillé.'; return; }
+        dgMot.textContent = 'Signal hors système…';
+        return passage();
+      }
       if (dgChamp.value !== DG_CODE) {
         dg.classList.remove('is-refus');
         void dg.offsetWidth;
@@ -990,15 +1017,15 @@
       fCont.textContent  = spot.continent;
       fVille.textContent = pirate ? brouiller(spot.ville, 0.5) : spot.ville;
       fPays.textContent  = pirate ? brouiller(spot.pays, 0.35) : spot.pays;
-      fHeure.textContent = pirate ? brouiller(DP.heureLocale(spot.tz), 0.6) : DP.heureLocale(spot.tz);
-      fDate.textContent  = pirate ? 'RELEVÉ CORROMPU — SinAIster' : DP.dateLocale(spot.tz);
+      fHeure.textContent = pirate ? brouiller(heureDe(spot), 0.6) : heureDe(spot);
+      fDate.textContent  = pirate ? 'RELEVÉ CORROMPU — SinAIster' : dateDe(spot);
       fiche.hidden = false;
 
       stopHorloge();
       horloge = setInterval(function () {
         if (!document.body.contains(fiche)) { stopHorloge(); return; }
         var pir = enFaille && purgees.indexOf(spot.id) === -1;
-        fHeure.textContent = pir ? brouiller(DP.heureLocale(spot.tz), 0.6) : DP.heureLocale(spot.tz);
+        fHeure.textContent = pir ? brouiller(heureDe(spot), 0.6) : heureDe(spot);
         if (pir) fVille.textContent = brouiller(spot.ville, 0.5);
       }, 1000);
     }
@@ -1054,14 +1081,14 @@
 
     function poser() {
       carte.querySelectorAll('.pin').forEach(function (p) { p.remove(); });
-      DP.spots().forEach(function (s) { poserBalise(s, false); });
+      lesSpots().forEach(function (s) { poserBalise(s, false); });
       relais.forEach(function (s) {
         if (purgees.indexOf(s.id) === -1) poserBalise(s, true).classList.add('is-relais');
       });
 
       // Si le panneau etait ouvert, il suit le nouveau lieu du continent.
       if (actif) {
-        var suite = DP.spots().filter(function (s) { return s.id === actif.id; })[0];
+        var suite = lesSpots().filter(function (s) { return s.id === actif.id; })[0];
         var pin = carte.querySelector('[data-spot="' + actif.id + '"]');
         if (suite && pin) afficher(suite, pin); else cacher();
       }
@@ -1275,7 +1302,7 @@
       if (reste <= 1000) setTimeout(poser, 1100);
 
       // La faille commence ou s'acheve pendant qu'on regarde : on redessine.
-      var f2 = essai ? F : DP.faille();
+      var f2 = (essai || stellaire) ? F : DP.faille();
       if (f2.cle !== F.cle || f2.active !== F.active) {
         if (window.ROUTER) window.ROUTER.reload();
         return;
@@ -1286,12 +1313,146 @@
       majBandeau();
     }
 
+    // ---- Le passage vers le systeme stellaire ----
+    // Cinq secondes : la carte de la Terre part vers la droite par
+    // a-coups, l'image se dechire, et celle d'Altera arrive par la gauche.
+    function passage() {
+      if (view.classList.contains('is-passage')) return;
+      var reduitP = window.matchMedia &&
+                    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var DUREE = reduitP ? 400 : 5000;
+      cacher();
+      view.classList.add('is-passage');
+
+      var arrivee = el('div', 'tracker-map tracker-arrivee');
+      var im = el('img', 'tracker-img');
+      im.src = S.carte();
+      im.alt = '';
+      arrivee.appendChild(im);
+      view.insertBefore(arrivee, carte);
+
+      // Les dechirures : des bandes qui sautent d'un bord a l'autre.
+      var brouille = el('div', 'trk-glitch');
+      for (var b = 0; b < 8; b++) {
+        var bande = el('span', 'trk-glitch-bande');
+        bande.style.setProperty('--i', String(b));
+        brouille.appendChild(bande);
+      }
+      var mot = el('strong', 'trk-glitch-mot', '');
+      brouille.appendChild(mot);
+      view.appendChild(brouille);
+
+      // Le glissement n'est pas lisse : il avance, bute, recule d'un
+      // cran, repart. Le meme trajet pour les deux cartes, l'une decalee
+      // d'un ecran.
+      var graine = 20261012;
+      function alea() {
+        graine = (graine * 1103515245 + 12345) & 0x7fffffff;
+        return graine / 0x7fffffff;
+      }
+      var N = 46, pas = [];
+      for (var i = 0; i <= N; i++) {
+        var u = i / N, fin = i === N;
+        var lisse = u * u * (3 - 2 * u);
+        pas.push({
+          p: fin ? 1 : Math.max(0, Math.min(1, lisse + (alea() - 0.6) * 0.1)),
+          biais: fin ? 0 : (alea() - 0.5) * 9,
+          dy: fin ? 0 : (alea() < 0.22 ? (alea() - 0.5) * 7 : 0),
+          teinte: fin ? 0 : (alea() < 0.3 ? Math.round(alea() * 300) : 0)
+        });
+      }
+      function cles(decale) {
+        return pas.map(function (k) {
+          return {
+            transform: 'translateX(' + ((k.p + decale) * 100).toFixed(2) + '%) ' +
+                       'translateY(' + k.dy.toFixed(1) + '%) skewX(' + k.biais.toFixed(1) + 'deg)',
+            filter: 'hue-rotate(' + k.teinte + 'deg)',
+            easing: 'steps(1, end)'
+          };
+        });
+      }
+      if (!reduitP && carte.animate) {
+        carte.animate(cles(0), { duration: DUREE, fill: 'forwards' });
+        arrivee.animate(cles(-1), { duration: DUREE, fill: 'forwards' });
+      } else {
+        carte.style.transform = 'translateX(100%)';
+        arrivee.style.transform = 'none';
+      }
+
+      // Le mot au centre : brouille d'abord, lisible a la fin.
+      var t0 = Date.now();
+      var grille = setInterval(function () {
+        var k = Math.min(1, (Date.now() - t0) / DUREE);
+        var txt = k < 0.55 ? 'SIGNAL HORS SYSTÈME' : 'SYSTÈME STELLAIRE';
+        mot.textContent = brouiller(txt, k < 0.55 ? 0.25 + k * 0.6 : (1 - k) * 1.2);
+      }, 80);
+
+      setTimeout(function () {
+        clearInterval(grille);
+        if (!document.body.contains(carte)) return;
+        var neuf = DP.ouvrirStellaire();
+        DP.noterAstre(S.MONDE);
+        arriveeStellaire = neuf ? 'neuf' : 'retour';
+        if (window.location.hash === '#tracker/stellaire') {
+          if (window.ROUTER) window.ROUTER.reload();
+        } else {
+          window.location.hash = '#tracker/stellaire';
+        }
+      }, DUREE + 150);
+    }
+
+    // L'arrivee : le panneau qui dit ce qu'on vient de trouver. Le voile
+    // laisse passer les clics ; seul le panneau se touche.
+    function annoncer(neuf) {
+      var V = window.ODYVIE;
+      var monde = V && V.astre(S.MONDE);
+      var sc = el('div', 'stl-annonce');
+      var p = el('div', 'stl-annonce-carte');
+      p.appendChild(el('span', 'stl-annonce-sur', 'SIGNAL VERROUILLÉ'));
+      p.appendChild(el('strong', 'stl-annonce-titre', 'SYSTÈME STELLAIRE'));
+      p.appendChild(el('span', 'stl-annonce-txt',
+        'De l’autre côté du trou de ver, une autre Terre. ' +
+        'Le DinderTracker en reçoit la carte : Altéra.'));
+      if (neuf && monde) {
+        var c = el('span', 'stl-annonce-coord');
+        c.appendChild(el('span', null, 'Coordonnées inscrites au Téléportail'));
+        c.appendChild(el('strong', null, monde.nom + '  ·  ' + monde.code));
+        p.appendChild(c);
+      }
+      var ok = el('button', 'stl-annonce-btn', 'CONTINUER');
+      ok.type = 'button';
+      ok.addEventListener('click', function () {
+        sc.classList.add('is-sortie');
+        setTimeout(function () { if (sc.parentNode) sc.remove(); }, 350);
+      });
+      p.appendChild(ok);
+      sc.appendChild(p);
+      carte.appendChild(sc);
+    }
+
     carte.appendChild(voile);
     carte.appendChild(fiche);
     view.appendChild(carte);
     view.appendChild(bandeau);
     view.appendChild(rebours);
     carte.appendChild(dg);
+
+    // Les deux cartes, une fois la seconde connue.
+    if (S && DP.stellaire()) {
+      var onglets = el('div', 'tracker-onglets');
+      [['', 'Système solaire'], ['stellaire', 'Système stellaire']].forEach(function (o) {
+        var a = el('a', 'tracker-onglet' + ((o[0] === 'stellaire') === stellaire ? ' is-actif' : ''), o[1]);
+        a.href = '#tracker' + (o[0] ? '/' + o[0] : '');
+        onglets.appendChild(a);
+      });
+      carte.appendChild(onglets);
+    }
+
+    if (stellaire && arriveeStellaire) {
+      var quoi = arriveeStellaire;
+      arriveeStellaire = null;
+      annoncer(quoi === 'neuf');
+    }
 
     poser();
     majBandeau();

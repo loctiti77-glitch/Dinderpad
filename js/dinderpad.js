@@ -492,6 +492,9 @@
       astres: [],
       scans: {},
       abattus: {},
+      // Le systeme stellaire : ferme tant que le DinderTracker n'a pas
+      // recu le bon code.
+      stellaire: false,
       // La monnaie de l'Odyssee : ce que laissent les creatures qu'on
       // abat. Elle fait monter le meme pistolet que les Noyaux de la
       // peche, mais on ne l'echange pas contre eux.
@@ -599,6 +602,7 @@
     if (typeof p.telecommande !== 'boolean') p.telecommande = false;
     if (typeof p.chapitre !== 'number') p.chapitre = 0;
     if (!Array.isArray(p.astres)) p.astres = [];
+    if (typeof p.stellaire !== 'boolean') p.stellaire = false;
     if (!p.scans || typeof p.scans !== 'object') p.scans = {};
     if (!p.abattus || typeof p.abattus !== 'object') p.abattus = {};
     if (typeof p.roches !== 'number') p.roches = 0;
@@ -1183,6 +1187,19 @@
     return true;
   }
 
+  // Le systeme stellaire, de l'autre cote du trou de ver. C'est un code
+  // du DinderTracker qui l'ouvre ; le Teleportail et le Codanex n'en
+  // montrent rien avant.
+  function stellaire() { return !!me().stellaire; }
+
+  function ouvrirStellaire() {
+    var p = me();
+    if (p.stellaire) return false;
+    p.stellaire = true;
+    save();
+    return true;
+  }
+
   // Le carnet du scanner : chaque entree garde le nombre de scans et la
   // date du premier, qui sert a ordonner les decouvertes.
   function scans() { return me().scans; }
@@ -1292,6 +1309,7 @@
     { id: 'odyssee', nom: 'The Odyssey of Dinder', det: 'Téléportail, mondes, scans, créatures abattues, Roches Solaires',
       vider: function (p) {
         p.telecommande = false; p.chapitre = 0; p.astres = []; p.scans = {};
+        p.stellaire = false;
         p.abattus = {}; p.roches = 0; p.armeNiveauOdyssee = 1;
       } },
     { id: 'badges', nom: 'Badges', det: 'Les badges et les exploits comptés',
@@ -1504,6 +1522,7 @@
     aLaTelecommande: aLaTelecommande, prendreTelecommande: prendreTelecommande,
     chapitre: chapitre, ouvrirChapitre: ouvrirChapitre,
     astresVus: astresVus, aVuAstre: aVuAstre, noterAstre: noterAstre,
+    stellaire: stellaire, ouvrirStellaire: ouvrirStellaire,
     scans: scans, aScanne: aScanne, noterScan: noterScan,
     abattus: abattus, noterAbattu: noterAbattu,
     roches: roches, gagnerRoches: gagnerRoches, depenserRoches: depenserRoches,

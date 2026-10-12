@@ -742,10 +742,19 @@
   //  Le Teleportail
   // ==========================================================
 
+  // Le systeme ouvert dans le journal de bord. On le retient le temps de
+  // la page : en revenant d'un monde stellaire, on retrouve sa liste.
+  var ongletSys = 'solaire';
+
   function viewTeleportail(view) {
     if (!DP.aLaTelecommande()) { location.hash = '#odyssee'; return; }
 
     var box = el('div', 'tp');
+    var SYS = V.systemes();
+    if (!SYS.some(function (s) { return s.id === ongletSys; })) ongletSys = 'solaire';
+    function sysActif() {
+      return SYS.filter(function (s) { return s.id === ongletSys; })[0] || SYS[0];
+    }
     var saisie = '';
     var message = 'Entre une destination.';
     var erreur = false;
@@ -762,32 +771,44 @@
     ecran.appendChild(ligneMot);
     appareil.appendChild(ecran);
 
+    // Le pave change avec le systeme : chacun a ses initiales.
     var pave = el('div', 'tp-pave');
-    var TOUCHES = ['S', 'M', 'V', 'T', 'J', 'U', 'N', 'L', '-',
-                   '1', '2', '3', '4', '5', '6', '7', '8'];
-    TOUCHES.forEach(function (c) {
-      var b = el('button', 'tp-touche', c);
-      b.type = 'button';
-      b.dataset.touche = c;
-      b.addEventListener('click', function () { taper(c); });
-      pave.appendChild(b);
-    });
+    var TOUCHES = {
+      solaire: ['S', 'M', 'V', 'T', 'J', 'U', 'N', 'L', '-',
+                '1', '2', '3', '4', '5', '6', '7', '8'],
+      stellaire: ['S', 'T', 'C', 'O', 'A', 'V', 'F', 'B', 'P', 'I', '-',
+                  '1', '2', '3', '4', '5', '6', '7', '8']
+    };
     var effacer = el('button', 'tp-touche tp-touche--eff', '←');
     effacer.type = 'button';
     effacer.dataset.touche = 'eff';
     effacer.addEventListener('click', function () {
       saisie = saisie.slice(0, -1); erreur = false; majEcran();
     });
-    pave.appendChild(effacer);
     var partir = el('button', 'tp-touche tp-touche--go', 'PARTIR');
     partir.type = 'button';
     partir.dataset.touche = 'go';
     partir.addEventListener('click', valider);
-    pave.appendChild(partir);
     appareil.appendChild(pave);
 
-    appareil.appendChild(el('p', 'tp-plaque', 'SS-[INITIALE][RANG]'));
+    var plaque = el('p', 'tp-plaque', '');
+    appareil.appendChild(plaque);
     box.appendChild(appareil);
+
+    function poserPave() {
+      pave.textContent = '';
+      pave.classList.toggle('tp-pave--serre', ongletSys === 'stellaire');
+      (TOUCHES[ongletSys] || TOUCHES.solaire).forEach(function (c) {
+        var b = el('button', 'tp-touche', c);
+        b.type = 'button';
+        b.dataset.touche = c;
+        b.addEventListener('click', function () { taper(c); });
+        pave.appendChild(b);
+      });
+      pave.appendChild(effacer);
+      pave.appendChild(partir);
+      plaque.textContent = sysActif().prefixe + '-[INITIALE][RANG]';
+    }
 
     // ---- Le journal de bord, a droite ----
     var droite = el('div', 'tp-droite');
@@ -795,13 +816,47 @@
     var tete = el('div', 'tp-banniere');
     tete.appendChild(el('span', 'tp-enseigne', 'Journal de bord'));
     var nScans = Object.keys(DP.scans()).length;
-    tete.appendChild(el('span', 'tp-compte',
-      DP.astresVus().length + ' / ' + V.ASTRES.length + ' mondes  ·  ' + nScans + ' / ' +
-      V.tout().length + ' scans'));
+    var compte = el('span', 'tp-compte', '');
+    tete.appendChild(compte);
     droite.appendChild(tete);
 
+    // Les deux categories, des que la seconde existe : avant, le journal
+    // garde son allure d'origine.
+    var onglets = el('div', 'tp-onglets');
+    if (SYS.length > 1) {
+      SYS.forEach(function (s) {
+        var o = el('button', 'tp-onglet', s.nom);
+        o.type = 'button';
+        o.dataset.systeme = s.id;
+        o.addEventListener('click', function () {
+          if (ongletSys === s.id) return;
+          ongletSys = s.id;
+          saisie = ''; erreur = false; message = 'Entre une destination.';
+          poserSysteme();
+        });
+        onglets.appendChild(o);
+      });
+      droite.appendChild(onglets);
+    }
+
     var liste = el('div', 'tp-mondes');
-    V.ASTRES.forEach(function (a) {
+    droite.appendChild(liste);
+
+    function poserSysteme() {
+      box.dataset.systeme = ongletSys;
+      [].forEach.call(onglets.children, function (o) {
+        o.classList.toggle('is-actif', o.dataset.systeme === ongletSys);
+      });
+      var mondes = V.astresDe(ongletSys);
+      compte.textContent = mondes.filter(function (a) { return DP.aVuAstre(a.id); }).length +
+        ' / ' + mondes.length + ' mondes  ·  ' + nScans + ' / ' + V.tout().length + ' scans';
+      poserPave();
+      liste.textContent = '';
+      mondes.forEach(poserMonde);
+      majEcran();
+    }
+
+    function poserMonde(a) {
       var vu = DP.aVuAstre(a.id);
       var ouvert = V.ouvert(a.id);
       var n = el('button', 'tp-monde');
@@ -833,7 +888,9 @@
 
       n.addEventListener('click', function () {
         if (!vu) {
-          dire('Ce monde n’est pas encore au journal. Tape ses coordonnées.', true);
+          dire(a.systeme === 'stellaire'
+            ? 'Pas encore au journal. Ses coordonnées sont gardées sur un monde déjà visité.'
+            : 'Ce monde n’est pas encore au journal. Tape ses coordonnées.', true);
           return;
         }
         if (!ouvert) {
@@ -846,8 +903,7 @@
         majEcran();
       });
       liste.appendChild(n);
-    });
-    droite.appendChild(liste);
+    }
 
     var pied = el('div', 'tp-pied');
     var carnet = el('a', 'ody-btn ody-btn--plat', 'Carnet du scanner');
@@ -925,7 +981,11 @@
 
     function valider() {
       var a = V.astre(saisie);
-      if (!a) return refuser('Coordonnées refusées. Rien ne répond.');
+      // Un monde stellaire qui n'est pas au journal ne repond pas du tout :
+      // son nom ne doit pas sortir d'un message de refus.
+      if (!a || (a.systeme === 'stellaire' && !V.ouvert(a.id))) {
+        return refuser('Coordonnées refusées. Rien ne répond.');
+      }
       // On ne saute pas une escale : le gardien du monde d'avant barre
       // la route tant qu'il est debout.
       if (!V.ouvert(a.id)) {
@@ -941,7 +1001,7 @@
       }, reduit ? 0 : 700);
     }
 
-    majEcran();
+    poserSysteme();
   }
 
   // ==========================================================
@@ -1193,6 +1253,7 @@
 
     jeu.textContent = '';
     DP.noterAstre(a.id);
+    ongletSys = a.systeme;
     var lune = a.id === 'lune';
 
     var scene = el('div', 'ody-scene');
@@ -1444,11 +1505,18 @@
         scan = null;
         var r = DP.noterScan(sujet.id, a.id);
         etat = 'fiche';
-        montrerFiche(sujet, r.neuf, r.entree);
+        // Dans le systeme stellaire, le lieu remarquable garde les
+        // coordonnees d'un monde encore inconnu.
+        var revele = null;
+        if (r.neuf && sujet.forme && !sujet.objet && a.systeme === 'stellaire') {
+          revele = V.prochainStellaire();
+          if (revele) DP.noterAstre(revele.id);
+        }
+        montrerFiche(sujet, r.neuf, r.entree, revele);
       }, reduit ? 200 : 1500);
     }
 
-    function montrerFiche(sujet, neuf, entree) {
+    function montrerFiche(sujet, neuf, entree, revele) {
       panneau.hidden = false;
       panneau.textContent = '';
       var carte = el('div', 'ody-fiche' + (neuf ? ' is-neuf' : ''));
@@ -1469,6 +1537,12 @@
       if (entree && entree.n > 1) det.appendChild(el('span', null, '×' + entree.n));
       carte.appendChild(det);
       carte.appendChild(el('p', 'ody-fiche-txt', sujet.texte));
+      if (revele) {
+        var coord = el('p', 'ody-fiche-coord');
+        coord.appendChild(el('span', 'ody-fiche-coord-titre', 'COORDONNÉES RELEVÉES'));
+        coord.appendChild(el('strong', 'ody-fiche-coord-code', revele.nom + '  ·  ' + revele.code));
+        carte.appendChild(coord);
+      }
       var b = el('button', 'ody-btn', 'Continuer');
       b.type = 'button';
       b.addEventListener('click', fermerFiche);
@@ -2053,7 +2127,17 @@
 
     var grille = el('div', 'ody-grille');
 
-    V.ASTRES.forEach(function (a) {
+    var parSysteme = V.systemes().length > 1, dernierSys = null;
+    V.connus().forEach(function (a) {
+      // Une bande par systeme, des qu'il y en a deux a distinguer.
+      if (parSysteme && a.systeme !== dernierSys) {
+        dernierSys = a.systeme;
+        var bande = el('p', 'ody-systeme', V.SYSTEMES.filter(function (s) {
+          return s.id === a.systeme;
+        })[0].nom);
+        bande.dataset.systeme = a.systeme;
+        grille.appendChild(bande);
+      }
       var vu = DP.aVuAstre(a.id);
       var sujets = V.scannables(a.id);
       var n = sujets.filter(function (s) { return scans[s.id]; }).length;

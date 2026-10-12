@@ -62,8 +62,15 @@
       affiche: function (n) { return n + ' × 5–25'; } },
     { id: 'founder', nom: 'Niveaux de The Founder War', pts: 150,
       compte: function () { return DP.fwNiveau(); } },
-    { id: 'failles', nom: 'Failles contenues', pts: 250,
+    // Une faille ne revient qu'une fois par semaine : elle paie en
+    // consequence.
+    { id: 'failles', nom: 'Failles contenues', pts: 1500,
       compte: function () { return DP.faillesContenues(); } },
+    // La fusion du Dr. Islas et du Fondateur : le bout de The Founder
+    // War, et le plus gros gain d'un seul coup.
+    { id: 'fusion', nom: 'Fusion Dr.Islas × The Founder', pts: 5000,
+      compte: function () { return DP.fusion().faite ? 1 : 0; },
+      sur: function () { return 1; } },
     { id: 'artefacts', nom: 'Artefacts trouvés', pts: 120,
       compte: function () { return window.ARTEFACTS ? window.ARTEFACTS.trouves().length : 0; } },
     { id: 'objets', nom: 'Objets trouvés', pts: 150,
@@ -771,6 +778,7 @@
   }, function (cle) { return gardienDe(cle) ? 9 : 1; });
   surveiller('acquerirRevetement', 'Revêtement gagné', 4);
   surveiller('contenirFaille', 'Faille de sécurité contenue', 9);
+  surveiller('noterFusion', 'Fusion : Dr.Islas × The Founder', 10);
   surveiller('noterArtefact', function (id) {
     var a = window.ARTEFACTS && window.ARTEFACTS.parId(id);
     return 'Artefact trouvé' + (a ? ' : ' + a.nom : '');

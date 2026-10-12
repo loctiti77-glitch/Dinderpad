@@ -163,8 +163,169 @@
         structure: '#33487f', structureHaut: '#5169a8'
       },
       liquideNom: 'des geysers d’azote', eau: 0.08, roche: 0.13, cristal: 0.05
+    },
+
+    // ---------- Le systeme stellaire ----------
+    // De l'autre cote du trou de ver : huit mondes aussi, mais autour
+    // d'une etoile qui prend la chaleur au lieu d'en donner. Tout y est a
+    // l'envers — le plus proche est gele, le plus lointain brule. Le
+    // code suit la meme regle, avec ST pour Systeme sTellaire ; "ordre"
+    // est le rang depuis l'etoile, "rang" reste unique d'un bout a l'autre
+    // de la liste parce que les cartes en tirent leur relief.
+    {
+      code: 'ST-C1', id: 'cryos', nom: 'Cryos', rang: 11, ordre: 1, systeme: 'stellaire',
+      sous: 'Le plus proche, le plus froid',
+      texte: 'Collé à son étoile, et pourtant gelé jusqu’au cœur. Une glace ' +
+             'noire, lisse comme un miroir, où l’on voit le ciel sous ses ' +
+             'pieds. L’étoile, ici, ne réchauffe rien : elle boit.',
+      ciel: ['#0a0616', '#5a48b8', '#020108'],
+      palette: {
+        sol: '#1c2238', sol2: '#161b2e', grain: '#2c3654',
+        roche: '#0e1220', rocheHaut: '#3a4670', rocheOmbre: '#05070e',
+        liquide: '#6a3ad8', liquide2: '#9a6cf4', ecume: '#e0d0ff',
+        cristal: '#7ad8ff', cristal2: '#e8fbff',
+        structure: '#2a3050', structureHaut: '#4c5888'
+      },
+      liquideNom: 'des puits de froid', eau: 0.05, roche: 0.12, cristal: 0.09
+    },
+    {
+      code: 'ST-O2', id: 'opaline', nom: 'Opaline', rang: 12, ordre: 2, systeme: 'stellaire',
+      sous: 'Pas un nuage, jamais',
+      texte: 'Un ciel si limpide qu’on y compte les autres mondes à l’œil ' +
+             'nu. Le sol est du verre laiteux, et des mers de perles y ' +
+             'roulent sans bruit d’un rivage à l’autre.',
+      ciel: ['#3a5a8a', '#bfe4f4', '#16243c'],
+      palette: {
+        sol: '#e4dcec', sol2: '#d2c8de', grain: '#f8f2ff',
+        roche: '#a89cc0', rocheHaut: '#cfc4e4', rocheOmbre: '#5c5278',
+        liquide: '#f0b8d8', liquide2: '#ffd8ec', ecume: '#ffffff',
+        cristal: '#9ae8d8', cristal2: '#e0fff8',
+        structure: '#b0a4c8', structureHaut: '#d8cdec'
+      },
+      liquideNom: 'des mers de perles', eau: 0.09, roche: 0.09, cristal: 0.06
+    },
+    {
+      code: 'ST-A3', id: 'altera', nom: 'Altéra', rang: 13, ordre: 3, systeme: 'stellaire',
+      sous: 'L’autre Terre',
+      texte: 'Le DinderTracker en a dressé la carte avant que tu y poses le ' +
+             'pied. Une herbe ambrée, des océans violets, et un jardin qui ' +
+             'ressemble au tien — à ceci près que personne n’y a jamais dormi.',
+      ciel: ['#2a1248', '#7a3aa8', '#0c0418'],
+      palette: {
+        sol: '#d88a2a', sol2: '#c47a22', grain: '#f0a848',
+        roche: '#6a4a5c', rocheHaut: '#93697f', rocheOmbre: '#34222e',
+        liquide: '#5a2aa8', liquide2: '#7a44cc', ecume: '#d8b8ff',
+        cristal: '#7cf0e8', cristal2: '#e0fffc',
+        structure: '#4a2a5a', structureHaut: '#70457f'
+      },
+      liquideNom: 'la mare violette', eau: 0.06, roche: 0.08, cristal: 0.03
+    },
+    {
+      code: 'ST-V4', id: 'viridia', nom: 'Viridia', rang: 14, ordre: 4, systeme: 'stellaire',
+      sous: 'La jungle qui ne s’arrête pas',
+      texte: 'Pas un pouce de poussière : tout pousse, partout, tout le ' +
+             'temps. Il pleut depuis toujours, et les arbres sont si serrés ' +
+             'qu’ils se tiennent debout les uns les autres.',
+      ciel: ['#0e3a2a', '#3fa878', '#04140e'],
+      palette: {
+        sol: '#1f6a3a', sol2: '#185a30', grain: '#2f8a4c',
+        roche: '#0e3a22', rocheHaut: '#3a9a5a', rocheOmbre: '#061c10',
+        liquide: '#1a8a8a', liquide2: '#2fb0a8', ecume: '#a8f4e0',
+        cristal: '#f0d83a', cristal2: '#fff8a8',
+        structure: '#5a3a1e', structureHaut: '#7f582f'
+      },
+      liquideNom: 'des marais tièdes', eau: 0.10, roche: 0.20, cristal: 0.03
+    },
+    {
+      code: 'ST-F5', id: 'ferron', nom: 'Ferron', rang: 15, ordre: 5, systeme: 'stellaire',
+      sous: 'Un seul bloc de fer',
+      texte: 'Ni gaz ni tempête : une boule de métal plein, la plus lourde ' +
+             'du système. Tout ce qui est en fer se couche vers le nord, et ' +
+             'les éclairs y courent à ras du sol, d’un clou à l’autre.',
+      ciel: ['#1a1c22', '#5a626e', '#08090c'],
+      palette: {
+        sol: '#5a606c', sol2: '#4e5460', grain: '#747c8a',
+        roche: '#33373f', rocheHaut: '#8a929f', rocheOmbre: '#16181c',
+        liquide: '#3ad0ff', liquide2: '#8ae6ff', ecume: '#ffffff',
+        cristal: '#c8783a', cristal2: '#f0b070',
+        structure: '#44484f', structureHaut: '#6c727c'
+      },
+      liquideNom: 'des nappes d’éclairs', eau: 0.05, roche: 0.18, cristal: 0.05
+    },
+    {
+      code: 'ST-B6', id: 'brisure', nom: 'Brisure', rang: 16, ordre: 6, systeme: 'stellaire',
+      sous: 'Le monde en morceaux',
+      texte: 'Elle a éclaté il y a longtemps, et ses morceaux ne se sont ' +
+             'jamais dispersés. On marche sur un éclat grand comme un pays, ' +
+             'et entre deux éclats il n’y a que le vide, et le cœur qui luit.',
+      ciel: ['#2a0e2e', '#a8486a', '#0c040e'],
+      palette: {
+        sol: '#7a5a6a', sol2: '#6c4e5e', grain: '#977684',
+        roche: '#4a3442', rocheHaut: '#8f6c7e', rocheOmbre: '#221620',
+        liquide: '#0a0410', liquide2: '#1c0c24', ecume: '#ff5aa8',
+        cristal: '#ff7ac0', cristal2: '#ffd0e8',
+        structure: '#5c4050', structureHaut: '#84606f'
+      },
+      liquideNom: 'des failles sur le vide', eau: 0.10, roche: 0.12, cristal: 0.05
+    },
+    {
+      code: 'ST-P7', id: 'pyrrhe', nom: 'Pyrrhe', rang: 17, ordre: 7, systeme: 'stellaire',
+      sous: 'Les dunes qui chantent',
+      texte: 'Loin de l’étoile, donc brûlante. Un désert de sable rouge ' +
+             'où le vent cuit les dunes en verre, et où les dunes, la nuit, ' +
+             'sonnent comme des cloches fêlées.',
+      ciel: ['#5a1a0e', '#f0883a', '#200804'],
+      palette: {
+        sol: '#d8642a', sol2: '#c45622', grain: '#f0884a',
+        roche: '#8a3418', rocheHaut: '#c0562c', rocheOmbre: '#48180a',
+        liquide: '#ffe08a', liquide2: '#fff2c0', ecume: '#ffffff',
+        cristal: '#ffc86a', cristal2: '#fff0c8',
+        structure: '#9a4420', structureHaut: '#c8683a'
+      },
+      liquideNom: 'du verre encore mou', eau: 0.05, roche: 0.11, cristal: 0.07
+    },
+    {
+      code: 'ST-I8', id: 'ignis', nom: 'Ignis', rang: 18, ordre: 8, systeme: 'stellaire',
+      sous: 'Pas un souffle',
+      texte: 'Le dernier monde, et le plus chaud. Une mer de lave d’un ' +
+             'bord à l’autre, sans une ride : ici il n’y a jamais eu de ' +
+             'vent. Les cendres tombent droit, et restent où elles tombent.',
+      ciel: ['#3a0a04', '#c8301a', '#120302'],
+      palette: {
+        sol: '#3a2a2a', sol2: '#302222', grain: '#523a38',
+        roche: '#1e1414', rocheHaut: '#5e4440', rocheOmbre: '#0c0808',
+        liquide: '#ff5a14', liquide2: '#ff9a2a', ecume: '#ffe08a',
+        cristal: '#ffb02e', cristal2: '#ffe8a8',
+        structure: '#4a3432', structureHaut: '#6e504c'
+      },
+      liquideNom: 'la mer de lave', eau: 0.12, roche: 0.13, cristal: 0.04
     }
   ];
+
+  // Les deux systemes. Le stellaire n'existe, pour le joueur, qu'une
+  // fois le code du DinderTracker entre : avant, rien ne doit le montrer.
+  var SYSTEMES = [
+    { id: 'solaire', nom: 'Système solaire', prefixe: 'SS' },
+    { id: 'stellaire', nom: 'Système stellaire', prefixe: 'ST' }
+  ];
+  ASTRES.forEach(function (a) { if (!a.systeme) a.systeme = 'solaire'; });
+
+  function stellaireOuvert() {
+    return !!(window.DP && window.DP.stellaire && window.DP.stellaire());
+  }
+
+  function systemes() {
+    return SYSTEMES.filter(function (s) { return s.id !== 'stellaire' || stellaireOuvert(); });
+  }
+
+  function astresDe(sys) {
+    return ASTRES.filter(function (a) { return a.systeme === sys; });
+  }
+
+  // Les mondes dont le joueur peut entendre parler.
+  function connus() {
+    return ASTRES.filter(function (a) { return a.systeme !== 'stellaire' || stellaireOuvert(); });
+  }
 
   function astre(code) {
     var c = String(code || '').toUpperCase().replace(/\s+/g, '');
@@ -354,7 +515,51 @@
       forme: 'grotte', c: ['#3a3a38', '#6a6a66', '#0a0a0c'],
       texte: 'Quarante mètres de haut, et une pente qui descend sous la ' +
              'croûte bien plus loin que le scanner ne porte. Les parois sont ' +
-             'rayées de l’intérieur, comme par des griffes.' }
+             'rayées de l’intérieur, comme par des griffes.' },
+
+    // ---- Le systeme stellaire ----
+    // Chacune garde aussi les coordonnees d'un autre monde : la scanner
+    // les inscrit au journal de bord.
+    { id: 'miroir-noir', astre: 'cryos', nom: 'Le Miroir Noir',
+      forme: 'tache', c: ['#05070e', '#1c2238', '#7ad8ff'],
+      texte: 'Un lac de glace si lisse qu’il renvoie les étoiles sans en ' +
+             'perdre une. En s’y penchant, on voit un ciel qui n’est pas ' +
+             'celui du dessus.' },
+    { id: 'phare-verre', astre: 'opaline', nom: 'Le Phare de Verre',
+      forme: 'tour', c: ['#a89cc0', '#f8f2ff', '#9ae8d8'],
+      texte: 'Une aiguille de verre plein, haute comme une montagne. Elle ' +
+             'attrape la lumière de l’étoile et la renvoie vers un point du ' +
+             'ciel, toujours le même.' },
+    { id: 'jardin-jumeau', astre: 'altera', nom: 'Le Jardin Jumeau',
+      forme: 'cratere', c: ['#34222e', '#6a4a5c', '#7cf0e8'],
+      texte: 'Le même jardin que le tien, le même cabanon, la même mare. ' +
+             'Et au fond, un cratère, froid depuis des siècles, avec ' +
+             'l’empreinte d’une télécommande dans la cendre.' },
+    { id: 'arbre-monde', astre: 'viridia', nom: 'L’Arbre-Monde',
+      forme: 'falaise', c: ['#0e3a22', '#3a9a5a', '#061c10'],
+      texte: 'Ce qu’on prenait pour une falaise est une racine. Le tronc, ' +
+             'lui, sort de l’atmosphère : toute la jungle de Viridia est ' +
+             'peut-être un seul arbre.' },
+    { id: 'pole-aimant', astre: 'ferron', nom: 'Le Pôle d’Aimant',
+      forme: 'hexagone', c: ['#33373f', '#3ad0ff', '#16181c'],
+      texte: 'Le point où toutes les boussoles s’affolent. La limaille s’y ' +
+             'range d’elle-même en hexagones, et le scanner met trois essais ' +
+             'à tenir une mesure.' },
+    { id: 'coeur-nu', astre: 'brisure', nom: 'Le Cœur à Nu',
+      forme: 'oeil', c: ['#4a3442', '#ff7ac0', '#ffd0e8'],
+      texte: 'Entre les éclats, on voit le noyau de la planète, à vif, qui ' +
+             'bat encore. Il tient les morceaux ensemble, comme une main ' +
+             'qui refuse de s’ouvrir.' },
+    { id: 'dune-cloche', astre: 'pyrrhe', nom: 'La Dune-Cloche',
+      forme: 'ciel', c: ['#8a3418', '#f0884a', '#fff0c8'],
+      texte: 'Une dune de verre, creuse, grande comme une cathédrale. Le ' +
+             'vent la fait sonner d’une seule note, que l’on entend depuis ' +
+             'l’orbite.' },
+    { id: 'dormeur-lave', astre: 'ignis', nom: 'Le Dormeur de Lave',
+      forme: 'visage', c: ['#1e1414', '#ff5a14', '#0c0808'],
+      texte: 'Un visage de basalte, couché dans la mer de lave, les yeux ' +
+             'fermés. Il n’y a pas de vent pour l’avoir sculpté. Il n’y a ' +
+             'personne non plus.' }
   ];
 
   // Le gardien de la grotte : il n'erre pas sur la carte, il ne se scanne
@@ -434,7 +639,7 @@
 
   function tout() {
     var out = [];
-    ASTRES.forEach(function (a) {
+    connus().forEach(function (a) {
       scannables(a.id).forEach(function (s) { out.push(s); });
     });
     return out;
@@ -1014,13 +1219,19 @@
   // ==========================================================
   // On ne saute pas un monde : chacun s'ouvre quand le gardien du
   // precedent est tombe. Mercure, premiere escale, est toujours ouverte.
+  // L'ordre se lit systeme par systeme : Neptune ne mene pas a Cryos.
 
-  function ordre() {
-    return ASTRES.slice().sort(function (x, y) { return x.rang - y.rang; });
+  function ordre(sys) {
+    return astresDe(sys || 'solaire').sort(function (x, y) { return x.rang - y.rang; });
+  }
+
+  function systemeDe(id) {
+    var a = astre(id);
+    return a ? a.systeme : 'solaire';
   }
 
   function suivant(id) {
-    var l = ordre();
+    var l = ordre(systemeDe(id));
     for (var i = 0; i < l.length; i++) {
       if (l[i].id === id) return l[i + 1] || null;
     }
@@ -1028,7 +1239,7 @@
   }
 
   function precedent(id) {
-    var l = ordre();
+    var l = ordre(systemeDe(id));
     for (var i = 0; i < l.length; i++) {
       if (l[i].id === id) return i > 0 ? l[i - 1] : null;
     }
@@ -1046,7 +1257,22 @@
     return null;
   }
 
+  // Le systeme stellaire n'a pas de gardiens : un monde s'y ouvre quand
+  // ses coordonnees sont au journal. Altera y entre avec le code du
+  // DinderTracker ; les autres, une par une, en scannant le lieu
+  // remarquable d'un monde deja visite.
+  function prochainStellaire() {
+    var l = ordre('stellaire');
+    for (var i = 0; i < l.length; i++) {
+      if (!window.DP.aVuAstre(l[i].id)) return l[i];
+    }
+    return null;
+  }
+
   function ouvert(id) {
+    if (systemeDe(id) === 'stellaire') {
+      return stellaireOuvert() && window.DP.aVuAstre(id);
+    }
     var av = precedent(id);
     if (!av) return true;
     var g = gardienDe(av.id);
@@ -1056,6 +1282,8 @@
 
   window.ODYVIE = {
     ASTRES: ASTRES, VIES: VIES, CURIOSITES: CURIOSITES, OBJETS: OBJETS,
+    SYSTEMES: SYSTEMES, systemes: systemes, astresDe: astresDe, connus: connus,
+    stellaireOuvert: stellaireOuvert, prochainStellaire: prochainStellaire,
     ordre: ordre, suivant: suivant, precedent: precedent,
     gardienDe: gardienDe, ouvert: ouvert,
     MONSTRE: MONSTRE, MONSTRES: MONSTRES, monstre: monstre, FORCE: FORCE, force: force, teintes: teintes,

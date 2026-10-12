@@ -7765,3 +7765,117 @@ body.is-locked .pad-titre { display: none; }
     animation-delay: 0s;
   }
 }
+
+/* ==========================================================
+   The Odyssey of Dinder — le systeme stellaire
+   Deux categories au journal de bord, une bande par systeme au
+   carnet, et les coordonnees qu'un lieu remarquable laisse lire.
+   ========================================================== */
+
+.tp-onglets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(6 * var(--px));
+}
+
+.tp-onglet {
+  padding: calc(6 * var(--px)) calc(8 * var(--px));
+  border: calc(3 * var(--px)) solid #1d4a42;
+  border-radius: calc(10 * var(--px));
+  background: rgba(6, 26, 30, .9);
+  color: #7fb8a8;
+  font-family: inherit;
+  font-size: calc(17 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.tp-onglet:hover { color: #d8fff0; }
+
+.tp-onglet.is-actif {
+  border-color: #7cf0c8;
+  background: rgba(124, 240, 200, .18);
+  color: #fff;
+}
+
+.tp-onglet[data-systeme="stellaire"].is-actif {
+  border-color: #c88cff;
+  background: rgba(200, 140, 255, .2);
+}
+
+/* Le journal prend la teinte du systeme ouvert. */
+.tp[data-systeme="stellaire"] {
+  background: radial-gradient(90% 70% at 20% 30%, #2c1450 0%, #130822 55%, #07030e 100%);
+}
+
+.tp[data-systeme="stellaire"] .tp-banniere {
+  border-color: #1c0a36;
+  background: linear-gradient(180deg, #b47cf0 0%, #7a44cc 100%);
+}
+
+.tp[data-systeme="stellaire"] .tp-enseigne { text-shadow: calc(2 * var(--px)) calc(2 * var(--px)) 0 #2a1050; }
+.tp[data-systeme="stellaire"] .tp-compte { color: #1c0a36; }
+.tp[data-systeme="stellaire"] .tp-plaque { border-color: rgba(200, 140, 255, .55); color: #d8c0f4; }
+
+/* Deux touches de plus : on serre un peu les rangees. */
+.tp-pave--serre .tp-touche { padding: calc(4 * var(--px)) 0; }
+.tp-pave--serre .tp-touche--go { grid-column: span 4; }
+
+/* ---------- Le carnet ---------- */
+
+.ody-systeme {
+  grid-column: 1 / -1;
+  margin: calc(10 * var(--px)) 0 0;
+  padding: calc(5 * var(--px)) calc(12 * var(--px));
+  border-radius: calc(8 * var(--px));
+  background: linear-gradient(90deg, rgba(47, 216, 176, .35), transparent);
+  font-size: calc(21 * var(--px));
+  letter-spacing: calc(4 * var(--px));
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.ody-systeme:first-child { margin-top: 0; }
+
+.ody-systeme[data-systeme="stellaire"] {
+  background: linear-gradient(90deg, rgba(180, 124, 240, .45), transparent);
+}
+
+/* ---------- Les coordonnees relevees sur une fiche ---------- */
+
+.ody-fiche-coord {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2 * var(--px));
+  margin: 0;
+  padding: calc(6 * var(--px)) calc(18 * var(--px));
+  border: calc(2 * var(--px)) dashed #c88cff;
+  border-radius: calc(10 * var(--px));
+  background: rgba(46, 16, 78, .6);
+  animation: ody-coord .7s .4s cubic-bezier(.2, 1.5, .4, 1) both;
+}
+
+.ody-fiche-coord-titre {
+  font-size: calc(14 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: #d8c0f4;
+}
+
+.ody-fiche-coord-code {
+  font-size: calc(24 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: #7cf0e8;
+  text-shadow: 0 0 calc(12 * var(--px)) rgba(124, 240, 232, .7);
+}
+
+@keyframes ody-coord {
+  from { opacity: 0; transform: scale(.7); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ody-fiche-coord { animation: none; }
+}

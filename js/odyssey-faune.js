@@ -532,6 +532,252 @@
   ]);
 
   // ==========================================================
+  //  Le systeme stellaire
+  //  Huit mondes a l'envers des notres : le froid pres de l'etoile, le
+  //  feu au bout. La faune y est plus rude que dans le systeme solaire.
+  // ==========================================================
+
+  // ---------- Cryos ----------
+  vies('cryos', [
+    ['patineur-noir', 'Patineur Noir', 'insecte', 1, '#3a4670', 0,
+      'Il glisse sur la glace sans jamais lever une patte. Son reflet, dessous, a toujours un temps de retard.'],
+    ['buveur-chaleur', 'Buveur de Chaleur', 'meduse', 2, '#6a3ad8', 1,
+      'Il s’approche de tout ce qui est tiède et le laisse froid. Il fait, en petit, ce que fait son étoile.'],
+    ['tortue-givre-noir', 'Tortue de Givre Noir', 'tortue', 2, '#1c2238', 0,
+      'Elle dort prise dans la glace des années entières, et repart comme si de rien n’était.'],
+    ['aiguille-vive', 'Aiguille Vive', 'cristallin', 3, '#7ad8ff', 1,
+      'Un cristal qui marche. Il pousse d’un centimètre à chaque pas, et se brise quand il devient trop grand.'],
+    ['reflet', 'Le Reflet', 'bipede', 4, '#2c3654', 1,
+      'Il a ta taille, ta démarche, et il vit de l’autre côté de la glace. Parfois, il passe de ce côté-ci.'],
+    ['nuee-flocons', 'Nuée de Flocons Sombres', 'essaim', 1, '#4c5888', 0,
+      'Une neige noire qui remonte vers le ciel au lieu de tomber.'],
+    ['raie-miroir', 'Raie-Miroir', 'raie', 3, '#9a6cf4', 0,
+      'Elle nage sous la glace, et on la suit du dessus comme une ombre violette.'],
+    ['veilleur-zero', 'Veilleur du Zéro', 'colosse', 5, '#0e1220', 1,
+      'Il se tient là où il fait le plus froid de tout le système. Le scanner gèle avant d’avoir fini de le mesurer.']
+  ]);
+  objets('cryos', [
+    ['glace-noire', 'Éclat de Glace Noire', 'cristal', '#3a4670',
+      'Il ne fond pas dans la main : c’est la main qui refroidit.'],
+    ['puits-froid', 'Puits de Froid', 'geyser', '#9a6cf4',
+      'Un trou d’où le froid monte en colonne, assez dense pour qu’on le voie.'],
+    ['sonde-figee', 'Sonde Figée', 'epave', '#4c5888',
+      'Une sonde prise dans la glace en plein vol. Ses lettres ressemblent aux nôtres, écrites à l’envers.'],
+    ['fleur-givre', 'Fleur de Givre', 'fleur', '#7ad8ff',
+      'Elle s’ouvre quand l’étoile se couche, et se referme dès qu’elle se lève.']
+  ]);
+
+  // ---------- Opaline ----------
+  vies('opaline', [
+    ['perlier', 'Perlier', 'crabe', 1, '#f0b8d8', 0,
+      'Il roule une perle devant lui jusqu’à la mer, la lâche, et retourne en chercher une autre.'],
+    ['souffleur-verre', 'Souffleur de Verre', 'limace', 1, '#cfc4e4', 0,
+      'Il laisse derrière lui un fil de verre qui durcit en quelques secondes.'],
+    ['cygne-opale', 'Cygne d’Opale', 'oiseau', 2, '#f8f2ff', 0,
+      'On le voit de très loin : dans un ciel sans nuage, il n’y a que lui.'],
+    ['prisme-errant', 'Prisme Errant', 'cristallin', 2, '#9ae8d8', 0,
+      'Il décompose la lumière en marchant, et traîne un arc-en-ciel sur le sol.'],
+    ['guetteur-limpide', 'Guetteur Limpide', 'flottant', 3, '#bfe4f4', 1,
+      'Presque transparent. On ne le remarque qu’à la façon dont le paysage se tord derrière lui.'],
+    ['araignee-fil-verre', 'Fileuse de Verre', 'araignee', 3, '#a89cc0', 1,
+      'Sa toile est en verre filé. Elle coupe, et elle tinte quand on s’y prend.'],
+    ['banc-perles', 'Banc de Perles', 'essaim', 2, '#ffd8ec', 0,
+      'Des perles qui roulent ensemble, à contre-pente. Le scanner les classe « vivantes », sans conviction.'],
+    ['dame-blanche', 'La Dame Blanche', 'meduse', 4, '#e4dcec', 1,
+      'Elle flotte au-dessus des mers de perles et ne supporte pas qu’on trouble leur surface.']
+  ]);
+  objets('opaline', [
+    ['perle-mer', 'Perle de Mer', 'sphere', '#ffd8ec',
+      'Parfaitement ronde, tiède, et un peu plus lourde qu’elle ne devrait.'],
+    ['larme-verre', 'Larme de Verre', 'cristal', '#9ae8d8',
+      'Une goutte de verre figée en tombant. Elle n’a jamais touché le sol.'],
+    ['dalle-laiteuse', 'Dalle Laiteuse', 'plaque', '#e4dcec',
+      'Le sol d’Opaline, poli. On y voit son visage, en plus pâle.'],
+    ['borne-claire', 'Borne Claire', 'balise', '#bfe4f4',
+      'Une borne de verre, plantée là par quelqu’un. Elle pointe vers Altéra.']
+  ]);
+
+  // ---------- Altera ----------
+  vies('altera', [
+    ['herisson-ambre', 'Hérisson d’Ambre', 'rampant', 1, '#d88a2a', 0,
+      'Il traverse le jardin toutes les nuits à la même heure. Tu connais quelqu’un qui fait pareil.'],
+    ['merle-violet', 'Merle Violet', 'oiseau', 1, '#7a44cc', 0,
+      'Il chante la même chanson que celui de chez toi, une note plus bas.'],
+    ['escargot-double', 'Escargot à Deux Coquilles', 'limace', 1, '#c47a22', 0,
+      'Une pour lui, et une d’avance. Ici, on prévoit.'],
+    ['renard-cendre', 'Renard de Cendre', 'rampant', 2, '#6a4a5c', 0,
+      'Il vient renifler le vieux cratère, comme l’autre. Mais celui-ci a l’air d’attendre quelqu’un.'],
+    ['guepe-cristal', 'Guêpe de Cristal', 'insecte', 2, '#7cf0e8', 1,
+      'Son nid est sous le rebord de la même fenêtre. Elle pique plus fort.'],
+    ['chien-de-garde', 'Chien de Personne', 'rampant', 3, '#93697f', 1,
+      'Il garde une maison où personne n’habite. Il prend son travail très au sérieux.'],
+    ['hibou-fixe', 'Hibou Fixe', 'oiseau', 3, '#4a2a5a', 0,
+      'Il est sur le poteau. Il n’a pas bougé depuis que le poteau existe.'],
+    ['autre-chose', 'L’Autre Chose', 'flottant', 5, '#2a1248', 1,
+      'Elle flotte au-dessus du cabanon et regarde. Celle de chez toi regardait vers ici ; celle-ci regarde vers chez toi.']
+  ]);
+  objets('altera', [
+    ['nain-inverse', 'Nain de Jardin', 'totem', '#7a44cc',
+      'Le même que le tien, peint dans les couleurs d’ici. Il est tourné vers le cratère, lui aussi.'],
+    ['rosier-ambre', 'Rosier d’Ambre', 'fleur', '#f0a848',
+      'Des roses orange, sans épines. Personne ne les arrose et elles se portent très bien.'],
+    ['velo-neuf', 'Vélo Neuf', 'epave', '#7cf0e8',
+      'Ton premier vélo. Celui-ci n’a jamais roulé, et n’a pas pris une tache de rouille.'],
+    ['empreinte-tele', 'Empreinte dans la Cendre', 'fossile', '#6a4a5c',
+      'La forme exacte d’un Téléportail, moulée dans le fond du cratère. Quelqu’un l’a ramassé avant toi.']
+  ]);
+
+  // ---------- Viridia ----------
+  vies('viridia', [
+    ['saute-feuille', 'Saute-Feuille', 'insecte', 1, '#2f8a4c', 0,
+      'Il a la forme d’une feuille, la couleur d’une feuille, et il saute quand on marche dessus.'],
+    ['limace-pluie', 'Limace de Pluie', 'limace', 1, '#2fb0a8', 0,
+      'Elle ne vit que sous l’averse. Sur Viridia, cela veut dire tout le temps.'],
+    ['liane-vive', 'Liane Vive', 'serpent', 2, '#185a30', 1,
+      'Elle pend avec les autres, immobile, jusqu’à ce que quelque chose passe en dessous.'],
+    ['spore-lanterne', 'Spore-Lanterne', 'champignon', 2, '#f0d83a', 0,
+      'Le seul éclairage du sous-bois. Il s’éteint si l’on parle trop fort.'],
+    ['crapaud-mousse', 'Crapaud de Mousse', 'rampant', 2, '#3a9a5a', 0,
+      'Un petit jardin lui pousse sur le dos. Il n’a pas l’air de s’en plaindre.'],
+    ['mante-canopee', 'Mante de la Canopée', 'araignee', 4, '#1f6a3a', 1,
+      'Elle chasse d’en haut. On ne voit d’elle que deux yeux jaunes entre les feuilles, puis plus rien.'],
+    ['perroquet-echo', 'Perroquet-Écho', 'oiseau', 3, '#a8f4e0', 0,
+      'Il répète le dernier bruit qu’il a entendu. En ce moment, c’est celui du Téléportail.'],
+    ['pere-racine', 'Père-Racine', 'colosse', 5, '#5a3a1e', 1,
+      'Une souche qui s’est levée. Il met un jour à faire dix pas, et la forêt s’écarte devant lui.']
+  ]);
+  objets('viridia', [
+    ['graine-geante', 'Graine Géante', 'sphere', '#7f582f',
+      'Grosse comme un ballon, tiède, et qui bat doucement.'],
+    ['orchidee-pluie', 'Orchidée de Pluie', 'fleur', '#f0d83a',
+      'Elle boit l’averse par le haut et la rend par le bas, plus claire.'],
+    ['ambre-vert', 'Ambre Vert', 'geode', '#3a9a5a',
+      'De la sève durcie. Quelque chose est pris dedans, et ce n’est pas un insecte.'],
+    ['idole-moussue', 'Idole Moussue', 'totem', '#185a30',
+      'Une statue mangée par la mousse. On devine un bandeau sur les yeux et un large sourire.']
+  ]);
+
+  // ---------- Ferron ----------
+  vies('ferron', [
+    ['limaille', 'Nuée de Limaille', 'essaim', 1, '#747c8a', 0,
+      'De la limaille qui se dresse en pointes quand on approche, puis retombe.'],
+    ['clou-vif', 'Clou Vif', 'insecte', 1, '#8a929f', 0,
+      'Il se plante dans le sol pour dormir, et il faut un aimant pour l’en sortir.'],
+    ['tortue-enclume', 'Tortue-Enclume', 'tortue', 2, '#44484f', 0,
+      'Les éclairs tombent sur son dos et n’y laissent pas une marque.'],
+    ['anguille-arc', 'Anguille d’Arc', 'serpent', 3, '#3ad0ff', 1,
+      'Un éclair qui a appris à ramper. Elle saute d’un morceau de fer à l’autre, et tu en portes un.'],
+    ['rouilleur', 'Rouilleur', 'limace', 2, '#c8783a', 0,
+      'Il broute le métal et laisse derrière lui une traînée de rouille, la seule couleur de Ferron.'],
+    ['sentinelle-froide', 'Sentinelle Froide', 'machine', 4, '#6c727c', 1,
+      'Une machine. Personne ne sait qui l’a construite : sur Ferron, tout finit peut-être par devenir une machine.'],
+    ['aimant-errant', 'Aimant Errant', 'flottant', 3, '#33373f', 1,
+      'Il flotte à un mètre du sol et tire vers lui tout ce qui est en fer, pistolet compris.'],
+    ['forgeron', 'Le Forgeron', 'colosse', 5, '#5a606c', 1,
+      'Il frappe le sol de ses poings, sans s’arrêter, depuis toujours. Les étincelles montent jusqu’aux nuages.']
+  ]);
+  objets('ferron', [
+    ['boussole-folle', 'Boussole Folle', 'balise', '#3ad0ff',
+      'Elle tourne sans jamais se décider. Quelqu’un l’a pourtant posée là exprès.'],
+    ['lingot-natif', 'Lingot Natif', 'plaque', '#8a929f',
+      'Du fer pur, en barre, tel que la planète le fait toute seule.'],
+    ['fulgurite', 'Fulgurite', 'cristal', '#8ae6ff',
+      'La trace d’un éclair dans le métal : un tube de fer fondu, encore chaud au milieu.'],
+    ['carcasse-machine', 'Carcasse de Machine', 'module', '#6c727c',
+      'Une Sentinelle, éteinte. Sa dernière mesure est encore à l’écran : une date, dans le futur.']
+  ]);
+
+  // ---------- Brisure ----------
+  vies('brisure', [
+    ['saute-vide', 'Saute-Vide', 'insecte', 1, '#977684', 0,
+      'Il bondit d’un éclat à l’autre par-dessus le vide, et ne rate jamais.'],
+    ['lichen-rose', 'Lichen Rose', 'champignon', 1, '#ff7ac0', 0,
+      'Il pousse sur les arêtes, là où la lueur du cœur arrive encore.'],
+    ['crabe-arete', 'Crabe d’Arête', 'crabe', 2, '#6c4e5e', 0,
+      'Il ne marche que sur les bords. Le milieu d’un éclat, pour lui, c’est la haute mer.'],
+    ['fileur-gouffre', 'Fileur de Gouffre', 'araignee', 3, '#4a3442', 1,
+      'Il tend ses fils d’un éclat à l’autre. C’est peut-être lui qui empêche la planète de se défaire.'],
+    ['eclat-vif', 'Éclat Vif', 'cristallin', 2, '#ffd0e8', 0,
+      'Un morceau de la planète qui a décidé de bouger tout seul.'],
+    ['raie-abime', 'Raie de l’Abîme', 'raie', 4, '#1c0c24', 1,
+      'Elle nage dans le vide entre les éclats comme dans de l’eau, et remonte quand quelque chose se penche.'],
+    ['pleureuse', 'Pleureuse', 'flottant', 3, '#a8486a', 0,
+      'Elle dérive au-dessus des failles en laissant tomber des gouttes roses, qui ne touchent jamais le fond.'],
+    ['recolleur', 'Le Recolleur', 'colosse', 5, '#7a5a6a', 1,
+      'Il pousse les éclats les uns contre les autres, patiemment, pour refaire la planète. Tu es sur l’un des morceaux.']
+  ]);
+  objets('brisure', [
+    ['fragment-coeur', 'Fragment du Cœur', 'geode', '#ff7ac0',
+      'Un morceau du noyau, tombé sur l’éclat. Il bat au même rythme que le grand.'],
+    ['pont-fils', 'Pont de Fils', 'fossile', '#977684',
+      'Des fils tendus au-dessus du vide, assez solides pour porter un homme. On n’a pas vérifié.'],
+    ['borne-fendue', 'Borne Fendue', 'totem', '#6c4e5e',
+      'Une borne d’avant l’éclatement, coupée net. L’autre moitié est sur un éclat qu’on voit d’ici.'],
+    ['poussiere-rose', 'Poussière Rose', 'sphere', '#ffd0e8',
+      'Elle flotte en boule, sans retomber, comme si elle hésitait entre deux éclats.']
+  ]);
+
+  // ---------- Pyrrhe ----------
+  vies('pyrrhe', [
+    ['puce-sable', 'Puce de Sable Rouge', 'insecte', 1, '#f0884a', 0,
+      'Elle saute sans arrêt : le sable est trop chaud pour y rester posée.'],
+    ['lezard-verre', 'Lézard de Verre', 'rampant', 2, '#ffc86a', 0,
+      'Transparent. On voit, au travers, ce qu’il a mangé ce matin.'],
+    ['sonneur', 'Sonneur', 'tortue', 2, '#c0562c', 0,
+      'Sa carapace est creuse et il la frappe de la queue. C’est lui qu’on entend, la nuit, avec les dunes.'],
+    ['vipere-vitrail', 'Vipère-Vitrail', 'serpent', 3, '#ffe08a', 1,
+      'Elle laisse dans le sable une trace de verre fondu. On la suit facilement ; c’est rarement une bonne idée.'],
+    ['mirage', 'Mirage', 'flottant', 3, '#fff2c0', 0,
+      'On le voit de loin, et plus on avance moins il est là. Le scanner, lui, jure qu’il existe.'],
+    ['scorpion-braise', 'Scorpion de Braise', 'araignee', 4, '#8a3418', 1,
+      'Son dard est chauffé à blanc. Il n’a pas besoin de venin.'],
+    ['vautour-cuivre', 'Vautour de Cuivre', 'oiseau', 3, '#d8642a', 1,
+      'Il tourne au-dessus de tout ce qui marche lentement. Sur Pyrrhe, tout marche lentement.'],
+    ['ver-dunes', 'Ver des Dunes', 'colosse', 5, '#9a4420', 1,
+      'On ne le voit pas : on voit la dune se déplacer. Quand elle s’arrête, c’est qu’il a entendu.']
+  ]);
+  objets('pyrrhe', [
+    ['rose-sable', 'Rose de Verre', 'fleur', '#ffc86a',
+      'Du sable soudé par la chaleur en pétales. Elle coupe comme un rasoir.'],
+    ['goutte-molle', 'Goutte de Verre Mou', 'sphere', '#ffe08a',
+      'Encore tiède, encore souple. Elle garde l’empreinte du doigt.'],
+    ['squelette-ver', 'Anneau de Ver', 'os', '#fff0c8',
+      'Une seule vertèbre d’un Ver des Dunes. On passerait dedans debout.'],
+    ['stele-rouge', 'Stèle Rouge', 'totem', '#c0562c',
+      'Une pierre dressée, gravée d’une flèche. Elle montre le bout du système.']
+  ]);
+
+  // ---------- Ignis ----------
+  vies('ignis', [
+    ['braisillon', 'Braisillon', 'insecte', 1, '#ff9a2a', 0,
+      'Une étincelle qui a des pattes. Elle court sur la lave comme une araignée d’eau.'],
+    ['cendreux', 'Cendreux', 'limace', 2, '#523a38', 0,
+      'Il avance sous la couche de cendre. On ne le devine qu’au sillon qu’il laisse.'],
+    ['tortue-basalte', 'Tortue de Basalte', 'tortue', 2, '#3a2a2a', 0,
+      'Elle traverse la mer de lave à gué, sans se presser. Sa carapace sert d’île aux autres.'],
+    ['nageur-lave', 'Nageur de Lave', 'raie', 3, '#ff5a14', 1,
+      'Il fend la lave sans faire une vague : même lui ne trouble pas le calme d’Ignis.'],
+    ['fumerolle-vive', 'Fumerolle Vive', 'flottant', 3, '#6e504c', 1,
+      'Une colonne de fumée, droite comme un fil puisqu’il n’y a pas de vent. Celle-ci se déplace.'],
+    ['salamandre-or', 'Salamandre d’Or', 'rampant', 4, '#ffb02e', 1,
+      'Une cousine de celle de Mercure, mais qui n’a jamais connu le froid. Elle ne se fige pas, elle.'],
+    ['phenix-cendre', 'Phénix de Cendre', 'oiseau', 4, '#ffe08a', 0,
+      'Il se pose, tombe en cendre, et se relève un peu plus loin. Le scanner compte chaque fois une entrée de plus.'],
+    ['roi-immobile', 'Le Roi Immobile', 'colosse', 5, '#1e1414', 1,
+      'Il est assis dans la lave jusqu’à la taille. Il ne s’est jamais levé : rien, ici, ne l’y avait encore obligé.']
+  ]);
+  objets('ignis', [
+    ['cendre-droite', 'Colonne de Cendre', 'geyser', '#6e504c',
+      'La cendre tombe en un seul fil vertical, et fait un tas parfaitement conique.'],
+    ['larme-lave', 'Larme de Lave', 'cristal', '#ff9a2a',
+      'Une goutte figée, noire dehors, rouge dedans. Elle luit encore.'],
+    ['ile-refroidie', 'Dalle Refroidie', 'plaque', '#3a2a2a',
+      'Un radeau de basalte sur la lave. Il ne dérive pas : il n’y a rien pour le pousser.'],
+    ['dernier-relais', 'Dernier Relais', 'module', '#ffb02e',
+      'Un relais de Téléportail, à moitié fondu. Après lui, la télécommande ne connaît plus aucune adresse.']
+  ]);
+
+  // ==========================================================
   //  Les curiosites manquantes se rangent avec les objets de leur
   //  astre : il n'y a plus rien a faire ici.
   // ==========================================================

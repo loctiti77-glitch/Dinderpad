@@ -3405,3 +3405,257 @@ html, body { touch-action: manipulation; }
   .fete.is-coupe .fete-adieu { display: none; }
   .fete-sceau { opacity: 1; }
 }
+
+/* ==========================================================
+   DinderTracker - le systeme stellaire
+   Le second code decroche le tracker de la Terre : la carte part vers
+   la droite en se dechirant, et celle d'Altera arrive par la gauche.
+   ========================================================== */
+
+/* Sur Altera, tout ce qui etait vert passe au violet. */
+.view--stellaire .tracker-rebours {
+  background: rgba(14, 4, 26, .85);
+  border-color: rgba(200, 140, 255, .6);
+  color: #e8ccff;
+}
+
+.view--stellaire .spot-card {
+  background: rgba(16, 4, 30, .95);
+  border-color: #c88cff;
+}
+
+.view--stellaire .pin-onde { border-color: rgba(124, 240, 232, .9); }
+
+/* ---------- Les deux cartes ---------- */
+
+.tracker-onglets {
+  position: absolute;
+  z-index: 5;
+  right: calc(10 * var(--px));
+  bottom: calc(54 * var(--px));
+  display: flex;
+  gap: calc(6 * var(--px));
+  font-family: "Courier New", Courier, ui-monospace, monospace;
+  line-height: 1.2;
+}
+
+.tracker-onglet {
+  padding: calc(7 * var(--px)) calc(14 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(0, 241, 253, .35);
+  border-radius: calc(10 * var(--px));
+  background: rgba(2, 14, 22, .7);
+  color: rgba(216, 244, 255, .7);
+  font-size: calc(16 * var(--px));
+  letter-spacing: calc(1 * var(--px));
+  text-decoration: none;
+  touch-action: manipulation;
+}
+
+.tracker-onglet:hover { color: #fff; border-color: rgba(0, 241, 253, .7); }
+
+.tracker-onglet.is-actif {
+  border-color: #00f1fd;
+  background: rgba(6, 40, 62, .92);
+  color: #fff;
+}
+
+.view--stellaire .tracker-onglet.is-actif {
+  border-color: #c88cff;
+  background: rgba(46, 16, 78, .92);
+}
+
+/* ---------- Le passage ---------- */
+
+.view--tracker.is-passage { overflow: hidden; background: #05010a; }
+
+.tracker-arrivee { transform: translateX(-100%); }
+
+.view--tracker.is-passage .tracker-map {
+  will-change: transform, filter;
+  box-shadow: calc(-8 * var(--px)) 0 0 rgba(255, 0, 70, .55),
+              calc(8 * var(--px)) 0 0 rgba(0, 241, 253, .55);
+}
+
+/* Pendant le passage, il ne reste que les deux cartes. */
+.view--tracker.is-passage .tracker-rebours,
+.view--tracker.is-passage .faille-bandeau,
+.view--tracker.is-passage .tracker-dg,
+.view--tracker.is-passage .tracker-onglets { visibility: hidden; }
+
+.trk-glitch {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  overflow: hidden;
+  pointer-events: none;
+  /* les lignes de balayage */
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .28) 0,
+              rgba(0, 0, 0, .28) calc(2 * var(--px)), transparent calc(2 * var(--px)),
+              transparent calc(6 * var(--px)));
+  animation: trk-eclats .42s steps(1, end) infinite;
+}
+
+.trk-glitch-bande {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  top: calc(var(--i) * 12.5%);
+  height: calc(10 * var(--px) + var(--i) * 4 * var(--px));
+  background: linear-gradient(90deg, rgba(255, 0, 70, .55), rgba(0, 241, 253, .55), rgba(200, 140, 255, .6));
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: trk-bande calc(.5s + var(--i) * .13s) steps(1, end) infinite;
+  animation-delay: calc(var(--i) * -.21s);
+}
+
+.trk-glitch-mot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: calc(8 * var(--px)) calc(22 * var(--px));
+  background: rgba(5, 1, 10, .82);
+  border: calc(3 * var(--px)) solid #c88cff;
+  font-family: "Courier New", Courier, ui-monospace, monospace;
+  font-size: calc(40 * var(--px));
+  line-height: 1.2;
+  letter-spacing: calc(6 * var(--px));
+  white-space: nowrap;
+  color: #f4e6ff;
+  text-shadow: calc(-3 * var(--px)) 0 0 rgba(255, 0, 70, .9),
+               calc(3 * var(--px)) 0 0 rgba(0, 241, 253, .9);
+  animation: trk-mot .31s steps(1, end) infinite;
+}
+
+@keyframes trk-eclats {
+  0%, 100% { opacity: 1; }
+  20%      { opacity: .55; }
+  45%      { opacity: .9; background-color: rgba(200, 140, 255, .12); }
+  70%      { opacity: .4; }
+  85%      { background-color: rgba(255, 255, 255, .2); }
+}
+
+@keyframes trk-bande {
+  0%, 100% { opacity: 0; transform: translateX(0); }
+  15%      { opacity: .9; transform: translateX(-14%); }
+  30%      { opacity: 0; }
+  55%      { opacity: .7; transform: translateX(22%) translateY(180%); }
+  70%      { opacity: 0; }
+  88%      { opacity: .5; transform: translateX(-6%) translateY(-240%); }
+}
+
+@keyframes trk-mot {
+  0%, 100% { transform: translate(-50%, -50%); }
+  30%      { transform: translate(calc(-50% + 6 * var(--px)), -50%) skewX(-8deg); }
+  60%      { transform: translate(calc(-50% - 5 * var(--px)), calc(-50% + 3 * var(--px))); }
+  80%      { transform: translate(-50%, -50%) skewX(6deg); }
+}
+
+/* ---------- L'arrivee ---------- */
+
+.stl-annonce {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;                 /* la carte reste utilisable dessous */
+  background: radial-gradient(circle at 50% 50%, rgba(60, 20, 110, .55), rgba(5, 1, 10, .25) 70%);
+  animation: stl-voile .5s ease both;
+}
+
+.stl-annonce.is-sortie { animation: stl-sortie .35s ease forwards; }
+
+.stl-annonce-carte {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 44 * var(--px));      /* sous le bandeau d'XP, qui tombe du haut */
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8 * var(--px));
+  width: calc(700 * var(--px));
+  max-width: 88%;
+  padding: calc(20 * var(--px)) calc(30 * var(--px));
+  border: calc(5 * var(--px)) solid #c88cff;
+  border-radius: calc(18 * var(--px));
+  background: rgba(14, 4, 28, .97);
+  box-shadow: 0 0 calc(48 * var(--px)) rgba(200, 140, 255, .7);
+  color: #f4e6ff;
+  font-family: "Courier New", Courier, ui-monospace, monospace;
+  line-height: 1.25;
+  text-align: center;
+  pointer-events: auto;
+  animation: stl-carte .7s .25s cubic-bezier(.2, 1.5, .4, 1) both;
+}
+
+.stl-annonce-sur {
+  font-size: calc(16 * var(--px));
+  letter-spacing: calc(4 * var(--px));
+  color: #7cf0e8;
+}
+
+.stl-annonce-titre {
+  font-size: calc(40 * var(--px));
+  letter-spacing: calc(5 * var(--px));
+  white-space: nowrap;
+  color: #fff;
+  text-shadow: 0 0 calc(18 * var(--px)) rgba(200, 140, 255, .9);
+}
+
+.stl-annonce-txt { font-size: calc(19 * var(--px)); color: #dcc4f4; }
+
+.stl-annonce-coord {
+  display: flex;
+  flex-direction: column;
+  gap: calc(2 * var(--px));
+  margin-top: calc(4 * var(--px));
+  padding: calc(8 * var(--px)) calc(18 * var(--px));
+  border: calc(2 * var(--px)) dashed rgba(124, 240, 232, .6);
+  border-radius: calc(10 * var(--px));
+  font-size: calc(15 * var(--px));
+  color: #9fd8d0;
+  animation: stl-coord .6s 1s ease both;
+}
+
+.stl-annonce-coord strong {
+  font-size: calc(26 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: #7cf0e8;
+}
+
+.stl-annonce-btn {
+  margin-top: calc(6 * var(--px));
+  padding: calc(8 * var(--px)) calc(26 * var(--px));
+  border: calc(3 * var(--px)) solid #c88cff;
+  border-radius: calc(10 * var(--px));
+  background: rgba(46, 16, 78, .95);
+  color: #fff;
+  font-family: inherit;
+  font-size: calc(20 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.stl-annonce-btn:hover { background: rgba(70, 28, 116, .98); }
+
+@keyframes stl-voile  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes stl-sortie { to { opacity: 0; } }
+
+@keyframes stl-carte {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(.6); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes stl-coord {
+  from { opacity: 0; transform: translateY(calc(10 * var(--px))); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trk-glitch, .trk-glitch-bande, .trk-glitch-mot { animation: none; }
+  .stl-annonce, .stl-annonce-carte, .stl-annonce-coord {
+    animation-duration: .01s;
+    animation-delay: 0s;
+  }
+}
