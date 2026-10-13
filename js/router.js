@@ -137,20 +137,14 @@
       }
     });
 
-    // En plein ecran, les boutons du pad ne sont plus la : un bouton de
-    // retour flotte en haut de la fenetre, et Echap fait de meme.
-    var sortie = document.createElement('button');
-    sortie.type = 'button';
-    sortie.className = 'plein-retour';
-    sortie.setAttribute('data-pad-back', '');
-    sortie.setAttribute('aria-label', 'Retour');
-    sortie.textContent = '←  Retour';
-    body.appendChild(sortie);
-
+    // En plein ecran, le bouton d'accueil du pad reste a portee, au
+    // milieu du bord gauche (css/style.css). Echap fait de meme.
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || e.defaultPrevented || !body.classList.contains('is-plein')) return;
+      var retour = nav && nav.querySelector('[data-pad-home]');
+      if (!retour) return;
       e.preventDefault();
-      sortie.click();
+      retour.click();
     });
 
     window.addEventListener('hashchange', route);

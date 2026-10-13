@@ -3715,7 +3715,6 @@ body.is-plein .pad-img {
   visibility: hidden;
 }
 
-body.is-plein .pad-nav,
 body.is-plein .pad-arcade,
 body.is-plein .pad-niveau,
 body.is-plein .hotspot,
@@ -3734,38 +3733,20 @@ body.is-plein .xp-flash,
 body.is-plein .art-trouve { left: calc(272 * var(--k) + var(--pw) / 2); }
 body.is-plein .art-trouve { top: calc(90 * var(--k) + var(--ph) / 2); }
 
-/* Le retour, en haut de la fenetre : discret tant qu'on ne le cherche pas. */
-.plein-retour { display: none; }
-
-body.is-plein .plein-retour {
-  position: fixed;
+/* La sortie : le bouton octogonal du pad qui ramene a l'accueil, le
+   meme, pose au milieu du bord gauche de l'ecran du jeu. La fleche de
+   retour, elle, reste au pad. */
+body.is-plein .pad-nav {
+  position: absolute;
   z-index: 70;
-  left: 50%;
-  top: 6px;
-  transform: translateX(-50%);
-  display: block;
-  padding: 6px 16px;
-  border: 2px solid rgba(0, 241, 253, .7);
-  border-radius: 999px;
-  background: rgba(0, 10, 18, .6);
-  color: #d8f8ff;
-  font-family: "Courier New", Courier, monospace;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: 1px;
-  cursor: pointer;
-  opacity: .45;
-  transition: opacity .15s ease, background-color .15s ease;
-  touch-action: manipulation;
+  left: calc(280 * var(--k));
+  top: calc(90 * var(--k) + var(--ph) / 2);
+  transform: translateY(-50%);
+  gap: 0;
 }
 
-body.is-plein .plein-retour:hover,
-body.is-plein .plein-retour:focus-visible {
-  opacity: 1;
-  background: rgba(0, 30, 48, .92);
-  outline: none;
-}
+body.is-plein .pad-nav .nav-btn { --btn: 104; }
+body.is-plein .pad-nav [data-pad-back] { display: none; }
 
 /* ==========================================================
    L'entree dans un jeu

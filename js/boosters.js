@@ -189,8 +189,13 @@
     document.body.classList.add('bo--ouverture');
 
     function retourner(b, c, neuve) {
-      if (b.classList.contains('is-retournee') || b.classList.contains('is-attente')) return;
+      if (b.classList.contains('is-attente')) return;
       if (!scene.classList.contains('is-pretes')) return;
+      // Deja retournee : un second clic la montre en grand, pour la lire.
+      if (b.classList.contains('is-retournee')) {
+        if (!scene.querySelector('.cartes-zoom')) C.agrandir(scene, c, DP.cartes()[c.id] || 1);
+        return;
+      }
       // Une legendaire se fait attendre : la carte tremble avant de ceder.
       var attente = c.rarete === 'legendaire' ? 650 : c.rarete === 'epique' ? 280 : 0;
       b.classList.add('is-attente');
@@ -198,7 +203,7 @@
         b.classList.remove('is-attente');
         b.classList.add('is-retournee');
         b.setAttribute('aria-label', c.nom + ', ' + C.rarete(c.rarete).nom +
-                       (neuve ? ', nouvelle carte' : ''));
+                       (neuve ? ', nouvelle carte' : '') + '. Agrandir');
         if (neuve) nouvelles++;
         if (c.rarete === 'legendaire') {
           scene.classList.remove('is-legendaire');
@@ -210,10 +215,15 @@
       }, attente);
     }
 
+    // Ne touche qu'aux cartes encore face cachee : une carte deja
+    // retournee s'agrandirait au lieu de rester en place.
     function toutRetourner() {
-      bascules.forEach(function (x, i) {
-        apres(function () { retourner(x.b, x.c, x.neuve); }, i * 260);
-      });
+      bascules.filter(function (x) { return !x.b.classList.contains('is-retournee'); })
+        .forEach(function (x, i) {
+          apres(function () {
+            if (!x.b.classList.contains('is-retournee')) retourner(x.b, x.c, x.neuve);
+          }, i * 260);
+        });
     }
 
     function conclure() {
@@ -222,6 +232,7 @@
         ? nouvelles + ' nouvelle' + (nouvelles > 1 ? 's' : '') + ' carte' + (nouvelles > 1 ? 's' : '') +
           ' pour le livret.'
         : 'Rien de nouveau cette fois : cinq doubles.';
+      consigne.textContent += ' Touche une carte pour l’agrandir.';
       actions.textContent = '';
       var m = C.moyens();
       var suite = m.offert ? 'offert' : m.illimite ? 'green'

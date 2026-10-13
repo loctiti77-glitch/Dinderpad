@@ -457,6 +457,14 @@ body.bo--ouverture { overflow: hidden; }
 .bo-ouv.is-pretes .bo-flip:not(.is-retournee):hover .bo-flip-dedans { transform: translateY(-1.2em) rotate(-2deg); }
 .bo-ouv.is-pretes .bo-flip:not(.is-retournee):focus-visible { outline: .2em solid #fff; outline-offset: .4em; }
 
+/* Retournee, une carte se touche encore : elle s'agrandit. */
+.bo-flip.is-retournee { cursor: zoom-in; transition: transform .15s ease; }
+.bo-ouv.is-pretes .bo-flip.is-retournee:hover,
+.bo-ouv.is-pretes .bo-flip.is-retournee:focus-visible { transform: translateY(-1em) scale(1.04); outline: none; }
+
+/* La carte en grand passe devant toute la scene. */
+.bo-ouv .cartes-zoom { z-index: 40; }
+
 /* Une carte rare se fait attendre. */
 .bo-flip.is-attente .bo-flip-dedans { animation: bo-attente .16s linear infinite; }
 
