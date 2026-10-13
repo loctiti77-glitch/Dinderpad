@@ -458,9 +458,14 @@ body.bo--ouverture { overflow: hidden; }
 .bo-ouv.is-pretes .bo-flip:not(.is-retournee):focus-visible { outline: .2em solid #fff; outline-offset: .4em; }
 
 /* Retournee, une carte se touche encore : elle s'agrandit. */
-.bo-flip.is-retournee { cursor: zoom-in; transition: transform .15s ease; }
-.bo-ouv.is-pretes .bo-flip.is-retournee:hover,
-.bo-ouv.is-pretes .bo-flip.is-retournee:focus-visible { transform: translateY(-1em) scale(1.04); outline: none; }
+.bo-flip.is-retournee { cursor: zoom-in; }
+/* Le soulevement se fait sur l'interieur, deja tourne : l'animation de
+   sortie tient la carte elle-meme. */
+.bo-ouv.is-pretes .bo-flip.is-retournee:hover .bo-flip-dedans,
+.bo-ouv.is-pretes .bo-flip.is-retournee:focus-visible .bo-flip-dedans {
+  transform: rotateY(180deg) translateY(-1.2em) scale(1.05);
+}
+.bo-ouv.is-pretes .bo-flip.is-retournee:focus-visible { outline: none; }
 
 /* La carte en grand passe devant toute la scene. */
 .bo-ouv .cartes-zoom { z-index: 40; }
