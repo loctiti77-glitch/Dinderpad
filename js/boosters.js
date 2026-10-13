@@ -111,10 +111,11 @@
   // ==========================================================
   //  L'ouverture d'un booster
   // ==========================================================
-  // Le booster arrive, tremble, son bord superieur s'arrache dans un
-  // eclat, les cinq cartes en sortent face cachee et se rangent. On les
-  // retourne une a une : la rarete se devine a la lueur, et une carte
-  // qu'on n'avait pas le dit.
+  // Le booster arrive et attend : c'est le joueur qui l'ouvre, d'un
+  // clic ou en tirant son bord du haut vers la droite. Le bord s'arrache
+  // alors dans un eclat, les cinq cartes sortent face cachee et se
+  // rangent. On les retourne une a une : la rarete se devine a la lueur,
+  // et une carte qu'on n'avait pas le dit.
 
   function lancer(moyen) {
     if (enCours) return;
@@ -262,18 +263,66 @@
       }, 300);
     }
 
-    // --- La mise en scene ---
-    apres(function () { scene.classList.add('is-secousse'); }, 450);
-    apres(function () { scene.classList.remove('is-secousse'); scene.classList.add('is-dechire'); }, 1350);
-    apres(function () { scene.classList.add('is-sortie'); }, 1900);
+    // --- L'ouverture, a la main ---
+    // Le sachet attend. On l'ouvre d'un clic, d'une touche, ou en tirant
+    // son bord : le haut suit alors le doigt avant de ceder.
+    var haut = sachet.querySelector('.bo-ouv-pack-img--haut');
+    var ouvert = false, prise = null;
+
+    function dechirer() {
+      if (ouvert || !scene.classList.contains('is-attend')) return;
+      ouvert = true;
+      haut.style.transform = '';
+      scene.classList.remove('is-attend');
+      sachet.removeAttribute('tabindex');
+      consigne.textContent = '';
+      scene.classList.add('is-secousse');
+      apres(function () { scene.classList.remove('is-secousse'); scene.classList.add('is-dechire'); }, 420);
+      apres(function () { scene.classList.add('is-sortie'); }, 970);
+      apres(function () {
+        scene.classList.add('is-pretes');
+        consigne.textContent = 'Touche les cartes pour les retourner.';
+        var tout = el('button', 'bo-btn bo-btn--plat bo-btn--court', 'Tout retourner');
+        tout.type = 'button';
+        tout.addEventListener('click', function () { tout.remove(); toutRetourner(); });
+        actions.appendChild(tout);
+      }, 2070);
+    }
+
+    sachet.addEventListener('pointerdown', function (e) {
+      if (ouvert || !scene.classList.contains('is-attend')) return;
+      prise = { x: e.clientX, l: sachet.getBoundingClientRect().width || 1, tire: 0 };
+      if (sachet.setPointerCapture) { try { sachet.setPointerCapture(e.pointerId); } catch (err) {} }
+    });
+    sachet.addEventListener('pointermove', function (e) {
+      if (!prise || ouvert) return;
+      prise.tire = Math.max(0, Math.min(1, (e.clientX - prise.x) / (prise.l * 0.7)));
+      haut.style.transform = 'translate(' + (prise.tire * 14) + '%,' + (-prise.tire * 5) + '%) rotate(' +
+                             (prise.tire * 16) + 'deg)';
+      if (prise.tire >= 1) { prise = null; dechirer(); }
+    });
+    function lacher() {
+      if (!prise) return;
+      var t = prise.tire;
+      prise = null;
+      // Un simple clic, ou un bord assez tire : il cede. Sinon il revient.
+      if (t < 0.04 || t > 0.4) dechirer();
+      else haut.style.transform = '';
+    }
+    sachet.addEventListener('pointerup', lacher);
+    sachet.addEventListener('pointercancel', function () { prise = null; haut.style.transform = ''; });
+    sachet.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dechirer(); }
+    });
+
     apres(function () {
-      scene.classList.add('is-pretes');
-      consigne.textContent = 'Touche les cartes pour les retourner.';
-      var tout = el('button', 'bo-btn bo-btn--plat bo-btn--court', 'Tout retourner');
-      tout.type = 'button';
-      tout.addEventListener('click', function () { tout.remove(); toutRetourner(); });
-      actions.appendChild(tout);
-    }, 3000);
+      scene.classList.add('is-attend');
+      sachet.setAttribute('tabindex', '0');
+      sachet.setAttribute('role', 'button');
+      sachet.setAttribute('aria-label', 'Ouvrir le booster');
+      consigne.textContent = 'Touche le booster pour l\u2019ouvrir, ou tire son bord.';
+      sachet.focus();
+    }, 500);
   }
 
   majComptoir();
