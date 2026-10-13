@@ -748,7 +748,8 @@
 
       var scene = el('div', 'fw-scene');
       var cv = el('canvas', 'fw-canvas');
-      cv.width = 480; cv.height = 316;
+      var vueF = M.vue(MW, MH);
+      cv.width = vueF.L; cv.height = vueF.H;
       scene.appendChild(cv);
 
       var hud = el('div', 'fw-hud');

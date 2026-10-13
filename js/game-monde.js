@@ -851,9 +851,27 @@
     };
   }
 
+  // La taille de la toile d'une scene de marche. Dans le pad, c'est
+  // 480 x 316. En plein ecran, elle prend la forme de la fenetre : on ne
+  // grossit pas davantage les pixels, on montre plus de terrain, sur les
+  // cotes ou en hauteur. Jamais plus que la carte elle-meme.
+  function vue(MW, MH) {
+    var L = 480, H = 316;
+    var ecran = document.getElementById('screen');
+    if (ecran && document.body.classList.contains('is-plein')) {
+      var r = ecran.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        var forme = r.width / r.height;
+        if (forme >= L / H) L = Math.round(H * forme / 2) * 2;
+        else H = Math.round(L / forme / 2) * 2;
+      }
+    }
+    return { L: Math.min(L, MW * TS), H: Math.min(H, MH * TS) };
+  }
+
   window.MONDE = {
     TS: TS, T: T, BLOQUANT: BLOQUANT, estEau: estEau,
-    bruit: bruit, borne: borne,
+    bruit: bruit, borne: borne, vue: vue,
     peindre: peindre, Balade: Balade
   };
 })();

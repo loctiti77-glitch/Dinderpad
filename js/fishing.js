@@ -289,7 +289,8 @@
       // Sortir du magasin : le rideau se leve au lieu de tout recommencer.
       if (ou) scene.classList.add('is-entree');
       var cv = el('canvas', 'pe-canvas');
-      cv.width = 480; cv.height = 316;
+      var vueP = M.vue(MW, MH);
+      cv.width = vueP.L; cv.height = vueP.H;
       scene.appendChild(cv);
 
       var hud = el('div', 'pe-hud');
@@ -935,7 +936,7 @@
         if (k3 > 0.72) {
           var v = (k3 - 0.72) / 0.28;
           ctx.fillStyle = 'rgba(234,247,255,' + (v * v).toFixed(2) + ')';
-          ctx.fillRect(0, 0, 480, 316);
+          ctx.fillRect(0, 0, cv.width, cv.height);
         }
       }
 
@@ -1389,7 +1390,7 @@
 
       // Ou se tient le pecheur sur l'ecran, et non dans le monde : la
       // minicarte s'en sert pour savoir si elle le masque.
-      var ecranChef = { x: 240, y: 158 };
+      var ecranChef = { x: cv.width / 2, y: cv.height / 2 };
 
       function dessinerBouchon(ctx, cam, t) {
         ecranChef.x = balade.chef.x - cam.x;

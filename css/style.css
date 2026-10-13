@@ -3659,3 +3659,392 @@ html, body { touch-action: manipulation; }
     animation-delay: 0s;
   }
 }
+
+/* ==========================================================
+   Les jeux en plein ecran
+   Le routeur pose "is-plein" sur le <body> pour les quatre jeux. Le pad
+   entier grandit et son chassis sort du champ ; l'ecran, lui, quitte sa
+   forme d'origine (1065 x 701) pour prendre celle de la fenetre, d'un
+   bord a l'autre. --pw et --ph sont sa taille ; --k est l'echelle, telle
+   que les 1065 x 701 d'origine tiennent toujours dedans : le jeu gagne
+   de la place sur les cotes, il n'en perd nulle part.
+
+   Deux bornes, pour les fenetres extremes : pas plus large que 2,2 pour
+   1, pas plus haut que 4 pour 3. Au-dela, des bandes noires reviennent.
+   ========================================================== */
+
+body.is-plein {
+  --pw: min(100vw, calc(100vh * 2.2));
+  --ph: min(100vh, calc(100vw * .75));
+  --k: min(calc(var(--pw) / 1065), calc(var(--ph) / 701));
+  background: #000;
+  overflow: hidden;
+}
+
+@supports (height: 100dvh) {
+  body.is-plein {
+    --pw: min(100vw, calc(100dvh * 2.2));
+    --ph: min(100dvh, calc(100vw * .75));
+  }
+}
+
+body.is-plein .pad-wrap {
+  position: fixed;
+  inset: 0;
+  display: block;
+  min-height: 0;
+  padding: 0;
+}
+
+body.is-plein .pad {
+  position: absolute;
+  display: block;
+  max-width: none;
+  width: calc(1612 * var(--k));
+  /* L'ecran est a 272 x 90 du coin du pad : on le centre dans la fenetre. */
+  left: calc(50% - var(--pw) / 2 - 272 * var(--k));
+  top:  calc(50% - var(--ph) / 2 - 90 * var(--k));
+}
+
+/* Le chassis garde sa place, pour que le pad garde sa taille, mais il
+   ne se voit plus. */
+body.is-plein .pad-img {
+  width: calc(1612 * var(--k));
+  max-width: none;
+  max-height: none;
+  visibility: hidden;
+}
+
+body.is-plein .pad-nav,
+body.is-plein .pad-arcade,
+body.is-plein .pad-niveau,
+body.is-plein .hotspot,
+body.is-plein .lock-card { display: none; }
+
+body.is-plein .screen {
+  width: var(--pw);
+  height: var(--ph);
+  border-radius: 0;
+}
+
+/* Les annonces posees sur le pad se calaient sur son milieu : elles
+   suivent maintenant celui de l'ecran agrandi. */
+body.is-plein .bdg-pop { width: var(--pw); height: var(--ph); border-radius: 0; }
+body.is-plein .xp-flash,
+body.is-plein .art-trouve { left: calc(272 * var(--k) + var(--pw) / 2); }
+body.is-plein .art-trouve { top: calc(90 * var(--k) + var(--ph) / 2); }
+
+/* Le retour, en haut de la fenetre : discret tant qu'on ne le cherche pas. */
+.plein-retour { display: none; }
+
+body.is-plein .plein-retour {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  top: 6px;
+  transform: translateX(-50%);
+  display: block;
+  padding: 6px 16px;
+  border: 2px solid rgba(0, 241, 253, .7);
+  border-radius: 999px;
+  background: rgba(0, 10, 18, .6);
+  color: #d8f8ff;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 1px;
+  cursor: pointer;
+  opacity: .45;
+  transition: opacity .15s ease, background-color .15s ease;
+  touch-action: manipulation;
+}
+
+body.is-plein .plein-retour:hover,
+body.is-plein .plein-retour:focus-visible {
+  opacity: 1;
+  background: rgba(0, 30, 48, .92);
+  outline: none;
+}
+
+/* ==========================================================
+   L'entree dans un jeu
+   Une scene d'une seconde et demie par-dessus la fenetre, propre a
+   chaque jeu. Elle laisse passer les clics : le jeu est deja la,
+   dessous, et l'on peut jouer avant qu'elle ait fini.
+   ========================================================== */
+
+.entree {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+  pointer-events: none;
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.1;
+}
+
+.entree-fond, .entree-a, .entree-b { position: absolute; inset: 0; }
+
+.entree-p { position: absolute; display: block; }
+
+.entree-titre {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 92vw;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: clamp(26px, 6.4vw, 92px);
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #fff;
+  animation: entree-titre 1.6s ease both;
+}
+
+@keyframes entree-titre {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(1.5); letter-spacing: .5em; }
+  22%  { opacity: 1; transform: translate(-50%, -50%) scale(1); letter-spacing: .12em; }
+  62%  { opacity: 1; transform: translate(-50%, -50%) scale(1.04); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); }
+}
+
+/* ---------- The Founder War : la porte fendue ----------
+   Deux battants noirs, une entaille rouge en travers, et ils s'ecartent. */
+
+.entree--founder-war .entree-a,
+.entree--founder-war .entree-b {
+  width: 51%;
+  background: linear-gradient(180deg, #16060a 0%, #050203 100%);
+  animation: entree-fw-battant 1.6s cubic-bezier(.7, 0, .2, 1) both;
+}
+
+.entree--founder-war .entree-a { right: auto; border-right: .6vw solid #ff2a2a; --sens: -1; }
+.entree--founder-war .entree-b { left: auto; border-left: .6vw solid #ff2a2a; --sens: 1; }
+
+@keyframes entree-fw-battant {
+  0%, 46% { transform: none; box-shadow: 0 0 0 rgba(255, 42, 42, 0); }
+  52%     { transform: translateX(calc(var(--sens) * 2%)); box-shadow: 0 0 8vw rgba(255, 42, 42, .9); }
+  100%    { transform: translateX(calc(var(--sens) * 104%)); box-shadow: 0 0 8vw rgba(255, 42, 42, .9); }
+}
+
+/* L'entaille : un trait rouge qui traverse l'ecran en diagonale. */
+.entree--founder-war .entree-fond {
+  z-index: 2;
+  background: linear-gradient(115deg, transparent 49.2%, #fff 49.7%, #ff2a2a 50%, #fff 50.3%, transparent 50.8%);
+  animation: entree-fw-entaille 1.6s ease-out both;
+}
+
+@keyframes entree-fw-entaille {
+  0%, 18% { opacity: 0; clip-path: inset(0 100% 0 0); }
+  26%     { opacity: 1; clip-path: inset(0 0 0 0); }
+  44%     { opacity: 1; filter: blur(0); }
+  60%, 100% { opacity: 0; filter: blur(8px); }
+}
+
+/* Les etincelles, qui giclent de l'entaille. */
+.entree--founder-war .entree-p {
+  z-index: 3;
+  left: calc(8% + var(--i) * 6.2%);
+  top: calc(86% - var(--i) * 5.6%);
+  width: .5vw;
+  height: .5vw;
+  background: #ffb02e;
+  box-shadow: 0 0 1vw #ff2a2a;
+  opacity: 0;
+  animation: entree-fw-etincelle .7s calc(.32s + var(--i) * .012s) ease-out both;
+}
+
+@keyframes entree-fw-etincelle {
+  0%   { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translate(calc((var(--i) - 7) * 1.4vw), calc(8vh + var(--i) * 1vh)) scale(.3); }
+}
+
+.entree--founder-war .entree-titre {
+  z-index: 4;
+  color: #ff4a4a;
+  text-shadow: 0 0 2vw rgba(255, 42, 42, .9), .25vw .25vw 0 #000;
+}
+
+/* ---------- Fish n'Der : la vague ----------
+   L'eau couvre tout, des bulles montent, puis la vague se retire par
+   le bas. */
+
+.entree--peche .entree-a {
+  inset: -12vh 0 0 0;
+  background:
+    radial-gradient(circle at 50% 0, transparent 5.4vh, #0b6aa8 5.6vh) 0 0 / 14vh 12vh repeat-x,
+    linear-gradient(180deg, transparent 0, transparent 11.8vh, #0b6aa8 11.9vh, #053a66 100%);
+  animation: entree-peche-vague 1.6s cubic-bezier(.5, 0, .3, 1) both;
+}
+
+.entree--peche .entree-b {
+  inset: -9vh 0 0 0;
+  background:
+    radial-gradient(circle at 50% 0, transparent 5.4vh, rgba(120, 220, 255, .55) 5.6vh) 7vh 0 / 14vh 12vh repeat-x;
+  animation: entree-peche-vague 1.6s .06s cubic-bezier(.5, 0, .3, 1) both;
+}
+
+@keyframes entree-peche-vague {
+  0%, 48% { transform: translateX(0) translateY(0); }
+  100%    { transform: translateX(-14vh) translateY(125%); }
+}
+
+.entree--peche .entree-p {
+  left: calc(4% + var(--i) * 6.8%);
+  bottom: -6vh;
+  width: calc(1.4vw + var(--i) * .12vw);
+  aspect-ratio: 1;
+  border: .2vw solid rgba(220, 245, 255, .9);
+  border-radius: 50%;
+  background: rgba(200, 240, 255, .2);
+  animation: entree-peche-bulle 1.2s calc(var(--i) * .045s) ease-in both;
+}
+
+@keyframes entree-peche-bulle {
+  0%   { opacity: 0; transform: translateY(0); }
+  15%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-112vh) translateX(calc((var(--i) - 7) * .6vw)); }
+}
+
+.entree--peche .entree-titre {
+  color: #eaf9ff;
+  text-shadow: 0 0 2vw rgba(60, 200, 255, .9), .25vw .25vw 0 #053a66;
+}
+
+/* ---------- The Odyssey of Dinder : le saut ----------
+   Les etoiles s'etirent, un anneau s'ouvre, et l'on debouche dans un
+   eclat. */
+
+.entree--odyssee .entree-fond {
+  background: #02060c;
+  animation: entree-ody-fond 1.6s ease both;
+}
+
+@keyframes entree-ody-fond {
+  0%, 62% { opacity: 1; }
+  100%    { opacity: 0; }
+}
+
+.entree--odyssee .entree-a {
+  inset: -60vmax;
+  background: repeating-conic-gradient(from 0deg, rgba(124, 240, 200, .9) 0deg .35deg,
+              transparent .35deg 4deg, rgba(180, 220, 255, .8) 4deg 4.25deg, transparent 4.25deg 9deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 0, transparent 6%, #000 22%, #000 60%, transparent 72%);
+          mask-image: radial-gradient(circle, transparent 0, transparent 6%, #000 22%, #000 60%, transparent 72%);
+  animation: entree-ody-saut 1.6s cubic-bezier(.6, 0, .9, .5) both;
+}
+
+@keyframes entree-ody-saut {
+  0%   { opacity: 0; transform: scale(.3) rotate(0); }
+  20%  { opacity: 1; }
+  70%  { opacity: 1; transform: scale(1.6) rotate(24deg); }
+  100% { opacity: 0; transform: scale(3) rotate(40deg); }
+}
+
+/* L'anneau du Teleportail, puis l'eclat. */
+.entree--odyssee .entree-b {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: 20vmin;
+  height: 20vmin;
+  margin: -10vmin 0 0 -10vmin;
+  border: 1vmin solid #7cf0c8;
+  border-radius: 50%;
+  box-shadow: 0 0 6vmin #7cf0c8, inset 0 0 6vmin #7cf0c8;
+  animation: entree-ody-anneau 1.6s cubic-bezier(.7, 0, .9, .4) both;
+}
+
+@keyframes entree-ody-anneau {
+  0%   { opacity: 0; transform: scale(.2); }
+  25%  { opacity: 1; transform: scale(1); }
+  60%  { opacity: 1; transform: scale(2.2); background: rgba(234, 255, 248, 0); }
+  80%  { opacity: 1; transform: scale(14); background: rgba(234, 255, 248, .9); }
+  100% { opacity: 0; transform: scale(18); background: rgba(234, 255, 248, 0); }
+}
+
+.entree--odyssee .entree-p { display: none; }
+
+.entree--odyssee .entree-titre {
+  color: #eafff8;
+  text-shadow: 0 0 2vw rgba(124, 240, 200, .95);
+  font-size: clamp(20px, 4.8vw, 70px);
+}
+
+/* ---------- Spookinder : la panne ----------
+   Le noir, des parasites, deux yeux qui s'allument, et l'image revient
+   comme un vieil ecran qu'on rallume. */
+
+.entree--spookinder .entree-fond {
+  background: #030106;
+  animation: entree-spk-ecran 1.6s steps(1, end) both;
+}
+
+@keyframes entree-spk-ecran {
+  0%   { opacity: 1; clip-path: inset(0); }
+  70%  { opacity: 1; clip-path: inset(0); }
+  76%  { opacity: 1; clip-path: inset(0 0 52% 0); }
+  82%  { opacity: 1; clip-path: inset(0 0 86% 0); }
+  88%  { opacity: .7; clip-path: inset(0 0 96% 0); }
+  94%, 100% { opacity: 0; }
+}
+
+/* Les parasites. */
+.entree--spookinder .entree-a {
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .09) 0, rgba(255, 255, 255, .09) 2px, transparent 2px, transparent 5px),
+    repeating-linear-gradient(90deg, rgba(255, 138, 30, .07) 0, rgba(255, 138, 30, .07) 3px, transparent 3px, transparent 11px);
+  animation: entree-spk-neige .12s steps(2, end) infinite, entree-spk-fin 1.6s steps(1, end) both;
+}
+
+@keyframes entree-spk-neige {
+  0%   { background-position: 0 0, 0 0; }
+  50%  { background-position: 0 3px, 5px 0; }
+  100% { background-position: 0 1px, -4px 0; }
+}
+
+@keyframes entree-spk-fin { 0%, 72% { visibility: visible; } 73%, 100% { visibility: hidden; } }
+
+/* Les deux yeux. */
+.entree--spookinder .entree-b {
+  inset: auto;
+  left: 50%;
+  top: 30%;
+  width: 2.6vmin;
+  height: 2.6vmin;
+  margin-left: -7vmin;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 3vmin 1vmin #ff8a1e, 11.4vmin 0 0 0 #fff, 11.4vmin 0 3vmin 1vmin #ff8a1e;
+  animation: entree-spk-yeux 1.6s steps(1, end) both;
+}
+
+@keyframes entree-spk-yeux {
+  0%, 14%  { opacity: 0; }
+  15%, 30% { opacity: 1; }
+  31%, 36% { opacity: 0; }
+  37%, 68% { opacity: 1; }
+  69%, 100% { opacity: 0; }
+}
+
+.entree--spookinder .entree-p { display: none; }
+
+.entree--spookinder .entree-titre {
+  top: 58%;
+  color: #ff8a1e;
+  text-shadow: 0 0 2vw rgba(255, 138, 30, .9), .3vw 0 0 rgba(255, 0, 60, .7), -.3vw 0 0 rgba(0, 241, 253, .5);
+  animation: entree-spk-titre 1.6s steps(1, end) both;
+}
+
+@keyframes entree-spk-titre {
+  0%, 20%  { opacity: 0; transform: translate(-50%, -50%); }
+  21%      { opacity: 1; transform: translate(-51%, -50%) skewX(-8deg); }
+  26%      { opacity: .3; transform: translate(-50%, -50%); }
+  31%      { opacity: 1; transform: translate(-49.4%, -50%) skewX(5deg); }
+  40%      { opacity: 1; transform: translate(-50%, -50%); }
+  58%      { opacity: .5; }
+  61%      { opacity: 1; }
+  70%, 100% { opacity: 0; }
+}

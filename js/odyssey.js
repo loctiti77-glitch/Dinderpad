@@ -1264,7 +1264,8 @@
     if (!ou) scene.classList.add('is-arrivee');
 
     var cv = el('canvas', 'ody-canvas');
-    cv.width = 480; cv.height = 316;
+    var vueO = M.vue(MW, MH);
+    cv.width = vueO.L; cv.height = vueO.H;
     scene.appendChild(cv);
 
     // Le bandeau : le monde, l'etat du voyageur, ce qu'on a devant soi.
@@ -2159,7 +2160,7 @@
         }
         if (ks > 0.8) {
           ctx.fillStyle = 'rgba(20,4,4,' + ((ks - 0.8) / 0.2 * 0.9).toFixed(2) + ')';
-          ctx.fillRect(0, 0, 480, 316);
+          ctx.fillRect(0, 0, cv.width, cv.height);
         }
       }
     }
