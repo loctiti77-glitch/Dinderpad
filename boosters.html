@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DIO – Boosters</title>
+<meta name="theme-color" content="#050506">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png">
+<link rel="stylesheet" href="css/cartes.css">
+<link rel="stylesheet" href="css/boosters.css">
+</head>
+<body class="bo">
+
+  <!-- La page annexe du DinderPad : on y ouvre les boosters. Les cartes
+       tirees rejoignent le Livret de cartes, dans les Items du pad. -->
+  <header class="bo-tete">
+    <a class="bo-retour" id="retour" href="index.html#items">&larr; DinderPad</a>
+    <div class="bo-marque">
+      <strong>DIO</strong>
+      <span>Dinder&rsquo;s Incommon Omniverse</span>
+    </div>
+    <span class="bo-profil" id="profil"></span>
+  </header>
+
+  <main class="bo-corps">
+
+    <section class="bo-comptoir">
+      <div class="bo-pack-socle">
+        <img class="bo-pack" id="pack" src="assets/cartes/booster.webp" alt="Booster DIO">
+      </div>
+      <div class="bo-cote">
+        <h1 class="bo-titre">Boosters</h1>
+        <p class="bo-accroche">Cinq cartes par booster : Dinders, créatures, poissons et boss
+          de tout le DinderPad. Une rare au moins, à chaque fois.</p>
+        <div class="bo-achat" id="achat"></div>
+        <p class="bo-mot" id="mot" role="status"></p>
+        <div class="bo-bilan" id="bilan"></div>
+      </div>
+    </section>
+
+    <section class="bo-collection">
+      <div class="bo-collection-tete">
+        <h2 class="bo-sous-titre">Ta collection</h2>
+        <a class="bo-lien" id="versLivret" href="index.html#livret">Voir le livret dans le DinderPad &rarr;</a>
+      </div>
+      <div class="bo-onglets" id="onglets"></div>
+      <div class="bo-grille" id="grille"></div>
+    </section>
+
+  </main>
+
+  <!-- Les donnees du jeu : les cartes en tirent leurs images et leurs
+       chiffres. Aucune de ces rubriques ne s'affiche ici. -->
+  <script>window.VIEWS = {};</script>
+  <script src="js/dinderpad.js"></script>
+  <script src="js/game-palettes.js"></script>
+  <script src="js/game-sprites.js"></script>
+  <script src="js/game-monde.js"></script>
+  <script src="js/game-poissons.js"></script>
+  <script src="js/arme.js"></script>
+  <script src="js/requin.js"></script>
+  <script src="js/odyssey-vie.js"></script>
+  <script src="js/odyssey-faune.js"></script>
+  <script src="js/odyssey-boss.js"></script>
+  <script src="js/odyssey-gardiens.js"></script>
+  <script src="js/odyssey-stellaire.js"></script>
+  <script src="js/founder-campagne.js"></script>
+  <script src="js/founder-war.js"></script>
+  <script src="js/cartes.js"></script>
+  <script src="js/boosters.js"></script>
+</body>
+</html>

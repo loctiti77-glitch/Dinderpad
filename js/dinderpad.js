@@ -184,7 +184,26 @@
         return n ? n + (n > 1 ? ' mondes visités' : ' monde visité')
                  : 'Aucune destination connue';
       },
-      view: 'teleportail', acquis: function () { return aLaTelecommande(); } }
+      view: 'teleportail', acquis: function () { return aLaTelecommande(); } },
+    { id: 'livret', name: 'Livret de cartes',
+      sub: 'Dinder’s Incommon Omniverse',
+      img: 'assets/items/cardbook.webp',
+      // Il ne s'ouvre pas comme les autres : le livre vient au milieu de
+      // l'ecran et sa couverture se tourne avant qu'on entre dedans.
+      ouverture: function (view, row, fini) {
+        if (window.CARTES && window.CARTES.ouvrirLivre) window.CARTES.ouvrirLivre(view, row, fini);
+        else fini();
+      },
+      detail: function () {
+        var C = window.CARTES;
+        if (!C) return 'Dinder’s Incommon Omniverse';
+        var e = C.etat();
+        return e.vues ? e.vues + ' / ' + e.total + ' cartes' : 'Vide — ouvre un booster';
+      },
+      // Fourni avec l'appareil, comme le DinderTracker : c'est par lui
+      // qu'on rejoint la page des boosters, il doit donc etre la des le
+      // debut, meme vide.
+      view: 'livret', acquis: function () { return true; } }
   ];
 
   // Ce que le joueur possede vraiment, dans l'ordre du catalogue.
@@ -495,6 +514,11 @@
       // Le systeme stellaire : ferme tant que le DinderTracker n'a pas
       // recu le bon code.
       stellaire: false,
+      // Les cartes a collectionner : combien d'exemplaires de chacune, et
+      // ce qu'on sait des boosters (combien d'ouverts, le jour du dernier
+      // booster offert).
+      cartes: {},
+      boosters: { ouverts: 0, offert: '' },
       // La monnaie de l'Odyssee : ce que laissent les creatures qu'on
       // abat. Elle fait monter le meme pistolet que les Noyaux de la
       // peche, mais on ne l'echange pas contre eux.
@@ -603,6 +627,10 @@
     if (typeof p.chapitre !== 'number') p.chapitre = 0;
     if (!Array.isArray(p.astres)) p.astres = [];
     if (typeof p.stellaire !== 'boolean') p.stellaire = false;
+    if (!p.cartes || typeof p.cartes !== 'object') p.cartes = {};
+    if (!p.boosters || typeof p.boosters !== 'object') p.boosters = { ouverts: 0, offert: '' };
+    if (typeof p.boosters.ouverts !== 'number') p.boosters.ouverts = 0;
+    if (typeof p.boosters.offert !== 'string') p.boosters.offert = '';
     if (!p.scans || typeof p.scans !== 'object') p.scans = {};
     if (!p.abattus || typeof p.abattus !== 'object') p.abattus = {};
     if (typeof p.roches !== 'number') p.roches = 0;
@@ -924,6 +952,55 @@
     var p = me();
     if (p.fusion.faite) return false;
     p.fusion.faite = true;
+    save();
+    return true;
+  }
+
+  // ---------- Les cartes a collectionner ----------
+  // Le catalogue et le tirage vivent dans js/cartes.js ; ici, seulement ce
+  // que le joueur possede. Les boosters s'ouvrent sur une page a part
+  // (boosters.html), qui lit et ecrit la meme sauvegarde.
+
+  function cartes() {
+    var c = me().cartes, out = {};
+    for (var k in c) out[k] = c[k];
+    return out;
+  }
+
+  function aCarte(id) { return (me().cartes[id] || 0) > 0; }
+
+  // Range les cartes d'un booster. Rend celles qu'on n'avait pas encore.
+  function rangerCartes(ids) {
+    var p = me(), neuves = [];
+    (ids || []).forEach(function (id) {
+      if (!p.cartes[id]) neuves.push(id);
+      p.cartes[id] = (p.cartes[id] || 0) + 1;
+    });
+    p.boosters.ouverts++;
+    save();
+    return neuves;
+  }
+
+  function boostersOuverts() { return me().boosters.ouverts; }
+
+  // Un booster offert par jour (heure locale).
+  function boosterOffert() { return me().boosters.offert !== cleDuJour(new Date(maintenant())); }
+
+  function prendreBoosterOffert() {
+    if (!boosterOffert()) return false;
+    me().boosters.offert = cleDuJour(new Date(maintenant()));
+    save();
+    return true;
+  }
+
+  // Payer un nombre libre de credits d'une sorte : les Dindises ont leur
+  // prix fixe, les boosters le leur.
+  function payerCredits(key, n) {
+    if (!CREDITS[key] || !(n > 0)) return false;
+    if (illimite()) return true;
+    var p = me();
+    if ((p.credits[key] || 0) < n) return false;
+    p.credits[key] -= n;
     save();
     return true;
   }
@@ -1312,6 +1389,8 @@
         p.stellaire = false;
         p.abattus = {}; p.roches = 0; p.armeNiveauOdyssee = 1;
       } },
+    { id: 'cartes', nom: 'Cartes à collectionner', det: 'Le livret de cartes et les boosters ouverts',
+      vider: function (p) { p.cartes = {}; p.boosters = { ouverts: 0, offert: '' }; } },
     { id: 'badges', nom: 'Badges', det: 'Les badges et les exploits comptés',
       vider: function (p) { p.exploits = {}; p.vus = []; } },
     { id: 'artefacts', nom: 'Artefacts', det: 'Les artefacts trouvés dans les mini-jeux',
@@ -1523,6 +1602,9 @@
     chapitre: chapitre, ouvrirChapitre: ouvrirChapitre,
     astresVus: astresVus, aVuAstre: aVuAstre, noterAstre: noterAstre,
     stellaire: stellaire, ouvrirStellaire: ouvrirStellaire,
+    cartes: cartes, aCarte: aCarte, rangerCartes: rangerCartes,
+    boostersOuverts: boostersOuverts, boosterOffert: boosterOffert,
+    prendreBoosterOffert: prendreBoosterOffert, payerCredits: payerCredits,
     scans: scans, aScanne: aScanne, noterScan: noterScan,
     abattus: abattus, noterAbattu: noterAbattu,
     roches: roches, gagnerRoches: gagnerRoches, depenserRoches: depenserRoches,

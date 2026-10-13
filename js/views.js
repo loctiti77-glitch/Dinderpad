@@ -812,6 +812,16 @@
       row.appendChild(name);
 
       row.appendChild(el('span', 'slot-open', 'Ouvrir'));
+      // Un item peut mettre en scene sa propre ouverture : il recoit
+      // l'ecran, sa case, et de quoi passer a sa rubrique une fois fini.
+      if (it.ouverture) {
+        row.addEventListener('click', function (e) {
+          e.preventDefault();
+          if (row.dataset.ouvre) return;
+          row.dataset.ouvre = '1';
+          it.ouverture(view, row, function () { window.location.hash = '#' + it.view; });
+        });
+      }
       list.appendChild(row);
     });
 

@@ -1,0 +1,637 @@
+/* ==========================================================
+   Les cartes a collectionner — Dinder's Incommon Omniverse
+   Ce fichier sert le Livret de cartes du DinderPad et la page des
+   boosters. Une carte se mesure en em : sa taille de police fixe
+   l'echelle, la meme carte tient en vignette comme en grand.
+   ========================================================== */
+
+.carte {
+  --r: #b8c4d0;
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 20em;
+  height: 28em;
+  padding: .55em;
+  border: .32em solid var(--r);
+  border-radius: 1.1em;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, .1) 0%, transparent 34%),
+    linear-gradient(180deg, #23232e 0%, #0c0c12 100%);
+  box-shadow: 0 .3em .9em rgba(0, 0, 0, .6), inset 0 0 0 .1em rgba(0, 0, 0, .7);
+  color: #f2f2f6;
+  font-family: "Segoe UI", "Trebuchet MS", system-ui, sans-serif;
+  line-height: 1.2;                    /* le pad impose line-height: 0 */
+  text-align: left;
+  overflow: hidden;
+  user-select: none;
+}
+
+button.carte { cursor: pointer; font-size: inherit; }
+button.carte:hover,
+button.carte:focus-visible { outline: none; transform: translateY(-.5em); box-shadow: 0 .8em 1.4em rgba(0, 0, 0, .7), 0 0 1.2em var(--r); }
+button.carte { transition: transform .15s ease, box-shadow .15s ease; }
+
+.carte-tete {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5em;
+  padding: 0 .3em .3em;
+}
+
+.carte-nom {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 1.32em;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: .02em;
+  text-shadow: 0 .08em 0 #000;
+}
+
+.carte-famille {
+  flex: 0 0 auto;
+  font-size: .72em;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--r);
+}
+
+.carte-art {
+  flex: 0 0 10.6em;
+  position: relative;
+  border: .14em solid var(--r);
+  border-radius: .5em;
+  background:
+    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--r) 55%, #1a1a24) 0%, #101018 78%);
+  overflow: hidden;
+}
+
+.carte-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 8%;
+}
+
+.carte-art--pixel .carte-img {
+  box-sizing: border-box;
+  padding: .9em 1.2em;
+  object-fit: contain;
+  object-position: 50% 50%;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 .3em .2em rgba(0, 0, 0, .55));
+}
+
+.carte-sous {
+  flex: 0 0 auto;
+  margin: .38em 0 .3em;
+  padding: .22em .5em;
+  border-radius: .3em;
+  background: color-mix(in srgb, var(--r) 22%, #0c0c12);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: .74em;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #e6e6ee;
+}
+
+.carte-corps {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .22em;
+  padding: 0 .2em;
+  overflow: hidden;
+}
+
+.carte-ligne {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .6em;
+  padding: .12em .45em .12em .6em;
+  border-left: .26em solid #ff6a4a;
+  background: rgba(255, 255, 255, .06);
+  font-size: .98em;
+}
+
+.carte-ligne--def { border-left-color: #4fd1ff; }
+
+.carte-ligne-nom {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.carte-ligne-val { flex: 0 0 auto; font-size: 1.08em; font-weight: 800; color: #ffb49f; }
+.carte-ligne--def .carte-ligne-val { color: #a8e6ff; }
+
+.carte-texte {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: .2em .1em 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  font-size: .74em;
+  font-style: italic;
+  line-height: 1.28;
+  color: #c4c4d2;
+}
+
+.carte-pied {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5em;
+  padding: .3em .3em 0;
+  font-size: .62em;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #8a8a9a;
+}
+
+.carte-rarete { font-weight: 800; color: var(--r); }
+
+.carte-nombre {
+  position: absolute;
+  right: .7em;
+  top: 3.4em;
+  padding: .12em .5em;
+  border-radius: 1em;
+  background: rgba(0, 0, 0, .78);
+  border: .1em solid var(--r);
+  font-size: .9em;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* ---------- Les raretes ---------- */
+
+.carte[data-rarete="rare"] { box-shadow: 0 .3em .9em rgba(0, 0, 0, .6), 0 0 .7em rgba(69, 176, 255, .45); }
+.carte[data-rarete="epique"] { box-shadow: 0 .3em .9em rgba(0, 0, 0, .6), 0 0 .9em rgba(200, 140, 255, .55); }
+
+.carte[data-rarete="legendaire"] {
+  border-image: linear-gradient(135deg, #fff2b8, #ffd166 30%, #c8862a 55%, #ffe9a0 80%, #ffd166) 1;
+  border-radius: 0;
+  box-shadow: 0 .3em .9em rgba(0, 0, 0, .6), 0 0 1.3em rgba(255, 209, 102, .7);
+}
+
+/* Le reflet qui passe sur les cartes epiques et legendaires. */
+.carte[data-rarete="epique"]::after,
+.carte[data-rarete="legendaire"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, .28) 48%,
+              rgba(160, 230, 255, .18) 53%, transparent 62%);
+  background-size: 260% 100%;
+  mix-blend-mode: screen;
+  animation: carte-reflet 3.6s linear infinite;
+}
+
+@keyframes carte-reflet {
+  from { background-position: 130% 0; }
+  to   { background-position: -130% 0; }
+}
+
+/* ---------- Le dos ---------- */
+
+.carte--dos {
+  align-items: center;
+  justify-content: center;
+  border-color: #c8962a;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 209, 102, .16) 0, rgba(255, 209, 102, .16) .5em,
+                              transparent .5em, transparent 1.6em),
+    linear-gradient(180deg, #17171f 0%, #050508 100%);
+}
+
+.carte-dos-coeur {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .3em;
+  padding: 1.1em 1.3em;
+  border: .2em solid #ffd166;
+  border-radius: 50%;
+  background: #0a0a10;
+  text-align: center;
+}
+
+.carte-dos-logo {
+  font-size: 3.6em;
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: .04em;
+  color: #fff;
+  text-shadow: .06em .06em 0 #c8962a;
+}
+
+.carte-dos-sous { font-size: .56em; letter-spacing: .12em; text-transform: uppercase; color: #ffd166; }
+
+.carte--dos.is-vide {
+  border-color: #2e2e3c;
+  background: #0d0d14;
+  box-shadow: none;
+  opacity: .8;
+}
+
+.carte--dos.is-vide .carte-dos-coeur { border-color: #2e2e3c; background: transparent; }
+.carte--dos.is-vide .carte-dos-logo { color: #3c3c4e; text-shadow: none; }
+.carte--dos.is-vide .carte-dos-sous { color: #4c4c60; font-size: .9em; }
+
+/* ---------- La grille d'une famille ---------- */
+
+.cartes-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 20em);
+  justify-content: center;
+  gap: 1.3em;
+}
+
+/* ---------- La carte en grand ---------- */
+
+.cartes-zoom {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
+  background: rgba(2, 2, 6, .88);
+  animation: cartes-voile .2s ease both;
+}
+
+.cartes-zoom.is-sortie { animation: cartes-voile .22s ease reverse forwards; }
+.cartes-zoom .carte--grande { animation: cartes-zoom-entree .35s cubic-bezier(.2, 1.4, .4, 1) both; }
+
+.cartes-zoom-fermer {
+  padding: .5em 1.6em;
+  border: .14em solid #ffd166;
+  border-radius: .6em;
+  background: rgba(40, 30, 6, .9);
+  color: #fff;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+@keyframes cartes-voile { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes cartes-zoom-entree {
+  from { opacity: 0; transform: scale(.6) rotate(-6deg); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ==========================================================
+   Le Livret de cartes, dans le DinderPad
+   ========================================================== */
+
+.view--livret { position: relative; padding: 0; }
+
+.livret {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--px));
+  padding: calc(12 * var(--px)) calc(16 * var(--px));
+  background: radial-gradient(90% 70% at 50% 0%, #2a2210 0%, #0d0b08 55%, #050506 100%);
+  font-family: "Segoe UI", "Trebuchet MS", system-ui, sans-serif;
+  line-height: 1.2;
+  color: #f2f2f6;
+}
+
+.livret-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--px));
+}
+
+.livret-titre {
+  margin: 0;
+  font-size: calc(34 * var(--px));
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: calc(1 * var(--px));
+  color: #fff;
+  text-shadow: calc(2 * var(--px)) calc(2 * var(--px)) 0 #c8962a;
+}
+
+.livret-compte { font-size: calc(18 * var(--px)); color: #ffd166; }
+
+.livret-onglets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(6 * var(--px));
+}
+
+.livret-onglet {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(8 * var(--px));
+  padding: calc(7 * var(--px)) calc(12 * var(--px));
+  border: calc(3 * var(--px)) solid #4a3c14;
+  border-radius: calc(10 * var(--px));
+  background: rgba(12, 10, 6, .9);
+  color: #b8a878;
+  text-decoration: none;
+  font-size: calc(19 * var(--px));
+}
+
+.livret-onglet span { font-size: calc(15 * var(--px)); }
+.livret-onglet:hover { color: #fff; }
+
+.livret-onglet.is-actif {
+  border-color: #ffd166;
+  background: rgba(255, 209, 102, .16);
+  color: #fff;
+}
+
+.livret-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: calc(8 * var(--px)) 0 calc(14 * var(--px));
+  font-size: calc(9.4 * var(--px));      /* l'echelle des vignettes */
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+
+.livret-page::-webkit-scrollbar { width: 0; }
+.livret-page .cartes-grille { gap: calc(13 * var(--px)); }
+
+.livret-pied { display: flex; gap: calc(8 * var(--px)); }
+
+.livret-btn {
+  flex: 1;
+  padding: calc(9 * var(--px)) calc(12 * var(--px));
+  border: calc(3 * var(--px)) solid #4a3c14;
+  border-radius: calc(10 * var(--px));
+  background: rgba(12, 10, 6, .9);
+  color: #e6d8a8;
+  text-align: center;
+  text-decoration: none;
+  font-size: calc(20 * var(--px));
+  font-weight: 700;
+}
+
+.livret-btn--or {
+  flex: 2;
+  border-color: #ffd166;
+  background: linear-gradient(180deg, #ffd166 0%, #c8862a 100%);
+  color: #1a1204;
+}
+
+.livret .cartes-zoom { font-size: calc(21 * var(--px)); }
+.livret .cartes-zoom-fermer { font-size: calc(18 * var(--px)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .carte::after { animation: none !important; }
+  .cartes-zoom, .cartes-zoom .carte--grande { animation: none; }
+  button.carte { transition: none; }
+}
+
+/* ==========================================================
+   L'ouverture du livre, depuis les Items
+   Le livre fait 443 x 560 (en px de l'image du pad). Il vole de sa
+   case au milieu de l'ecran, puis glisse vers la droite a mesure que
+   sa couverture se tourne, pour que le livre ouvert reste centre.
+   ========================================================== */
+
+.livre-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  overflow: hidden;
+  perspective: calc(1700 * var(--px));
+  background: radial-gradient(circle at 50% 50%, rgba(60, 44, 10, .96) 0%, rgba(8, 6, 4, .97) 62%, #000 100%);
+  cursor: pointer;
+  animation: livre-voile .35s ease both;
+}
+
+@keyframes livre-voile { from { opacity: 0; } to { opacity: 1; } }
+
+.livre-rayons {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(1700 * var(--px));
+  height: calc(1700 * var(--px));
+  margin: calc(-850 * var(--px)) 0 0 calc(-850 * var(--px));
+  background: repeating-conic-gradient(from 0deg, rgba(255, 209, 102, .16) 0deg 6deg, transparent 6deg 18deg);
+  opacity: 0;
+  transition: opacity .7s ease;
+  animation: livre-tourne 30s linear infinite;
+}
+
+.livre-scene.is-ouvert .livre-rayons { opacity: 1; }
+
+@keyframes livre-tourne { to { transform: rotate(360deg); } }
+
+.livre {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(443 * var(--px));
+  height: calc(560 * var(--px));
+  margin: calc(-280 * var(--px)) 0 0 calc(-221 * var(--px));
+  transform-style: preserve-3d;
+  --dx: 0px; --dy: 0px; --s: .3;
+}
+
+.livre-scene.is-vol .livre { animation: livre-vol .52s cubic-bezier(.2, 1.15, .4, 1) both; }
+
+@keyframes livre-vol {
+  from { transform: translate(var(--dx), var(--dy)) scale(var(--s)) rotate(-8deg); }
+  to   { transform: none; }
+}
+
+/* Le fermoir saute : un sursaut, juste avant que la couverture ne parte. */
+.livre-scene.is-fermoir .livre { animation: livre-fermoir .3s ease both; }
+
+@keyframes livre-fermoir {
+  0%   { transform: none; }
+  35%  { transform: translateX(calc(7 * var(--px))) rotate(1.4deg) scale(1.03); }
+  70%  { transform: translateX(calc(-4 * var(--px))) rotate(-.8deg) scale(1.03); }
+  100% { transform: scale(1.02); }
+}
+
+/* Ouvert, le livre fait deux pages : il se decale d'une demi-largeur. */
+.livre-scene.is-ouvert .livre {
+  animation: livre-glisse .9s cubic-bezier(.4, 0, .2, 1) both;
+}
+
+@keyframes livre-glisse {
+  from { transform: scale(1.02); }
+  to   { transform: translateX(calc(206 * var(--px))) scale(1.02); }
+}
+
+.livre-scene.is-plongee .livre {
+  animation: livre-plongee .5s cubic-bezier(.5, 0, .9, .4) forwards;
+}
+
+@keyframes livre-plongee {
+  from { transform: translateX(calc(206 * var(--px))) scale(1.02); opacity: 1; }
+  to   { transform: translateX(calc(-60 * var(--px))) scale(3.2); opacity: 0; }
+}
+
+/* ---------- La page et ses pochettes ---------- */
+
+.livre-page {
+  position: absolute;
+  left: 8%;
+  right: 4%;
+  top: 3%;
+  bottom: 3%;
+  padding: 5%;
+  border: calc(3 * var(--px)) solid #c8962a;
+  border-radius: calc(4 * var(--px)) calc(12 * var(--px)) calc(12 * var(--px)) calc(4 * var(--px));
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .65) 0%, rgba(0, 0, 0, 0) 14%),
+    linear-gradient(180deg, #1c1810 0%, #0e0c08 100%);
+  box-shadow: calc(6 * var(--px)) calc(8 * var(--px)) calc(18 * var(--px)) rgba(0, 0, 0, .7);
+}
+
+.livre-poches {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 5%;
+}
+
+.livre-poche {
+  border: calc(2 * var(--px)) solid #ffd166;
+  border-radius: calc(6 * var(--px));
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 209, 102, .2) 0, rgba(255, 209, 102, .2) calc(4 * var(--px)),
+                              transparent calc(4 * var(--px)), transparent calc(12 * var(--px))),
+    #0a0a10;
+  opacity: 0;
+  transform: scale(.6);
+}
+
+.livre-scene.is-ouvert .livre-poche {
+  animation: livre-poche .4s calc(.35s + var(--i) * .05s) cubic-bezier(.2, 1.5, .4, 1) both;
+}
+
+@keyframes livre-poche {
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- La couverture ---------- */
+
+.livre-couv {
+  position: absolute;
+  inset: 0;
+  transform-origin: 4% 50%;              /* la reliure */
+  transform-style: preserve-3d;
+}
+
+.livre-scene.is-ouvert .livre-couv,
+.livre-scene.is-plongee .livre-couv {
+  animation: livre-tourne-page .9s cubic-bezier(.45, 0, .2, 1) forwards;
+}
+
+@keyframes livre-tourne-page {
+  from { transform: rotateY(0); }
+  to   { transform: rotateY(-172deg); }
+}
+
+.livre-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.livre-face--devant {
+  object-fit: contain;
+  filter: drop-shadow(calc(10 * var(--px)) calc(14 * var(--px)) calc(16 * var(--px)) rgba(0, 0, 0, .75));
+}
+
+/* Le contreplat : ce qu'on voit de la couverture une fois tournee. */
+.livre-face--dedans {
+  inset: 3% 4% 3% 8%;
+  width: auto;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--px));
+  transform: rotateY(180deg);
+  border: calc(3 * var(--px)) solid #c8962a;
+  border-radius: calc(12 * var(--px)) calc(4 * var(--px)) calc(4 * var(--px)) calc(12 * var(--px));
+  background:
+    linear-gradient(270deg, rgba(0, 0, 0, .65) 0%, rgba(0, 0, 0, 0) 14%),
+    repeating-linear-gradient(135deg, rgba(255, 209, 102, .1) 0, rgba(255, 209, 102, .1) calc(8 * var(--px)),
+                              transparent calc(8 * var(--px)), transparent calc(26 * var(--px))),
+    #100e0a;
+  font-family: "Segoe UI", "Trebuchet MS", system-ui, sans-serif;
+  line-height: 1.1;
+}
+
+.livre-ex {
+  font-size: calc(96 * var(--px));
+  font-weight: 900;
+  font-style: italic;
+  color: #fff;
+  text-shadow: calc(5 * var(--px)) calc(5 * var(--px)) 0 #c8962a;
+}
+
+.livre-ex-sous {
+  font-size: calc(15 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(3 * var(--px));
+  text-transform: uppercase;
+  color: #ffd166;
+}
+
+/* L'eclat dans lequel on plonge. */
+.livre-eclat {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, #fff 0%, #ffe9a0 30%, rgba(255, 209, 102, 0) 72%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.livre-scene.is-plongee .livre-eclat { animation: livre-eclat .5s ease-in forwards; }
+
+@keyframes livre-eclat {
+  from { opacity: 0; transform: scale(.4); }
+  to   { opacity: 1; transform: scale(2.4); }
+}
