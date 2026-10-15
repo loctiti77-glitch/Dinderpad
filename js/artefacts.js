@@ -287,6 +287,14 @@
   var PAR_ID = {};
   LISTE.forEach(function (a) { PAR_ID[a.id] = a; });
 
+  // Les jeux qui ont quitte le pad : leurs artefacts deja trouves restent
+  // dans la collection, les autres ne se montrent plus, puisqu'on ne peut
+  // plus aller les chercher.
+  var RETIRES = { spookinder: true };
+  function visibles() {
+    return LISTE.filter(function (a) { return !RETIRES[a.jeu] || aTrouve(a.id); });
+  }
+
   // ==========================================================
   //  Le dessin : trente formes de 24 x 24
   // ==========================================================
@@ -640,7 +648,7 @@
     carte.appendChild(el('strong', 'art-trouve-nom', a.nom));
     var d = DP.byId && DP.byId(a.dinder);
     carte.appendChild(el('span', 'art-trouve-dinder', d ? 'Lié à ' + d.name + (d.form ? ' · ' + d.form : '') : ''));
-    carte.appendChild(el('span', 'art-trouve-compte', trouves().length + ' / ' + LISTE.length + ' artefacts'));
+    carte.appendChild(el('span', 'art-trouve-compte', trouves().length + ' / ' + visibles().length + ' artefacts'));
     pad.appendChild(carte);
     setTimeout(function () { carte.classList.add('is-sortie'); }, reduit ? 1800 : 3000);
     setTimeout(function () { carte.remove(); suivant(); }, reduit ? 1900 : 3500);
@@ -813,7 +821,7 @@
 
   function onglets(view, actif) {
     var barre = el('div', 'it-onglets');
-    [['items', 'Objets'], ['artefacts', 'Artefacts  ' + trouves().length + ' / ' + LISTE.length]].forEach(function (o) {
+    [['items', 'Objets'], ['artefacts', 'Artefacts  ' + trouves().length + ' / ' + visibles().length]].forEach(function (o) {
       var a = el('a', 'it-onglet' + (o[0] === actif ? ' is-actif' : ''), o[1]);
       a.href = '#' + o[0];
       barre.appendChild(a);
@@ -831,14 +839,15 @@
       'Des reliques de l’histoire des Dinders, cachées dans les mini-jeux.'));
     var jauge = el('div', 'art-jauge');
     var plein = el('div', 'art-jauge-plein');
-    plein.style.width = (n / LISTE.length * 100).toFixed(1) + '%';
+    plein.style.width = (n / visibles().length * 100).toFixed(1) + '%';
     jauge.appendChild(plein);
     tete.appendChild(jauge);
     box.appendChild(tete);
 
     var grille = el('div', 'art-grille');
     Object.keys(JEUX).forEach(function (jeu) {
-      var liste = LISTE.filter(function (a) { return a.jeu === jeu; });
+      var liste = visibles().filter(function (a) { return a.jeu === jeu; });
+      if (!liste.length) return;
       var eu = liste.filter(function (a) { return aTrouve(a.id); }).length;
       var sec = el('div', 'art-section');
       sec.appendChild(el('p', 'art-jeu', JEUX[jeu] + '  ·  ' + eu + ' / ' + liste.length));

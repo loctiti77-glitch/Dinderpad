@@ -108,11 +108,11 @@
     // Il ne s'obtient pas dans une Dindise : il faut le battre au bout de
     // The Founder War, a l'Effondrement Terminal.
     { id: 'lefondateur',                       name: 'Le Fondateur',  form: '',                   rarity: 'Temporel',     universe: '???',    horsTirage: true, desc: 'Celui qui voulait remettre de l’ordre dans l’omnivers : un seul monde de chaque, à sa place, pour toujours. Vaincu, il suit désormais celui qui l’a battu.' },
-    // La collection Spookinder : on ne les gagne que dans le pass de
-    // l'evenement, jusqu'au 1er novembre a 0 h. "collection" les distingue
-    // dans la page Dinders ; "serie" dit de quelle saga vient le personnage,
-    // et s'affiche en etiquette. Leur description reste a ecrire par
-    // l'auteur.
+    // La collection Spookinder : on les gagnait dans le pass de
+    // l'evenement, qui n'existe plus. Ceux qui les ont les gardent.
+    // "collection" les distingue dans la page Dinders ; "serie" dit de
+    // quelle saga vient le personnage, et s'affiche en etiquette. Leur
+    // description reste a ecrire par l'auteur.
     { id: 'chica-the-chicken',                 name: 'Chica',          form: 'the Chicken',      rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', serie: 'Gaming Legends', desc: '' },
     { id: 'bonnie-the-bunny',                  name: 'Bonnie',         form: 'the Bunny',        rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', serie: 'Gaming Legends', desc: '' },
     { id: 'foxy-the-fox-pirate',               name: 'Foxy',           form: 'the Fox Pirate',   rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', serie: 'Gaming Legends', desc: '' },
@@ -120,11 +120,19 @@
     // Le secret de Spookinder : il ne sort d'aucun pass, il se trouve dans
     // la camera des toilettes. "secret" le garde hors des cases marquees
     // manquantes : on ne doit pas savoir qu'il existe.
-    { id: 'golden-freddy',                     name: 'Golden Freddy', form: '',                  rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', serie: 'Gaming Legends', secret: true, desc: '' }
+    { id: 'golden-freddy',                     name: 'Golden Freddy', form: '',                  rarity: 'Exclusif',     universe: '???',    horsTirage: true, collection: 'spookinder', serie: 'Gaming Legends', secret: true, desc: '' },
+    // Les animatroniques de Wade and Friends, la Maison du Burger de
+    // SSt-03. La facon de les gagner reste a decider : en attendant, leurs
+    // cases restent marquees manquantes. Seule leur version de base entre
+    // dans la collection, pas leurs formes Horror ni leurs endosquelettes.
+    { id: 'wade-wolhunter',                    name: 'Wade',          form: 'Wolhunter',         rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', desc: '' },
+    { id: 'stephen-sharkodon',                 name: 'Stephen',       form: 'Sharkodon',         rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', desc: '' },
+    { id: 'faith-faisandoir',                  name: 'Faith',         form: 'Faisandoir',        rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', desc: '' },
+    { id: 'charlie-capsule',                   name: 'Charlie',       form: 'Capsule',           rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', desc: '' }
   ];
 
-  // Le palier du pass Spookinder qui rend chacun d'eux. js/spookinder.js
-  // place ses recompenses d'apres cette table.
+  // Le palier de l'ancien pass Spookinder qui rendait chacun d'eux : un
+  // Dinder Spookinder ne vaut que s'il a ete gagne ainsi (voir completer).
   var SPOOK_DINDERS = {
     'chica-the-chicken': 5, 'bonnie-the-bunny': 10,
     'foxy-the-fox-pirate': 15, 'freddy-fazbear': 20
@@ -537,7 +545,10 @@
       dinderXP: {},
       // Spookinder : l'experience du pass, les nuits tenues jusqu'a 6 h,
       // et les paliers deja reclames.
-      spookinder: { xp: 0, nuits: [], reclames: [] }
+      spookinder: { xp: 0, nuits: [], reclames: [] },
+      // Wade and Friends : la nuit ou l'on reprend, les nuits deja tenues,
+      // et les reglages de la derniere nuit personnalisee.
+      wade: { nuit: 1, faites: [], perso: {}, vingt: false }
     };
   }
 
@@ -562,6 +573,11 @@
         return !n || p.spookinder.offerts || p.spookinder.reclames.indexOf(n) !== -1;
       });
     }
+    if (!p.wade || typeof p.wade !== 'object') p.wade = {};
+    if (typeof p.wade.nuit !== 'number') p.wade.nuit = 1;
+    if (!Array.isArray(p.wade.faites)) p.wade.faites = [];
+    if (!p.wade.perso || typeof p.wade.perso !== 'object') p.wade.perso = {};
+    if (typeof p.wade.vingt !== 'boolean') p.wade.vingt = false;
     if (!p.peche || typeof p.peche !== 'object') p.peche = {};
     if (!p.exploits || typeof p.exploits !== 'object') p.exploits = {};
     if (!Array.isArray(p.vus)) p.vus = [];
@@ -1486,72 +1502,44 @@
     } catch (e) { return null; }
   }
 
-  // ---------- Spookinder ----------
-  // L'evenement d'Halloween. Il s'ouvre le 1er octobre et se ferme le
-  // 1er novembre a 0 h : passe cette date, le pass ne donne plus rien. Les
-  // bornes se lisent sur l'horloge du pad, que les essais peuvent decaler.
-  var SPOOK_DEBUT = new Date(2026, 9, 1, 0, 0, 0).getTime();
-  var SPOOK_FIN   = new Date(2026, 10, 1, 0, 0, 0).getTime();
-
-  function spookinderEtat() {
-    var t = maintenant();
-    return { ouvert: t >= SPOOK_DEBUT && t < SPOOK_FIN, passe: t >= SPOOK_FIN,
-             fin: SPOOK_FIN, reste: Math.max(0, SPOOK_FIN - t) };
+  // ---------- Wade and Friends ----------
+  // Les etoiles du menu, comme dans FNaF : la cinquieme nuit, la sixieme,
+  // et la nuit personnalisee tenue avec tout le monde a 20.
+  function wade() {
+    var w = me().wade;
+    var etoiles = (w.faites.indexOf(5) !== -1 ? 1 : 0) + (w.faites.indexOf(6) !== -1 ? 1 : 0) + (w.vingt ? 1 : 0);
+    return { nuit: w.nuit, faites: w.faites.slice(), perso: Object.assign({}, w.perso), etoiles: etoiles };
   }
 
-  function spookinder() {
-    var s = me().spookinder;
-    return { xp: s.xp, nuits: s.nuits.slice(), reclames: s.reclames.slice() };
-  }
-
-  // L'experience ne compte plus une fois l'evenement ferme.
-  function gagnerSpookXP(n) {
-    n = Math.max(0, Math.round(n || 0));
-    if (!n || !spookinderEtat().ouvert) return me().spookinder.xp;
-    var p = me();
-    p.spookinder.xp += n;
+  // Une nuit tenue jusqu'a 6 h. Rend true la premiere fois. ia : les
+  // niveaux d'une nuit personnalisee.
+  function wadeNuitFaite(n, ia) {
+    var p = me(), w = p.wade;
+    var premiere = w.faites.indexOf(n) === -1;
+    if (premiere) w.faites.push(n);
+    if (n < 5) w.nuit = Math.max(w.nuit, n + 1);
+    if (ia && ['faith', 'charlie', 'stephen', 'wade'].every(function (k) { return ia[k] >= 20; })) w.vingt = true;
     save();
-    return p.spookinder.xp;
+    return premiere;
   }
 
-  function noterNuit(n) {
-    var p = me();
-    if (p.spookinder.nuits.indexOf(n) !== -1) return false;
-    p.spookinder.nuits.push(n);
+  // Nouvelle partie : on reprend a la premiere nuit. Les etoiles restent.
+  function wadeRecommencer() {
+    me().wade.nuit = 1;
     save();
-    return true;
   }
 
-  // Le code des toilettes : rend true la premiere fois seulement, et
-  // seulement tant que l'evenement dure.
-  function trouverGolden() {
-    if (!spookinderEtat().ouvert) return false;
-    var p = me();
-    if (p.spookinder.golden && has('golden-freddy')) return false;
-    p.spookinder.golden = true;
+  // Les fins vues : 'bonne' (le batiment brule) ou 'mauvaise'.
+  function wadeFin(k) {
+    var w = me().wade;
+    if (!w.fins || typeof w.fins !== 'object') w.fins = {};
+    w.fins[k] = true;
     save();
-    collect('golden-freddy');
-    return true;
   }
 
-  // Les quatre du pass, donnes d'un coup hors du pass. Rend la liste de
-  // ceux qui viennent d'entrer dans la collection.
-  function offrirSpookinder() {
-    var p = me();
-    p.spookinder.offerts = true;
+  function wadePerso(niv) {
+    me().wade.perso = Object.assign({}, niv);
     save();
-    var neufs = Object.keys(SPOOK_DINDERS).filter(function (id) { return !has(id); });
-    neufs.forEach(collect);
-    return neufs;
-  }
-
-  function reclamerPalier(n) {
-    if (!spookinderEtat().ouvert) return false;
-    var p = me();
-    if (p.spookinder.reclames.indexOf(n) !== -1) return false;
-    p.spookinder.reclames.push(n);
-    save();
-    return true;
   }
 
   // ---------- Chemins ----------
@@ -1580,9 +1568,7 @@
     dindiseOfferte: dindiseOfferte,
     consommerDindiseOfferte: consommerDindiseOfferte,
     MENACE: MENACE, EXCLUSIF: EXCLUSIF, horsDindise: horsDindise,
-    spookinderEtat: spookinderEtat, spookinder: spookinder, SPOOK_DINDERS: SPOOK_DINDERS,
-    gagnerSpookXP: gagnerSpookXP, noterNuit: noterNuit, reclamerPalier: reclamerPalier,
-    trouverGolden: trouverGolden, offrirSpookinder: offrirSpookinder,
+    wade: wade, wadeNuitFaite: wadeNuitFaite, wadeRecommencer: wadeRecommencer, wadePerso: wadePerso, wadeFin: wadeFin,
     evos: evos, evoImg: evoImg, gagnerEvos: gagnerEvos, depenserEvos: depenserEvos,
     odysseeDinder: odysseeDinder, choisirOdysseeDinder: choisirOdysseeDinder,
     fusion: fusion, noterSacrifice: noterSacrifice,

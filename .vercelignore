@@ -2,6 +2,9 @@
 assets/_source/
 assets/credits/_source/
 assets/dinders/_source/
+# Les rendus de Wade and Friends tels que deposes : tools/prepare-wade.js
+# en tire les images du site.
+assets/WADE/
 tools/
 
 # Images d'origine : remplacees par pad-menu.webp et pad-screen.webp,

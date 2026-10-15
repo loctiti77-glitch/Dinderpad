@@ -27,11 +27,12 @@
     var C = window.FWCAMP;
     var piste = !got && C && d && d.id === C.FUSION && DP.has(C.ISLAS);
 
-    // Un Dinder d'evenement pas encore gagne se montre comme manquant :
-    // sa silhouette, en violet, pour dire qu'il y a la quelque chose a
-    // aller chercher. Tant que l'evenement dure, la case y mene.
-    var manquant = !got && d && d.collection === 'spookinder' && !d.secret;
-    var evOuvert = manquant && DP.spookinderEtat().ouvert;
+    // Un Dinder de collection speciale pas encore gagne se montre comme
+    // manquant : sa silhouette, en violet, pour dire qu'il y a la quelque
+    // chose a aller chercher. Ceux de Wade and Friends menent au jeu ;
+    // ceux de Spookinder, dont le pass n'existe plus, ne menent nulle part.
+    var manquant = !got && d && !!d.collection && !d.secret;
+    var evOuvert = manquant && d.collection === 'wade' && !!window.VIEWS.wade;
 
     var node = el(got || piste || evOuvert ? 'a' : 'div',
                   'slot' + (got ? '' : ' slot--locked') + (piste ? ' slot--piste' : '') +
@@ -49,8 +50,8 @@
       node.dataset.piste = C.FUSION;
       node.title = 'Quelque chose manque ici. Va voir.';
     } else if (evOuvert) {
-      node.href = '#spookinder';
-      node.title = 'À gagner dans le pass Spookinder';
+      node.href = '#wade';
+      node.title = 'Un animatronique de Wade and Friends';
     }
 
     if (got) {
@@ -83,7 +84,7 @@
     if (piste) name.appendChild(el('span', 'slot-name-sub slot-piste-sous',
                                    'Quelque chose manque ici'));
     if (manquant) name.appendChild(el('span', 'slot-name-sub slot-manquant-sous',
-      evOuvert ? 'Manquant · Spookinder' : 'Manquant · événement terminé'));
+      evOuvert ? 'Manquant · Wade and Friends' : 'Manquant · événement terminé'));
     // La serie d'ou vient le personnage, en etiquette sous son nom.
     if ((got || manquant) && d.serie) {
       var serie = el('span', 'slot-serie');

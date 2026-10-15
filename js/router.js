@@ -20,7 +20,7 @@
   // Les jeux prennent toute la fenetre : le chassis du pad s'efface et
   // son ecran s'agrandit jusqu'aux bords. Les autres rubriques restent
   // dans l'appareil.
-  var PLEIN_ECRAN = { 'founder-war': true, 'peche': true, 'odyssee': true, 'spookinder': true };
+  var PLEIN_ECRAN = { 'founder-war': true, 'peche': true, 'odyssee': true, 'wade': true };
 
   function pleinEcran(oui) {
     if (body.classList.contains('is-plein') === oui) return;
@@ -40,7 +40,7 @@
                      suite: ['peche-hub', 'poissonnerie', 'vestiaire', 'peche-collection', 'armurerie'] },
     'odyssee':     { titre: 'The Odyssey of Dinder',
                      suite: ['odyssee-equipier', 'odyssee-carnet', 'armurerie'] },
-    'spookinder':  { titre: 'Spookinder', suite: [] }
+    'wade':        { titre: 'Wade and Friends', suite: [] }
   };
 
   function jouerEntree(name, depuis) {

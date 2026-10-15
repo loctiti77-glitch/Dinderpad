@@ -3954,16 +3954,16 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
   font-size: clamp(20px, 4.8vw, 70px);
 }
 
-/* ---------- Spookinder : la panne ----------
-   Le noir, des parasites, deux yeux qui s'allument, et l'image revient
-   comme un vieil ecran qu'on rallume. */
+/* ---------- Wade and Friends : la panne ----------
+   Le noir, des parasites, deux yeux jaunes de loup qui s'allument, et
+   l'image revient comme un vieil ecran qu'on rallume. */
 
-.entree--spookinder .entree-fond {
+.entree--wade .entree-fond {
   background: #030106;
-  animation: entree-spk-ecran 1.6s steps(1, end) both;
+  animation: entree-wf-ecran 1.6s steps(1, end) both;
 }
 
-@keyframes entree-spk-ecran {
+@keyframes entree-wf-ecran {
   0%   { opacity: 1; clip-path: inset(0); }
   70%  { opacity: 1; clip-path: inset(0); }
   76%  { opacity: 1; clip-path: inset(0 0 52% 0); }
@@ -3973,23 +3973,23 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
 }
 
 /* Les parasites. */
-.entree--spookinder .entree-a {
+.entree--wade .entree-a {
   background:
     repeating-linear-gradient(0deg, rgba(255, 255, 255, .09) 0, rgba(255, 255, 255, .09) 2px, transparent 2px, transparent 5px),
-    repeating-linear-gradient(90deg, rgba(255, 138, 30, .07) 0, rgba(255, 138, 30, .07) 3px, transparent 3px, transparent 11px);
-  animation: entree-spk-neige .12s steps(2, end) infinite, entree-spk-fin 1.6s steps(1, end) both;
+    repeating-linear-gradient(90deg, rgba(232, 72, 58, .07) 0, rgba(232, 72, 58, .07) 3px, transparent 3px, transparent 11px);
+  animation: entree-wf-neige .12s steps(2, end) infinite, entree-wf-fin 1.6s steps(1, end) both;
 }
 
-@keyframes entree-spk-neige {
+@keyframes entree-wf-neige {
   0%   { background-position: 0 0, 0 0; }
   50%  { background-position: 0 3px, 5px 0; }
   100% { background-position: 0 1px, -4px 0; }
 }
 
-@keyframes entree-spk-fin { 0%, 72% { visibility: visible; } 73%, 100% { visibility: hidden; } }
+@keyframes entree-wf-fin { 0%, 72% { visibility: visible; } 73%, 100% { visibility: hidden; } }
 
 /* Les deux yeux. */
-.entree--spookinder .entree-b {
+.entree--wade .entree-b {
   inset: auto;
   left: 50%;
   top: 30%;
@@ -3998,11 +3998,12 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
   margin-left: -7vmin;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 0 3vmin 1vmin #ff8a1e, 11.4vmin 0 0 0 #fff, 11.4vmin 0 3vmin 1vmin #ff8a1e;
-  animation: entree-spk-yeux 1.6s steps(1, end) both;
+  background: #fff6b0;
+  box-shadow: 0 0 3vmin 1vmin #f2c40c, 11.4vmin 0 0 0 #fff6b0, 11.4vmin 0 3vmin 1vmin #f2c40c;
+  animation: entree-wf-yeux 1.6s steps(1, end) both;
 }
 
-@keyframes entree-spk-yeux {
+@keyframes entree-wf-yeux {
   0%, 14%  { opacity: 0; }
   15%, 30% { opacity: 1; }
   31%, 36% { opacity: 0; }
@@ -4010,16 +4011,16 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
   69%, 100% { opacity: 0; }
 }
 
-.entree--spookinder .entree-p { display: none; }
+.entree--wade .entree-p { display: none; }
 
-.entree--spookinder .entree-titre {
+.entree--wade .entree-titre {
   top: 58%;
-  color: #ff8a1e;
-  text-shadow: 0 0 2vw rgba(255, 138, 30, .9), .3vw 0 0 rgba(255, 0, 60, .7), -.3vw 0 0 rgba(0, 241, 253, .5);
-  animation: entree-spk-titre 1.6s steps(1, end) both;
+  color: #f4eedc;
+  text-shadow: 0 0 2vw rgba(232, 72, 58, .9), .3vw 0 0 rgba(255, 0, 60, .7), -.3vw 0 0 rgba(0, 241, 253, .5);
+  animation: entree-wf-titre 1.6s steps(1, end) both;
 }
 
-@keyframes entree-spk-titre {
+@keyframes entree-wf-titre {
   0%, 20%  { opacity: 0; transform: translate(-50%, -50%); }
   21%      { opacity: 1; transform: translate(-51%, -50%) skewX(-8deg); }
   26%      { opacity: .3; transform: translate(-50%, -50%); }
