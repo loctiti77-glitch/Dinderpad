@@ -15,7 +15,9 @@ const OUT  = ROOT + '/assets/games/sprites';
 const IDS = [
   'dr-islas-human-form', 'dr-islas-demicos-form', 'dr-islas-final-form',
   'calder-veyne-veinburner', 'carl-sinars-cardinal-sin', 'edgar-marks-grincrusher',
-  'he-melt', 'v', 'a', 'h', 'multinder', 'gart-kervelor-king-of-karsovia'
+  'he-melt', 'v', 'a', 'h', 'multinder', 'gart-kervelor-king-of-karsovia',
+  // Wade and Friends.
+  'wade-wolhunter', 'stephen-sharkodon', 'faith-faisandoir', 'charlie-capsule', 'their-creator'
 ];
 
 // Une seule taille : celle du duel. Les sprites de balade de la foret ne
@@ -78,7 +80,8 @@ async function sprite(entree, sortie, W, H, couleurs) {
   for (const taille of Object.keys(TAILLES)) {
     fs.mkdirSync(path.join(OUT, taille), { recursive: true });
   }
-  for (const id of IDS) {
+  const choix = process.argv.slice(2);
+  for (const id of (choix.length ? choix : IDS)) {
     for (const [taille, [W, H]] of Object.entries(TAILLES)) {
       await sprite(ROOT + '/assets/dinders/full/' + id + '.webp',
                    path.join(OUT, taille, id + '.png'),
@@ -87,6 +90,7 @@ async function sprite(entree, sortie, W, H, couleurs) {
     process.stdout.write('.');
   }
 
+  if (choix.length) { console.log(' ' + choix.length + ' sprites'); return; }
   // Le Fondateur est plus grand que les autres : il domine l'arene.
   await sprite(ROOT + '/assets/_source/LeFondateur.PNG',
                path.join(OUT, 'duel', 'lefondateur.png'), 104, 128, 30);

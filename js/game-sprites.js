@@ -198,6 +198,27 @@
       torse: '#b8302a', ventre: '#8a2420', accent: '#d8a080',
       bas: '#4a3a30', chaussures: '#2a2226', peau: '#b8302a'
     },
+    // Wade and Friends : un loup, un requin, un oiseau, un capybara.
+    'wade-wolhunter': {
+      anim: 'loup', fourrure: '#7a7c84', museau: '#c8c4bc', yeux: '#f2c41c',
+      torse: '#7a7c84', ventre: '#b8b4ac', accent: '#2a2a30',
+      bas: '#6a6c74', chaussures: '#3a3a42', peau: '#7a7c84'
+    },
+    'stephen-sharkodon': {
+      anim: 'requin', fourrure: '#8c949e', museau: '#eef0f2', yeux: '#f2c41c',
+      torse: '#8c949e', ventre: '#eef0f2', accent: '#2a2a30',
+      bas: '#7c848e', chaussures: '#3a3e46', peau: '#8c949e'
+    },
+    'faith-faisandoir': {
+      anim: 'oiseau', fourrure: '#7a88a8', museau: '#e8d8a8', yeux: '#f2c41c',
+      torse: '#6a7898', ventre: '#c8d0e0', accent: '#4a5878',
+      bas: '#5a6888', chaussures: '#d8c890', peau: '#7a88a8'
+    },
+    'charlie-capsule': {
+      anim: 'capybara', fourrure: '#b0602a', museau: '#8a4a22', yeux: '#f2c41c',
+      torse: '#b0602a', ventre: '#c87a40', accent: '#2a2a30',
+      bas: '#9a5224', chaussures: '#5a2e14', peau: '#b0602a'
+    },
     // Golden Freddy : Freddy en or terni, et deux orbites vides.
     'golden-freddy': {
       anim: 'ours', fourrure: '#b8902a', museau: '#d8b850', yeux: '#f4f0e8',
@@ -442,10 +463,27 @@
       if (!dos) { p(6, 5, 2, 2, c.museau); p(16, 5, 2, 2, c.museau); }
     } else if (c.anim === 'poule') {
       p(10, 3, 1, 4, f); p(12, 2, 1, 5, f); p(14, 3, 1, 4, f);
+    } else if (c.anim === 'loup') {
+      // De grandes oreilles pointues, dressees.
+      p(5, 1, 2, 3, f); p(5, 4, 4, 4, f); p(6, 0, 1, 1, f);
+      p(17, 1, 2, 3, f); p(15, 4, 4, 4, f); p(17, 0, 1, 1, f);
+      if (!dos) { p(6, 3, 2, 4, c.museau); p(16, 3, 2, 4, c.museau); }
+    } else if (c.anim === 'requin') {
+      // L'aileron, sur le crane.
+      p(11, 1, 2, 2, f); p(10, 3, 4, 2, f); p(9, 5, 6, 3, f);
+      p(11, 1, 1, 6, fc);
+    } else if (c.anim === 'oiseau') {
+      // La crete, en plumes herissees.
+      p(8, 2, 1, 5, f); p(10, 0, 1, 7, f); p(12, 1, 1, 6, f); p(14, 0, 1, 7, f); p(16, 2, 1, 5, f);
+      p(10, 0, 1, 1, fc); p(14, 0, 1, 1, fc);
+    } else if (c.anim === 'capybara') {
+      // De toutes petites oreilles rondes.
+      p(6, 6, 3, 2, f); p(15, 6, 3, 2, f);
+      if (!dos) { p(7, 7, 1, 1, c.museau); p(16, 7, 1, 1, c.museau); }
     }
 
     // La tete, ronde et un peu large.
-    var haut = c.anim === 'poule' ? 6 : 8;
+    var haut = c.anim === 'poule' || c.anim === 'oiseau' ? 6 : 8;
     p(6, haut - 1, 12, 1, f);
     p(5, haut, 14, 18 - haut, f);
     p(7, haut, 6, 1, fc);
@@ -464,7 +502,7 @@
       p(13, 10, 3, 3, c.orbites ? '#050405' : BLANC);
       p(15, 11, 1, 1, c.yeux);
       p(14, 13, 6, 4, c.museau);
-      p(19, 13, 1, 1, c.anim === 'poule' ? ombre(c.museau, 0.7) : NEZ);
+      p(19, 13, 1, 1, c.anim === 'poule' || c.anim === 'oiseau' ? ombre(c.museau, 0.7) : NEZ);
       p(14, 16, 6, 1, BOUCHE);
       p(15, 15, 4, 1, DENT);
       if (c.cache) p(13, 9, 4, 4, c.cache);
@@ -477,7 +515,7 @@
     p(7, 10, 4, 3, fond); p(13, 10, 4, 3, fond);
     if (c.orbites) { p(9, 11, 1, 1, c.yeux); p(15, 11, 1, 1, c.yeux); }
     else { p(8, 11, 2, 1, c.yeux); p(14, 11, 2, 1, c.yeux); }
-    if (c.anim === 'ours' || c.anim === 'poule') {
+    if (c.anim === 'ours' || c.anim === 'poule' || c.anim === 'loup' || c.anim === 'oiseau') {
       p(7, 9, 4, 1, NEZ); p(13, 9, 4, 1, NEZ);   // les sourcils
     }
     if (c.cache) {
@@ -485,7 +523,22 @@
       p(5, 9, 8, 1, c.cache);                     // le cordon
     }
 
-    if (c.anim === 'poule') {
+    if (c.anim === 'requin') {
+      // Pas de museau : une gueule large, pleine de dents en scie.
+      p(6, 13, 12, 4, c.museau);
+      p(7, 14, 10, 2, BOUCHE);
+      for (var j = 0; j < 10; j += 2) { p(7 + j, 14, 1, 1, DENT); p(8 + j, 15, 1, 1, DENT); }
+      return;
+    }
+    if (c.anim === 'capybara') {
+      // Un grand museau carre, le nez tout en haut, deux incisives.
+      p(7, 12, 10, 5, c.museau);
+      p(9, 12, 6, 1, NEZ);
+      p(8, 16, 8, 1, BOUCHE);
+      p(11, 16, 1, 1, DENT); p(12, 16, 1, 1, DENT);
+      return;
+    }
+    if (c.anim === 'poule' || c.anim === 'oiseau') {
       // Le bec, ouvert sur une rangee de dents.
       p(8, 13, 8, 2, c.museau);
       p(9, 15, 6, 1, DENT);
@@ -496,8 +549,8 @@
     p(11, 13, 2, 1, NEZ);
     p(8, 16, 8, 1, BOUCHE);
     for (var i = 0; i < 6; i += 2) p(9 + i, 15, 1, 1, DENT);
-    if (c.anim === 'renard') {
-      // La machoire de Foxy pend, grande ouverte.
+    if (c.anim === 'renard' || c.anim === 'loup') {
+      // La machoire pend, grande ouverte.
       p(9, 17, 6, 1, BOUCHE);
       p(9, 17, 1, 1, DENT); p(14, 17, 1, 1, DENT);
     }

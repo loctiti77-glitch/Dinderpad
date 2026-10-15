@@ -84,6 +84,15 @@
     return c;
   }
 
+  // Un animatronique en sprite de balade (24 x 34), comme dans The Founder
+  // War. dir : 'bas', 'gauche', 'droite', 'haut' ; pose : 0 a 3.
+  function chibi(x, id, dir, pose, X, Y) {
+    var C = window.CHIBI, f = C && C.feuille(id);
+    if (!f) return;
+    var d = C.DIRS[dir] || 0;
+    x.drawImage(f.canvas || f, (pose % C.POSES) * C.L, d * C.H, C.L, C.H, Math.round(X), Math.round(Y), C.L, C.H);
+  }
+
   // ==========================================================
   //  Le haut-parleur PC
   // ==========================================================
@@ -382,9 +391,10 @@
       }
       // Charlie, son steak au-dessus de la tete.
       if (!(mort && Math.floor(mort * 12) % 2)) {
-        var f = Math.floor(c.anim) % 2;
-        x.drawImage(c.dir > 0 ? sCH[f] : sCHg[f], Math.round(c.x), Math.round(c.y));
-        if (!gagne) x.drawImage(STEAK, Math.round(c.x) + 5, Math.round(c.y) - 5);
+        // Les pieds a c.y + 12, comme avant : le sprite monte au-dessus.
+        var pose = Math.abs(c.vx) > 0.3 ? Math.floor(c.anim) % 4 : 0;
+        chibi(x, 'charlie-capsule', c.dir > 0 ? 'droite' : 'gauche', pose, c.x - 4, c.y + 12 - 34);
+        if (!gagne) x.drawImage(STEAK, Math.round(c.x) + 5, Math.round(c.y) - 27);
         else x.drawImage(STEAK, ex + 1, ey + 9);
       }
       x.restore();
@@ -397,7 +407,7 @@
       x.fillStyle = EGA[0]; x.fillRect(0, 0, W, H);
       centre(x, 'CHARLIE', 40, EGA[14], 3);
       centre(x, 'ET LE STEAK PERDU', 72, EGA[12], 2);
-      x.drawImage(sCH[Math.floor(t * 4) % 2], 120, 110); x.drawImage(STEAK, 125, 104);
+      chibi(x, 'charlie-capsule', 'droite', Math.floor(t * 4) % 4, 118, 92); x.drawImage(STEAK, 127, 86);
       x.drawImage(ENF, 190, 108);
       centre(x, 'FLECHES : MARCHER   ESPACE : SAUTER', 150, EGA[7]);
     }
@@ -450,7 +460,7 @@
       stp.x = Math.max(0, Math.min(W - 24, stp.x + stp.vx)); stp.y = Math.max(22, Math.min(H - 26, stp.y + stp.vy));
       if (ax) stp.dir = ax;
       stp.gueule = Math.max(0, stp.gueule - dt);
-      var bx = stp.x + (stp.dir > 0 ? 3 : 21), by = stp.y + 7;
+      var bx = stp.x + 12 + stp.dir * 9, by = stp.y + 6;
       for (var i = poissons.length - 1; i >= 0; i--) {
         var p = poissons[i];
         p.ph += dt * 3;
@@ -492,8 +502,10 @@
         x.fillStyle = EGA[0]; x.fillRect(X + d * 2 * t, Y - 1 * t, 1, 1);
         if (p.dore && Math.floor(depuis * 6 + p.ph) % 9 === 0) { x.fillStyle = EGA[15]; x.fillRect(X, Y - 4, 1, 1); }
       });
-      x.drawImage(stp.dir > 0 ? REQg : REQ, Math.round(stp.x), Math.round(stp.y));
-      if (stp.gueule > 0) { x.fillStyle = EGA[4]; x.fillRect(Math.round(stp.x) + (stp.dir > 0 ? 18 : 2), Math.round(stp.y) + 7, 4, 2); }
+      // Il nage : les jambes battent, le corps ondule un peu.
+      chibi(x, 'stephen-sharkodon', stp.dir > 0 ? 'droite' : 'gauche', Math.floor(depuis * 8) % 4,
+            stp.x, stp.y - 8 + Math.sin(depuis * 5) * 1.5);
+      if (stp.gueule > 0) { x.fillStyle = EGA[4]; x.fillRect(Math.round(bx) - 2, Math.round(by), 4, 2); }
       x.fillStyle = EGA[0]; x.fillRect(0, 0, W, 18);
       texte(x, 'STEPHEN', 4, 6, EGA[11]);
       texte(x, 'DORES', 120, 6, EGA[14]);
@@ -504,7 +516,7 @@
       x.fillStyle = EGA[0]; x.fillRect(0, 0, W, H);
       centre(x, 'STEPHEN', 36, EGA[11], 3);
       centre(x, 'ET LES POISSONS DORES', 68, EGA[14], 2);
-      x.drawImage(Math.floor(t * 2) % 2 ? REQ : REQg, 148, 100);
+      chibi(x, 'stephen-sharkodon', Math.floor(t / 1.5) % 2 ? 'gauche' : 'droite', Math.floor(t * 6) % 4, 148, 92);
       centre(x, 'MANGE LES 3 POISSONS DORES', 132, EGA[15]);
       centre(x, 'LES AUTRES SONT DEGOUTANTS.', 144, EGA[12]);
       centre(x, 'FLECHES : NAGER', 158, EGA[7]);
@@ -602,9 +614,11 @@
       if (msg && depuis < msg.fin) centre(x, msg.t, 92, EGA[msg.c], 2);
       function loup() {
         x.save();
-        var X = Math.round(stp.x), Y = Math.round(stp.y + (Math.floor(stp.anim) % 2));
-        if (stp.dir < 0) { x.translate(X * 2 + 14, 0); x.scale(-1, 1); }
-        x.drawImage(LOUP[0], X, Y);
+        var marche = T.gauche || T.droite || T.haut || T.bas;
+        var d = T.haut ? 'haut' : T.bas ? 'bas' : stp.dir < 0 ? 'gauche' : 'droite';
+        if (!marche) d = stp.vue || 'bas';
+        stp.vue = d;
+        chibi(x, 'wade-wolhunter', d, marche ? Math.floor(stp.anim) % 4 : 0, stp.x - 5, stp.y + 12 - 34);
         x.restore();
       }
     }
@@ -612,7 +626,7 @@
       x.fillStyle = EGA[0]; x.fillRect(0, 0, W, H);
       centre(x, 'WADE', 36, EGA[7], 3);
       centre(x, 'ET LES MOUTONS D\'EMERAUDE', 68, EGA[10], 2);
-      x.drawImage(LOUP[0], 152, 96);
+      chibi(x, 'wade-wolhunter', 'bas', Math.floor(t * 4) % 4, 148, 88);
       centre(x, 'TROUVE LES 5 MOUTONS D\'EMERAUDE', 128, EGA[15]);
       centre(x, 'ILS ONT LA LAINE VERTE ET BRILLENT.', 140, EGA[10]);
       centre(x, 'FLECHES : MARCHER', 156, EGA[7]);

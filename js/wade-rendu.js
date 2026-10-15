@@ -499,8 +499,8 @@
       variantes: { base: ['eau', 'haut'], vide: ['eau', 'haut'] },
       cuve: { a: [-2.6, 0.5, 6.0], b: [2.6, 2.6, 6.0] },
       poses: {
-        nage: { p: [0.4, 0.55, 7.4], h: 2.0, dansCuve: true },
-        vitre: { p: [-0.3, 0.25, 6.08], h: 2.5, dansCuve: true },
+        nage: { p: [0.4, 0.62, 7.4], h: 1.85, dansCuve: true },
+        vitre: { p: [-0.3, 0.3, 6.08], h: 2.26, dansCuve: true },
         dehors: { p: [1.2, 0, 5.15], h: 2.2 }
       }
     };
@@ -743,6 +743,13 @@
     S.coinO.poses = { faith: { p: [0.15, 0, 2.9], h: 2.15 } };
     S.coinE = coin(1, 'fizzies');
     S.coinE.poses = { charlie: { p: [-0.2, 0, 2.9], h: 2.0 }, wade: { p: [0.25, 0, 1.0], h: 2.2 } };
+
+    // Les animatroniques, plus grands que nature : ils dominent les pieces.
+    Object.keys(S).forEach(function (k) {
+      if (k === 'labo') return;
+      var P = S[k].poses || {};
+      Object.keys(P).forEach(function (n) { if (P[n].h >= 1.9 && !P[n].dansCuve) P[n].h *= 1.22; });
+    });
 
     // La taille de rendu par defaut : un peu plus large que l'ecran, pour
     // que la camera puisse balayer la piece de gauche a droite.
@@ -1547,10 +1554,28 @@
       Object.keys(sc.poses || {}).forEach(function (k) {
         var ps = sc.poses[k];
         var zs = ps.echantillons || [ps.p[2]];
+        // La droite de la camera, dans la piece.
+        var dr = [Math.cos(sc.cam.lacet || 0), 0, -Math.sin(sc.cam.lacet || 0)];
         eclairages[k] = zs.map(function (z) {
           var dist = Math.sqrt(Math.pow(o[0] - ps.p[0], 2) + Math.pow(o[1] - ps.p[1] - ps.h * 0.6, 2) + Math.pow(o[2] - z, 2));
           var fog = Math.exp(-Math.max(0, dist - 2) * brume);
-          return [0.85, 0.45, 0.08].map(function (hk) {
+          // D'ou vient la lumiere : on mesure ce que recoit le flanc gauche
+          // et le flanc droit (vus de la camera), a mi-hauteur.
+          var vc = [o[0] - ps.p[0], 0, o[2] - z], vl = Math.sqrt(vc[0] * vc[0] + vc[2] * vc[2]) || 1;
+          vc = [vc[0] / vl, 0, vc[2] / vl];
+          var cotes = [-1, 1].map(function (sg) {
+            var n = [vc[0] * 0.55 + dr[0] * sg, 0, vc[2] * 0.55 + dr[2] * sg], nl = Math.sqrt(n[0] * n[0] + n[2] * n[2]) || 1;
+            n = [n[0] / nl, 0, n[2] / nl];
+            var t = 0;
+            for (var s = 0; s < 6; s++) {
+              eclairer(G, lampes, [ps.p[0] + n[0] * 0.3, ps.p[1] + ps.h * 0.55, z + n[2] * 0.3], n, null, 0);
+              t += L[0] + L[1] + L[2];
+            }
+            return t / 6 + 1e-4;
+          });
+          var moy = (cotes[0] + cotes[1]) / 2;
+          var cote = cotes.map(function (v) { return Math.max(0.3, Math.min(1.7, v / moy)); });
+          var res = [0.85, 0.45, 0.08].map(function (hk) {
             var acc = [0, 0, 0];
             for (var s = 0; s < 6; s++) {
               // Sans normale : un personnage prend la lumiere d'ou qu'elle
@@ -1568,6 +1593,8 @@
                                    Math.pow(ton(0.8, expo), contraste));
             });
           });
+          res.push(cote);
+          return res;
         });
       });
 

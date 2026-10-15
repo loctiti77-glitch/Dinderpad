@@ -477,7 +477,7 @@
     } catch (e) { return ''; }
   }
 
-  var SLOTS   = 30;                  // le nombre de cases de la collection
+  var SLOTS   = 100;                 // le nombre de cases de la collection
   var KEY     = 'dinderpad.v2';      // la sauvegarde, profils compris
   var OLD_KEY = 'dinderpad.save.v1'; // l'ancienne sauvegarde, sans profils
 

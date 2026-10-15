@@ -27,6 +27,52 @@
     }
     function ok() { return pret() && ac.state !== 'closed'; }
 
+    // ---------- Les vrais cris ----------
+    // Des enregistrements, s'ils sont la : assets/games/wade/sons/,
+    // cri-wade, cri-stephen, cri-faith, cri-charlie (un par animatronique),
+    // ou cri (pour tous), en mp3, ogg, wav ou m4a. Sinon, le cri de synthese.
+    var DOSSIER_SONS = 'assets/games/wade/sons/';
+    var CRIS = {}, crisCherches = false;
+    function chercherCris() {
+      if (crisCherches || !ac) return;
+      crisCherches = true;
+      // regard : le son d'un animatronique qui nous fixe depuis une camera.
+      ['wade', 'stephen', 'faith', 'charlie', 'tous', 'regard'].forEach(function (k) {
+        var nom = k === 'tous' ? 'cri' : k === 'regard' ? 'son' : 'cri-' + k;
+        (function essai(ext) {
+          if (!ext.length) return;
+          fetch(DOSSIER_SONS + nom + '.' + ext[0]).then(function (r) {
+            if (!r.ok) throw 0;
+            return r.arrayBuffer();
+          }).then(function (b) {
+            return new Promise(function (ok_, ko) { ac.decodeAudioData(b, ok_, ko); });
+          }).then(function (buf) { CRIS[k] = buf; }).catch(function () { essai(ext.slice(1)); });
+        })(['mp3', 'ogg', 'wav', 'm4a']);
+      });
+    }
+
+    // Joue un cri enregistre : fort, sature, avec un coup sourd dessous.
+    function crier(buf) {
+      var t = ac.currentTime;
+      var src = ac.createBufferSource(); src.buffer = buf;
+      var pre = ac.createGain(); pre.gain.value = 2.2;
+      var ds = ac.createWaveShaper(), c = new Float32Array(1024);
+      for (var i = 0; i < 1024; i++) { var x = i / 512 - 1; c[i] = Math.tanh(x * 3.5); }
+      ds.curve = c; ds.oversample = '4x';
+      var comp = ac.createDynamicsCompressor();
+      comp.threshold.value = -12; comp.knee.value = 4; comp.ratio.value = 12;
+      comp.attack.value = 0.002; comp.release.value = 0.2;
+      var sortie = ac.createGain(); sortie.gain.value = 0.9;
+      src.connect(pre); pre.connect(ds); ds.connect(comp); comp.connect(sortie); sortie.connect(maitre);
+      src.start(t);
+      // Le coup, au moment ou il surgit.
+      var o = ac.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.5);
+      var g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.7, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+      o.connect(g); g.connect(maitre); o.start(t); o.stop(t + 0.65);
+    }
+
     function bruit(t0, duree, filtre, freq, vol, q, sortie) {
       var s = ac.createBufferSource();
       s.buffer = bruitBuf; s.loop = true;
@@ -89,7 +135,7 @@
     var RIEN = { arreter: function () {}, fini: true };
 
     var S = {
-      reveiller: function () { if (ok() && ac.state === 'suspended') ac.resume(); },
+      reveiller: function () { if (ok()) { if (ac.state === 'suspended') ac.resume(); chercherCris(); } },
       muet: function (m) { muet = m; if (maitre) maitre.gain.value = m ? 0 : 0.8; },
       estMuet: function () { return muet; },
 
@@ -385,6 +431,77 @@
         c.arreter = function (sec) { fini = true; stop(sec); };
         return c;
       },
+      // Il nous fixe depuis une camera. Bien pire que l'accord de la
+      // porte : la neige qui explose, un cri de metal qui monte en
+      // grincant, une voix grave qui se distord, un coup dans le ventre, et
+      // un sifflement qui reste dans les oreilles.
+      regardCam: function (pan) {
+        if (!ok()) return;
+        chercherCris();
+        // L'enregistrement fourni (sons/son.mp3), s'il est la.
+        if (CRIS.regard) {
+          var src = ac.createBufferSource(); src.buffer = CRIS.regard;
+          var g = ac.createGain(); g.gain.value = 1;
+          src.connect(g); g.connect(cote(pan)); src.start(ac.currentTime);
+          return;
+        }
+        var t = ac.currentTime, o = cote(pan);
+        var ds = ac.createWaveShaper(), courbe = new Float32Array(512);
+        for (var i = 0; i < 512; i++) { var xx = i / 256 - 1; courbe[i] = Math.tanh(xx * 5); }
+        ds.curve = courbe;
+        var bus = ac.createGain();
+        bus.gain.setValueAtTime(0.0001, t);
+        bus.gain.exponentialRampToValueAtTime(0.9, t + 0.04);
+        bus.gain.setValueAtTime(0.9, t + 0.9);
+        bus.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+        ds.connect(bus); bus.connect(o);
+        // La neige.
+        bruit(t, 0.5, 'highpass', 1500, 0.5, 0.6, o);
+        // Le cri de metal : deux scies desaccordees qui montent.
+        [1, 1.06].forEach(function (m) {
+          var x = ac.createOscillator(); x.type = 'sawtooth';
+          x.frequency.setValueAtTime(380 * m, t);
+          x.frequency.exponentialRampToValueAtTime(1500 * m, t + 0.7);
+          x.frequency.exponentialRampToValueAtTime(900 * m, t + 1.5);
+          var bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 2.5;
+          var g = ac.createGain(); g.gain.value = 0.16;
+          x.connect(bp); bp.connect(g); g.connect(ds);
+          x.start(t); x.stop(t + 1.6);
+        });
+        // La voix, tres grave, qui tremble.
+        var v = ac.createOscillator(); v.type = 'sawtooth';
+        v.frequency.setValueAtTime(70, t); v.frequency.linearRampToValueAtTime(52, t + 1.4);
+        var tr = ac.createOscillator(); tr.frequency.value = 17;
+        var tg = ac.createGain(); tg.gain.value = 9;
+        tr.connect(tg); tg.connect(v.frequency);
+        var vf = ac.createBiquadFilter(); vf.type = 'bandpass'; vf.frequency.value = 500; vf.Q.value = 3;
+        var vg = ac.createGain(); vg.gain.value = 0.5;
+        v.connect(vf); vf.connect(vg); vg.connect(ds);
+        v.start(t); tr.start(t); v.stop(t + 1.6); tr.stop(t + 1.6);
+        // Le coup, et le sifflement.
+        ton(t, 0.8, 'sine', 55, 0.8, 28, o);
+        ton(t + 0.05, 2.2, 'sine', 4200, 0.025, 3900, o);
+      },
+      // Il quitte la porte : trois pas lourds qui s'eloignent, le metal du
+      // chambranle qui crisse sous ses doigts, un grognement.
+      depart: function (pan) {
+        if (!ok()) return;
+        var t = ac.currentTime, o = cote(pan);
+        var cr = bruit(t, 0.7, 'bandpass', 2400, 0.12, 10, o);
+        cr.f.frequency.setValueAtTime(2600, t); cr.f.frequency.linearRampToValueAtTime(1200, t + 0.7);
+        for (var i = 0; i < 4; i++) {
+          var vol = 0.55 * (1 - i * 0.22), d = 0.35 + i * 0.5;
+          bruit(t + d, 0.18, 'lowpass', 380, vol, 1, o);
+          ton(t + d, 0.2, 'sine', 60, vol, 40, o);
+        }
+        var g = ac.createOscillator(); g.type = 'sawtooth';
+        g.frequency.setValueAtTime(90, t + 0.1); g.frequency.linearRampToValueAtTime(65, t + 1.1);
+        var gf = ac.createBiquadFilter(); gf.type = 'lowpass'; gf.frequency.value = 400;
+        var gg = ac.createGain();
+        gg.gain.setValueAtTime(0.0001, t + 0.1); gg.gain.exponentialRampToValueAtTime(0.12, t + 0.3); gg.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+        g.connect(gf); gf.connect(gg); gg.connect(o);
+        g.start(t + 0.1); g.stop(t + 1.25);
+      },
       // Il nous regarde dans les yeux : un accord faux qui enfle a
       // l'envers, une note aigue qui siffle, et un souffle de statique.
       regard: function (pan) {
@@ -460,6 +577,9 @@
       // Stephen gargouillant, Charlie caverneux).
       hurle: function (qui) {
         if (!ok()) return;
+        chercherCris();
+        var vrai = CRIS[qui] || CRIS.tous;
+        if (vrai) { crier(vrai); return; }
         var V = {
           wade:    { f0: 82,  cri: 520, haut: 1.9, rale: 34, formants: [650, 1150, 2500] },
           faith:   { f0: 130, cri: 900, haut: 2.3, rale: 46, formants: [900, 1800, 3200] },
@@ -470,18 +590,26 @@
 
         // Le bus : saturation douce, puis compresseur, puis le maitre.
         var ds = ac.createWaveShaper(), courbe = new Float32Array(1024);
-        for (var i = 0; i < 1024; i++) { var x = i / 512 - 1; courbe[i] = Math.tanh(x * 3.2) * 0.95; }
-        ds.curve = courbe; ds.oversample = '4x';
+        // Ecretage dur : le signal est pousse bien au-dela de ce que le
+        // haut-parleur peut rendre, et il grogne.
+        for (var i = 0; i < 1024; i++) { var x = i / 512 - 1; courbe[i] = Math.max(-0.92, Math.min(0.92, Math.tanh(x * 9) * 1.15)); }
+        ds.curve = courbe; ds.oversample = '2x';
+        var pre = ac.createGain(); pre.gain.value = 3.2;
         var comp = ac.createDynamicsCompressor();
-        comp.threshold.value = -18; comp.knee.value = 6; comp.ratio.value = 8;
+        comp.threshold.value = -16; comp.knee.value = 4; comp.ratio.value = 20;
         comp.attack.value = 0.002; comp.release.value = 0.15;
         var bus = ac.createGain();
         bus.gain.setValueAtTime(0.0001, t);
         bus.gain.exponentialRampToValueAtTime(1, t + 0.012);
         bus.gain.setValueAtTime(1, t + D - 0.35);
         bus.gain.exponentialRampToValueAtTime(0.0001, t + D);
-        var sortie = ac.createGain(); sortie.gain.value = 1.4;
-        bus.connect(ds); ds.connect(comp); comp.connect(sortie); sortie.connect(maitre);
+        var sortie = ac.createGain(); sortie.gain.value = 0.85;
+        // Et un second etage, apres le premier : le son se dechire.
+        var ds2 = ac.createWaveShaper(), c2 = new Float32Array(512);
+        for (var j = 0; j < 512; j++) { var y = j / 256 - 1; c2[j] = Math.sign(y) * Math.min(1, Math.abs(y) * 6); }
+        ds2.curve = c2;
+        var milieu = ac.createGain(); milieu.gain.value = 1.8;
+        bus.connect(pre); pre.connect(ds); ds.connect(milieu); milieu.connect(ds2); ds2.connect(comp); comp.connect(sortie); sortie.connect(maitre);
 
         function enveloppe(g, pic, att, tenue, fin) {
           g.gain.setValueAtTime(0.0001, t);

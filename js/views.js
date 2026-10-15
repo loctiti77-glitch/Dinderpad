@@ -34,14 +34,18 @@
     var manquant = !got && d && !!d.collection && !d.secret;
     var evOuvert = manquant && d.collection === 'wade' && !!window.VIEWS.wade;
 
+    // Les animatroniques de Wade and Friends, une fois gagnes, rejoignent
+    // les autres Dinders sur une case bleue ; seuls ceux qui manquent
+    // restent en violet.
+    var violet = got && d.collection && d.collection !== 'wade';
     var node = el(got || piste || evOuvert ? 'a' : 'div',
                   'slot' + (got ? '' : ' slot--locked') + (piste ? ' slot--piste' : '') +
                   // Une collection speciale (Spookinder...) se lit a son
                   // fond violet.
-                  (got && d.collection ? ' slot--special' : '') +
+                  (violet ? ' slot--special' : '') +
                   // Les personnages d'une serie (Gaming Legends...) ont une
                   // case violette vivante.
-                  (got && d.collection && d.serie ? ' slot--anime' : '') +
+                  (violet && d.serie ? ' slot--anime' : '') +
                   (manquant ? ' slot--manquant' : ''));
     node.dataset.slot = String(index + 1).padStart(2, '0');
     if (got) { node.href = '#dinder/' + d.id; node.dataset.dinder = d.id; }

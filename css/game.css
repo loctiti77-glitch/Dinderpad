@@ -7189,58 +7189,49 @@ body.is-locked .pad-titre { display: none; }
   color: #5a5a56;
 }
 
-/* ---------- Le journal ---------- */
+/* ---------- Le journal ----------
+   Comme dans FNaF : la une, en noir et blanc, l'annonce nette au centre
+   et le reste de la page flou autour. L'image s'avance tres lentement. */
 
 .wf-journal {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: calc(14 * var(--px));
+  overflow: hidden;
   background: #000;
   cursor: pointer;
+  animation: wf-fondu 1.6s ease both;
 }
-
-.wf-journal-page {
-  width: min(72%, calc(720 * var(--px)));
-  padding: calc(20 * var(--px)) calc(26 * var(--px));
-  background: linear-gradient(160deg, #ece3c8, #d6caa6);
-  color: #241e16;
-  font-family: Georgia, "Times New Roman", serif;
-  box-shadow: 0 0 calc(40 * var(--px)) rgba(0, 0, 0, .8);
-  transform: rotate(-1.2deg);
-  animation: wf-journal 1.4s cubic-bezier(.2, .8, .2, 1) both;
+.wf-journal-flou, .wf-journal-net {
+  position: absolute;
+  transform-origin: var(--mx, 50%) var(--my, 50%);
+  animation: wf-journal-avance 14s linear both;
 }
-@keyframes wf-journal {
-  from { opacity: 0; transform: rotate(-14deg) scale(.4); }
-  to   { opacity: 1; transform: rotate(-1.2deg) scale(1); }
+.wf-journal-flou { filter: blur(calc(4 * var(--px))) brightness(.72) contrast(1.05); }
+.wf-journal-net {
+  filter: contrast(1.12) brightness(.97);
+  -webkit-mask-image: radial-gradient(ellipse var(--mr, 300px) calc(var(--mr, 300px) * 1.05) at var(--mx, 50%) var(--my, 50%), #000 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse var(--mr, 300px) calc(var(--mr, 300px) * 1.05) at var(--mx, 50%) var(--my, 50%), #000 55%, transparent 100%);
 }
-
-.wf-journal-tete {
-  padding-bottom: calc(6 * var(--px));
-  border-bottom: calc(4 * var(--px)) double #241e16;
-  font-size: calc(30 * var(--px));
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-align: center;
+@keyframes wf-journal-avance { from { transform: scale(1); } to { transform: scale(1.06); } }
+/* Le grain de la photo, et les coins sombres. */
+.wf-journal-voile {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .06) 0, rgba(0, 0, 0, .06) 1px, transparent 1px, transparent 3px),
+    radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(0, 0, 0, .75) 100%);
 }
-.wf-journal-date { margin: calc(4 * var(--px)) 0; font-size: calc(13 * var(--px)); font-style: italic; text-align: center; }
-.wf-journal-titre { margin: calc(6 * var(--px)) 0 calc(10 * var(--px)); font-size: calc(42 * var(--px)); text-align: center; }
-
-.wf-journal-corps { display: flex; gap: calc(18 * var(--px)); align-items: flex-start; }
-.wf-journal-logo { width: 36%; filter: sepia(.55) grayscale(.5) contrast(1.15); }
-.wf-journal-txt { flex: 1; font-size: calc(17 * var(--px)); }
-.wf-journal-txt p { margin: 0 0 calc(10 * var(--px)); }
-.wf-journal-paie { font-size: calc(26 * var(--px)); font-weight: 700; }
-.wf-journal-petit { font-size: calc(11 * var(--px)); font-style: italic; }
-.wf-journal-fizz { width: 80%; filter: grayscale(.8) sepia(.5) contrast(1.1); }
 
 .wf-journal-suite {
+  position: absolute;
+  left: 50%;
+  bottom: calc(18 * var(--px));
+  transform: translateX(-50%);
   border: 0;
-  background: none;
-  color: #aaa;
+  background: rgba(0, 0, 0, .55);
+  padding: calc(6 * var(--px)) calc(12 * var(--px));
+  color: #ddd;
   font: calc(17 * var(--px)) Consolas, monospace;
   opacity: 0;
   cursor: pointer;
@@ -7491,9 +7482,9 @@ body.is-locked .pad-titre { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .wf-energie.is-bas, .wf-cam.is-vue, .wf-peur-img, .wf-peur-neige, .wf.is-neige::after,
-  .wf-menu-img, .wf-journal.is-pret .wf-journal-suite, .wf--menu::after, .wf-menu-titre, .wf-carton.is-perdu .wf-carton-titre { animation: none; }
+  .wf-menu-img, .wf-journal.is-pret .wf-journal-suite, .wf-journal-flou, .wf-journal-net, .wf--menu::after, .wf-menu-titre, .wf-carton.is-perdu .wf-carton-titre { animation: none; }
   .wf-peur-img { transform: scale(1.25); }
-  .wf-carton.is-debut, .wf-six-roue span, .wf-carton-suite, .wf-carton-btns, .wf-journal-page,
+  .wf-carton.is-debut, .wf-six-roue span, .wf-carton-suite, .wf-carton-btns,
   .wf-cheque, .wf-tablette.is-monte, .wf-tablette.is-descend {
     animation-duration: .01s;
     animation-delay: 0s;

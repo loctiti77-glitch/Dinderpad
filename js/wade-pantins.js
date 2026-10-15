@@ -203,17 +203,32 @@
   var FS = [
     'precision mediump float;',
     'uniform sampler2D uTex; uniform vec3 uT0, uT1, uT2, uEau;',
-    'uniform float uLum, uDesat, uContraste, uEauK, uAlpha;',
+    'uniform float uLum, uDesat, uContraste, uEauK, uAlpha, uInteg, uSeed;',
+    'uniform vec2 uCote;',
     'varying vec2 vUV;',
     'void main() {',
-    '  vec4 c = texture2D(uTex, vUV);',
+    // Un rien de flou, comme la piece calculee.
+    '  vec4 c = texture2D(uTex, vUV, uInteg * 0.6);',
     '  if (c.a < 0.004) discard;',
     '  vec3 t = vUV.y < 0.55 ? mix(uT0, uT1, smoothstep(0.08, 0.55, vUV.y))',
     '                        : mix(uT1, uT2, smoothstep(0.55, 1.0, vUV.y));',
+    // La lumiere vient d un cote : le flanc tourne vers la lampe est clair.
+    '  t *= mix(1.0, mix(uCote.x, uCote.y, smoothstep(0.15, 0.85, vUV.x)), uInteg);',
+    // Le volume : pres des bords de la silhouette, la matiere tourne et
+    // s assombrit (ce que rend la couverture lissee de l image).
+    '  float plein = texture2D(uTex, vUV, 4.0).a;',
+    '  t *= mix(1.0, mix(0.42, 1.0, smoothstep(0.35, 0.95, plein)), uInteg);',
     '  vec3 rgb = c.rgb * t * uLum;',
+    // Les noirs ecrases de la piece.
+    '  vec3 lin = rgb / max(c.a, 0.001);',
+    '  lin = mix(lin, pow(max(lin, 0.0), vec3(1.3)), uInteg);',
+    '  rgb = lin * c.a;',
     '  float l = dot(rgb, vec3(0.3, 0.59, 0.11));',
     '  rgb = mix(rgb, vec3(l), uDesat);',
     '  rgb = (rgb - 0.5 * c.a) * uContraste + 0.5 * c.a;',
+    // Le grain du rendu.
+    '  float g = fract(sin(dot(gl_FragCoord.xy + uSeed, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;',
+    '  rgb += g * 0.07 * uInteg * c.a;',
     '  rgb = mix(rgb, uEau * (l * 1.6 + 0.08 * c.a), uEauK);',
     '  rgb = clamp(rgb, 0.0, c.a);',
     '  gl_FragColor = vec4(rgb, c.a) * uAlpha;',
@@ -245,7 +260,7 @@
     } catch (e) { echec = true; gl = null; return false; }
     gl.useProgram(prog);
     ['uM0', 'uM1', 'uM2', 'uM3', 'uM4', 'uM5', 'uM6', 'uM7', 'uVue', 'uTete', 'uRot', 'uTex',
-     'uT0', 'uT1', 'uT2', 'uEau', 'uLum', 'uDesat', 'uContraste', 'uEauK', 'uAlpha'].forEach(function (k) {
+     'uT0', 'uT1', 'uT2', 'uEau', 'uLum', 'uDesat', 'uContraste', 'uEauK', 'uAlpha', 'uInteg', 'uSeed', 'uCote'].forEach(function (k) {
       U[k] = gl.getUniformLocation(prog, k);
     });
     ['aUV', 'aW0', 'aW1'].forEach(function (k) { A[k] = gl.getAttribLocation(prog, k); });
@@ -357,6 +372,12 @@
     gl.uniform1f(U.uDesat, o.desat == null ? 0.22 : o.desat);
     gl.uniform1f(U.uContraste, o.contraste || 1.12);
     gl.uniform1f(U.uAlpha, o.alpha == null ? 1 : o.alpha);
+    // integre : le traitement de la piece (lumiere de cote, volume, noirs,
+    // grain). Le jumpscare et le menu s'en passent.
+    gl.uniform1f(U.uInteg, o.integre === false ? 0 : 1);
+    gl.uniform1f(U.uSeed, Math.random() * 1000);
+    var cote = (o.ecl && o.ecl[3]) || [1, 1];
+    gl.uniform2f(U.uCote, cote[0], cote[1]);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture(k, im));
     gl.uniform1i(U.uTex, 0);

@@ -167,7 +167,7 @@
     Object.keys(PERSOS).forEach(function (p) {
       ['base', 'horror', 'endo'].forEach(function (r) { image(p + '-' + r); });
     });
-    image('plushies'); image('fizzies');
+    image('plushies'); image('fizzies'); image('logo');
   }
   function pret(im) {
     return im && (im.tagName !== 'IMG' || (im.complete && im.naturalWidth > 0));
@@ -604,9 +604,9 @@
 
     // Le bruit qu'il fait, d'ou il vient : un servomoteur qui force, ou
     // l'accord qui crisse quand il nous regarde dans les yeux.
-    function bruitDe(vol, pan) {
+    function bruitDe(vol, pan, cam) {
       return function (type) {
-        if (type === 'regard') SON.regard(pan);
+        if (type === 'regard') { if (cam) SON.regardCam(pan); else SON.regard(pan); }
         else SON.servo(vol, pan);
       };
     }
@@ -791,6 +791,7 @@
       A[k].arrive = e.t;
       // On l'a vu partir, ou arriver : l'image se brouille.
       if (e.cam && (e.camVue === avant || e.camVue === vers)) e.glitch = 1.3;
+      if (avant === 'PG' || avant === 'PD') SON.depart(avant === 'PG' ? -0.9 : 0.9);
       if (k === 'wade') SON.hurlement();
       var pan = k === 'faith' ? -0.7 : 0.7;
       if (vers === 'PG' || vers === 'PD') {
@@ -1233,7 +1234,12 @@
         if (vivants) {
           var G = cadre(sc, 'base', pose, img);
           if (G) L.push({ d: G.dist, f: function (off) {
-            animer(G, quoi, k + '|' + cle, off, null, bruitDe(0.5, 0));
+            animer(G, quoi, k + '|' + cle, off, null, bruitDe(0.5, 0, true));
+            if (quoi !== 'cam' || e.fini || !A[cle]) return;
+            var st = VIVANTS[k + '|' + cle] && VIVANTS[k + '|' + cle].st;
+            if (!st) return;
+            st.fixeT = st.regard > 0.9 ? (st.fixeT || 0) + dtImage : 0;
+            if (st.fixeT > 3) attaque(cle);
           } });
           return;
         }
@@ -1389,7 +1395,7 @@
         var s = VH * 0.42 / Rg.tete[2];
         PANT.dessiner(ctx, v.k, im, q,
           { s: s, tx: VW / 2 - Rg.tete[0] * s, ty: VH * 0.5 - Rg.tete[1] * s, vw: VW, vh: VH },
-          { yeux: 1, contraste: 1.3 });
+          { yeux: 1, contraste: 1.4, desat: -0.6, integre: false });
       } else {
         var w = VW * 0.9, h = w * im.naturalHeight / im.naturalWidth;
         ctx.drawImage(im, VW / 2 - w / 2 + hasard(-10, 10), -h * 0.05 + hasard(-8, 8), w, h);
@@ -1496,7 +1502,7 @@
       PANT.dessiner(cx_, key, im, q,
         { s: s_, tx: hx - Rg.tete[0] * s_, ty: hy - Rg.tete[1] * s_, vw: VW, vh: VH },
         { ecl: [[1.05, 1.0, 0.98], [0.95, 0.9, 0.88], [0.6, 0.56, 0.54]], lum: flash, yeux: 1,
-          desat: 0.08, contraste: 1.28, taillesYeux: 0.75 });
+          desat: -0.75, contraste: 1.45, taillesYeux: 0.75, integre: false });
       cx_.setTransform(1, 0, 0, 1, 0, 0);
       // Deux fantomes decales de part et d'autre : l'image ne suit pas.
       ctx.globalAlpha = 0.3;
@@ -1735,7 +1741,7 @@
         opts.textContent = '';
         [1, 2, 3, 4, 5, 6].forEach(function (n) {
           var sous = { 2: 'Charlie', 3: 'Stephen', 4: 'Faith', 5: 'Wade', 6: 'Les deux fins' }[n];
-          option(NOMS_NUIT[n], sous ? 'Secret : ' + sous : null, function () { lancer(n); });
+          option(NOMS_NUIT[n], sous ? 'Secret : ' + sous : null, function () { if (n === 1) journal(); else lancer(n); });
         });
         option('Nuit personnalisée', null, personnalisee);
         var n4 = DP.DINDERS.filter(function (d) { return d.collection === 'wade' && DP.has(d.id); }).length;
@@ -1816,7 +1822,7 @@
           var s = h * 0.34 * (1 + e_ * 0.3) / Rg.tete[2];
           PANT.dessiner(mx, qui_, im, q,
             { s: s, tx: w * 0.56 - Rg.tete[0] * s, ty: h * 0.42 - Rg.tete[1] * s, vw: w, vh: h },
-            { lum: lum, yeux: 1, contraste: 1.35, desat: 0.35, taillesYeux: 1.25,
+            { lum: lum, yeux: 1, contraste: 1.35, desat: 0.35, taillesYeux: 1.25, integre: false,
               // Eclaire par en dessous : le haut du crane se perd dans l'ombre.
               ecl: [[0.35, 0.3, 0.3], [0.75, 0.62, 0.6], [1, 0.85, 0.8]] });
           // Une teinte rouge sale, par-dessus.
@@ -1846,39 +1852,162 @@
     }
 
     // ---------- Le journal : l'offre d'emploi ----------
+    // Comme dans FNaF : une vraie une de journal, en noir et blanc, prise
+    // en photo. L'annonce est au centre et nette ; le reste de la page,
+    // autour, est flou.
+    var PAGE = null, ANNONCE = null;
+    function unePage() {
+      if (PAGE) return PAGE;
+      var PW = 1700, PH = 2200, c = toile(PW, PH), x = c.getContext('2d');
+      x.fillStyle = '#e9e4d6'; x.fillRect(0, 0, PW, PH);
+      var ser = 'Georgia, "Times New Roman", serif';
+      function ecrire(txt, X, Y, l, taille, inter, gras, it) {
+        x.font = (it ? 'italic ' : '') + (gras ? 'bold ' : '') + taille + 'px ' + ser;
+        var mots = txt.split(' '), ligne = '', y = Y;
+        mots.forEach(function (m) {
+          if (x.measureText(ligne + m).width > l && ligne) { x.fillText(ligne.trim(), X, y); y += inter; ligne = ''; }
+          ligne += m + ' ';
+        });
+        if (ligne.trim()) { x.fillText(ligne.trim(), X, y); y += inter; }
+        return y;
+      }
+      // Le bandeau.
+      x.fillStyle = '#16130e'; x.textAlign = 'center';
+      x.font = 'bold 128px ' + ser; x.fillText('Le Courrier de SSt-03', PW / 2, 160);
+      x.fillRect(60, 190, PW - 120, 6); x.fillRect(60, 202, PW - 120, 2);
+      x.font = 'italic 28px ' + ser;
+      x.fillText('Quotidien indépendant · Édition du soir · Prix : 0,50 $', PW / 2, 240);
+      x.fillRect(60, 258, PW - 120, 2);
+      x.textAlign = 'left';
+      // La une : sans rapport avec l'annonce. Ou presque.
+      x.font = 'bold 76px ' + ser;
+      ecrire('LA MAISON DU BURGER ROUVRE SES PORTES', 70, 350, PW - 140, 76, 82, true);
+      x.font = 'italic 34px ' + ser;
+      ecrire('Après des mois de fermeture, le restaurant familial de Wade and Friends accueille de nouveau les enfants. La direction promet que « tout est rentré dans l’ordre ».', 70, 450, PW - 140, 34, 42, false, true);
+      var COLS = 4, gx = 70, gw = (PW - 140 - (COLS - 1) * 36) / COLS;
+      var TXT = [
+        'Les familles du quartier se souviennent encore des après-midi d’anniversaire, des chapeaux de fête et des burgers servis par Wade lui-même. Le restaurant avait fermé brusquement, sans explication, au printemps dernier. ' +
+        'Interrogé sur les raisons de cette fermeture, le propriétaire s’est contenté de parler de « travaux de maintenance sur les animatroniques ». Les quatre personnages, qui avaient fait la renommée de l’établissement, ont été remis en service cette semaine.',
+        'Plusieurs parents ont toutefois fait part de leur inquiétude. « Mon fils dit que Stephen l’a regardé pendant tout le repas », raconte une mère, qui préfère garder l’anonymat. « Ce n’est qu’une machine, bien sûr. Mais il ne regardait que lui. » ' +
+        'La direction assure que les animatroniques sont entièrement sûrs et qu’un système de surveillance a été installé dans tout le bâtiment.',
+        'Le restaurant sera ouvert tous les jours de midi à minuit. La nuit, l’établissement est fermé au public. Un gardien veillera désormais sur les lieux, de minuit à six heures du matin, comme l’exige l’assurance. ' +
+        'Les animatroniques, eux, restent en mode « déambulation libre » la nuit, pour éviter que leurs servomoteurs ne se bloquent.',
+        'Le menu, lui, n’a pas changé : le Wade Burger, le Requin de Stephen, le Croustillant de Faith et le Fondant de Charlie, sans oublier les célèbres Fizzies, dans leurs quatre saveurs. ' +
+        'Une boutique de produits dérivés a été ajoutée à l’entrée. On y trouve des peluches des quatre amis, vendues à prix coûtant.'
+      ];
+      x.fillStyle = '#1e1a14';
+      var finCol = [];
+      for (var i = 0; i < COLS; i++) {
+        var X = gx + i * (gw + 36), y = ecrire(TXT[i], X, 560, gw, 25, 33, false);
+        finCol.push(y);
+        if (i) x.fillRect(X - 19, 540, 1.5, 450);
+      }
+      // Les photos, sous les colonnes de gauche.
+      x.save();
+      x.filter = 'grayscale(1) contrast(1.3) brightness(.85)';
+      var logo = image('logo'), pl = image('plushies');
+      if (pret(logo)) x.drawImage(logo, 80, 1030, 380, 380 * logo.naturalHeight / logo.naturalWidth > 560 ? 560 : 380 * logo.naturalHeight / logo.naturalWidth);
+      if (pret(pl)) x.drawImage(pl, PW - 420, 1040, 330, 495);
+      x.restore();
+      x.strokeStyle = '#16130e'; x.lineWidth = 3;
+      x.strokeRect(70, 1020, 400, 580); x.strokeRect(PW - 430, 1030, 350, 515);
+      x.font = 'italic 22px ' + ser; x.fillStyle = '#1e1a14';
+      ecrire('Wade et ses amis, sur l’affiche de la réouverture.', 74, 1630, 390, 22, 28, false, true);
+      ecrire('Les peluches de la boutique.', PW - 426, 1575, 340, 22, 28, false, true);
+      // Les petites annonces, au milieu : et la notre, encadree.
+      x.fillRect(510, 1020, PW - 1020 + 80 - 80, 4);
+      x.font = 'bold 38px ' + ser; x.textAlign = 'center';
+      x.fillText('PETITES ANNONCES', PW / 2, 1070);
+      x.textAlign = 'left';
+      var ax = 540, ay = 1100, aw = PW - 1080, ah = 600;
+      x.lineWidth = 6; x.strokeRect(ax, ay, aw, ah);
+      x.lineWidth = 2; x.strokeRect(ax + 12, ay + 12, aw - 24, ah - 24);
+      x.textAlign = 'center';
+      x.font = 'bold 74px ' + ser; x.fillText('ON RECRUTE !', ax + aw / 2, ay + 100);
+      x.font = 'italic 30px ' + ser;
+      x.fillText('Wade and Friends · La Maison du Burger', ax + aw / 2, ay + 150);
+      x.font = '30px ' + ser;
+      ecrireC('Gardien de nuit, de minuit à 6 h.', ay + 220);
+      ecrireC('Surveiller les caméras, veiller sur le matériel', ay + 268);
+      ecrireC('et sur nos amis animatroniques.', ay + 306);
+      x.font = 'bold 56px ' + ser; x.fillText('120 $ par semaine', ax + aw / 2, ay + 400);
+      x.font = '26px ' + ser; ecrireC('Se présenter au restaurant, après la fermeture.', ay + 456);
+      x.font = 'italic 19px ' + ser;
+      ecrireC('L’établissement décline toute responsabilité en cas de', ay + 520);
+      ecrireC('blessure, de démembrement ou de disparition.', ay + 546);
+      function ecrireC(t, y) { x.fillText(t, ax + aw / 2, y); }
+      x.textAlign = 'left';
+      // Les autres petites annonces, autour.
+      x.font = '20px ' + ser;
+      [['À VENDRE : costume de mascotte, odeur persistante.', 1740], ['PERDU : chat roux, répond au nom de Biscuit.', 1800],
+       ['CHERCHE : témoins, parking de la Maison du Burger, nuit du 12.', 1860], ['ÉCHANGE : boîte à musique contre radio.', 1920]].forEach(function (a) {
+        ecrire(a[0], 540, a[1], PW - 1080, 20, 26, false);
+      });
+      // Le papier : jauni, tache, plie en deux.
+      for (i = 0; i < 2500; i++) {
+        x.fillStyle = 'rgba(60,50,30,' + (Math.random() * 0.07).toFixed(3) + ')';
+        x.fillRect(Math.random() * PW, Math.random() * PH, 1 + Math.random() * 40, 1 + Math.random() * 3);
+      }
+      var pli = x.createLinearGradient(0, PH / 2 - 30, 0, PH / 2 + 30);
+      pli.addColorStop(0, 'rgba(0,0,0,0)'); pli.addColorStop(0.5, 'rgba(0,0,0,.18)'); pli.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = pli; x.fillRect(0, PH / 2 - 30, PW, 60);
+      // Tout en noir et blanc.
+      var d = x.getImageData(0, 0, PW, PH), px = d.data;
+      for (i = 0; i < px.length; i += 4) {
+        var g = px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11;
+        px[i] = px[i + 1] = px[i + 2] = g;
+      }
+      x.putImageData(d, 0, 0);
+      // Une photo pas encore chargee : on redessinera la page la prochaine fois.
+      if (pret(logo) && pret(pl)) PAGE = c;
+      ANNONCE = { x: ax + aw / 2, y: ay + ah / 2, w: aw, h: ah };
+      return c;
+    }
+
     function journal() {
       vider();
+      // On attend les photos de la page (une seconde au plus).
+      var n = 0;
+      (function attendre() {
+        if (!(pret(image('logo')) && pret(image('plushies'))) && n++ < 10) { setTimeout(attendre, 100); return; }
+        construireJournal();
+      })();
+    }
+    function construireJournal() {
       var j = el('div', 'wf-journal');
-      var page = el('div', 'wf-journal-page');
-      page.appendChild(el('div', 'wf-journal-tete', 'LE COURRIER DE SST-03'));
-      page.appendChild(el('div', 'wf-journal-date', 'Édition du soir · Annonces'));
-      page.appendChild(el('h3', 'wf-journal-titre', 'ON RECRUTE !'));
-      var corps = el('div', 'wf-journal-corps');
-      var logo = el('img', 'wf-journal-logo');
-      logo.src = DOSSIER + 'logo.webp';
-      logo.alt = 'Wade and Friends';
-      corps.appendChild(logo);
-      var txt = el('div', 'wf-journal-txt');
-      txt.appendChild(el('p', null, 'Wade and Friends, la Maison du Burger, cherche un gardien de nuit.'));
-      txt.appendChild(el('p', null, 'De minuit à 6 h. Surveiller les caméras, veiller sur le matériel, ' +
-                                    'et sur nos amis animatroniques.'));
-      txt.appendChild(el('p', 'wf-journal-paie', '120 $ par semaine'));
-      txt.appendChild(el('p', 'wf-journal-petit', 'L’établissement décline toute responsabilité ' +
-                                                  'en cas de blessure ou de démembrement.'));
-      var fz = el('img', 'wf-journal-fizz');
-      fz.src = DOSSIER + 'fizzies.webp';
-      fz.alt = '';
-      txt.appendChild(fz);
-      corps.appendChild(txt);
-      page.appendChild(corps);
-      j.appendChild(page);
+      var flou = el('canvas', 'wf-journal-flou'), net = el('canvas', 'wf-journal-net');
+      var page = unePage();
+      [flou, net].forEach(function (cv) {
+        cv.width = page.width; cv.height = page.height;
+        cv.getContext('2d').drawImage(page, 0, 0);
+        j.appendChild(cv);
+      });
+      j.appendChild(el('div', 'wf-journal-voile'));
       var suite = el('button', 'wf-journal-suite', 'Cliquer pour commencer');
       suite.type = 'button';
       j.appendChild(suite);
       box.appendChild(j);
+      // L'annonce au centre de l'ecran, a la bonne taille.
+      function placer() {
+        var b = j.getBoundingClientRect();
+        if (!b.width) return;
+        var s = Math.min(b.width * 0.4 / ANNONCE.w, b.height * 0.56 / ANNONCE.h);
+        [flou, net].forEach(function (cv) {
+          cv.style.width = page.width * s + 'px';
+          cv.style.height = page.height * s + 'px';
+          cv.style.left = b.width / 2 - ANNONCE.x * s + 'px';
+          cv.style.top = b.height / 2 - ANNONCE.y * s + 'px';
+        });
+        net.style.setProperty('--mx', ANNONCE.x * s + 'px');
+        net.style.setProperty('--my', ANNONCE.y * s + 'px');
+        net.style.setProperty('--mr', Math.max(ANNONCE.w, ANNONCE.h) * s * 0.62 + 'px');
+      }
+      placer();
+      requestAnimationFrame(placer);
+      window.addEventListener('resize', placer);
       var pret_ = false;
-      setTimeout(function () { pret_ = true; j.classList.add('is-pret'); suite.focus(); }, reduit ? 0 : 1600);
-      j.addEventListener('click', function () { if (pret_) lancer(1); });
+      setTimeout(function () { pret_ = true; j.classList.add('is-pret'); suite.focus(); }, reduit ? 0 : 2200);
+      j.addEventListener('click', function () { if (pret_) { window.removeEventListener('resize', placer); lancer(1); } });
     }
 
     // ---------- La nuit personnalisee ----------
