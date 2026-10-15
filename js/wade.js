@@ -1735,7 +1735,12 @@
       // Le mode essai (essai-wade.html) : toutes les nuits, sans les avoir
       // jouees, et les animatroniques a regagner.
       // En local (localhost), on est toujours en mode essai.
-      var essai = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+      var local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+      // En ligne, le 15 octobre 2026 de 21 h 56 a 22 h (heure du joueur) :
+      // les six nuits sont ouvertes a tout le monde.
+      var tt = DP.maintenant ? DP.maintenant() : Date.now();
+      var fenetre = tt >= new Date(2026, 9, 15, 21, 56, 0).getTime() && tt < new Date(2026, 9, 15, 22, 0, 0).getTime();
+      var essai = local || fenetre;
       try { essai = essai || sessionStorage.getItem('wade.essai') === '1'; } catch (er) {}
       if (essai) {
         opts.textContent = '';
@@ -1745,7 +1750,7 @@
         });
         option('Nuit personnalisée', null, personnalisee);
         var n4 = DP.DINDERS.filter(function (d) { return d.collection === 'wade' && DP.has(d.id); }).length;
-        option('Retirer les animatroniques', n4 + ' / 5 dans la collection', function () { DP.wadeOublier(); menu(); });
+        if (local) option('Retirer les animatroniques', n4 + ' / 5 dans la collection', function () { DP.wadeOublier(); menu(); });
       }
       gauche.appendChild(opts);
       box.appendChild(gauche);
