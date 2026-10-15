@@ -615,28 +615,85 @@
 
     // ---------- Le laboratoire, derriere la cuisine ----------
     // La CAM 06 n'a jamais marche. C'est la qu'il travaille.
-    S.labo = {
-      cam: { pos: [1.5, 2.15, 1.7], lacet: -0.3, tangage: -0.17, fov: 66 },
-      objets: [
-        piece({ x0: -3.2, x1: 3.2, z0: 0, z1: 6, h: 3, sol: 'beton', plafond: 'plafond', murs: { d: 'murAtelier' } }),
-        obj('etabli', [B(-1.6, 0.86, 3.4, 1.6, 0.94, 4.3, 'acier'),
-                       B(-1.55, 0, 3.45, -1.45, 0.86, 4.25, 'acier'), B(1.45, 0, 3.45, 1.55, 0.86, 4.25, 'acier')]),
-        obj('etageres', [B(-3.1, 1.3, 5.5, 1.0, 1.34, 5.95, 'bois'), B(-3.1, 2.0, 5.5, 1.0, 2.04, 5.95, 'bois')]),
-        obj('caisses', [B(2.0, 0, 4.8, 3.1, 0.9, 5.9, 'carton'), B(2.2, 0.9, 5.0, 2.9, 1.4, 5.7, 'carton')]),
-        plaque('pl-wade', [-2.6, 1.34, 5.7], 0.45, { sale: 1 }), plaque('pl-faith', [-1.8, 1.34, 5.7], 0.45, { sale: 1 }),
-        plaque('pl-charlie', [-1.0, 2.04, 5.7], 0.45, { sale: 1 }), plaque('pl-stephen', [-0.2, 2.04, 5.7], 0.45, { sale: 1 }),
-        affiche('nz', 6, 1.2, 2.6, 1.2, 2.5, 'plans'),
-        detritus(0, 2, 16, 101),
-        suspension(0, 3.85, 3, [2.4, 2.8, 2.0])
-      ],
-      lampes: [{ id: 'lampe', p: [0, 2.2, 3.85], c: [1.6, 1.9, 1.3], r: 1.6, taille: 0.15 }],
-      feu: { eteint: [], lampes: [
-        { id: 'f1', p: [-2, 0.5, 4.8], c: [3.6, 1.3, 0.3], r: 1.8, taille: 0.6 },
-        { id: 'f2', p: [2.4, 0.6, 3.0], c: [3.0, 1.0, 0.2], r: 1.6, taille: 0.6 }] },
-      flammes: [[-2, 0, 5.2, 1.8], [2.4, 0, 3.0, 1.6], [-0.6, 0.94, 3.7, 1.0], [1.2, 0, 5.6, 1.4], [-2.8, 0, 1.2, 1.3]],
-      ambiant: [0.005, 0.006, 0.005], brume: 0.06, expo: 1.4,
-      poses: { createur: { p: [0, 0, 4.75], h: 1.9 } }
-    };
+    S.labo = (function () {
+      var o = [
+        piece({ x0: -3.6, x1: 3.6, z0: -2.2, z1: 7, h: 3.2, sol: 'beton', plafond: 'plafond',
+                murs: { d: 'carrelage', z1: 'murAtelier' } })
+      ];
+      // L'etabli d'acier, au milieu : un etau, des outils, une lampe
+      // d'operation au-dessus.
+      o.push(obj('etabli', [
+        B(-1.7, 0.86, 3.2, 1.7, 0.94, 4.2, 'inox'),
+        B(-1.65, 0, 3.25, -1.55, 0.86, 4.15, 'acier'), B(1.55, 0, 3.25, 1.65, 0.86, 4.15, 'acier'),
+        B(-1.65, 0.25, 3.25, 1.65, 0.3, 4.15, 'acier')
+      ]));
+      o.push(obj('etau', [B(-1.3, 0.94, 3.4, -0.95, 1.12, 3.65, 'acier'), B(-1.4, 1.1, 3.35, -0.85, 1.15, 3.7, 'acier')]));
+      o.push(obj('outils', [B(0.95, 0.94, 3.35, 1.45, 0.99, 3.6, 'cuivre'), B(1.1, 0.94, 3.75, 1.5, 1.06, 4.05, 'acier'),
+                            B(-0.6, 0.94, 3.95, -0.3, 0.97, 4.12, 'noir')]));
+      o.push(obj('lampeOp', [B(-0.02, 2.45, 3.48, 0.02, 3.2, 3.52, 'noir'),
+                             B(-0.45, 2.35, 3.1, 0.45, 2.45, 3.9, 'acier'),
+                             B(-0.38, 2.33, 3.17, 0.38, 2.35, 3.83, { e: [3, 3.3, 2.8] })], { ombre: false }));
+      // Les cuves : un liquide vert qui luit, dans des cylindres d'acier.
+      [[-3.0, 6.2], [-2.0, 6.4], [2.9, 6.2]].forEach(function (c) {
+        o.push(obj('cuve', [
+          B(c[0] - 0.36, 0.28, c[1] - 0.36, c[0] + 0.36, 2.25, c[1] + 0.36, 'liquide'),
+          B(c[0] - 0.42, 0, c[1] - 0.42, c[0] + 0.42, 0.28, c[1] + 0.42, 'acier'),
+          B(c[0] - 0.42, 2.25, c[1] - 0.42, c[0] + 0.42, 2.45, c[1] + 0.42, 'acier'),
+          B(c[0] - 0.05, 2.45, c[1] - 0.05, c[0] + 0.05, 3.2, c[1] + 0.05, 'noir')
+        ], { ombre: false }));
+      });
+      // Les etageres de bocaux, sur le mur de gauche.
+      var bocaux = [];
+      for (var e = 0; e < 3; e++) {
+        bocaux.push(B(-3.6, 0.9 + e * 0.6, 1.2, -3.2, 0.94 + e * 0.6, 4.6, 'bois'));
+        for (var k = 0; k < 6; k++) {
+          var z = 1.4 + k * 0.55, h = 0.18 + ((k + e) % 3) * 0.07;
+          bocaux.push(B(-3.5, 0.94 + e * 0.6, z, -3.32, 0.94 + e * 0.6 + h, z + 0.18,
+                        (k + e) % 4 === 0 ? { e: [0.22, 0.15, 0.02] } : { e: [0.02, 0.12 + ((k * 7 + e) % 3) * 0.05, 0.05] }));
+        }
+      }
+      o.push(obj('bocaux', bocaux, { ombre: false }));
+      // Le poste aux moniteurs, a droite.
+      o.push(obj('poste', [B(2.3, 0.75, 1.6, 3.5, 0.8, 3.4, 'bois'), B(2.35, 0, 1.65, 3.45, 0.75, 1.75, 'boisSombre')]));
+      [[1.75], [2.5]].forEach(function (z) {
+        o.push(obj('moniteur', [B(3.0, 0.8, z[0] - 0.3, 3.45, 1.25, z[0] + 0.3, 'plastique'),
+                                B(2.98, 0.86, z[0] - 0.24, 3.0, 1.2, z[0] + 0.24, 'ecran')]));
+      });
+      // Des cables qui pendent du plafond.
+      o.push(obj('cables', [B(-1.2, 2.5, 2.4, -1.17, 3.2, 2.43, 'noir'), B(0.9, 2.2, 4.8, 0.93, 3.2, 4.83, 'noir'),
+                            B(-2.3, 2.7, 3.6, -2.27, 3.2, 3.63, 'noir'), B(1.8, 2.4, 2.1, 1.83, 3.2, 2.13, 'noir')], { ombre: false }));
+      // Le presentoir des masques termines, contre le mur du fond.
+      o.push(obj('presentoir', [B(-3.1, 1.55, 6.65, -1.2, 1.6, 7, 'acier'), B(1.2, 1.55, 6.65, 3.1, 1.6, 7, 'acier'),
+                                B(-3.1, 0, 6.85, -3.05, 1.6, 7, 'acier'), B(3.05, 0, 6.85, 3.1, 1.6, 7, 'acier'),
+                                B(-1.25, 0, 6.85, -1.2, 1.6, 7, 'acier'), B(1.2, 0, 6.85, 1.25, 1.6, 7, 'acier')]));
+      o.push(affiche('nz', 7, -1.0, 1.0, 2.0, 3.0, 'plans'));
+      o.push(affiche('nz', 7, 1.3, 2.6, 1.95, 2.95, 'plans2'));
+      o.push(affiche('px', -3.6, 4.9, 6.3, 1.2, 2.4, 'plans2'));
+      o.push(detritus(0, 2, 16, 101), detritus(1.5, 5.5, 8, 102));
+      o.push(toileAraignee(-3.35, 3.2, 6.75, 0.8), toileAraignee(3.35, 3.2, 6.75, 0.7));
+      return {
+        cam: { pos: [2.4, 2.45, -0.6], lacet: -0.3, tangage: -0.18, fov: 64 },
+        objets: o,
+        lampes: [
+          { id: 'op', p: [0, 2.28, 3.5], c: [3.2, 3.4, 3.0], r: 1.5, taille: 0.5,
+            spot: [0, -1, 0], cone: [0.6, 0.1] },
+          { id: 'cuves', p: [-2.3, 1.3, 5.6], c: [0.15, 0.9, 0.3], r: 1.8, taille: 0.8, ombre: false },
+          { id: 'cuve3', p: [2.6, 1.3, 5.6], c: [0.1, 0.6, 0.2], r: 1.4, taille: 0.8, ombre: false },
+          { id: 'ecrans', p: [2.7, 1.1, 2.1], c: [0.1, 0.4, 0.25], r: 1.0, taille: 0.4, ombre: false },
+          { id: 'fond', p: [0, 2.9, 5.9], c: [0.9, 1.0, 0.8], r: 1.5, taille: 0.3, spot: [0, -0.5, 0.86], cone: [0.7, 0.2] }
+        ],
+        lumiere: 0.9,
+        feu: { eteint: [], lampes: [
+          { id: 'f1', p: [-2, 0.5, 4.8], c: [3.6, 1.3, 0.3], r: 1.8, taille: 0.6 },
+          { id: 'f2', p: [2.4, 0.6, 3.0], c: [3.0, 1.0, 0.2], r: 1.6, taille: 0.6 }] },
+        flammes: [[-2, 0, 5.2, 1.8], [2.4, 0, 3.0, 1.6], [-0.6, 0.94, 3.7, 1.0], [1.2, 0, 5.6, 1.4], [-2.8, 0, 1.6, 1.3]],
+        ambiant: [0.006, 0.01, 0.007], brume: 0.05, expo: 1.45,
+        // Ou il se tient, ou il travaille, et les places du presentoir.
+        poses: { createur: { p: [0, 0, 4.75], h: 1.9 } },
+        masque: [0.15, 0.94, 3.62],
+        presentoir: [[-2.6, 1.6, 6.8], [-1.7, 1.6, 6.8], [1.7, 1.6, 6.8], [2.6, 1.6, 6.8]]
+      };
+    })();
 
     // ---------- CAM 09 et 11 : les couloirs ----------
     S.couloirO = couloir(-1, [
@@ -975,6 +1032,19 @@
         if (hash(Math.floor(p[0] * 40), Math.floor(p[1] * 40), 3) > 0.985) k += 0.06;
         o.er = 0.06 * k; o.eg = 0.26 * k; o.eb = 0.2 * k;
         o.s = 0.6; o.k = 60;
+      },
+      // Le liquide des cuves : un vert trouble qui luit d'en bas, des bulles
+      // qui montent, et le reflet du verre sur les bords.
+      liquide: function (p, n, o) {
+        poser(o, C(10, 30, 14));
+        var u = Math.abs(n[0]) > 0.5 ? p[2] : p[0];
+        var tr = fbm(u * 3, p[1] * 2, 4);
+        var k = 0.05 + (2.3 - p[1]) * 0.05 + tr * 0.08;
+        var fr = u * 9 - Math.floor(u * 9);
+        if (fr < 0.08) k += 0.08;
+        if (hash(Math.floor(u * 30), Math.floor(p[1] * 22), 7) > 0.97) k += 0.18;
+        o.er = 0.12 * k; o.eg = 0.75 * k; o.eb = 0.3 * k;
+        o.s = 1.4; o.k = 90;
       },
       ecran: function (p, n, o) {
         var l = Math.sin(p[1] * 900) * 0.5 + 0.5;
@@ -1864,6 +1934,18 @@
       x.fillText(m, cx2, cy2 + 80);
     });
     T.plans = c;
+
+    c = toile(420, 300); x = c.getContext('2d');
+    x.fillStyle = '#d8d2c0'; x.fillRect(0, 0, 420, 300);
+    x.strokeStyle = 'rgba(30,40,90,.8)'; x.lineWidth = 2;
+    x.beginPath(); x.ellipse(130, 140, 80, 90, 0, 0, Math.PI * 2); x.stroke();
+    x.beginPath(); x.arc(100, 120, 16, 0, Math.PI * 2); x.arc(160, 120, 16, 0, Math.PI * 2); x.stroke();
+    x.beginPath(); x.moveTo(80, 190); x.lineTo(180, 190); x.stroke();
+    for (var dt2 = 0; dt2 < 8; dt2++) { x.beginPath(); x.moveTo(88 + dt2 * 12, 190); x.lineTo(92 + dt2 * 12, 205); x.stroke(); }
+    x.beginPath(); x.moveTo(230, 60); x.lineTo(400, 60); x.moveTo(230, 100); x.lineTo(380, 100); x.moveTo(230, 140); x.lineTo(390, 140); x.moveTo(230, 180); x.lineTo(360, 180); x.stroke();
+    x.fillStyle = 'rgba(30,40,90,.9)'; x.font = 'bold 18px Arial'; x.fillText('PROJET W-01', 240, 240);
+    x.fillStyle = 'rgba(150,20,20,.85)'; x.font = 'bold 22px Arial'; x.fillText('CONFIDENTIEL', 240, 275);
+    T.plans2 = c;
 
     // Les illustrations, telles quelles.
     ['logo', 'fizzies', 'plushies'].forEach(function (k) { if (imgs[k]) T[k] = imgs[k]; });

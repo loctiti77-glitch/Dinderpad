@@ -254,6 +254,23 @@ async function tete(img, carre, dest) {
     console.log(nom, 'ok');
   }
 
+  // Les masques seuls, decoupes sur la tete de Their Creator : ce qu'il
+  // fabrique a l'etabli. [x, y, largeur, hauteur, fondu du bas] dans le
+  // rendu en pied de 800 x 1200.
+  const MASQUES = { 1: [258, 4, 222, 188, 18], 2: [240, 8, 365, 128, 34], 3: [232, 8, 375, 208, 16], 4: [172, 2, 455, 216, 16] };
+  for (const n of Object.keys(MASQUES)) {
+    const m = MASQUES[n], src = OUT + '/createur-' + (n === '4' ? 'mf' : 'm' + n) + '.webp';
+    const { data, info } = await sharp(src).extract({ left: m[0], top: m[1], width: m[2], height: m[3] })
+      .ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    for (let y = 0; y < info.height; y++) {
+      const k = Math.min(1, (info.height - y) / m[4]);
+      for (let x = 0; x < info.width; x++) data[(y * info.width + x) * 4 + 3] *= k;
+    }
+    await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } }).trim({ threshold: 1 })
+      .webp({ quality: 90, alphaQuality: 100 }).toFile(OUT + '/masque-' + n + '.webp');
+    console.log('masque', n, 'ok');
+  }
+
   // La jaquette : le logo, deja detoure, dans un carre.
   await sharp(SRC + '/Logo.PNG').trim({ threshold: 1 })
     .resize(600, 600, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })

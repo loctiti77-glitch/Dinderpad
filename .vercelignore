@@ -6,6 +6,8 @@ assets/dinders/_source/
 # en tire les images du site.
 assets/WADE/
 tools/
+# Les pages d'essai : pour tester en local, jamais en ligne.
+essai-wade.html
 
 # Images d'origine : remplacees par pad-menu.webp et pad-screen.webp,
 # gardees pour pouvoir les regenerer.

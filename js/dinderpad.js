@@ -1537,6 +1537,17 @@
     save();
   }
 
+  // Pour les essais (essai-wade.html) : rend les quatre animatroniques,
+  // pour pouvoir les regagner.
+  function wadeOublier() {
+    var p = me();
+    p.owned = p.owned.filter(function (id) {
+      var d = DINDERS.filter(function (x) { return x.id === id; })[0];
+      return !d || d.collection !== 'wade';
+    });
+    save();
+  }
+
   function wadePerso(niv) {
     me().wade.perso = Object.assign({}, niv);
     save();
@@ -1568,7 +1579,7 @@
     dindiseOfferte: dindiseOfferte,
     consommerDindiseOfferte: consommerDindiseOfferte,
     MENACE: MENACE, EXCLUSIF: EXCLUSIF, horsDindise: horsDindise,
-    wade: wade, wadeNuitFaite: wadeNuitFaite, wadeRecommencer: wadeRecommencer, wadePerso: wadePerso, wadeFin: wadeFin,
+    wade: wade, wadeNuitFaite: wadeNuitFaite, wadeRecommencer: wadeRecommencer, wadePerso: wadePerso, wadeFin: wadeFin, wadeOublier: wadeOublier,
     evos: evos, evoImg: evoImg, gagnerEvos: gagnerEvos, depenserEvos: depenserEvos,
     odysseeDinder: odysseeDinder, choisirOdysseeDinder: choisirOdysseeDinder,
     fusion: fusion, noterSacrifice: noterSacrifice,

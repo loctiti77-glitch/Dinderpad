@@ -103,51 +103,247 @@
 
   // ==========================================================
   //  Le feu
-  //  Des langues de flamme, en mode additif, qui ondulent ; une lueur a
-  //  la base ; de la fumee au-dessus.
+  //  Une vraie simulation : une grille de chaleur, alimentee par le bas,
+  //  qui monte, ondule au gre d'un courant d'air et se refroidit. La
+  //  chaleur devient couleur (rouge sombre, orange, jaune, presque blanc
+  //  au coeur), et l'image s'additionne a la piece. Autour : la lueur
+  //  qu'elle jette, les braises qui s'envolent, la fumee qui monte.
   // ==========================================================
 
+  function Foyer(w, h) {
+    this.w = w; this.h = h;
+    this.c = new Float32Array(w * h); this.n = new Float32Array(w * h);
+    this.cv = toile(w, h); this.cx = this.cv.getContext('2d');
+    this.img = this.cx.createImageData(w, h);
+    this.t = Math.random() * 10;
+    this.braises = []; this.fumees = [];
+    this.vif = 0;
+    this.froid = 1;
+  }
+  Foyer.prototype.chauffer = function (x, y, v) {
+    x = Math.round(x); y = Math.round(y);
+    if (x < 0 || y < 0 || x >= this.w || y >= this.h) return;
+    var i = y * this.w + x;
+    if (this.c[i] < v) this.c[i] = v;
+  };
+  // Un pas de simulation : chaque case prend la chaleur de celles du
+  // dessous, deportee par le courant d'air, et en perd un peu.
+  Foyer.prototype.pas = function (dt) {
+    var w = this.w, h = this.h, c = this.c, n = this.n;
+    this.t += dt;
+    var vent = Math.sin(this.t * 1.1) * 0.5 + Math.sin(this.t * 2.9 + 1.3) * 0.3;
+    for (var it = 0; it < 2; it++) {
+      for (var y = 0; y < h; y++) {
+        var y1 = Math.min(h - 1, y + 1), y2 = Math.min(h - 1, y + 2);
+        var tour = Math.sin(y * 0.35 + this.t * 6) * 0.7 + vent;
+        for (var x = 0; x < w; x++) {
+          var xs = x + Math.round(tour + Math.random() - 0.5);
+          if (xs < 1) xs = 1; else if (xs > w - 2) xs = w - 2;
+          var v = (c[y1 * w + xs - 1] + c[y1 * w + xs] * 2 + c[y1 * w + xs + 1] + c[y2 * w + xs]) / 5;
+          // Le refroidissement varie par colonne et monte avec la flamme :
+          // c'est lui qui la decoupe en langues.
+          var froid = 0.006 + 0.02 * (0.5 + 0.5 * Math.sin(x * 0.9 + y * 0.25 - this.t * 7)) + Math.random() * 0.012;
+          v = v * 0.992 - froid * this.froid;
+          n[y * w + x] = v > 0 ? v : 0;
+        }
+      }
+      var tmp = c; c = n; n = tmp;
+    }
+    this.c = c; this.n = n;
+  };
+  Foyer.prototype.image = function () {
+    var d = this.img.data, c = this.c, somme = 0;
+    for (var i = 0; i < c.length; i++) {
+      var t = c[i], p = i * 4;
+      somme += t;
+      if (t < 0.06) { d[p + 3] = 0; continue; }
+      d[p] = Math.min(255, t * 2.6 * 255);
+      d[p + 1] = Math.min(255, Math.max(0, (t - 0.32) * 2.1) * 235);
+      d[p + 2] = Math.min(255, Math.max(0, (t - 0.72) * 3.2) * 210);
+      d[p + 3] = Math.min(255, (t - 0.06) * 2.4 * 255);
+    }
+    this.vif = somme / c.length;
+    this.cx.putImageData(this.img, 0, 0);
+    return this.cv;
+  };
+  // Dessine le foyer dans le rectangle (x, y, w, h) de l'ecran.
+  Foyer.prototype.dessiner = function (ctx, X, Y, W, H, dt) {
+    var im = this.image();
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    // La lueur jetee sur ce qui entoure le feu.
+    var cx = X + W / 2, cy = Y + H * 0.8, rr = Math.max(W, H) * 1.3;
+    var a = Math.min(0.5, this.vif * 2.2) * (0.85 + Math.random() * 0.15);
+    if (a > 0.01) {
+      ctx.globalCompositeOperation = 'lighter';
+      var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rr);
+      g.addColorStop(0, 'rgba(255,120,30,' + a.toFixed(3) + ')');
+      g.addColorStop(0.4, 'rgba(200,60,10,' + (a * 0.35).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(120,20,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(cx - rr, cy - rr, rr * 2, rr * 2);
+    }
+    // La fumee, sous les flammes.
+    ctx.globalCompositeOperation = 'source-over';
+    this.fumees.forEach(function (f) {
+      f.vie -= dt; f.x += f.vx * dt; f.y += f.vy * dt; f.r += dt * f.r * 0.6;
+      var k = Math.max(0, f.vie / f.max);
+      var gs = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
+      gs.addColorStop(0, 'rgba(14,12,10,' + (0.32 * k).toFixed(3) + ')');
+      gs.addColorStop(1, 'rgba(14,12,10,0)');
+      ctx.fillStyle = gs;
+      ctx.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2);
+    });
+    this.fumees = this.fumees.filter(function (f) { return f.vie > 0; });
+    // Les flammes : une passe floue pour le halo, une passe nette.
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.4;
+    ctx.filter = 'blur(' + Math.max(2, W / 55).toFixed(1) + 'px)';
+    ctx.drawImage(im, X, Y, W, H);
+    ctx.filter = 'none';
+    ctx.globalAlpha = 1;
+    ctx.drawImage(im, X, Y, W, H);
+    // Les braises.
+    this.braises.forEach(function (b) {
+      b.vie -= dt; b.x += b.vx * dt + Math.sin(b.vie * 9 + b.g) * 0.6; b.y += b.vy * dt; b.vy -= 20 * dt;
+      var k = Math.max(0, b.vie / b.max);
+      ctx.fillStyle = 'rgba(255,' + Math.round(140 + 90 * k) + ',' + Math.round(40 * k) + ',' + (k * (0.6 + Math.random() * 0.4)).toFixed(3) + ')';
+      ctx.fillRect(b.x, b.y, b.s, b.s);
+    });
+    this.braises = this.braises.filter(function (b) { return b.vie > 0; });
+    ctx.restore();
+  };
+  Foyer.prototype.braise = function (x, y, echelle) {
+    var m = 0.8 + Math.random() * 1.4;
+    this.braises.push({ x: x, y: y, vx: (Math.random() - 0.5) * 30 * echelle, vy: -(40 + Math.random() * 80) * echelle,
+                        vie: m, max: m, s: 1 + Math.random() * 2 * echelle, g: Math.random() * 10 });
+  };
+  Foyer.prototype.fumee = function (x, y, echelle) {
+    var m = 1.5 + Math.random() * 1.5;
+    this.fumees.push({ x: x, y: y, vx: (Math.random() - 0.5) * 12 * echelle, vy: -(18 + Math.random() * 25) * echelle,
+                       r: 8 * echelle, vie: m, max: m });
+  };
+
+  // Un feu qui brule a un endroit, sans fin : la base (X, Y), sa largeur
+  // et sa hauteur a l'ecran. Chaque foyer garde son etat d'une image a
+  // l'autre, d'apres sa graine.
+  var FOYERS_F = {};
   function flammes(ctx, X, Y, w, h, t, graine, force) {
     if (w < 2 || h < 2 || force <= 0) return;
+    var k = String(Math.round(graine * 1000));
+    var F = FOYERS_F[k];
+    if (!F) { F = FOYERS_F[k] = { f: new Foyer(36, 60), t: t }; F.f.froid = 0.55; }
+    var dt = Math.min(0.1, Math.max(0, t - F.t));
+    F.t = t;
+    var f = F.f;
+    // La base : une rangee de cases, chauffees de facon inegale.
+    for (var x = 6; x < f.w - 6; x++) {
+      var bord = 1 - Math.abs(x - f.w / 2) / (f.w / 2 - 6);
+      var lg = 0.55 + 0.45 * Math.sin(x * 0.8 + t * 5 + graine) * Math.sin(x * 0.31 - t * 3.3);
+      var vb = force * (0.8 + Math.random() * 0.2) * (0.5 + bord * 0.5) * Math.max(0.35, lg);
+      f.chauffer(x, f.h - 2, vb); f.chauffer(x, f.h - 3, vb); f.chauffer(x, f.h - 4, vb * 0.9);
+    }
+    f.pas(dt);
+    var W = w * 1.3, H = h * 1.7;
+    if (Math.random() < dt * 14 * force) f.braise(X + (Math.random() - 0.5) * w * 0.6, Y - h * 0.4, w / 120);
+    if (Math.random() < dt * 5 * force) f.fumee(X + (Math.random() - 0.5) * w * 0.4, Y - h * 0.9, w / 90);
+    f.dessiner(ctx, X - W / 2, Y - H, W, H, dt);
+  }
+
+  // ---------- Un objet qui brule ----------
+  // Le feu prend au bas de l'objet ; le front de flammes monte sur sa
+  // surface, en suivant sa forme a l'ecran. Derriere lui, l'objet noircit,
+  // et sa lisiere rougeoie.
+  function lerp(a, b, k) { return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]; }
+  function bruit1(x, g) { return Math.sin(x * 9.3 + g) * 0.45 + Math.sin(x * 23.7 + g * 2.1) * 0.3 + Math.sin(x * 57.3 + g * 0.7) * 0.15 + Math.sin(x * 131 + g * 3.3) * 0.1; }
+
+  // q : les quatre coins a l'ecran [bas-gauche, bas-droit, haut-droit,
+  // haut-gauche] ; k : ou en est le front (0 en bas, 1 en haut).
+  function front(q, k, g, n) {
+    var L = [];
+    for (var i = 0; i <= n; i++) {
+      var u = i / n, kk = Math.max(0, Math.min(1.05, k + bruit1(u, g) * 0.09));
+      var bas = lerp(q[0], q[1], u), haut = lerp(q[3], q[2], u);
+      L.push(lerp(bas, haut, kk));
+    }
+    return L;
+  }
+
+  function dessinerBrulure(ctx, f, q, k, t, dt) {
+    var L = front(q, k, f.g, 60);
+    // Le noir, de la base jusqu'au front.
     ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(q[0][0], q[0][1]);
+    L.forEach(function (p) { ctx.lineTo(p[0], p[1]); });
+    ctx.lineTo(q[1][0], q[1][1]);
+    ctx.closePath();
+    ctx.clip();
+    var yb = Math.max(q[0][1], q[1][1]), yh = Math.min(L[0][1], L[L.length - 1][1]);
+    var g = ctx.createLinearGradient(0, yb, 0, yh - 4);
+    g.addColorStop(0, 'rgba(8,6,5,.95)'); g.addColorStop(0.8, 'rgba(20,12,8,.92)'); g.addColorStop(1, 'rgba(70,30,10,.85)');
+    ctx.fillStyle = g;
+    ctx.fillRect(Math.min(q[0][0], q[3][0]) - 4, yh - 6, Math.abs(q[1][0] - q[0][0]) + Math.abs(q[2][0] - q[3][0]) + 12, yb - yh + 12);
+    // Des braises qui couvent dans le noir.
     ctx.globalCompositeOperation = 'lighter';
-    var g0 = ctx.createRadialGradient(X, Y, 0, X, Y, w * 0.9);
-    g0.addColorStop(0, 'rgba(255,140,40,' + (0.35 * force).toFixed(3) + ')');
-    g0.addColorStop(1, 'rgba(255,60,0,0)');
-    ctx.fillStyle = g0;
-    ctx.fillRect(X - w, Y - w * 0.9, w * 2, w * 1.8);
-    var n = 7;
-    for (var i = 0; i < n; i++) {
-      var k = i / (n - 1) - 0.5;
-      var fx = X + k * w * 0.85 + Math.sin(t * 3.1 + i * 1.7 + graine) * w * 0.05;
-      var fh = h * force * (0.45 + 0.55 * Math.abs(Math.sin(t * (4.3 + i * 0.6) + graine + i * 2.1))) * (1 - Math.abs(k) * 0.9);
-      var fw = w * 0.32;
-      var gr = ctx.createLinearGradient(0, Y, 0, Y - fh);
-      gr.addColorStop(0, 'rgba(255,245,200,.85)');
-      gr.addColorStop(0.25, 'rgba(255,170,40,.7)');
-      gr.addColorStop(0.65, 'rgba(220,60,0,.35)');
-      gr.addColorStop(1, 'rgba(120,10,0,0)');
-      ctx.fillStyle = gr;
-      ctx.beginPath();
-      ctx.moveTo(fx - fw / 2, Y);
-      ctx.quadraticCurveTo(fx - fw * 0.7, Y - fh * 0.55, fx + Math.sin(t * 7 + i) * fw * 0.4, Y - fh);
-      ctx.quadraticCurveTo(fx + fw * 0.7, Y - fh * 0.55, fx + fw / 2, Y);
-      ctx.fill();
+    for (var i = 0; i < 18; i++) {
+      var u = (i * 0.618 + f.g) % 1, v = ((i * 0.381 + f.g * 0.3) % 1) * k;
+      var p = lerp(lerp(q[0], q[1], u), lerp(q[3], q[2], u), v);
+      var a = 0.25 + 0.25 * Math.sin(t * 5 + i * 1.7);
+      ctx.fillStyle = 'rgba(255,90,20,' + a.toFixed(3) + ')';
+      ctx.fillRect(p[0], p[1], 2, 2);
     }
     ctx.restore();
-    // La fumee.
-    ctx.save();
-    for (var j = 0; j < 4; j++) {
-      var ph = (t * 0.5 + j * 0.25 + graine) % 1;
-      var sy = Y - h * force * (0.8 + ph * 1.6), sx = X + Math.sin(ph * 6 + j) * w * 0.3;
-      var r = w * (0.25 + ph * 0.6);
-      var gs = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
-      gs.addColorStop(0, 'rgba(10,8,6,' + (0.35 * (1 - ph) * force).toFixed(3) + ')');
-      gs.addColorStop(1, 'rgba(10,8,6,0)');
-      ctx.fillStyle = gs;
-      ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+    // La lisiere qui rougeoie, le long du front.
+    if (k < 1.02) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineJoin = 'round';
+      ctx.filter = 'blur(1.5px)';
+      [[8, 'rgba(255,70,10,.22)'], [3.5, 'rgba(255,130,40,.45)'], [1.4, 'rgba(255,210,140,.55)']].forEach(function (s) {
+        ctx.lineWidth = s[0] * (0.8 + Math.random() * 0.4); ctx.strokeStyle = s[1];
+        ctx.beginPath();
+        L.forEach(function (p, i) { if (i) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); });
+        ctx.stroke();
+      });
+      ctx.filter = 'none';
+      ctx.restore();
     }
-    ctx.restore();
+    return L;
+  }
+
+  // Le foyer d'un objet qui brule, alimente le long du front.
+  function feuSurObjet(ctx, f, q, k, force, t, dt) {
+    var xs = q.map(function (p) { return p[0]; }), ys = q.map(function (p) { return p[1]; });
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+    var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    var w = x1 - x0, h = y1 - y0;
+    // La zone du feu : l'objet, et assez de place au-dessus pour les flammes.
+    var bx = x0 - w * 0.25, by = y0 - Math.max(h * 0.9, w * 0.6), bw = w * 1.5, bh = y1 - by + h * 0.05;
+    if (!f.foyer) f.foyer = new Foyer(Math.max(24, Math.min(64, Math.round(bw / 5))), Math.max(40, Math.min(96, Math.round(bh / 5))));
+    var F = f.foyer;
+    if (force > 0) {
+      var L = front(q, Math.min(1, k), f.g, 40);
+      L.forEach(function (p, i) {
+        var sx = (p[0] - bx) / bw * F.w, sy = (p[1] - by) / bh * F.h;
+        var langue = 0.55 + 0.45 * Math.sin(i * 0.8 + t * 5 + f.g) * Math.sin(i * 0.33 - t * 3.1);
+        var v = force * (0.7 + Math.random() * 0.3) * Math.max(0.25, langue);
+        F.chauffer(sx, sy, v); F.chauffer(sx, sy + 1, v); F.chauffer(sx, sy + 2, v * 0.8);
+        if (Math.random() < 0.3) F.chauffer(sx + (Math.random() - 0.5) * 2, sy - 1, v);
+      });
+      // Ce qui a deja brule couve encore.
+      for (var j = 0; j < 6; j++) {
+        var u = Math.random(), vv = Math.random() * Math.min(1, k);
+        var p = lerp(lerp(q[0], q[1], u), lerp(q[3], q[2], u), vv);
+        F.chauffer((p[0] - bx) / bw * F.w, (p[1] - by) / bh * F.h, force * 0.45 * Math.random());
+      }
+      var mid = L[Math.floor(Math.random() * L.length)];
+      if (Math.random() < dt * 22 * force) F.braise(mid[0], mid[1], Math.max(0.5, w / 160));
+      if (Math.random() < dt * 6 * force) F.fumee(mid[0], mid[1] - h * 0.2, Math.max(0.6, w / 110));
+    }
+    F.pas(dt);
+    F.dessiner(ctx, bx, by, bw, bh, dt);
   }
 
   // ==========================================================
@@ -205,15 +401,45 @@
       st.mods[cle] = m;
       (variantes || ['base']).forEach(function (v) { R.obtenir(cle, v, m); });
     }
-    function bruler(cle, cible, centre, w, h) {
-      st.feux.push({ cle: cle, c: centre, w: w, h: h, t0: performance.now() / 1000, dur: 2.6, g: Math.random() * 10 });
+    // coins : les quatre coins de la face visible, dans la piece.
+    // montee : le temps que met le feu a gagner le haut de l'objet.
+    function bruler(cle, cible, coins, montee) {
+      var f = { cle: cle, coins: coins, t0: performance.now() / 1000, montee: montee || 2.6,
+                g: Math.random() * 10, pret: false };
+      st.feux.push(f);
       SON.flamme();
+      // Quand le feu a tout pris, la piece est recalculee, brulee ; en
+      // attendant, le noir dessine par-dessus tient lieu de brulure.
       setTimeout(function () {
         changer(cle, function (m) {
           if (cible.indexOf('etoile:') === 0) (m.etoiles = m.etoiles || []).push(cible.slice(7));
           else (m.brules = m.brules || []).push(cible);
         }, cle === 'bureau' ? ['base', 'lumG', 'lumD', 'noir'] : ['base']);
-      }, 900);
+        f.mods = st.mods[cle];
+      }, f.montee * 1000);
+    }
+    function coinsAffiche(cle, tex) {
+      var s_ = null;
+      R.SCENES[cle].objets.forEach(function (g) { if (g.sprite && g.sprite.tex === tex) s_ = g.sprite; });
+      if (!s_ || !s_.w) return null;
+      var n = s_.n, r = [-n[2], 0, n[0]], w = s_.w / 2, p = s_.p;
+      var bg = [p[0] - r[0] * w, p[1], p[2] - r[2] * w], bd = [p[0] + r[0] * w, p[1], p[2] + r[2] * w];
+      return [bg, bd, [bd[0], p[1] + s_.h, bd[2]], [bg[0], p[1] + s_.h, bg[2]]];
+    }
+    // La face d'une boite tournee vers la camera.
+    function coinsBoite(cle, a, b) {
+      var c = R.SCENES[cle].cam.pos, F = [];
+      if (c[2] < a[2]) F.push([[a[0], a[1], a[2]], [b[0], a[1], a[2]], [b[0], b[1], a[2]], [a[0], b[1], a[2]]]);
+      if (c[2] > b[2]) F.push([[a[0], a[1], b[2]], [b[0], a[1], b[2]], [b[0], b[1], b[2]], [a[0], b[1], b[2]]]);
+      if (c[0] < a[0]) F.push([[a[0], a[1], a[2]], [a[0], a[1], b[2]], [a[0], b[1], b[2]], [a[0], b[1], a[2]]]);
+      if (c[0] > b[0]) F.push([[b[0], a[1], a[2]], [b[0], a[1], b[2]], [b[0], b[1], b[2]], [b[0], b[1], a[2]]]);
+      var best = F[0], aire = -1;
+      F.forEach(function (q) {
+        var p = q.map(function (x) { return R.projeter(cle, x) || [0, 0]; });
+        var ar = Math.abs((p[1][0] - p[0][0]) * (p[3][1] - p[0][1]) - (p[3][0] - p[0][0]) * (p[1][1] - p[0][1]));
+        if (ar > aire) { aire = ar; best = q; }
+      });
+      return best;
     }
     function centreAffiche(cle, tex, mur) {
       var s = null;
@@ -235,18 +461,12 @@
         }
         a = R.surAffiche(cle, et.tex, pt);
         if (!a || a.u < et.u[0] || a.u > et.u[1] || a.v < et.v[0] || a.v > et.v[1]) return null;
-        if (actuelle && et.brule) {
-          var c0 = centreAffiche(cle, et.tex);
-          bruler(cle, et.brule, c0.c, c0.w, c0.h);
-        }
+        if (actuelle && et.brule) bruler(cle, et.brule, coinsAffiche(cle, et.tex), 2.8);
         return 'ok';
       }
       if (et.type === 'boite') {
         if (!dans(pt, et.a, et.b)) return null;
-        if (actuelle && et.brule) {
-          bruler(cle, et.brule, [(et.a[0] + et.b[0]) / 2, et.a[1], (et.a[2] + et.b[2]) / 2],
-                 et.b[0] - et.a[0], 1.2);
-        }
+        if (actuelle && et.brule) bruler(cle, et.brule, coinsBoite(cle, et.a, [et.b[0], Math.min(et.b[1], 1.0), et.b[2]]), 2.4);
         return 'ok';
       }
       if (et.type === 'fanions') {
@@ -293,7 +513,8 @@
         if (!actuelle) return 'pas';
         if (st.sous.indexOf(e.cle) !== -1) return null;
         st.sous.push(e.cle);
-        bruler('scene', 'etoile:' + e.cle, [e.x, e.y - 0.07, 10], 0.2, 0.3);
+        var z_ = 9.995, d_ = 0.075;
+        bruler('scene', 'etoile:' + e.cle, [[e.x - d_, e.y - d_, z_], [e.x + d_, e.y - d_, z_], [e.x + d_, e.y + d_, z_], [e.x - d_, e.y + d_, z_]], 1.2);
         return st.sous.length >= et.n ? 'ok' : 'pas';
       }
       if (et.type === 'lampe') {
@@ -316,8 +537,7 @@
         if (!actuelle) return 'pas';
         if (st.sous.indexOf(cle) !== -1) return null;
         st.sous.push(cle);
-        var c1 = centreAffiche(cle, 'souriez');
-        bruler(cle, 'tex:souriez', c1.c, c1.w, c1.h);
+        bruler(cle, 'tex:souriez', coinsAffiche(cle, 'souriez'), 2.8);
         return st.sous.length === 2 ? 'ok' : 'pas';
       }
       if (et.type === 'cartons') {
@@ -328,8 +548,7 @@
         if (st.sous.indexOf(touche) !== -1) return null;
         st.sous.push(touche);
         var bx = CARTONS[touche];
-        bruler('froid', 'id:' + touche, [(bx[0][0] + bx[1][0]) / 2, bx[0][1], (bx[0][2] + bx[1][2]) / 2],
-               bx[1][0] - bx[0][0] + 0.3, 1.2);
+        bruler('froid', 'id:' + touche, coinsBoite('froid', bx[0], bx[1]), 2.2);
         return st.sous.length === 3 ? 'ok' : 'pas';
       }
       return null;
@@ -388,16 +607,22 @@
     // de l'ampoule, et l'atelier en flammes.
     function dessiner(cle, ctx, off, K, VW, VH) {
       var t = performance.now() / 1000;
-      st.feux = st.feux.filter(function (f) { return t - f.t0 < f.dur; });
+      // Un feu s'en va quand il est eteint et que la piece brulee est prete.
+      st.feux = st.feux.filter(function (f) {
+        return !(f.mods && t - f.t0 > f.montee + 1.6 && R.deja(f.cle, 'base', f.mods));
+      });
       st.feux.forEach(function (f) {
-        if (f.cle !== cle) return;
-        var u = (t - f.t0) / f.dur;
-        var force = u < 0.25 ? u / 0.25 : u > 0.7 ? (1 - u) / 0.3 : 1;
-        var p = R.projeter(cle, f.c), p2 = R.projeter(cle, [f.c[0], f.c[1] + f.h, f.c[2]]);
-        var p3 = R.projeter(cle, [f.c[0] + (f.w || 0.5) / 2, f.c[1], f.c[2]]);
-        if (!p || !p2) return;
-        var hh = Math.abs(p[1] - p2[1]) * K, ww = Math.max(20, Math.abs((p3 ? p3[0] : p[0] + 30) - p[0]) * 2 * K);
-        flammes(ctx, p[0] * K - off, p[1] * K, ww * 1.1, hh * 1.3, t, f.g, force);
+        if (f.cle !== cle || !f.coins) return;
+        var dt = f.dernier ? Math.min(0.1, t - f.dernier) : 0;
+        f.dernier = t;
+        var q = f.coins.map(function (p) { var r = R.projeter(cle, p); return r ? [r[0] * K - off, r[1] * K] : null; });
+        if (q.some(function (p) { return !p; })) return;
+        // Le bas a gauche de l'ecran, toujours en premier.
+        if (q[0][0] > q[1][0]) q = [q[1], q[0], q[3], q[2]];
+        var u = t - f.t0, k = Math.min(1.02, u / f.montee);
+        var force = u < 0.3 ? u / 0.3 : u < f.montee ? 1 : Math.max(0, 1 - (u - f.montee) / 1.4);
+        dessinerBrulure(ctx, f, q, k, t, dt);
+        feuSurObjet(ctx, f, q, k, force, t, dt);
       });
       if (cle === 'atelier') {
         var dt = t - st.eclair;
@@ -410,7 +635,7 @@
             var p = R.projeter('atelier', [f[0], f[1], f[2]]), p2 = R.projeter('atelier', [f[0], f[1] + f[3], f[2]]);
             if (!p || !p2) return;
             var hh = Math.abs(p[1] - p2[1]) * K;
-            flammes(ctx, p[0] * K - off, p[1] * K, hh * 0.9, hh, t, i * 3.7, 1);
+            flammes(ctx, p[0] * K - off, p[1] * K, hh * 0.9, hh, t, 500 + i * 3.7, 1);
           });
         }
       }
@@ -507,7 +732,7 @@
       var a = R.projeter(cle, p), b = R.projeter(cle, [p[0], p[1] + 1.2 * force, p[2]]);
       if (!a || !b) return;
       var hh = Math.abs(a[1] - b[1]) * K;
-      flammes(x, a[0] * K - off, a[1] * K, hh * 0.9, hh, t, i * 2.3, 1);
+      flammes(x, a[0] * K - off, a[1] * K, hh * 0.9, hh, t, cle.length * 37 + cle.charCodeAt(0) + i * 2.3, 1);
     });
     grain(x, t, 0.12, VW, VH);
     vignette(x, VW, VH, 0.85);
@@ -710,107 +935,248 @@
     x.restore();
   }
 
+  // ---------- Le laboratoire : la CAM 06 ----------
+  // La camera qui ne marchait pas. On n'y entendait que des coups ; le
+  // signal revient, et ce n'est pas une cuisine.
+  var LABO = 25;                       // la duree de la scene
+  var MASQUE_IMG = ['masque-1', 'masque-2', 'masque-3', 'masque-4'];
+  var PORTE = ['createur', 'createur-m1', 'createur-m2', 'createur-m3', 'createur-mf'];
+  var SCENE_LABO = null, ETINCELLES = [];
+
+  // Le labo tel que la camera le voit : la piece, lui derriere l'etabli,
+  // les masques finis au presentoir, celui en cours sur l'etabli.
+  function vueLabo(VW, VH, t, o) {
+    if (!SCENE_LABO || SCENE_LABO.width !== VW) SCENE_LABO = toile(VW, VH);
+    var x = SCENE_LABO.getContext('2d');
+    var r0 = R.deja('labo', 'base'), r = (o.feu && R.deja('labo', 'base', { feu: true })) || r0;
+    x.fillStyle = '#000'; x.fillRect(0, 0, VW, VH);
+    if (!r0) return SCENE_LABO;
+    var K = VH / r.h, off = (r.w * K - VW) / 2, sc = R.SCENES.labo;
+    x.drawImage(r.canvas, -off, 0, r.w * K, r.h * K);
+    function objet(nom, p, h, lum) {
+      var im = image(nom);
+      if (!pret(im)) return null;
+      var a = R.projeter('labo', p), b = R.projeter('labo', [p[0], p[1] + h, p[2]]);
+      var hh = (a[1] - b[1]) * K, ww = hh * im.naturalWidth / im.naturalHeight;
+      x.save();
+      x.filter = 'brightness(' + lum + ') saturate(.85)';
+      x.drawImage(im, a[0] * K - off - ww / 2, a[1] * K - hh, ww, hh);
+      x.restore();
+      return { x: a[0] * K - off - ww / 2, y: a[1] * K - hh, w: ww, h: hh, im: im };
+    }
+    // Les masques termines, poses au presentoir.
+    for (var i = 0; i < o.finis; i++) objet(MASQUE_IMG[i], sc.presentoir[i], 0.42, 0.85);
+    var sec = o.secousse ? hasard(-o.secousse, o.secousse) : 0;
+    poser(x, 'labo', r0, 'createur', image(PORTE[o.porte]), K, off, { dx: sec, dy: sec * 0.4 });
+    // Le masque en cours, sur l'etabli : sa silhouette en fil de fer, et
+    // le metal qui se soude de bas en haut.
+    if (o.banc != null) {
+      var im = image(MASQUE_IMG[o.banc]);
+      if (pret(im)) {
+        var a = R.projeter('labo', sc.masque), b = R.projeter('labo', [sc.masque[0], sc.masque[1] + 0.4, sc.masque[2]]);
+        var hh = (a[1] - b[1]) * K, ww = hh * im.naturalWidth / im.naturalHeight;
+        var X = a[0] * K - off - ww / 2, Y = a[1] * K - hh;
+        var fil = toile(Math.ceil(ww), Math.ceil(hh)), fx = fil.getContext('2d');
+        fx.drawImage(im, 0, 0, fil.width, fil.height);
+        fx.globalCompositeOperation = 'source-in';
+        fx.fillStyle = 'rgba(120,255,210,1)'; fx.fillRect(0, 0, fil.width, fil.height);
+        x.save();
+        x.globalAlpha = 0.18 + Math.random() * 0.1;
+        x.globalCompositeOperation = 'lighter';
+        x.drawImage(fil, X, Y);
+        x.restore();
+        var k = Math.max(0, Math.min(1, o.k));
+        var yk = Y + hh * (1 - k);
+        x.save();
+        x.beginPath(); x.rect(X - 2, yk, ww + 4, hh - (yk - Y) + 2); x.clip();
+        x.filter = 'brightness(.95)';
+        x.drawImage(im, X, Y, ww, hh);
+        x.restore();
+        if (k > 0 && k < 1) {
+          // Le cordon de soudure, et sa lumiere bleue qui eclabousse tout.
+          var sx = X + ww * (0.5 + Math.sin(t * 9) * 0.42);
+          x.save();
+          x.globalCompositeOperation = 'lighter';
+          var f = 0.6 + Math.random() * 0.4;
+          var g = x.createRadialGradient(sx, yk, 0, sx, yk, hh * 2.2);
+          g.addColorStop(0, 'rgba(230,245,255,' + (0.9 * f).toFixed(2) + ')');
+          g.addColorStop(0.08, 'rgba(140,200,255,' + (0.45 * f).toFixed(2) + ')');
+          g.addColorStop(1, 'rgba(60,120,255,0)');
+          x.fillStyle = g; x.fillRect(sx - hh * 2.2, yk - hh * 2.2, hh * 4.4, hh * 4.4);
+          x.fillStyle = 'rgba(255,240,200,.9)'; x.fillRect(X, yk - 1, ww, 2);
+          x.restore();
+          for (var e = 0; e < 5; e++) {
+            ETINCELLES.push({ x: sx, y: yk, vx: hasard(-160, 160), vy: hasard(-220, -40), vie: hasard(0.3, 0.8) });
+          }
+        }
+      }
+    }
+    // Les etincelles, qui retombent.
+    x.save();
+    x.globalCompositeOperation = 'lighter';
+    ETINCELLES.forEach(function (s) {
+      s.vie -= 1 / 60; s.x += s.vx / 60; s.y += s.vy / 60; s.vy += 600 / 60;
+      x.fillStyle = 'rgba(255,' + Math.round(170 + Math.random() * 80) + ',90,' + Math.min(1, s.vie * 2).toFixed(2) + ')';
+      x.fillRect(s.x, s.y, 2, 2);
+    });
+    ETINCELLES = ETINCELLES.filter(function (s) { return s.vie > 0; });
+    x.restore();
+    // L'incendie.
+    if (o.feu) {
+      var k2 = o.feu;
+      x.globalCompositeOperation = 'multiply';
+      x.fillStyle = 'rgb(255,' + Math.round(255 - k2 * 110) + ',' + Math.round(255 - k2 * 170) + ')';
+      x.fillRect(0, 0, VW, VH);
+      x.globalCompositeOperation = 'source-over';
+      sc.flammes.forEach(function (fl, i) {
+        var a = R.projeter('labo', [fl[0], fl[1], fl[2]]), b = R.projeter('labo', [fl[0], fl[1] + fl[3] * k2, fl[2]]);
+        if (!a || !b) return;
+        var hh = Math.abs(a[1] - b[1]) * K;
+        flammes(x, a[0] * K - off, a[1] * K, hh * 0.9 + 10, hh, t, 900 + i * 2.9, k2);
+      });
+      for (var fi = 0; fi < 7; fi++) flammes(x, VW * (fi + 0.5) / 7, VH + 20, 260, 260 + k2 * 260, t, 1300 + fi * 1.3, k2);
+    }
+    SCENE_LABO.ou = function (p) { var a = R.projeter('labo', p); return [a[0] * K - off, a[1] * K]; };
+    return SCENE_LABO;
+  }
+
+  // L'habillage d'une camera de surveillance : grain, delavage, lisere,
+  // nom, point rouge.
+  function habillage(x, t, VW, VH, nom, g) {
+    x.globalCompositeOperation = 'saturation';
+    x.fillStyle = 'rgba(128,128,128,.3)'; x.fillRect(0, 0, VW, VH);
+    x.globalCompositeOperation = 'source-over';
+    grain(x, t, g, VW, VH);
+    vignette(x, VW, VH, 0.9);
+    x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = 2; x.strokeRect(14, 14, VW - 28, VH - 28);
+    x.fillStyle = '#f4f4f0'; x.font = 'bold 26px Consolas, monospace'; x.textAlign = 'left';
+    x.fillText(nom, 70, 58);
+    if (Math.floor(t * 1.6) % 2) { x.fillStyle = '#e8261c'; x.beginPath(); x.arc(46, 49, 10, 0, Math.PI * 2); x.fill(); }
+  }
+
+  function sceneLabo(x, u, t, VW, VH, une) {
+    x.fillStyle = '#000'; x.fillRect(0, 0, VW, VH);
+    // 1. L'ecran que l'on connait : la camera est morte, on n'a que le son.
+    //    Et on entend travailler.
+    if (u < 3) {
+      var coup = Math.floor(u / 0.55);
+      une('c' + coup, function () { SON.marteau(); });
+      var signal = u > 2.3 && Math.random() < (u - 2.3) * 1.4;
+      if (signal) {
+        x.drawImage(vueLabo(VW, VH, t, { porte: 0, finis: 0 }), 0, 0);
+        for (var i = 0; i < 7; i++) {
+          var y = Math.random() * VH, hh = 10 + Math.random() * 60;
+          x.drawImage(x.canvas, 0, y, VW, hh, (Math.random() - 0.5) * 160, y, VW, hh);
+        }
+        grain(x, t, 0.5, VW, VH);
+      } else {
+        grain(x, t, 0.5, VW, VH);
+        x.fillStyle = 'rgba(0,0,0,.6)'; x.fillRect(0, 0, VW, VH);
+        x.fillStyle = '#e8e8e8'; x.textAlign = 'center';
+        x.font = 'bold 34px Consolas, monospace'; x.fillText('CAMÉRA HORS SERVICE', VW / 2, VH / 2 - 10);
+        x.font = '24px Consolas, monospace'; x.fillText('— AUDIO SEULEMENT —', VW / 2, VH / 2 + 30);
+      }
+      if (u > 2.3) une('signal', function () { SON.vision(); SON.grain(); });
+      habillage(x, t, VW, VH, 'CAM 06  CUISINE', 0.08);
+      return;
+    }
+    // 2. Le signal est revenu. Il est la, a son etabli. Il rit.
+    if (u < 5) {
+      une('rire', function () { SON.regard(); });
+      x.drawImage(vueLabo(VW, VH, t, { porte: 0, finis: 0 }), 0, 0);
+      habillage(x, t, VW, VH, 'CAM 06  CUISINE', 0.1 + Math.max(0, 3.4 - u) * 0.6);
+      return;
+    }
+    // 3. Quatre masques. A chaque fois : la camera zoome sur l'etabli, le
+    //    masque se soude ; puis il l'enfile, et pose l'ancien au presentoir.
+    if (u < 21) {
+      var n = Math.floor((u - 5) / 4), v = (u - 5) - n * 4;
+      if (v < 2.6) {
+        var k = (v - 0.35) / 2.0;
+        if (k > 0 && k < 1) une('s' + n + '-' + Math.floor(k * 9), function () { SON.gresille(); if (Math.random() < 0.4) SON.marteau(); });
+        var vue = vueLabo(VW, VH, t, { porte: n, finis: Math.max(0, n - 1), banc: n, k: k });
+        // Le zoom numerique de la camera, centre sur l'etabli.
+        var z = v < 0.35 ? 1 + (v / 0.35) * 2.2 : v > 2.35 ? 3.2 - ((v - 2.35) / 0.25) * 2.2 : 3.2;
+        var c = vue.ou(R.SCENES.labo.masque);
+        var w = VW / z, h = VH / z, cx = Math.max(w / 2, Math.min(VW - w / 2, c[0])), cy = Math.max(h / 2, Math.min(VH - h / 2, c[1] - VH * 0.05));
+        x.imageSmoothingEnabled = true;
+        x.drawImage(vue, cx - w / 2, cy - h / 2, w, h, 0, 0, VW, VH);
+        habillage(x, t, VW, VH, 'CAM 06  CUISINE', 0.14);
+        if (z > 1.5 && Math.floor(t * 2.5) % 2) {
+          x.fillStyle = '#f4f4f0'; x.font = 'bold 22px Consolas, monospace'; x.textAlign = 'right';
+          x.fillText('ZOOM ×' + z.toFixed(1), VW - 40, 58);
+        }
+        x.fillStyle = 'rgba(160,255,210,.85)'; x.font = '18px Consolas, monospace'; x.textAlign = 'left';
+        x.fillText('M' + (n + 1), 40, VH - 40);
+      } else {
+        // Il a enfile le nouveau.
+        if (v < 2.75) {
+          une('porte' + n, function () { SON.servo(0.8); SON.marteau(); SON.regard(); });
+        }
+        x.drawImage(vueLabo(VW, VH, t, { porte: n + 1, finis: n, secousse: v < 2.9 ? 4 : 0 }), 0, 0);
+        if (v < 2.72) { x.fillStyle = 'rgba(255,255,255,' + (0.6 * (1 - (v - 2.6) / 0.12)).toFixed(2) + ')'; x.fillRect(0, 0, VW, VH); }
+        habillage(x, t, VW, VH, 'CAM 06  CUISINE', 0.12);
+      }
+      return;
+    }
+    // 4. Le feu le rattrape. Il ne bouge pas. Il rit.
+    une('feuLabo', function () { SON.flamme(); SON.explosion(); });
+    var kf = Math.min(1, (u - 21) / 2);
+    x.drawImage(vueLabo(VW, VH, t, { porte: 4, finis: 3, feu: kf, secousse: 5 }), 0, 0);
+    habillage(x, t, VW, VH, 'CAM 06  CUISINE', 0.12 + Math.max(0, u - 23.6) * 0.8);
+    if (u > LABO - 0.7) { x.fillStyle = 'rgba(255,170,60,' + ((u - LABO + 0.7) / 0.7).toFixed(2) + ')'; x.fillRect(0, 0, VW, VH); }
+  }
+
   // ---------- La bonne fin ----------
   function finBonne(hote, retour) {
     init();
     DP.wadeFin && DP.wadeFin('bonne');
     R.obtenir('labo', 'base'); R.obtenir('labo', 'base', { feu: true });
-    ['createur', 'createur-m1', 'createur-m2', 'createur-m3', 'createur-mf', 'logo'].forEach(image);
+    PORTE.concat(MASQUE_IMG, ['logo']).forEach(image);
     ['wade', 'charlie', 'faith', 'stephen'].forEach(function (k) { image(k + '-horror'); });
     var brasier = SON.brasier();
-    SON.alarme(16);
+    SON.alarme(4);
     var page = null, sons = {};
     function une(cle, f) { if (!sons[cle]) { sons[cle] = 1; f(); } }
-    var MASQUES = [[6.2, 'createur-m1'], [7.8, 'createur-m2'], [9.4, 'createur-m3'], [11.0, 'createur-mf']];
-    film(hote, 31.5, function (x, t, VW, VH) {
-      if (t < 3.6) {
+    // Les temps : le feu gagne, le labo, le feu partout, le journal, le
+    // noir, les tetes.
+    var T1 = 3.6, T2 = T1 + 0.4, T3 = T2 + LABO, T4 = T3 + 3, T5 = T4 + 7.5, T6 = T5 + 1.5;
+    film(hote, T6 + 4, function (x, t, VW, VH) {
+      if (t < T1) {
         var L = [['scene', 'CAM 01'], ['salle', 'CAM 02'], ['couloirE', 'CAM 11']];
         var i = Math.min(2, Math.floor(t / 1.2));
         camEnFeu(x, L[i][0], t, 0.6 + i * 0.3, VW, VH, L[i][1]);
         if ((t % 1.2) < 0.08) grain(x, t, 0.9, VW, VH);
-      } else if (t < 4.0) {
+      } else if (t < T2) {
+        // Le brasier se tait pendant le labo : on doit entendre le marteau.
+        une('silence', function () { brasier.arreter(0.4); });
         x.fillStyle = '#000'; x.fillRect(0, 0, VW, VH); grain(x, t, 0.8, VW, VH);
-      } else if (t < 15.5) {
-        // CAM 06 : le laboratoire. Il ne nous a jamais vus.
-        var u = t - 4, enFeu = t > 12.2;
-        var r = (enFeu && R.deja('labo', 'base', { feu: true })) || R.deja('labo', 'base');
-        x.fillStyle = '#000'; x.fillRect(0, 0, VW, VH);
-        if (r) {
-          var K = VH / r.h, off = (r.w * K - VW) / 2;
-          x.drawImage(r.canvas, -off, 0, r.w * K, r.h * K);
-          var k = 'createur';
-          MASQUES.forEach(function (m) { if (t >= m[0]) k = m[1]; });
-          var sec = enFeu ? hasard(-6, 6) : 0;
-          poser(x, 'labo', R.deja('labo', 'base'), 'createur', image(k), K, off, { dx: sec, dy: sec * 0.5 });
-          // Le marteau, avant les masques : un eclat sur l'etabli.
-          if (t < 6.2) {
-            var coup = Math.floor(u / 0.45);
-            une('m' + coup, function () { SON.marteau(); });
-            if ((u % 0.45) < 0.06) {
-              var pe = R.projeter('labo', [0.2, 0.95, 3.8]);
-              x.save(); x.globalCompositeOperation = 'lighter';
-              for (var s = 0; s < 14; s++) {
-                x.fillStyle = 'rgba(255,' + Math.round(180 + Math.random() * 70) + ',80,.9)';
-                x.fillRect(pe[0] * K - off + hasard(-30, 30), pe[1] * K + hasard(-30, 6), 2, 2);
-              }
-              x.restore();
-            }
-          }
-          MASQUES.forEach(function (m, i) {
-            if (t >= m[0] && t < m[0] + 0.12) {
-              une('masque' + i, function () { SON.marteau(); SON.servo(0.8); SON.regard(); });
-              x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(0, 0, VW, VH);
-            }
-          });
-          if (enFeu) {
-            une('feuLabo', function () { SON.flamme(); SON.explosion(); });
-            var k2 = Math.min(1, (t - 12.2) / 2);
-            x.globalCompositeOperation = 'multiply';
-            x.fillStyle = 'rgb(255,' + Math.round(255 - k2 * 110) + ',' + Math.round(255 - k2 * 170) + ')';
-            x.fillRect(0, 0, VW, VH);
-            x.globalCompositeOperation = 'source-over';
-            R.SCENES.labo.flammes.forEach(function (f, i) {
-              var a = R.projeter('labo', [f[0], f[1], f[2]]), b = R.projeter('labo', [f[0], f[1] + f[3] * k2, f[2]]);
-              if (!a || !b) return;
-              var hh = Math.abs(a[1] - b[1]) * K;
-              flammes(x, a[0] * K - off, a[1] * K, hh * 0.9 + 10, hh, t, i * 2.9, k2);
-            });
-            // Le feu gagne tout le bas de l'image.
-            for (var fi = 0; fi < 7; fi++) flammes(x, VW * (fi + 0.5) / 7, VH + 20, 260, 260 + k2 * 260, t, fi * 1.3, k2);
-          }
-        }
-        x.globalCompositeOperation = 'saturation';
-        x.fillStyle = 'rgba(128,128,128,.3)'; x.fillRect(0, 0, VW, VH);
-        x.globalCompositeOperation = 'source-over';
-        grain(x, t, 0.1 + (t > 14.5 ? (t - 14.5) : 0), VW, VH);
-        vignette(x, VW, VH, 0.9);
-        x.fillStyle = '#f4f4f0'; x.font = 'bold 26px Consolas, monospace'; x.textAlign = 'left';
-        x.fillText('CAM 06  LABORATOIRE', 40, 60);
-        if (t > 14.8) { x.fillStyle = 'rgba(255,170,60,' + ((t - 14.8) / 0.7).toFixed(2) + ')'; x.fillRect(0, 0, VW, VH); }
-      } else if (t < 18.5) {
+      } else if (t < T3) {
+        sceneLabo(x, t - T2, t, VW, VH, une);
+      } else if (t < T4) {
+        une('brasier2', function () { brasier = SON.brasier(); SON.alarme(3); });
         var L2 = [['comptoir', 'CAM 03'], ['boutique', 'CAM 05'], ['coinO', 'CAM 10']];
-        var j = Math.min(2, Math.floor((t - 15.5) / 1));
+        var j = Math.min(2, Math.floor((t - T3) / 1));
         camEnFeu(x, L2[j][0], t, 1.4, VW, VH, L2[j][1]);
-        if (t > 18) { x.fillStyle = 'rgba(255,220,160,' + ((t - 18) / 0.5).toFixed(2) + ')'; x.fillRect(0, 0, VW, VH); }
-      } else if (t < 26) {
+        if (t > T4 - 0.5) { x.fillStyle = 'rgba(255,220,160,' + ((t - T4 + 0.5) / 0.5).toFixed(2) + ')'; x.fillRect(0, 0, VW, VH); }
+      } else if (t < T5) {
         une('finBrasier', function () { brasier.arreter(2); });
         if (!page) page = journal(x, VW, VH, 'LA MAISON DU BURGER PART EN FUMÉE',
           'Un incendie a ravagé le restaurant de Wade and Friends dans la nuit.',
           'Les pompiers de SST-03 ont lutté jusqu’à l’aube contre les flammes. Du bâtiment, il ne reste que des murs noircis. ' +
           'Le gardien de nuit, sain et sauf, n’a pas souhaité s’exprimer. Les enquêteurs s’interrogent sur une pièce ' +
-          'inconnue des plans, derrière la cuisine, où ils disent avoir retrouvé des établis, des outils, et des dessins de masques. ' +
+          'inconnue des plans, derrière la cuisine, où ils disent avoir retrouvé des établis, des outils, et quatre masques fondus. ' +
           'Le propriétaire des lieux reste introuvable. Les quatre animatroniques de l’établissement n’ont pas été retrouvés intacts.',
           image('logo'));
         x.fillStyle = '#000'; x.fillRect(0, 0, VW, VH);
-        var kb = t < 22.5 ? 0 : Math.min(1, (t - 22.5) / 3);
+        var kb = t < T4 + 4 ? 0 : Math.min(1, (t - T4 - 4) / 3);
         if (kb > 0) une('feuJournal', function () { SON.flamme(); });
         x.save();
-        x.globalAlpha = Math.min(1, (t - 18.5) / 0.6);
+        x.globalAlpha = Math.min(1, (t - T4) / 0.6);
         x.translate(VW / 2, VH / 2 + 10); x.rotate(-0.025);
         x.drawImage(brulure(page, kb, 1.7), -410, -300);
         x.restore();
         if (kb > 0 && kb < 1) {
-          // Les braises qui montent de la page.
           x.save(); x.globalCompositeOperation = 'lighter';
           for (var e2 = 0; e2 < 30; e2++) {
             var ex = VW / 2 - 400 + Math.random() * 800, ey = VH / 2 + 300 - kb * 640 + hasard(-40, 40);
@@ -820,12 +1186,12 @@
           x.restore();
         }
         grain(x, t, 0.05, VW, VH);
-      } else if (t < 27.5) {
+      } else if (t < T6) {
         x.fillStyle = '#000'; x.fillRect(0, 0, VW, VH);
       } else {
-        tetes(x, t - 27.5, VW, VH, false);
-        noir(x, 1 - (t - 27.5) / 2, VW, VH);
-        titreFin(x, 'Good Ending', (t - 29.5) / 1.5, VW, 'rgba(255,200,120,.6)');
+        tetes(x, t - T6, VW, VH, false);
+        noir(x, 1 - (t - T6) / 2, VW, VH);
+        titreFin(x, 'Good Ending', (t - T6 - 2) / 1.5, VW, 'rgba(255,200,120,.6)');
       }
     }, retour);
   }

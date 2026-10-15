@@ -457,8 +457,8 @@
         // Les dores fuient le requin.
         if (p.dore) {
           var dx = p.x - bx, dy = p.y - by, d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 50) { p.v += (dx > 0 ? 0.08 : -0.08); p.y += dy > 0 ? 0.6 : -0.6; }
-          p.v = Math.max(-2.1, Math.min(2.1, p.v)) * 0.99;
+          if (d < 40) { p.v += (dx > 0 ? 0.05 : -0.05); p.y += dy > 0 ? 0.35 : -0.35; }
+          p.v = Math.max(-1.5, Math.min(1.5, p.v)) * 0.99;
           if (Math.abs(p.v) < 0.5) p.v = p.v < 0 ? -0.5 : 0.5;
         }
         p.x += p.v; p.y += Math.sin(p.ph) * 0.3;
@@ -468,11 +468,10 @@
           poissons.splice(i, 1);
           stp.gueule = 0.25;
           if (p.dore) { dores++; msg = { t: 'MIAM !', c: 14, fin: depuis + 1 }; air([784, 1047], 0.08); }
-          else { vies--; msg = { t: 'BEURK !', c: 12, fin: depuis + 1 }; bip(130, 0.25, 'sawtooth'); poissons.push(poisson(false)); }
+          else { msg = { t: 'BEURK !', c: 12, fin: depuis + 1 }; bip(130, 0.2, 'sawtooth'); poissons.push(poisson(false)); }
         }
       }
       if (dores >= 3) return 'gagne';
-      if (vies <= 0) return 'perdu';
     }
     function dessin() {
       x.fillStyle = EGA[1]; x.fillRect(0, 0, W, H);
@@ -499,7 +498,6 @@
       texte(x, 'STEPHEN', 4, 6, EGA[11]);
       texte(x, 'DORES', 120, 6, EGA[14]);
       for (i = 0; i < 3; i++) { x.fillStyle = i < dores ? EGA[14] : EGA[8]; x.fillRect(156 + i * 9, 7, 6, 5); }
-      for (i = 0; i < 5; i++) { x.fillStyle = i < vies ? EGA[12] : EGA[8]; x.fillRect(250 + i * 12, 6, 3, 2); x.fillRect(254 + i * 12, 6, 3, 2); x.fillRect(250 + i * 12, 8, 7, 2); x.fillRect(251 + i * 12, 10, 5, 1); x.fillRect(252 + i * 12, 11, 3, 1); }
       if (msg && depuis < msg.fin) centre(x, msg.t, 90, EGA[msg.c], 2);
     }
     function titre(t) {
@@ -508,7 +506,7 @@
       centre(x, 'ET LES POISSONS DORES', 68, EGA[14], 2);
       x.drawImage(Math.floor(t * 2) % 2 ? REQ : REQg, 148, 100);
       centre(x, 'MANGE LES 3 POISSONS DORES', 132, EGA[15]);
-      centre(x, 'PAS LES AUTRES.', 144, EGA[12]);
+      centre(x, 'LES AUTRES SONT DEGOUTANTS.', 144, EGA[12]);
       centre(x, 'FLECHES : NAGER', 158, EGA[7]);
     }
     function victoire(t) { centre(x, 'BON APPETIT STEPHEN !', 110, EGA[14], 1); }
@@ -526,9 +524,9 @@
     function debut() {
       stp = { x: 152, y: 96, dir: 1, anim: 0 };
       moutons = [];
-      for (var i = 0; i < 48; i++) moutons.push(mouton(false));
+      for (var i = 0; i < 26; i++) moutons.push(mouton(false));
       for (i = 0; i < 5; i++) moutons.push(mouton(true));
-      pris = 0; temps = 90; msg = null; depuis = 0; eclats = [];
+      pris = 0; temps = 120; msg = null; depuis = 0; eclats = [];
     }
     function mouton(em) {
       return { x: 20 + Math.random() * 280, y: 30 + Math.random() * 150, vx: 0, vy: 0, t: Math.random() * 3,
@@ -537,7 +535,7 @@
     function pas(dt) {
       depuis += dt; temps -= dt;
       var ax = (T.droite ? 1 : 0) - (T.gauche ? 1 : 0), ay = (T.bas ? 1 : 0) - (T.haut ? 1 : 0);
-      stp.x = Math.max(4, Math.min(W - 18, stp.x + ax * 1.6)); stp.y = Math.max(24, Math.min(H - 16, stp.y + ay * 1.6));
+      stp.x = Math.max(4, Math.min(W - 18, stp.x + ax * 2.1)); stp.y = Math.max(24, Math.min(H - 16, stp.y + ay * 2.1));
       if (ax) stp.dir = ax;
       if (ax || ay) stp.anim += dt * 8;
       for (var i = moutons.length - 1; i >= 0; i--) {
@@ -546,7 +544,7 @@
         if (m.t <= 0) { m.t = hasard(0.8, 3); var a = Math.random() * 6.3, v = Math.random() < 0.4 ? 0 : 0.4; m.vx = Math.cos(a) * v; m.vy = Math.sin(a) * v; }
         m.fuite = Math.max(0, m.fuite - dt);
         var dx = m.x - stp.x, dy = m.y - stp.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
-        if (m.fuite > 0 || (m.em && d < 28)) { m.vx = dx / d * 1.2; m.vy = dy / d * 1.2; }
+        if (m.fuite > 0) { m.vx = dx / d * 1.2; m.vy = dy / d * 1.2; }
         m.x = Math.max(6, Math.min(W - 16, m.x + m.vx)); m.y = Math.max(26, Math.min(H - 14, m.y + m.vy));
         if (Math.abs(m.x - stp.x) < 10 && Math.abs(m.y - stp.y) < 9) {
           if (m.em) {
@@ -555,8 +553,8 @@
             for (var k = 0; k < 14; k++) eclats.push({ x: m.x + 6, y: m.y + 4, vx: hasard(-1.5, 1.5), vy: hasard(-2, 0.5), fin: depuis + 0.8 });
             air([880, 1175, 1568], 0.07);
           } else if (m.fuite <= 0) {
-            m.fuite = 1.2; temps -= 5;
-            msg = { t: 'BEEE ! -5 S', c: 12, fin: depuis + 1 };
+            m.fuite = 1.2; temps -= 2;
+            msg = { t: 'BEEE ! -2 S', c: 12, fin: depuis + 1 };
             bip(300, 0.08); setTimeout(function () { bip(280, 0.12); }, 90);
           }
         }
@@ -582,9 +580,12 @@
         // La laine d'emeraude : quelques boucles vertes, a peine visibles,
         // et un eclat de temps en temps.
         if (m.em) {
+          // Une laine vert d'eau, des boucles d'emeraude, et un eclat
+          // qui revient souvent.
+          x.fillStyle = '#bfffcf'; x.fillRect(X + 1, Y + 1, 10, 7);
           x.fillStyle = EGA[10];
-          x.fillRect(X + 2, Y + 2, 1, 1); x.fillRect(X + 7, Y + 4, 1, 1); x.fillRect(X + 4, Y + 6, 1, 1);
-          if (Math.floor(depuis * 5 + m.ph) % 14 === 0) { x.fillStyle = EGA[15]; x.fillRect(X + 5, Y - 3, 1, 3); x.fillRect(X + 4, Y - 2, 3, 1); }
+          x.fillRect(X + 2, Y + 2, 2, 1); x.fillRect(X + 7, Y + 3, 2, 1); x.fillRect(X + 4, Y + 5, 2, 1); x.fillRect(X + 8, Y + 6, 1, 1);
+          if (Math.floor(depuis * 5 + m.ph) % 5 === 0) { x.fillStyle = EGA[15]; x.fillRect(X + 5, Y - 4, 1, 4); x.fillRect(X + 3, Y - 2, 5, 1); }
         } else {
           x.fillStyle = EGA[7]; x.fillRect(X + 3, Y + 3, 1, 1); x.fillRect(X + 8, Y + 5, 1, 1);
         }
@@ -613,7 +614,7 @@
       centre(x, 'ET LES MOUTONS D\'EMERAUDE', 68, EGA[10], 2);
       x.drawImage(LOUP[0], 152, 96);
       centre(x, 'TROUVE LES 5 MOUTONS D\'EMERAUDE', 128, EGA[15]);
-      centre(x, 'LES AUTRES TE FONT PERDRE DU TEMPS.', 140, EGA[12]);
+      centre(x, 'ILS ONT LA LAINE VERTE ET BRILLENT.', 140, EGA[10]);
       centre(x, 'FLECHES : MARCHER', 156, EGA[7]);
     }
     function victoire(t) { centre(x, 'LE TROUPEAU EST A TOI, WADE.', 110, EGA[10], 1); }

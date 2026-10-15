@@ -1726,6 +1726,21 @@
       if (etat.nuit > 1) option('Continuer', 'Nuit ' + etat.nuit, function () { lancer(etat.nuit); });
       if (etat.faites.indexOf(5) !== -1) option('6e nuit', null, function () { lancer(6); });
       if (etat.faites.indexOf(6) !== -1) option('Nuit personnalisée', null, personnalisee);
+      // Le mode essai (essai-wade.html) : toutes les nuits, sans les avoir
+      // jouees, et les animatroniques a regagner.
+      // En local (localhost), on est toujours en mode essai.
+      var essai = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+      try { essai = essai || sessionStorage.getItem('wade.essai') === '1'; } catch (er) {}
+      if (essai) {
+        opts.textContent = '';
+        [1, 2, 3, 4, 5, 6].forEach(function (n) {
+          var sous = { 2: 'Charlie', 3: 'Stephen', 4: 'Faith', 5: 'Wade', 6: 'Les deux fins' }[n];
+          option(NOMS_NUIT[n], sous ? 'Secret : ' + sous : null, function () { lancer(n); });
+        });
+        option('Nuit personnalisée', null, personnalisee);
+        var n4 = DP.DINDERS.filter(function (d) { return d.collection === 'wade' && DP.has(d.id); }).length;
+        option('Retirer les animatroniques', n4 + ' / 4 dans la collection', function () { DP.wadeOublier(); menu(); });
+      }
       gauche.appendChild(opts);
       box.appendChild(gauche);
 
