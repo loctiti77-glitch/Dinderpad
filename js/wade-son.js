@@ -42,7 +42,7 @@
       var nom = k === 'tous' ? 'cri' : k === 'regard' ? 'son' : 'cri-' + k;
       BRUTS[k] = (function essai(ext) {
         if (!ext.length) return Promise.reject(0);
-        return fetch(DOSSIER_SONS + nom + '.' + ext[0]).then(function (r) {
+        return fetch(DOSSIER_SONS + nom + '.' + ext[0] + '?v=2').then(function (r) {
           if (!r.ok) throw 0;
           return r.arrayBuffer();
         }).catch(function () { return essai(ext.slice(1)); });
