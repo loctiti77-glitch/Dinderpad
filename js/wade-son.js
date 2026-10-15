@@ -33,21 +33,29 @@
     // ou cri (pour tous), en mp3, ogg, wav ou m4a. Sinon, le cri de synthese.
     var DOSSIER_SONS = 'assets/games/wade/sons/';
     var CRIS = {}, crisCherches = false;
+    // Le telechargement part tout de suite, des que le script est charge :
+    // le fichier est lourd, il doit etre la avant le premier jumpscare.
+    // Le decodage attend, lui, le contexte audio (le premier clic).
+    var BRUTS = {};
+    // regard : le son d'un animatronique qui nous fixe depuis une camera.
+    ['wade', 'stephen', 'faith', 'charlie', 'tous', 'regard'].forEach(function (k) {
+      var nom = k === 'tous' ? 'cri' : k === 'regard' ? 'son' : 'cri-' + k;
+      BRUTS[k] = (function essai(ext) {
+        if (!ext.length) return Promise.reject(0);
+        return fetch(DOSSIER_SONS + nom + '.' + ext[0]).then(function (r) {
+          if (!r.ok) throw 0;
+          return r.arrayBuffer();
+        }).catch(function () { return essai(ext.slice(1)); });
+      })(['mp3', 'ogg', 'wav', 'm4a']);
+      BRUTS[k].catch(function () {});
+    });
     function chercherCris() {
       if (crisCherches || !ac) return;
       crisCherches = true;
-      // regard : le son d'un animatronique qui nous fixe depuis une camera.
-      ['wade', 'stephen', 'faith', 'charlie', 'tous', 'regard'].forEach(function (k) {
-        var nom = k === 'tous' ? 'cri' : k === 'regard' ? 'son' : 'cri-' + k;
-        (function essai(ext) {
-          if (!ext.length) return;
-          fetch(DOSSIER_SONS + nom + '.' + ext[0]).then(function (r) {
-            if (!r.ok) throw 0;
-            return r.arrayBuffer();
-          }).then(function (b) {
-            return new Promise(function (ok_, ko) { ac.decodeAudioData(b, ok_, ko); });
-          }).then(function (buf) { CRIS[k] = buf; }).catch(function () { essai(ext.slice(1)); });
-        })(['mp3', 'ogg', 'wav', 'm4a']);
+      Object.keys(BRUTS).forEach(function (k) {
+        BRUTS[k].then(function (b) {
+          return new Promise(function (ok_, ko) { ac.decodeAudioData(b.slice(0), ok_, ko); });
+        }).then(function (buf) { CRIS[k] = buf; }).catch(function () {});
       });
     }
 
