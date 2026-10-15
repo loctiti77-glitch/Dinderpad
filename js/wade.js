@@ -1739,7 +1739,7 @@
         });
         option('Nuit personnalisée', null, personnalisee);
         var n4 = DP.DINDERS.filter(function (d) { return d.collection === 'wade' && DP.has(d.id); }).length;
-        option('Retirer les animatroniques', n4 + ' / 4 dans la collection', function () { DP.wadeOublier(); menu(); });
+        option('Retirer les animatroniques', n4 + ' / 5 dans la collection', function () { DP.wadeOublier(); menu(); });
       }
       gauche.appendChild(opts);
       box.appendChild(gauche);

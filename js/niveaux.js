@@ -75,7 +75,7 @@
       compte: function () { return window.ARTEFACTS ? window.ARTEFACTS.trouves().length : 0; } },
     { id: 'objets', nom: 'Objets trouvés', pts: 150,
       compte: function () {
-        return [DP.aLaCanne(), DP.aLArme(), DP.aLaTelecommande()].filter(Boolean).length;
+        return [DP.aLaCanne(), DP.aLArme(), DP.aLaTelecommande(), DP.aLeTelescope && DP.aLeTelescope()].filter(Boolean).length;
       } },
     // Chaque gardien vaut son poids : 100 XP pour celui de Mercure,
     // 1 400 pour celui de Neptune.
@@ -796,6 +796,7 @@
   surveiller('prendreCanne', 'Objet trouvé : la canne à pêche', 8);
   surveiller('prendreArme', 'Objet trouvé : le Pistolet Lumithique', 8);
   surveiller('prendreTelecommande', 'Objet trouvé : le Téléportail', 8);
+  surveiller('prendreTelescope', 'Objet trouvé : le Télescope', 8);
 
   window.VIEWS = window.VIEWS || {};
   window.VIEWS['niveaux'] = { title: 'Niveaux', render: viewNiveaux };

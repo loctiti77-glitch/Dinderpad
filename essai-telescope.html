@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Essai : avant le Télescope</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center;
+         justify-content: center; background: #02030a; color: #9ff4ff;
+         font-family: "Courier New", Courier, monospace; font-size: 17px;
+         line-height: 1.6; text-align: center; }
+  ul { list-style: none; padding: 0; margin: 14px 0 0; color: #9fb4c4; font-size: 14px; }
+</style>
+</head>
+<body>
+<div>
+  <p id="etat">Préparation du profil…</p>
+  <ul id="detail"></ul>
+</div>
+<script src="js/dinderpad.js?v=20261016b"></script>
+<script src="js/game-palettes.js"></script>
+<script src="js/game-sprites.js"></script>
+<script src="js/game-monde.js"></script>
+<script src="js/odyssey-vie.js"></script>
+<script src="js/odyssey-boss.js"></script>
+<script src="js/odyssey-gardiens.js"></script>
+<script src="js/odyssey-stellaire.js"></script>
+<script>
+// Page d'essai, en local seulement : le profil arrive au bout du systeme
+// stellaire, gardien d'Ignis vaincu. Les failles ne sont pas touchees :
+// il en faut deux contenues pour que le Telescope arrive.
+(function () {
+  var L = [], B = window.BOSS, O = window.ODYVIE;
+  if (DP.ouvrirStellaire) DP.ouvrirStellaire();
+  L.push('Système stellaire ouvert');
+  if (O) O.astresDe('stellaire').forEach(function (a) { DP.noterAstre(a.id); });
+  L.push('Les 8 mondes ST visités');
+  if (B && B.GARDIENS['soleil-noye'] && !B.vaincu('soleil-noye')) DP.compterExploit(B.exploitDe(B.GARDIENS['soleil-noye']));
+  L.push('Le Soleil Noyé (gardien d’Ignis) : ' + (B && B.vaincu('soleil-noye') ? 'vaincu' : 'introuvable'));
+  L.push('Failles contenues : ' + DP.faillesContenues() + ' / 2');
+  document.getElementById('etat').textContent = 'Profil prêt.';
+  var ul = document.getElementById('detail');
+  L.forEach(function (t) { var li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+  setTimeout(function () { location.replace('index.html'); }, 3500);
+})();
+</script>
+</body>
+</html>

@@ -4030,3 +4030,217 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
   61%      { opacity: 1; }
   70%, 100% { opacity: 0; }
 }
+
+/* ==========================================================
+   Le Telescope
+   Une vue du ciel, plein ecran : les deux systemes, et le monde en
+   grand. L'interface est un affichage d'instrument : des coins de
+   cadre, des lignes fines, du cyan.
+   ========================================================== */
+
+.tel {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #02030a;
+  color: #d8f6ff;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  line-height: 1.25;
+}
+.tel-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.tel-ui { position: absolute; inset: 0; pointer-events: none; }
+.tel-ui > * { pointer-events: auto; }
+
+.tel-tete {
+  position: absolute;
+  top: calc(14 * var(--px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: calc(18 * var(--px));
+  z-index: 3;
+}
+.tel-titre {
+  font-size: calc(20 * var(--px));
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: #9ff4ff;
+  text-shadow: 0 0 calc(10 * var(--px)) rgba(120, 240, 255, .6);
+}
+.tel-onglets { display: flex; gap: calc(6 * var(--px)); }
+.tel-onglet {
+  padding: calc(6 * var(--px)) calc(14 * var(--px));
+  border: calc(1.5 * var(--px)) solid rgba(120, 220, 255, .35);
+  border-radius: calc(3 * var(--px));
+  background: rgba(10, 30, 50, .55);
+  color: #a8d8ec;
+  font: 600 calc(13 * var(--px)) / 1 "Segoe UI", sans-serif;
+  letter-spacing: .08em;
+  cursor: pointer;
+}
+.tel-onglet.is-actif { border-color: #7ff0ff; color: #fff; background: rgba(30, 110, 150, .55); box-shadow: 0 0 calc(12 * var(--px)) rgba(120, 240, 255, .4); }
+.tel.is-voyage .tel-tete, .tel.is-planete .tel-tete, .tel.is-voyage .tel-aide, .tel.is-planete .tel-aide { opacity: 0; pointer-events: none; }
+
+.tel-aide {
+  position: absolute;
+  bottom: calc(14 * var(--px));
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: calc(13 * var(--px));
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(160, 220, 240, .6);
+  pointer-events: none;
+}
+
+/* L'objectif qui s'ouvre, a l'arrivee. */
+.tel-iris {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: #000;
+  -webkit-mask-image: radial-gradient(circle at 50% 54%, transparent 0, transparent var(--iris, 0%), #000 calc(var(--iris, 0%) + 2%));
+  mask-image: radial-gradient(circle at 50% 54%, transparent 0, transparent var(--iris, 0%), #000 calc(var(--iris, 0%) + 2%));
+  animation: tel-iris 1.2s cubic-bezier(.6, 0, .2, 1) forwards;
+}
+@property --iris { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+@keyframes tel-iris { from { --iris: 0%; } to { --iris: 120%; visibility: hidden; } }
+
+/* Changer de systeme : un balayage. */
+.tel.is-bascule .tel-cv { animation: tel-bascule .5s ease both; }
+@keyframes tel-bascule { from { filter: brightness(2.5) blur(4px); } to { filter: none; } }
+
+/* ---------- La fiche d'un monde ---------- */
+.tel-panneau {
+  position: absolute;
+  right: calc(26 * var(--px));
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(310 * var(--px));
+  padding: calc(18 * var(--px)) calc(18 * var(--px)) calc(16 * var(--px));
+  background:
+    repeating-linear-gradient(0deg, rgba(120, 240, 255, .035) 0, rgba(120, 240, 255, .035) 1px, transparent 1px, transparent 3px),
+    linear-gradient(160deg, rgba(10, 40, 60, .92), rgba(4, 12, 22, .94));
+  border: calc(1.5 * var(--px)) solid rgba(120, 230, 255, .45);
+  clip-path: polygon(0 calc(14 * var(--px)), calc(14 * var(--px)) 0, 100% 0, 100% calc(100% - 14 * var(--px)), calc(100% - 14 * var(--px)) 100%, 0 100%);
+  box-shadow: 0 0 calc(30 * var(--px)) rgba(80, 200, 255, .25);
+  z-index: 4;
+  animation: tel-ouvre .35s cubic-bezier(.2, .9, .3, 1.2) both;
+}
+.tel-panneau--g { right: auto; left: calc(150 * var(--px)); }
+@keyframes tel-ouvre { from { opacity: 0; transform: translate(calc(40 * var(--px)), -50%) scaleY(.2); } to { opacity: 1; transform: translateY(-50%); } }
+.tel-p-code { display: block; font-size: calc(11 * var(--px)); letter-spacing: .18em; color: #6fd8f0; text-transform: uppercase; }
+.tel-p-nom { display: block; margin-top: calc(4 * var(--px)); font-size: calc(30 * var(--px)); letter-spacing: .04em; color: #fff; text-shadow: 0 0 calc(10 * var(--px)) rgba(120, 240, 255, .5); }
+.tel-p-sous { display: block; margin-bottom: calc(8 * var(--px)); font-size: calc(13 * var(--px)); font-style: italic; color: #a8d8ec; }
+.tel-p-texte { min-height: calc(70 * var(--px)); margin: 0 0 calc(10 * var(--px)); font: calc(12.5 * var(--px)) / 1.4 Consolas, monospace; color: #c8eef8; }
+.tel-p-ligne {
+  display: flex;
+  justify-content: space-between;
+  padding: calc(4 * var(--px)) 0;
+  border-top: 1px solid rgba(120, 220, 255, .15);
+  font-size: calc(12 * var(--px));
+  color: #8ac4d8;
+}
+.tel-p-ligne strong { color: #e8fbff; }
+.tel-go {
+  width: 100%;
+  margin-top: calc(12 * var(--px));
+  padding: calc(10 * var(--px));
+  border: 0;
+  background: linear-gradient(90deg, #12a8d8, #7ff0ff);
+  color: #02121c;
+  font: 900 calc(22 * var(--px)) / 1 "Segoe UI", sans-serif;
+  letter-spacing: .2em;
+  cursor: pointer;
+  clip-path: polygon(calc(10 * var(--px)) 0, 100% 0, calc(100% - 10 * var(--px)) 100%, 0 100%);
+  animation: tel-go 1.4s ease-in-out infinite;
+}
+.tel-go:hover, .tel-go:focus-visible { filter: brightness(1.2); outline: none; }
+@keyframes tel-go { 50% { filter: brightness(1.35); } }
+.tel-fermer {
+  position: absolute;
+  top: calc(8 * var(--px));
+  right: calc(10 * var(--px));
+  border: 0;
+  background: none;
+  color: #7fc8dc;
+  font-size: calc(16 * var(--px));
+  cursor: pointer;
+}
+
+/* ---------- Le monde en grand, et ses lieux ---------- */
+.tel-lieux { position: absolute; inset: 0; pointer-events: none; }
+.tel-planete-titre {
+  position: absolute;
+  top: calc(16 * var(--px));
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  animation: tel-apparait .5s .2s both;
+}
+@keyframes tel-apparait { from { opacity: 0; transform: translate(-50%, calc(-10 * var(--px))); } to { opacity: 1; transform: translateX(-50%); } }
+.tel-planete-titre strong { display: block; font-size: calc(34 * var(--px)); letter-spacing: .14em; text-transform: uppercase; text-shadow: 0 0 calc(14 * var(--px)) rgba(120, 240, 255, .6); }
+.tel-col {
+  position: absolute;
+  top: calc(80 * var(--px));
+  bottom: calc(70 * var(--px));
+  width: calc(270 * var(--px));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: calc(10 * var(--px));
+}
+.tel-col--g { left: calc(150 * var(--px)); }
+.tel-col--d { right: calc(28 * var(--px)); }
+.tel-lieu {
+  padding: calc(9 * var(--px)) calc(12 * var(--px));
+  background: linear-gradient(160deg, rgba(10, 40, 60, .9), rgba(4, 12, 22, .9));
+  border: calc(1.2 * var(--px)) solid rgba(120, 230, 255, .4);
+  border-left-width: calc(4 * var(--px));
+  pointer-events: auto;
+  animation: tel-lieu .3s cubic-bezier(.2, .9, .3, 1.2) both;
+}
+.tel-lieu--d { border-left-width: calc(1.2 * var(--px)); border-right-width: calc(4 * var(--px)); }
+@keyframes tel-lieu {
+  0% { opacity: 0; transform: scaleX(.1); filter: brightness(3); }
+  60% { opacity: 1; transform: scaleX(1.03); }
+  100% { transform: none; filter: none; }
+}
+.tel-lieu-num { display: block; font-size: calc(10 * var(--px)); letter-spacing: .16em; color: #6fd8f0; text-transform: uppercase; }
+.tel-lieu-nom { display: block; margin: calc(2 * var(--px)) 0 calc(6 * var(--px)); font-size: calc(15 * var(--px)); color: #fff; }
+.tel-lieu-dinders { display: flex; flex-wrap: wrap; gap: calc(6 * var(--px)); }
+.tel-dinder { display: flex; align-items: center; gap: calc(5 * var(--px)); font-size: calc(12 * var(--px)); color: #e8fbff; }
+.tel-dinder img {
+  width: calc(30 * var(--px));
+  height: calc(30 * var(--px));
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(120, 230, 255, .12);
+  border: calc(1.5 * var(--px)) solid rgba(120, 230, 255, .5);
+}
+.tel-dinder.is-inconnu img { filter: brightness(0); border-color: rgba(120, 230, 255, .25); }
+.tel-dinder.is-inconnu { color: #6a8a98; }
+.tel-lieu-vide { font-size: calc(12 * var(--px)); font-style: italic; color: #6a9aac; }
+.tel-lieu-note { margin: calc(6 * var(--px)) 0 0; font-size: calc(11.5 * var(--px)); font-style: italic; color: #9cc8d8; }
+.tel-retour {
+  position: absolute;
+  left: 50%;
+  bottom: calc(16 * var(--px));
+  transform: translateX(-50%);
+  padding: calc(8 * var(--px)) calc(18 * var(--px));
+  border: calc(1.5 * var(--px)) solid rgba(120, 230, 255, .5);
+  background: rgba(10, 30, 50, .7);
+  color: #cdf6ff;
+  font: 600 calc(14 * var(--px)) / 1 "Segoe UI", sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tel-iris { animation-duration: .01s; }
+  .tel-go, .tel.is-bascule .tel-cv { animation: none; }
+  .tel-panneau, .tel-lieu { animation-duration: .01s; }
+}

@@ -350,7 +350,7 @@
   //  La revelation d'un animatronique
   // ==========================================================
 
-  function revelation(hote, id, ensuite) {
+  function revelation(hote, id, ensuite, bouton) {
     var d = DP.byId(id);
     var deja = DP.has(id);
     if (!deja) { DP.collect(id); if (DP.markNew) DP.markNew(id); }
@@ -371,7 +371,7 @@
     SON.sursaut();
     setTimeout(function () { SON.carillon(); }, reduit ? 100 : 1300);
     setTimeout(function () {
-      var b = el('button', 'wf-gros-btn', 'REPRENDRE LA NUIT');
+      var b = el('button', 'wf-gros-btn', bouton || 'REPRENDRE LA NUIT');
       b.type = 'button';
       b.addEventListener('click', function () {
         r.classList.add('is-sortie');
@@ -668,7 +668,7 @@
       dessin(x, t, VW, VH);
       if (t > duree && !bouton) {
         bouton = true;
-        var b = el('button', 'wf-gros-btn wff-btn', 'MENU');
+        var b = el('button', 'wf-gros-btn wff-btn', texteFin || 'MENU');
         b.type = 'button';
         b.addEventListener('click', function () { fini = true; box.remove(); retour(); });
         box.appendChild(b);
@@ -950,6 +950,8 @@
     var x = SCENE_LABO.getContext('2d');
     var r0 = R.deja('labo', 'base'), r = (o.feu && R.deja('labo', 'base', { feu: true })) || r0;
     x.fillStyle = '#000'; x.fillRect(0, 0, VW, VH);
+    // Pas encore calcule : un ecran noir, et un point de mire au centre.
+    SCENE_LABO.ou = function () { return [VW / 2, VH / 2]; };
     if (!r0) return SCENE_LABO;
     var K = VH / r.h, off = (r.w * K - VW) / 2, sc = R.SCENES.labo;
     x.drawImage(r.canvas, -off, 0, r.w * K, r.h * K);
@@ -1193,7 +1195,10 @@
         noir(x, 1 - (t - T6) / 2, VW, VH);
         titreFin(x, 'Good Ending', (t - T6 - 2) / 1.5, VW, 'rgba(255,200,120,.6)');
       }
-    }, retour);
+    }, function () {
+      // Celui qui les a faits survit a l'incendie : il rejoint la collection.
+      revelation(hote, 'their-creator', retour, 'MENU');
+    }, 'CONTINUER');
   }
 
   // ---------- La mauvaise fin ----------

@@ -141,6 +141,28 @@
       { nom: 'Ruée du Couloir',     degats: [74, 96], recul: 14 },
       { nom: 'Crochet Rouillé',     degats: [34, 46], brulure: 10 }
     ],
+    // Wade and Friends : les animatroniques de la Maison du Burger, en
+    // rarete Threat.
+    'wade-wolhunter': [
+      { nom: 'Hurlement de Minuit', degats: [70, 92], etourdit: 0.4 },
+      { nom: 'Griffes du Loup',     degats: [22, 30], coups: 3 }
+    ],
+    'stephen-sharkodon': [
+      { nom: 'Ruée du Couloir',     degats: [84, 108], recul: 14 },
+      { nom: 'Mâchoire d’Acier',    degats: [40, 54], drain: true }
+    ],
+    'faith-faisandoir': [
+      { nom: 'Rafale de Plumes',    degats: [16, 22], coups: 4 },
+      { nom: 'Bec Plongeant',       degats: [52, 70], faiblesse: 0.4 }
+    ],
+    'their-creator': [
+      { nom: 'Fauteuil Volant',     degats: [96, 124], recul: 14 },
+      { nom: 'Masque Suivant',      degats: [44, 58], soinTous: 40, bouclier: 30 }
+    ],
+    'charlie-capsule': [
+      { nom: 'Steak Brûlant',       degats: [48, 64], brulure: 10 },
+      { nom: 'Câlin de Capybara',   degats: [20, 28], soinTous: 30 }
+    ],
     // Le secret : il n'est jamais vraiment la, et ca se paie. Les plus
     // grosses attaques du roster.
     'golden-freddy': [

@@ -128,7 +128,12 @@
     { id: 'wade-wolhunter',                    name: 'Wade',          form: 'Wolhunter',         rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', desc: '' },
     { id: 'stephen-sharkodon',                 name: 'Stephen',       form: 'Sharkodon',         rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', desc: '' },
     { id: 'faith-faisandoir',                  name: 'Faith',         form: 'Faisandoir',        rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', desc: '' },
-    { id: 'charlie-capsule',                   name: 'Charlie',       form: 'Capsule',           rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', desc: '' }
+    { id: 'charlie-capsule',                   name: 'Charlie',       form: 'Capsule',           rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', desc: '' },
+    // Celui qui les a faits. Il ne se gagne qu'a la bonne fin de Wade and
+    // Friends, quand le batiment brule : seule sa version au fauteuil
+    // entre dans la collection. "secret" : sa case ne doit pas annoncer
+    // qu'il existe.
+    { id: 'their-creator',                     name: 'Their Creator', form: '',                  rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', secret: true, desc: '' }
   ];
 
   // Le palier de l'ancien pass Spookinder qui rendait chacun d'eux : un
@@ -193,6 +198,13 @@
                  : 'Aucune destination connue';
       },
       view: 'teleportail', acquis: function () { return aLaTelecommande(); } },
+    // Le Telescope : il arrive une fois deux failles contenues et le
+    // gardien d'Ignis vaincu (js/telescope.js). Il montre les deux systemes.
+    { id: 'telescope', name: 'Télescope',
+      sub: 'Pour voir plus loin que le Téléportail',
+      img: 'assets/items/telescope.webp',
+      detail: function () { return stellaire() ? 'Deux systèmes en vue' : 'Le ciel, de plus près'; },
+      view: 'telescope', acquis: function () { return aLeTelescope(); } },
     { id: 'livret', name: 'Livret de cartes',
       sub: 'Dinder’s Incommon Omniverse',
       img: 'assets/items/cardbook.webp',
@@ -1248,6 +1260,15 @@
 
   function aLaTelecommande() { return !!me().telecommande; }
 
+  function aLeTelescope() { return !!me().telescope; }
+  function prendreTelescope() {
+    var p = me();
+    if (p.telescope) return false;
+    p.telescope = true;
+    save();
+    return true;
+  }
+
   function prendreTelecommande() {
     var p = me();
     if (p.telecommande) return false;
@@ -1596,6 +1617,7 @@
     equiperRevetement: equiperRevetement,
     requins: requins, noterRequin: noterRequin,
     aLaTelecommande: aLaTelecommande, prendreTelecommande: prendreTelecommande,
+    aLeTelescope: aLeTelescope, prendreTelescope: prendreTelescope,
     chapitre: chapitre, ouvrirChapitre: ouvrirChapitre,
     astresVus: astresVus, aVuAstre: aVuAstre, noterAstre: noterAstre,
     stellaire: stellaire, ouvrirStellaire: ouvrirStellaire,

@@ -20,7 +20,7 @@
   // Les jeux prennent toute la fenetre : le chassis du pad s'efface et
   // son ecran s'agrandit jusqu'aux bords. Les autres rubriques restent
   // dans l'appareil.
-  var PLEIN_ECRAN = { 'founder-war': true, 'peche': true, 'odyssee': true, 'wade': true };
+  var PLEIN_ECRAN = { 'founder-war': true, 'peche': true, 'odyssee': true, 'wade': true, 'telescope': true };
 
   function pleinEcran(oui) {
     if (body.classList.contains('is-plein') === oui) return;

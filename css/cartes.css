@@ -183,6 +183,98 @@ button.carte { transition: transform .15s ease, box-shadow .15s ease; }
   color: #fff;
 }
 
+/* ---------- Le fond du texte, selon la famille ----------
+   Seule la partie basse change : les attaques, la defense et la
+   description posent sur un panneau propre a ce que la carte represente.
+   L'illustration, elle, garde son cadre de rarete. */
+
+.carte-corps {
+  position: relative;
+  margin: 0 -.05em;
+  padding: .32em .34em .2em;
+  border-radius: .45em;
+  background: var(--fond, rgba(255, 255, 255, .03));
+  box-shadow: inset 0 0 0 .08em var(--lisere, rgba(255, 255, 255, .08)), inset 0 .6em 1.2em rgba(0, 0, 0, .35);
+  isolation: isolate;
+}
+/* Le motif, par-dessus le fond, sous le texte. */
+.carte-corps::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--motif, none);
+  opacity: .9;
+  pointer-events: none;
+}
+.carte-corps .carte-ligne { background: var(--ligne, rgba(255, 255, 255, .06)); }
+
+/* Dinders : l'omnivers, un violet profond seme d'etoiles. */
+.carte[data-famille="dinders"] {
+  --fond: radial-gradient(120% 90% at 85% 0%, #4a2a8a 0%, transparent 60%),
+          linear-gradient(180deg, #24123f 0%, #120a24 100%);
+  --motif: radial-gradient(1px 1px at 12% 22%, #fff 50%, transparent 51%),
+           radial-gradient(1px 1px at 38% 70%, #e8d8ff 50%, transparent 51%),
+           radial-gradient(1.5px 1.5px at 66% 34%, #fff 50%, transparent 51%),
+           radial-gradient(1px 1px at 84% 80%, #cdb8ff 50%, transparent 51%),
+           radial-gradient(1px 1px at 52% 12%, #fff 50%, transparent 51%),
+           radial-gradient(1px 1px at 22% 88%, #fff 50%, transparent 51%),
+           radial-gradient(60% 40% at 30% 100%, rgba(255, 120, 220, .16), transparent 70%);
+  --lisere: rgba(190, 150, 255, .35);
+  --ligne: rgba(170, 130, 255, .12);
+}
+.carte[data-famille="dinders"] .carte-ligne--atq { border-left-color: #ff7ad8; }
+.carte[data-famille="dinders"] .carte-texte { color: #d8ccf0; }
+
+/* Creatures : la vie d'une autre planete, verte et bioluminescente. */
+.carte[data-famille="creatures"] {
+  --fond: radial-gradient(90% 70% at 20% 100%, rgba(60, 220, 160, .28), transparent 70%),
+          linear-gradient(180deg, #0c2a24 0%, #06140f 100%);
+  --motif: radial-gradient(circle at 18% 30%, transparent .5em, rgba(110, 255, 200, .14) .55em, transparent .62em),
+           radial-gradient(circle at 70% 62%, transparent .8em, rgba(110, 255, 200, .12) .86em, transparent .94em),
+           radial-gradient(circle at 46% 86%, transparent .4em, rgba(180, 255, 120, .16) .45em, transparent .52em),
+           radial-gradient(circle at 88% 18%, transparent .35em, rgba(110, 255, 200, .14) .4em, transparent .46em),
+           radial-gradient(.25em .25em at 30% 60%, rgba(160, 255, 210, .5), transparent 70%),
+           radial-gradient(.2em .2em at 78% 40%, rgba(160, 255, 210, .45), transparent 70%);
+  --lisere: rgba(90, 240, 180, .35);
+  --ligne: rgba(90, 240, 180, .1);
+}
+.carte[data-famille="creatures"] .carte-ligne--atq { border-left-color: #8cff5a; }
+.carte[data-famille="creatures"] .carte-texte { color: #bfe8d8; }
+
+/* Poissons : l'eau des profondeurs, des vagues et des bulles. */
+.carte[data-famille="poissons"] {
+  --fond: linear-gradient(180deg, #0d3a5c 0%, #072238 55%, #03101c 100%);
+  --motif: repeating-radial-gradient(ellipse 2.2em .6em at 50% -.2em, transparent 0 .32em, rgba(140, 210, 255, .1) .34em .4em, transparent .42em .7em),
+           radial-gradient(circle at 14% 74%, transparent .14em, rgba(200, 240, 255, .45) .16em, transparent .22em),
+           radial-gradient(circle at 20% 52%, transparent .08em, rgba(200, 240, 255, .4) .1em, transparent .15em),
+           radial-gradient(circle at 86% 64%, transparent .18em, rgba(200, 240, 255, .4) .2em, transparent .26em),
+           radial-gradient(circle at 80% 36%, transparent .1em, rgba(200, 240, 255, .35) .12em, transparent .17em),
+           linear-gradient(115deg, transparent 30%, rgba(160, 220, 255, .08) 45%, transparent 60%);
+  --lisere: rgba(110, 200, 255, .38);
+  --ligne: rgba(110, 200, 255, .11);
+}
+.carte[data-famille="poissons"] .carte-ligne--atq { border-left-color: #5ae0ff; }
+.carte[data-famille="poissons"] .carte-ligne--def { border-left-color: #b8f0ff; }
+.carte[data-famille="poissons"] .carte-texte { color: #c4e2f4; }
+
+/* Boss : la braise et la menace, des griffures, un liseré d'or. */
+.carte[data-famille="boss"] {
+  --fond: radial-gradient(110% 80% at 50% 115%, rgba(255, 90, 20, .35), transparent 65%),
+          linear-gradient(180deg, #3a0c0a 0%, #1a0505 100%);
+  --motif: linear-gradient(118deg, transparent 46%, rgba(0, 0, 0, .55) 47%, rgba(255, 120, 60, .12) 48%, transparent 49%),
+           linear-gradient(118deg, transparent 56%, rgba(0, 0, 0, .55) 57%, rgba(255, 120, 60, .12) 58%, transparent 59%),
+           linear-gradient(118deg, transparent 66%, rgba(0, 0, 0, .55) 67%, rgba(255, 120, 60, .12) 68%, transparent 69%),
+           repeating-linear-gradient(-45deg, transparent 0 .9em, rgba(255, 200, 80, .035) .9em 1.3em);
+  --lisere: rgba(255, 190, 80, .55);
+  --ligne: rgba(255, 110, 60, .12);
+}
+.carte[data-famille="boss"] .carte-ligne--atq { border-left-color: #ff3a2a; }
+.carte[data-famille="boss"] .carte-ligne--def { border-left-color: #ffcf5a; }
+.carte[data-famille="boss"] .carte-ligne--def .carte-ligne-val { color: #ffe08a; }
+.carte[data-famille="boss"] .carte-texte { color: #f0c8b8; }
+
 /* ---------- Les raretes ---------- */
 
 .carte[data-rarete="rare"] { box-shadow: 0 .3em .9em rgba(0, 0, 0, .6), 0 0 .7em rgba(69, 176, 255, .45); }

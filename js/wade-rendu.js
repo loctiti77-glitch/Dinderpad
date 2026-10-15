@@ -2100,12 +2100,12 @@
     var L = [['bureau', 'base'], ['scene', 'base'], ['bureau', 'lumG'], ['bureau', 'lumD'],
              ['salle', 'base'], ['bassin', 'base'], ['couloirO', 'base'], ['coinO', 'base'],
              ['couloirE', 'base'], ['coinE', 'base'], ['comptoir', 'base'], ['boutique', 'base'],
-             ['atelier', 'base'], ['froid', 'base'], ['bureau', 'noir'], ['bassin', 'vide']];
+             ['atelier', 'base'], ['froid', 'base'], ['bureau', 'noir'], ['bassin', 'vide'], ['labo', 'base']];
     return Promise.all(L.map(function (p) { return obtenir(p[0], p[1]); }));
   }
 
   function progression() {
-    return Object.keys(CACHE).length / 16;
+    return Math.min(1, Object.keys(CACHE).length / 17);
   }
 
   window.WADE_RENDU = {
