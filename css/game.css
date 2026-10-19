@@ -7662,3 +7662,351 @@ body.is-locked .pad-titre { display: none; }
   .ody-scene.is-scan::before { animation: none; }
   .ody-fiche-img, .ody-fiche.is-neuf .ody-fiche-img { animation: none; }
 }
+
+/* ==========================================================
+   Fish n'Der - la hache et les arbres cosmiques
+   ========================================================== */
+
+/* Chaque coup de hache, et la chute de l'arbre, font trembler la scene. */
+.pe-scene.is-coup .pe-canvas { animation: pe-coup .22s steps(4, end); }
+
+@keyframes pe-coup {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(calc(-4 * var(--px)), calc(2 * var(--px))); }
+  50%  { transform: translate(calc(3 * var(--px)), calc(-2 * var(--px))); }
+  75%  { transform: translate(calc(-2 * var(--px)), 0); }
+  100% { transform: translate(0, 0); }
+}
+
+.pe-prise-box--cosmos {
+  --r: #b89aff;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(214, 92, 255, .22), transparent 55%),
+    radial-gradient(circle at 75% 80%, rgba(80, 120, 255, .2), transparent 60%),
+    rgba(10, 8, 30, .95);
+}
+
+.pe-prise-hache,
+.pe-prise-fragment {
+  height: calc(96 * var(--px));
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 calc(10 * var(--px)) rgba(184, 154, 255, .8));
+}
+
+.pe-prise-fragment { animation: pe-fragment 2.4s ease-in-out infinite; }
+
+@keyframes pe-fragment {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50%      { transform: translateY(calc(-6 * var(--px))) rotate(4deg); }
+}
+
+/* Les chiffres du fragment, gros et lumineux. */
+.pe-cosmo-chiffres {
+  margin: 0;
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(46 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(6 * var(--px));
+  color: #fff;
+  text-shadow: 0 0 calc(14 * var(--px)) #b89aff, 0 0 calc(30 * var(--px)) #d65cff;
+  animation: pe-chiffres-in .9s steps(6, end) both;
+}
+
+@keyframes pe-chiffres-in {
+  /* Les marges negatives laissent deborder la lueur : sans elles, les
+     chiffres restaient decoupes dans un rectangle sombre. */
+  from { clip-path: inset(-50% 100% -50% -20%); }
+  to   { clip-path: inset(-50% -20% -50% -20%); }
+}
+
+/* Le code tel qu'on le connait : le morceau neuf clignote a sa place. */
+.pe-cosmo-code {
+  margin: 0;
+  display: flex;
+  gap: calc(8 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(22 * var(--px));
+  color: #d8ccff;
+}
+
+.pe-cosmo-morceau {
+  padding: calc(2 * var(--px)) calc(8 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(184, 154, 255, .5);
+  border-radius: calc(6 * var(--px));
+}
+
+.pe-cosmo-morceau.is-vide { color: #5e5684; border-color: rgba(94, 86, 132, .5); }
+.pe-cosmo-morceau.is-neuf { animation: pe-morceau-neuf .5s 1s steps(2, end) 4 both; }
+
+@keyframes pe-morceau-neuf {
+  from { background: rgba(214, 92, 255, .55); color: #fff; }
+  to   { background: transparent; }
+}
+
+.pe-prise-box--cosmos.is-finale { --r: #f4d06a; }
+
+/* La hache qui se fend en deux, puis dont les moities tombent. */
+.pe-hache-brise {
+  position: relative;
+  width: calc(72 * var(--px));
+  height: calc(88 * var(--px));
+}
+
+.pe-hache-moitie {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  animation: pe-hache-tremble .6s 1.2s steps(6, end) both;
+}
+
+.pe-hache-moitie--g { clip-path: polygon(0 0, 58% 0, 44% 100%, 0 100%); }
+.pe-hache-moitie--d { clip-path: polygon(58% 0, 100% 0, 100% 100%, 44% 100%); }
+
+.pe-hache-moitie--g { animation: pe-hache-tremble .6s 1.2s steps(6, end) both,
+                                 pe-hache-g 1.1s 1.8s ease-in both; }
+.pe-hache-moitie--d { animation: pe-hache-tremble .6s 1.2s steps(6, end) both,
+                                 pe-hache-d 1.1s 1.8s ease-in both; }
+
+@keyframes pe-hache-tremble {
+  0%, 100% { translate: 0 0; }
+  33%      { translate: calc(-2 * var(--px)) 0; }
+  66%      { translate: calc(2 * var(--px)) 0; }
+}
+
+@keyframes pe-hache-g {
+  to { transform: translate(calc(-26 * var(--px)), calc(40 * var(--px))) rotate(-38deg); opacity: 0; }
+}
+
+@keyframes pe-hache-d {
+  to { transform: translate(calc(26 * var(--px)), calc(46 * var(--px))) rotate(32deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pe-scene.is-coup .pe-canvas, .pe-prise-fragment, .pe-cosmo-chiffres,
+  .pe-cosmo-morceau.is-neuf, .pe-hache-moitie { animation: none; }
+}
+
+/* ---------- Le Registre ----------
+   Un livre de comptes : des fiches de papier creme, ecrites a l'encre de
+   leur rubrique. */
+
+.reg {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--px));
+  padding: calc(18 * var(--px)) calc(22 * var(--px));
+  box-sizing: border-box;
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.25;                 /* .pad impose line-height: 0 */
+  color: #e8dcc0;
+  background: radial-gradient(circle at 20% 0%, rgba(110, 42, 28, .35), transparent 60%);
+}
+
+.reg-tete { display: flex; align-items: center; gap: calc(16 * var(--px)); }
+
+.reg-icone {
+  height: calc(76 * var(--px));
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 calc(8 * var(--px)) rgba(201, 162, 39, .5));
+  animation: reg-ouvre .5s ease-out both;
+}
+
+@keyframes reg-ouvre {
+  from { transform: rotate(-12deg) scale(.6); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.reg-titre {
+  margin: 0;
+  font-size: calc(44 * var(--px));
+  letter-spacing: calc(4 * var(--px));
+  text-transform: uppercase;
+  color: #f4e6c4;
+  text-shadow: 0 0 calc(14 * var(--px)) rgba(201, 162, 39, .55);
+}
+
+.reg-sous { margin: 0; font-size: calc(18 * var(--px)); color: #c9a227; }
+
+.reg-pages {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: calc(14 * var(--px));
+  align-content: start;
+  padding-right: calc(6 * var(--px));
+}
+
+/* Les onglets des categories. */
+.reg-onglets { display: flex; flex-wrap: wrap; gap: calc(8 * var(--px)); }
+
+.reg-onglet {
+  --encre: #c9a227;
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--px));
+  padding: calc(5 * var(--px)) calc(12 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(232, 220, 192, .25);
+  border-radius: calc(20 * var(--px));
+  background: rgba(20, 12, 8, .7);
+  font-family: inherit;
+  font-size: calc(16 * var(--px));
+  font-weight: 700;
+  color: #c8bca0;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.reg-onglet:hover, .reg-onglet:focus-visible { border-color: var(--encre); color: #f4e6c4; outline: none; }
+
+.reg-onglet.is-actif {
+  background: var(--encre);
+  border-color: var(--encre);
+  color: #fff;
+  box-shadow: 0 0 calc(12 * var(--px)) var(--encre);
+}
+
+.reg-onglet-img { height: calc(24 * var(--px)); width: calc(24 * var(--px)); object-fit: contain; }
+
+.reg-onglet-n {
+  min-width: calc(22 * var(--px));
+  padding: 0 calc(6 * var(--px));
+  border-radius: calc(10 * var(--px));
+  background: rgba(0, 0, 0, .35);
+  font-size: calc(13 * var(--px));
+  text-align: center;
+}
+
+/* L'en-tete d'une categorie, sur toute la largeur. */
+.reg-section {
+  --encre: #c9a227;
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--px));
+  margin: calc(6 * var(--px)) 0 0;
+  padding-bottom: calc(6 * var(--px));
+  border-bottom: calc(3 * var(--px)) solid var(--encre);
+  font-size: calc(24 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  text-transform: uppercase;
+  color: #f4e6c4;
+}
+
+.reg-section:first-child { margin-top: 0; }
+
+.reg-section-img {
+  height: calc(40 * var(--px));
+  width: calc(40 * var(--px));
+  object-fit: contain;
+  filter: drop-shadow(0 0 calc(6 * var(--px)) var(--encre));
+}
+
+.reg-section-n {
+  margin-left: auto;
+  font-size: calc(14 * var(--px));
+  letter-spacing: 0;
+  text-transform: none;
+  color: #a89c80;
+}
+
+.reg-vide { grid-column: 1 / -1; margin: 0; font-size: calc(20 * var(--px)); color: #a89c80; }
+
+.reg-fiche {
+  --encre: #2f8a3a;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--px));
+  padding: calc(14 * var(--px)) calc(16 * var(--px)) calc(14 * var(--px)) calc(22 * var(--px));
+  background:
+    repeating-linear-gradient(180deg, transparent 0 calc(25 * var(--px)), rgba(110, 90, 60, .14) calc(25 * var(--px)) calc(26 * var(--px))),
+    #efe4c8;
+  border-radius: calc(6 * var(--px));
+  box-shadow: 0 calc(4 * var(--px)) 0 #b8a67e, 0 calc(6 * var(--px)) calc(14 * var(--px)) rgba(0, 0, 0, .5);
+  color: #3a2c1a;
+  animation: reg-fiche-in .45s calc(var(--i) * .08s) ease-out both;
+}
+
+/* La marge de couleur, a gauche : la rubrique au premier coup d'oeil. */
+.reg-fiche::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: calc(8 * var(--px));
+  border-radius: calc(6 * var(--px)) 0 0 calc(6 * var(--px));
+  background: var(--encre);
+}
+
+@keyframes reg-fiche-in {
+  from { opacity: 0; transform: translateY(calc(14 * var(--px))) rotate(-1deg); }
+  to   { opacity: 1; transform: none; }
+}
+
+.reg-fiche-haut {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: calc(8 * var(--px));
+}
+
+.reg-date { flex-shrink: 0; font-size: calc(13 * var(--px)); color: #8a7a5a; }
+
+.reg-nom { margin: 0; font-size: calc(22 * var(--px)); color: #2a1e10; }
+
+.reg-code {
+  margin: 0;
+  font-size: calc(30 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(4 * var(--px));
+  color: var(--encre);
+}
+
+.reg-morceaux { margin: 0; display: flex; flex-wrap: wrap; gap: calc(6 * var(--px)); }
+
+.reg-morceau {
+  padding: calc(2 * var(--px)) calc(8 * var(--px));
+  border: calc(2 * var(--px)) solid var(--encre);
+  border-radius: calc(5 * var(--px));
+  font-size: calc(18 * var(--px));
+  font-weight: 700;
+  color: var(--encre);
+}
+
+.reg-morceau.is-vide { border-style: dashed; color: #a89c80; border-color: #b8a67e; }
+
+.reg-etapes, .reg-liste {
+  margin: 0;
+  padding-left: calc(22 * var(--px));
+  font-size: calc(15 * var(--px));
+  color: #3a2c1a;
+}
+
+.reg-etapes li::marker { color: var(--encre); font-weight: 700; }
+
+.reg-liste { list-style: none; padding-left: 0; columns: 2; }
+.reg-liste li { display: flex; gap: calc(8 * var(--px)); }
+.reg-liste-code { color: var(--encre); min-width: calc(64 * var(--px)); }
+
+.reg-infos {
+  margin: calc(4 * var(--px)) 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: calc(3 * var(--px)) calc(10 * var(--px));
+  font-size: calc(14 * var(--px));
+}
+
+.reg-infos dt { font-weight: 700; color: var(--encre); text-transform: uppercase; }
+.reg-infos dd { margin: 0; color: #4a3a24; }
+
+/* Les items peints au pixel gardent leurs gros pixels dans l'inventaire. */
+.slot--item[data-item="hache"] .slot-face,
+.slot--item[data-item="registre"] .slot-face { image-rendering: pixelated; object-fit: contain; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reg-icone, .reg-fiche { animation: none; }
+}

@@ -970,6 +970,7 @@
     dg.addEventListener('submit', function (e) {
       e.preventDefault();
       if (dgChamp.value === CODE_STELLAIRE && S) {
+        DP.noterCode('stellaire');
         dgChamp.value = '';
         dg.classList.remove('is-refus');
         dg.classList.add('is-ok');
@@ -985,6 +986,7 @@
         dgChamp.value = '';
         return;
       }
+      DP.noterCode('dg');
       dgChamp.value = '';
       dgMot.textContent = enFaille ? 'Purge relancée.' : 'Purge lancée.';
       dg.classList.add('is-ok');
@@ -1470,6 +1472,8 @@
     }
 
     poser();
+    // La balise blanche de New York : sur la carte de la Terre seulement.
+    if (!stellaire && window.TRACKER_NY) window.TRACKER_NY.poser(view, carte);
     majBandeau();
     tictac();
     var battement = setInterval(function () {

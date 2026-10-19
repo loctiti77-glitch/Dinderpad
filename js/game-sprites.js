@@ -219,6 +219,15 @@
       torse: '#b0602a', ventre: '#c87a40', accent: '#2a2a30',
       bas: '#9a5224', chaussures: '#5a2e14', peau: '#b0602a'
     },
+    // Their Creator, tel que sa carte le montre : le masque vert en tete
+    // de requin-marteau, quatre hublots cercles de laiton, et le costume
+    // vert sur chemise noire, cravate verte, souliers noirs.
+    'their-creator': {
+      marteau: '#2a9a3e', hublot: '#27c060', laiton: '#c9a227',
+      peau: '#f2c49a', visiere: null,
+      torse: '#1f8a3a', accent: '#176a2c', bas: '#1c7a33', chaussures: '#101014',
+      chemise: '#141318', cravate: '#2fbf55', poignets: '#141318'
+    },
     // Golden Freddy : Freddy en or terni, et deux orbites vides.
     'golden-freddy': {
       anim: 'ours', fourrure: '#b8902a', museau: '#d8b850', yeux: '#f4f0e8',
@@ -315,6 +324,55 @@
     }
   }
 
+  // Un hublot : un anneau de laiton, un verre vert et son reflet.
+  function hublot(p, c, x, y) {
+    p(x, y, 4, 4, c.laiton);
+    p(x, y, 1, 1, ombre(c.marteau, 0.7)); p(x + 3, y, 1, 1, ombre(c.marteau, 0.7));
+    p(x, y + 3, 1, 1, ombre(c.marteau, 0.7)); p(x + 3, y + 3, 1, 1, ombre(c.marteau, 0.7));
+    p(x + 1, y + 1, 2, 2, c.hublot);
+    p(x + 1, y + 1, 1, 1, ombre(c.hublot, 1.9));
+  }
+
+  // Le masque de Their Creator : un dome pose sur une barre transversale,
+  // comme la tete d'un requin-marteau. Un hublot a chaque bout de la
+  // barre, deux sur le devant. De profil, on voit le bout de la barre :
+  // un rond, et son hublot en plein milieu.
+  function masqueMarteau(p, c, dos, profil) {
+    var f = c.marteau, fo = ombre(f, 0.7), fc = ombre(f, 1.3);
+    if (profil) {
+      p(7, 4, 9, 2, f);                            // le dome
+      p(6, 6, 11, 12, f);
+      p(8, 17, 8, 2, fo);                          // le menton du masque
+      p(7, 5, 5, 1, fc);
+      p(6, 6, 1, 11, fo);
+      p(3, 8, 5, 6, fo);                           // la barre, vers l'arriere
+      p(14, 7, 8, 8, f);                           // son bout, face a nous
+      p(14, 7, 8, 1, fc);
+      p(14, 14, 8, 1, fo);
+      hublot(p, c, 16, 9);
+      p(16, 16, 2, 1, fo);                         // la jointure de la machoire
+      return;
+    }
+    p(8, 3, 8, 2, f);                              // le dome
+    p(6, 5, 12, 13, f);
+    p(8, 17, 8, 2, fo);
+    p(9, 4, 4, 1, fc);
+    p(17, 6, 1, 11, fo);
+    p(1, 8, 22, 6, f);                             // la barre
+    p(2, 8, 20, 1, fc);
+    p(1, 13, 22, 1, fo);
+    if (dos) {
+      p(11, 5, 2, 12, fo);                         // la couture du crane
+      return;
+    }
+    // Les bouts de la barre, vus de biais : un rebord de laiton.
+    p(1, 9, 1, 4, c.laiton); p(22, 9, 1, 4, c.laiton);
+    p(2, 10, 1, 2, c.hublot); p(21, 10, 1, 2, c.hublot);
+    hublot(p, c, 7, 10);
+    hublot(p, c, 13, 10);
+    p(8, 16, 8, 1, fo);                            // la jointure de la machoire
+  }
+
   // Le sourire : deux rangees de dents cernees de sombre.
   function sourire(p, c, profil) {
     var x0 = profil ? 12 : 8, larg = profil ? 6 : 8;
@@ -371,6 +429,15 @@
       p(x0, 19, larg, 2, c.armure);
     }
     if (c.ceinture) p(x0, 24, larg, 2, c.accent);
+    // Une veste ouverte sur la chemise : le col en V et ses revers.
+    if (c.chemise && !dos && !profil) {
+      p(9, 19, 6, 2, c.chemise);
+      p(10, 21, 4, 2, c.chemise);
+      p(8, 19, 1, 4, c.accent); p(15, 19, 1, 4, c.accent);
+      p(9, 21, 1, 2, c.accent); p(14, 21, 1, 2, c.accent);
+      p(12, 24, 1, 1, ombre(c.torse, 0.6));        // un bouton
+    }
+    if (c.chemise && profil && !dos) p(15, 19, 2, 3, c.chemise);
     if (c.cravate && !dos) p(11, 20, 2, 5, c.cravate);
 
     // Le medaillon grave : la lettre du personnage, lisible en 3 x 5.
@@ -433,6 +500,7 @@
     p(17, bd, 3, 5, c.torse);
     p(4, bg + 5, 3, 2, c.peau);
     p(17, bd + 5, 3, 2, c.peau);
+    if (c.poignets) { p(4, bg + 4, 3, 1, c.poignets); p(17, bd + 4, 3, 1, c.poignets); }
     // Le crochet de Foxy, a la place de la main droite.
     if (c.crochet) {
       p(17, bd + 5, 3, 2, ombre(c.torse, 0.6));
@@ -584,6 +652,10 @@
   function tete(p, c, dos, profil) {
     p(11, 18, 3, 2, ombre(c.peau, 0.78));         // le cou
     if (c.anim) return animatronique(p, c, dos, profil);
+    if (c.marteau) {
+      p(10, 18, 4, 2, c.chemise || '#141318');     // le col noir, sous le masque
+      return masqueMarteau(p, c, dos, profil);
+    }
     if (c.oreilles) oreilles(p, c);
 
     if (c.capuche) {

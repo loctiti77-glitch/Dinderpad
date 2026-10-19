@@ -16,13 +16,16 @@
     // chaque astre fournit sa palette, et le meme jeu de sept tuiles
     // donne huit planetes qui ne se ressemblent pas.
     SOL: 18, SOL_B: 19, GRAVATS: 20, ROCHE_A: 21, LIQUIDE: 22,
-    CRISTAL: 23, STRUCTURE: 24
+    CRISTAL: 23, STRUCTURE: 24,
+    // Un arbre cosmique de Fish n'Der. La carte ne le peint pas : il
+    // scintille, puis tombe sous la hache, et c'est le jeu qui le dessine.
+    ARBRE_COSMOS: 25
   };
 
   // Ce qu'on ne traverse pas. L'eau se longe, elle ne se marche pas.
   var BLOQUANT = {};
   [T.ARBRE, T.BUISSON, T.ROCHER, T.EAU, T.EAU_RAD, T.MUR, T.ROSEAU,
-   T.CABANE, T.TOIT, T.SOUCHE,
+   T.CABANE, T.TOIT, T.SOUCHE, T.ARBRE_COSMOS,
    T.ROCHE_A, T.LIQUIDE, T.CRISTAL, T.STRUCTURE].forEach(function (k) {
     BLOQUANT[k] = true;
   });
@@ -39,6 +42,17 @@
   }
 
   function borne(v, a, b) { return v < a ? a : (v > b ? b : v); }
+
+  // Les feuillages d'automne : ombre, masse, lumiere, taches. Du brun de
+  // noix au roux, avec un arbre jaune de loin en loin.
+  var AUTOMNE = [
+    ['#4a2a14', '#6e3f1c', '#8f5a2a', '#3a200e'],
+    ['#5a3016', '#83461c', '#b0642a', '#43230f'],
+    ['#5c2a12', '#8a3a18', '#c0562a', '#46200d'],
+    ['#4e3216', '#76501f', '#a0742e', '#3c2610'],
+    ['#6a4210', '#a0661a', '#d89a2a', '#4e300c']
+  ];
+  var FEUILLES_MORTES = ['#a0561e', '#c0762a', '#7a3e16', '#d89a2a', '#8a2e14'];
 
   // La palette d'un astre. Sans elle, les tuiles de monde lointain se
   // peignent en gris : c'est le jeu qui fournit la sienne, par opts.
@@ -170,7 +184,8 @@
   function solTuile(x, g, tx, ty, opts) {
     var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
 
-    if (t >= T.SOL) return solAstre(x, g, tx, ty, opts);
+    if (t === T.ARBRE_COSMOS) t = T.HERBE;
+    else if (t >= T.SOL) return solAstre(x, g, tx, ty, opts);
 
     if (estEau(t)) {
       // Un fond plus sombre au large, plus clair pres du bord : ca donne
@@ -332,17 +347,33 @@
     }
 
     // Herbe : deux verts en damier, puis des touffes.
-    x.fillStyle = (tx + ty) % 2 ? '#3d8b38' : '#438f3c';
+    // En automne, l'herbe tire sur l'olive.
+    var aut = opts && opts.automne;
+    x.fillStyle = (tx + ty) % 2 ? (aut ? '#55833a' : '#3d8b38') : (aut ? '#5a883c' : '#438f3c');
     x.fillRect(px, py, TS, TS);
-    x.fillStyle = '#4d9c42';
+    x.fillStyle = aut ? '#6a9644' : '#4d9c42';
     for (i = 0; i < 4; i++) {
       n = bruit(tx, ty, 60 + i);
       x.fillRect(px + (n * 21 | 0), py + ((bruit(tx, ty, 70 + i) * 21) | 0), 3, 2);
     }
-    x.fillStyle = '#347a30';
+    x.fillStyle = aut ? '#4a7432' : '#347a30';
     for (i = 0; i < 3; i++) {
       n = bruit(tx, ty, 80 + i);
       x.fillRect(px + (n * 22 | 0), py + ((bruit(tx, ty, 90 + i) * 22) | 0), 2, 3);
+    }
+    // L'automne : des feuilles mortes jonchent l'herbe, plus serrees au
+    // pied des arbres.
+    if (opts && opts.automne) {
+      var sousBois = 0;
+      for (var dy = -1; dy <= 1; dy++)
+        for (var dx = -1; dx <= 1; dx++)
+          if (g[ty + dy] && g[ty + dy][tx + dx] === T.ARBRE) sousBois++;
+      var nb = 1 + Math.min(4, sousBois);
+      for (i = 0; i < nb; i++) {
+        n = bruit(tx, ty, 400 + i);
+        x.fillStyle = FEUILLES_MORTES[(bruit(tx, ty, 410 + i) * FEUILLES_MORTES.length) | 0];
+        x.fillRect(px + (n * 21 | 0), py + ((bruit(tx, ty, 420 + i) * 21) | 0), 2 + (i % 2), 2);
+      }
     }
     if (t === T.FLEUR) {
       var fx = px + 8 + ((bruit(tx, ty, 3) * 6) | 0);
@@ -358,6 +389,7 @@
   function objetTuile(x, g, tx, ty, opts) {
     var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
 
+    if (t === T.ARBRE_COSMOS) return;
     if (t >= T.SOL) { objetAstre(x, g, tx, ty, opts); return; }
 
     if (t === T.ROSEAU) {
@@ -409,6 +441,37 @@
       x.fillStyle = '#7d5430'; x.fillRect(hx - 4, py + 8, 3, TS - 10);
       x.fillStyle = '#573619'; x.fillRect(hx + 1, py + 12, 2, 5);
 
+      if (opts && opts.automne) {
+        // Le meme arbre, roussi : chaque tronc tire au hasard sa teinte,
+        // du brun sombre au roux, et le feuillage s'eclaircit deja par
+        // endroits, la ou il commence a tomber.
+        var A = AUTOMNE[(bruit(tx, ty, 430) * AUTOMNE.length) | 0];
+        x.fillStyle = A[0];
+        x.fillRect(px - 2, py - 12, TS + 4, 22);
+        x.fillRect(px + 2, py - 18, TS - 4, 30);
+        x.fillStyle = A[1];
+        x.fillRect(px + 1, py - 14, TS - 6, 16);
+        x.fillStyle = A[2];
+        x.fillRect(px + 3, py - 16, 9, 7);
+        x.fillRect(px + 2, py - 9, 5, 4);
+        x.fillStyle = A[3];
+        for (i = 0; i < 4; i++) {
+          n = bruit(tx, ty, 100 + i);
+          x.fillRect(px + 2 + (n * 18 | 0), py - 12 + ((bruit(tx, ty, 110 + i) * 18) | 0), 4, 3);
+        }
+        // Des trouees : quelques branches nues percent le feuillage.
+        x.fillStyle = '#4a2c14';
+        if (bruit(tx, ty, 440) > 0.45) {
+          x.fillRect(px + 15, py - 17, 1, 5);
+          x.fillRect(px + 16, py - 19, 1, 2);
+        }
+        if (bruit(tx, ty, 441) > 0.6) {
+          x.fillRect(px + 4, py - 14, 1, 4);
+          x.fillRect(px + 3, py - 16, 1, 2);
+        }
+        return;
+      }
+
       x.fillStyle = '#1f5c26';
       x.fillRect(px - 2, py - 12, TS + 4, 22);
       x.fillRect(px + 2, py - 18, TS - 4, 30);
@@ -421,6 +484,19 @@
       for (i = 0; i < 4; i++) {
         n = bruit(tx, ty, 100 + i);
         x.fillRect(px + 2 + (n * 18 | 0), py - 12 + ((bruit(tx, ty, 110 + i) * 18) | 0), 4, 3);
+      }
+      return;
+    }
+
+    if (t === T.BUISSON && opts && opts.automne) {
+      x.fillStyle = 'rgba(0,0,0,.22)'; x.fillRect(px + 3, py + TS - 4, TS - 6, 3);
+      x.fillStyle = '#6b3a18'; x.fillRect(px + 2, py + 6, TS - 4, TS - 9);
+      x.fillStyle = '#9a5622'; x.fillRect(px + 3, py + 5, TS - 8, 9);
+      x.fillStyle = '#c47a2c'; x.fillRect(px + 5, py + 6, 6, 4);
+      x.fillStyle = '#7a1e22';
+      for (i = 0; i < 3; i++) {
+        n = bruit(tx, ty, 120 + i);
+        x.fillRect(px + 4 + (n * 14 | 0), py + 9 + ((bruit(tx, ty, 130 + i) * 9) | 0), 2, 2);
       }
       return;
     }

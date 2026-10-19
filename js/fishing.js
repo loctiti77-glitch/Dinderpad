@@ -169,6 +169,17 @@
       g[SOUCHE.y][SOUCHE.x] = T.SOUCHE;
     }
 
+    // Les cinq arbres cosmiques, et la souche ou dort la hache.
+    var C = window.COSMOS;
+    if (C) {
+      C.ARBRES.forEach(function (a) {
+        if (g[a.y] && g[a.y][a.x] !== undefined) g[a.y][a.x] = T.ARBRE_COSMOS;
+      });
+      if (g[C.HACHE.y] && g[C.HACHE.y][C.HACHE.x] !== undefined) {
+        g[C.HACHE.y][C.HACHE.x] = T.SOUCHE;
+      }
+    }
+
     // La cabane : deux rangees de toit, deux de facade, une porte au milieu.
     for (y = CABANE.y0; y <= CABANE.y1; y++) {
       for (x = CABANE.x0; x <= CABANE.x1; x++) {
@@ -360,6 +371,7 @@
       var cachesP = ART ? ART.caches('peche', g, { x: Math.floor(DEPART.x / TS), y: Math.floor(DEPART.y / TS) }, {
         graine: 517,
         eviter: [{ x: SOUCHE.x, y: SOUCHE.y }, { x: CABANE.porte, y: CABANE.y1 + 1 }]
+          .concat(window.COSMOS ? [window.COSMOS.HACHE] : [])
       }) : [];
 
       // Des que la carte est la, la partie devient reprenable.
@@ -391,6 +403,13 @@
       // partie en cours, et ils repartent de zero au prochain passage.
       var lancers = 0;
       var devantCabane = false;
+
+      // Les arbres cosmiques et la hache. "coupe" tient l'abattage en
+      // cours : les coups, la chute, l'eclat, le fragment qui monte.
+      var C = window.COSMOS;
+      var hacheAuSol = !!C && !DP.cosmos().hache;
+      var devantArbre = null;
+      var coupe = null;
 
       // La mise en scene : le vol du bouchon a l'aller, celui du poisson
       // au retour, et les ronds dans l'eau quand ca plouf.
@@ -608,6 +627,7 @@
         vol = null; gerbe = null;
         mordant = null; mordantCm = 0; lourd = false; irradie = false;
         lutte = null;
+        coupe = null;
         panneauLutte.hidden = true;
         scene.classList.remove('is-lutte');
         mordantShiny = false;
@@ -659,6 +679,12 @@
         } else if (etat === 'repos' && armeAuSol && devantLaSouche) {
           action.hidden = false;
           poserAction('fouiller', 'FOUILLER LA SOUCHE');
+        } else if (etat === 'repos' && hacheAuSol && faceALaHache()) {
+          action.hidden = false;
+          poserAction('hache', 'PRENDRE LA HACHE');
+        } else if (etat === 'repos' && peutAbattre()) {
+          action.hidden = false;
+          poserAction('abattre', 'ABATTRE');
         } else if (etat === 'repos' && devantCabane) {
           action.hidden = false;
           poserAction('entrer', 'RENTRER');
@@ -741,6 +767,310 @@
         dire('Le Pistolet Lumithique est à toi.');
         plusTard(function () { if (vivant()) ranger(); }, reduit ? 900 : 3600);
         majAction();
+      }
+
+      // ---------- La hache et les arbres cosmiques ----------
+
+      function faceALaHache() {
+        if (!C || !balade) return false;
+        var c = balade.caseDevant();
+        return c[0] === C.HACHE.x && c[1] === C.HACHE.y;
+      }
+
+      function prochesDeLaHache() {
+        if (!C || !balade) return false;
+        var dx = balade.chef.x - (C.HACHE.x + 0.5) * TS;
+        var dy = balade.chef.y - (C.HACHE.y + 0.5) * TS;
+        return dx * dx + dy * dy < 80 * 80;
+      }
+
+      function arbreDevant() {
+        if (!C || !balade) return null;
+        var c = balade.caseDevant();
+        return C.arbreEn(c[0], c[1]);
+      }
+
+      function peutAbattre() {
+        if (!devantArbre || C.abattu(devantArbre.rang)) return false;
+        var e = DP.cosmos();
+        return e.hache && !e.brisee;
+      }
+
+      function prendreLaHache() {
+        if (!hacheAuSol) return;
+        DP.prendreHache();
+        hacheAuSol = false;
+        etat = 'repos';
+        prise.hidden = false;
+        prise.textContent = '';
+        var box = el('div', 'pe-prise-box pe-prise-box--cosmos');
+        box.appendChild(el('p', 'pe-prise-titre', 'HACHE'));
+        var im = el('img', 'pe-prise-hache');
+        im.src = C.hacheUrl();
+        im.alt = '';
+        box.appendChild(im);
+        box.appendChild(el('p', 'pe-prise-txt',
+          'Plantée là depuis longtemps. Son fer garde un reflet violet.'));
+        box.appendChild(el('p', 'pe-prise-txt pe-prise-txt--sous',
+          'Ajoutée à tes Items. Elle ne servira qu’une fois.'));
+        prise.appendChild(box);
+        dire('La hache est à toi.');
+        plusTard(function () { if (vivant()) ranger(); }, reduit ? 900 : 3400);
+        majAction();
+      }
+
+      // Une secousse de la scene, a chaque coup et a la chute.
+      function secouer() {
+        scene.classList.remove('is-coup');
+        void scene.offsetWidth;
+        scene.classList.add('is-coup');
+      }
+
+      // L'abattage, en quatre temps : trois coups de hache, l'arbre qui
+      // bascule loin du bucheron, l'eclat d'etoiles a l'impact, puis le
+      // fragment qui monte de la souche et vient se poser dans la main.
+      var ABAT = { coups: [250, 800, 1350], chute: 1750, duree: 750, fragment: 1100 };
+
+      function abattre() {
+        var a = devantArbre;
+        if (!a || !peutAbattre() || etat !== 'repos') return;
+        etat = 'abattage';
+        majAction();
+        var finale = DP.cosmos().abattus.length === 4;
+        coupe = {
+          a: a, finale: finale,
+          // L'arbre tombe du cote oppose a celui ou l'on se tient.
+          sens: balade.chef.x <= (a.x + 0.5) * TS ? 1 : -1,
+          tCoup: 0, tChute: 0, tEclat: 0
+        };
+        var R = reduit ? 0 : 1;
+        var mots = ['Han !', 'Le bois cosmique résiste…', 'Il craque !'];
+        ABAT.coups.forEach(function (ms, i) {
+          plusTard(function () {
+            if (!vivant() || !coupe) return;
+            coupe.tCoup = maintenant();
+            secouer();
+            dire(mots[i]);
+          }, ms * R);
+        });
+        plusTard(function () {
+          if (!vivant() || !coupe) return;
+          coupe.tChute = maintenant();
+          dire('TIMBEEER !');
+        }, ABAT.chute * R);
+        plusTard(function () {
+          if (!vivant() || !coupe) return;
+          var n = DP.abattreArbre(a.rang);
+          coupe.tEclat = maintenant();
+          secouer();
+          dire('L’arbre éclate en poussière d’étoiles…');
+          plusTard(function () {
+            if (!vivant()) return;
+            montrerFragment(a, n, finale);
+          }, ABAT.fragment * R);
+        }, (ABAT.chute + ABAT.duree) * R);
+      }
+
+      function montrerFragment(a, n, finale) {
+        coupe = null;
+        etat = 'prise';
+        prise.hidden = false;
+        prise.textContent = '';
+        var box = el('div', 'pe-prise-box pe-prise-box--cosmos' + (finale ? ' is-finale' : ''));
+        box.appendChild(el('p', 'pe-prise-titre',
+          finale ? 'CODE COMPLET' : 'FRAGMENT COSMIQUE  ·  ' + n + ' / 5'));
+        var im = el('img', 'pe-prise-fragment');
+        im.src = C.fragmentUrl();
+        im.alt = '';
+        box.appendChild(im);
+        box.appendChild(el('p', 'pe-cosmo-chiffres', finale ? C.CODE : C.MORCEAUX[a.rang]));
+
+        // Le code tel qu'on le connait : le morceau neuf s'allume a sa place.
+        var ligne = el('p', 'pe-cosmo-code');
+        C.morceaux().forEach(function (m, i) {
+          var s = el('span', 'pe-cosmo-morceau' + (m ? '' : ' is-vide') +
+                              (i + 1 === a.rang ? ' is-neuf' : ''), m || '··');
+          ligne.appendChild(s);
+        });
+        box.appendChild(ligne);
+
+        if (finale) {
+          // La hache rend l'ame sur le dernier arbre : elle se fend en deux.
+          var brise = el('div', 'pe-hache-brise');
+          ['g', 'd'].forEach(function (cote) {
+            var moitie = el('img', 'pe-hache-moitie pe-hache-moitie--' + cote);
+            moitie.src = C.hacheUrl();
+            moitie.alt = '';
+            brise.appendChild(moitie);
+          });
+          box.appendChild(brise);
+          box.appendChild(el('p', 'pe-prise-txt',
+            'La hache se brise sur le cinquième arbre.'));
+          dire('Les cinq fragments sont réunis.');
+        } else {
+          box.appendChild(el('p', 'pe-prise-txt pe-prise-txt--sous',
+            'Fragment consigné au Registre.'));
+          dire('Un fragment de code !');
+        }
+        prise.appendChild(box);
+        plusTard(function () { if (vivant()) ranger(); },
+                 reduit ? 1500 : (finale ? 7000 : 4200));
+        majAction();
+      }
+
+      // Les arbres cosmiques et leur souche, a trier avec la troupe. Pendant
+      // l'abattage, l'arbre vise tremble a chaque coup, puis bascule.
+      function extrasCosmos(t) {
+        var sortie = [];
+        if (!C) return sortie;
+        C.ARBRES.forEach(function (a, i) {
+          var sx = (a.x + 0.5) * TS, sy = (a.y + 1) * TS - 1;
+          var enCours = coupe && coupe.a === a;
+          sortie.push({
+            x: sx, y: sy,
+            dessin: function (ctx, ex, ey) {
+              if (!enCours) {
+                if (C.abattu(a.rang)) C.dessinerSouche(ctx, ex, ey, t, i + 1);
+                else C.dessinerArbre(ctx, ex, ey, t, i + 1);
+                return;
+              }
+              dessinerAbattage(ctx, ex, ey, t, i + 1);
+            }
+          });
+        });
+
+        // La hache, plantee fer en bas dans sa souche.
+        if (hacheAuSol) {
+          sortie.push({
+            x: (C.HACHE.x + 0.5) * TS, y: (C.HACHE.y + 1) * TS,
+            dessin: function (ctx, ex, ey) {
+              C.dessinerHacheplantee(ctx, ex, ey - 6, t);
+              // De pres, une lueur l'appelle.
+              if (prochesDeLaHache()) {
+                var a = reduit ? 0.2 : 0.12 + 0.1 * Math.sin(t / 300);
+                ctx.fillStyle = 'rgba(196,155,255,' + a.toFixed(2) + ')';
+                ctx.beginPath();
+                ctx.ellipse(ex, ey - 22, 13, 10, 0, 0, 6.3);
+                ctx.fill();
+              }
+            }
+          });
+        }
+
+        // La hache dans les mains du pecheur, pendant les coups.
+        if (coupe && !coupe.tEclat && balade) {
+          var ch = balade.chef;
+          var vers = (coupe.a.x + 0.5) * TS - ch.x;
+          var cote = vers >= 0 ? 1 : -1;
+          sortie.push({
+            x: ch.x, y: ch.y + 1,
+            dessin: function (ctx, ex, ey) {
+              // Levee haut entre deux coups, abattue d'un coup sec.
+              var k = coupe.tCoup ? Math.min(1, (t - coupe.tCoup) / 380) : 1;
+              var ang = -1.25 + 1.85 * (1 - k);
+              if (coupe.tChute) ang = -1.25;
+              var h = C.hache();
+              ctx.save();
+              ctx.translate(Math.round(ex + cote * 7), Math.round(ey - 14));
+              ctx.scale(-cote, 1);
+              ctx.rotate(-ang);
+              ctx.drawImage(h, -h.width + 4, -h.height + 3);
+              ctx.restore();
+            }
+          });
+        }
+        return sortie;
+      }
+
+      function dessinerAbattage(ctx, ex, ey, t, graine) {
+        var c = coupe;
+        // 1. Les coups : l'arbre tremble, des eclats de bois-nuit giclent.
+        if (!c.tChute) {
+          var dt = c.tCoup ? t - c.tCoup : 9999;
+          var trem = dt < 180 ? (Math.floor(dt / 40) % 2 ? 1 : -1) * 2 : 0;
+          C.dessinerArbre(ctx, ex + trem, ey, t, graine);
+          if (dt < 520) {
+            var k = dt / 520;
+            for (var e = 0; e < 7; e++) {
+              var ang = -c.sens * 0.4 + (e - 3) * 0.32 - 1.57;
+              var d = 4 + k * 22;
+              ctx.fillStyle = e % 2 ? 'rgba(200,184,255,' + (1 - k).toFixed(2) + ')'
+                                    : 'rgba(255,255,255,' + (1 - k).toFixed(2) + ')';
+              ctx.fillRect(Math.round(ex - c.sens * 4 + Math.cos(ang) * d),
+                           Math.round(ey - 8 + Math.sin(ang) * d + k * k * 14), 2, 2);
+            }
+          }
+          return;
+        }
+        // 2. La chute : la souche reste, le fut bascule autour de sa base.
+        C.dessinerSouche(ctx, ex, ey, t, graine);
+        if (!c.tEclat) {
+          var u = Math.min(1, (t - c.tChute) / ABAT.duree);
+          ctx.save();
+          ctx.translate(ex, ey - 9);
+          ctx.rotate(c.sens * 1.5 * u * u);
+          C.dessinerArbre(ctx, 0, 9, t, graine);
+          ctx.restore();
+          return;
+        }
+        // 3. L'eclat : l'arbre couche se disperse en etoiles.
+        var v = (t - c.tEclat) / 1000;
+        if (v < 1) {
+          var cx = ex + c.sens * 26, cy = ey - 10;
+          for (var s = 0; s < 22; s++) {
+            var a = s * 2.4 + graine;
+            var r = 3 + v * (18 + (s % 5) * 6);
+            ctx.fillStyle = s % 3 ? 'rgba(255,255,255,' + (1 - v).toFixed(2) + ')'
+                                  : 'rgba(214,92,255,' + (1 - v).toFixed(2) + ')';
+            ctx.fillRect(Math.round(cx + Math.cos(a) * r * 1.4), Math.round(cy + Math.sin(a) * r * 0.8), 2, 2);
+          }
+          ctx.fillStyle = 'rgba(160,130,255,' + (0.35 * (1 - v)).toFixed(2) + ')';
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, 30 * (0.4 + v), 14 * (0.4 + v), 0, 0, 6.3);
+          ctx.fill();
+        }
+        // 4. Le fragment monte de la souche, tourne sur lui-meme et luit.
+        var f = Math.min(1, (t - c.tEclat) / ABAT.fragment);
+        var fr = C.fragment();
+        var fy = ey - 14 - f * 26;
+        var larg = Math.max(1, Math.abs(Math.cos(f * 9)) * fr.width);
+        ctx.fillStyle = 'rgba(196,155,255,' + (0.25 + 0.2 * Math.sin(t / 90)).toFixed(2) + ')';
+        ctx.beginPath();
+        ctx.ellipse(ex, fy - fr.height / 2, 14, 14, 0, 0, 6.3);
+        ctx.fill();
+        ctx.drawImage(fr, Math.round(ex - larg / 2), Math.round(fy - fr.height), Math.round(larg), fr.height);
+      }
+
+      // Les feuilles mortes qui se detachent des arbres en vue. Une sur
+      // deux seulement, chacune a son rythme : un bois qui se depouille,
+      // pas une averse.
+      var TEINTES_FEUILLES = ['#c0762a', '#a0561e', '#d89a2a', '#8a2e14', '#b0642a'];
+      function feuillesQuiTombent(ctx, cam, t) {
+        if (reduit) return;
+        var x0 = Math.floor(cam.x / TS) - 1, y0 = Math.floor(cam.y / TS) - 1;
+        var x1 = Math.ceil((cam.x + cv.width) / TS), y1 = Math.ceil((cam.y + cv.height) / TS) + 1;
+        for (var ty = y0; ty <= y1; ty++) {
+          if (!g[ty]) continue;
+          for (var tx = x0; tx <= x1; tx++) {
+            if (g[ty][tx] !== T.ARBRE) continue;
+            var b = bruit(tx, ty, 450);
+            if (b > 0.5) continue;
+            for (var k = 0; k < 2; k++) {
+              var periode = 3600 + b * 5000 + k * 1300;
+              var ph = ((t + (b + k * 0.37) * 11000) / periode) % 1;
+              var lx = tx * TS + 3 + bruit(tx, ty, 451 + k) * 18 + ph * 10;
+              var ly = ty * TS - 12 + ph * 40;
+              var balance = Math.sin(ph * 10 + b * 7 + k) * 4;
+              ctx.globalAlpha = ph > 0.78 ? (1 - ph) / 0.22 : 1;
+              ctx.fillStyle = TEINTES_FEUILLES[((b * 31 + k) | 0) % TEINTES_FEUILLES.length];
+              // Elle se retourne en tombant : tantot a plat, tantot de chant.
+              var plat = Math.floor(ph * 14 + k) % 2 === 0;
+              ctx.fillRect(Math.round(lx + balance - cam.x), Math.round(ly - cam.y),
+                           plat ? 3 : 1, plat ? 2 : 3);
+            }
+          }
+        }
+        ctx.globalAlpha = 1;
       }
 
       // --- La rencontre ---
@@ -1096,8 +1426,11 @@
       MINI_FOND[T.EAU_RAD] = '#9ad11e';
       MINI_FOND[T.SABLE] = '#dcc98c';
       MINI_FOND[T.CHEMIN] = '#a5794a';
-      MINI_FOND[T.ARBRE] = '#2c6329';
-      MINI_FOND[T.BUISSON] = '#357a31';
+      // Le bois d'automne. Les arbres cosmiques se fondent dans la masse :
+      // la minicarte ne trahit pas ou ils sont.
+      MINI_FOND[T.ARBRE] = '#6e3f1c';
+      MINI_FOND[T.ARBRE_COSMOS] = '#6e3f1c';
+      MINI_FOND[T.BUISSON] = '#9a5622';
       MINI_FOND[T.ROCHER] = '#7d8490';
       MINI_FOND[T.CABANE] = '#8a5a30';
       MINI_FOND[T.TOIT] = '#b2452f';
@@ -1114,7 +1447,7 @@
         if (!x) return null;
         for (var ty = 0; ty < MH; ty++) {
           for (var tx = 0; tx < MW; tx++) {
-            x.fillStyle = MINI_FOND[g[ty][tx]] || '#3d8b38';
+            x.fillStyle = MINI_FOND[g[ty][tx]] || '#55833a';
             x.fillRect(tx * MINI_T, ty * MINI_T, MINI_T, MINI_T);
           }
         }
@@ -1182,6 +1515,8 @@
         else if (r === 'ramasser') ramasser();
         else if (r === 'entrer') entrerBoutique();
         else if (r === 'fouiller') fouiller();
+        else if (r === 'hache') prendreLaHache();
+        else if (r === 'abattre') abattre();
       }
       // Mouliner, c'est taper vite sur le meme bouton. Un "click" demande
       // un appui ET un relachement, et deux appuis rapproches passent pour
@@ -1462,7 +1797,8 @@
         grille: g,
         canvas: cv,
         stick: stick, pomme: pomme,
-        opts: { cabane: CABANE },
+        // C'est l'automne au bord des lacs.
+        opts: { cabane: CABANE, automne: true },
         depart: ou ? { x: ou.x, y: ou.y } : DEPART,
         direction: ou ? ou.dir : undefined,
         troupe: [choisi],
@@ -1531,6 +1867,7 @@
             });
           }
 
+          sortie = sortie.concat(extrasCosmos(t));
           if (ART) sortie = sortie.concat(ART.extras(cachesP, balade && balade.chef, t));
 
           if (!canneAuSol) return sortie;
@@ -1554,7 +1891,10 @@
           return sortie;
         },
 
-        apres: dessinerBouchon,
+        apres: function (ctx, cam, t) {
+          feuillesQuiTombent(ctx, cam, t);
+          dessinerBouchon(ctx, cam, t);
+        },
 
         chaqueImage: function (t) {
           dessinerMini(t);
@@ -1575,6 +1915,7 @@
             reprise.dir = balade.chef.dir;
           }
           devantLaSouche = armeAuSol && faceALaSouche();
+          devantArbre = arbreDevant();
           if (etat !== 'repos') return;
           if (ART) ART.ramasser(cachesP, balade.chef);
           majAction();
@@ -1583,7 +1924,16 @@
             var c = balade.caseDevant();
             return balade.tuile(c[0], c[1]) === T.EAU_RAD;
           })();
+          var cosmos = DP.cosmos();
           var aide = devantLaSouche ? 'Quelque chose luit au creux de la souche.'
+                   : devantArbre && C.abattu(devantArbre.rang)
+                     ? 'Une souche encore tiède d’étoiles.'
+                   : devantArbre && cosmos.hache && !cosmos.brisee
+                     ? 'Un arbre cosmique. La hache frémit dans ta main.'
+                   : devantArbre
+                     ? 'Un feuillage de nuit, piqué d’étoiles… Le bois ne cède pas à mains nues.'
+                   : hacheAuSol && faceALaHache() ? 'Une hache est plantée dans la souche.'
+                   : hacheAuSol && prochesDeLaHache() ? 'Quelque chose brille au fond du recoin.'
                    : armeAuSol && prochesDeLaSouche()
                      ? 'Une vieille souche, au milieu des arbres.'
                    : canneAuSol ? 'Une canne à pêche flotte non loin.'
@@ -1643,7 +1993,7 @@
         teinte: '#3ad6f0',
         bouton: 'À L’EAU',
         lignes: [
-          'Sept lacs et une rivière, à perte de vue.',
+          'Sept lacs et une rivière, sous les arbres d’automne.',
           'Une canne flotte au bord de l’eau : ramasse-la,',
           'elle rejoindra tes Items pour de bon.',
           'Des dizaines d’espèces à remonter — et parfois un Crédit Temporel.'

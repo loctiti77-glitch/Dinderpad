@@ -184,6 +184,30 @@
         return window.ARME ? window.ARME.niveau().nom : 'Arme lumithique';
       },
       view: 'armurerie', acquis: function () { return aLArme(); } },
+    // La hache des arbres cosmiques : elle disparait de l'inventaire en
+    // se brisant sur le cinquieme. Le code qu'ils livrent, lui, reste.
+    { id: 'hache', name: 'Hache',
+      sub: 'Plantée dans une souche',
+      img: null,
+      visuel: function () { return window.COSMOS ? window.COSMOS.hacheUrl() : null; },
+      detail: function () {
+        var n = me().cosmos.abattus.length;
+        return n ? n + ' / 5 arbres abattus' : 'Une seule utilisation';
+      },
+      view: 'registre',
+      acquis: function () { var c = me().cosmos; return c.hache && !c.brisee; } },
+    // Le Registre : chaque code trouve, ou il sert, et ce qu'il ouvre. Il
+    // n'apparait qu'avec le premier code.
+    { id: 'registre', name: 'Registre',
+      sub: 'Les codes trouvés',
+      img: null,
+      visuel: function () { return window.REGISTRE ? window.REGISTRE.icone() : null; },
+      detail: function () {
+        var n = window.REGISTRE ? window.REGISTRE.trouves().length : 0;
+        return n + (n > 1 ? ' codes consignés' : ' code consigné');
+      },
+      view: 'registre',
+      acquis: function () { return !!window.REGISTRE && window.REGISTRE.trouves().length > 0; } },
     { id: 'teleportail', name: 'Téléportail',
       sub: 'Tombé du ciel',
       // L'image du joueur si elle est la ; sinon celle que le jeu peint.
@@ -524,6 +548,13 @@
       revetements: [],
       revetement: 'origine',
       requins: {},
+      // La hache cachee dans le bois de Fish n'Der : trouvee ou non, les
+      // arbres cosmiques deja abattus (leur rang, de 1 a 5), et si elle
+      // s'est brisee sur le dernier.
+      cosmos: { hache: false, abattus: [], brisee: false },
+      // Les codes deja entres quelque part, avec la date de la premiere
+      // fois : c'est ce que le Registre consigne.
+      codes: {},
       // L'Odyssee : la telecommande, les mondes ou l'on a pose le pied,
       // ce qu'on y a scanne, et le chapitre atteint.
       telecommande: false,
@@ -569,6 +600,11 @@
   // ce qui evite d'avoir a versionner la sauvegarde.
   function completer(p) {
     if (typeof p.canne !== 'boolean') p.canne = false;
+    if (!p.cosmos || typeof p.cosmos !== 'object') p.cosmos = {};
+    if (typeof p.cosmos.hache !== 'boolean') p.cosmos.hache = false;
+    if (!Array.isArray(p.cosmos.abattus)) p.cosmos.abattus = [];
+    if (typeof p.cosmos.brisee !== 'boolean') p.cosmos.brisee = false;
+    if (!p.codes || typeof p.codes !== 'object') p.codes = {};
     if (!p.spookinder || typeof p.spookinder !== 'object') p.spookinder = {};
     if (typeof p.spookinder.xp !== 'number') p.spookinder.xp = 0;
     if (!Array.isArray(p.spookinder.nuits)) p.spookinder.nuits = [];
@@ -1188,6 +1224,44 @@
     return true;
   }
 
+  // ---------- La hache et les arbres cosmiques ----------
+  // Une hache plantee dans un recoin du bois de Fish n'Der. Elle ne sert
+  // qu'une fois : a abattre les cinq arbres cosmiques, apres quoi elle se
+  // brise. Chaque arbre livre un morceau du code.
+
+  function cosmos() { return me().cosmos; }
+
+  function prendreHache() {
+    var p = me();
+    if (p.cosmos.hache) return false;
+    p.cosmos.hache = true;
+    save();
+    return true;
+  }
+
+  // Rend le nombre d'arbres abattus, ou 0 si le coup ne compte pas.
+  function abattreArbre(rang) {
+    var c = me().cosmos;
+    if (!c.hache || c.brisee || c.abattus.indexOf(rang) !== -1) return 0;
+    c.abattus.push(rang);
+    if (c.abattus.length >= 5) c.brisee = true;
+    save();
+    return c.abattus.length;
+  }
+
+  // ---------- Le Registre ----------
+  // Un code entre pour la premiere fois y est inscrit, avec sa date.
+
+  function noterCode(id) {
+    var p = me();
+    if (p.codes[id]) return false;
+    p.codes[id] = Date.now();
+    save();
+    return true;
+  }
+
+  function codes() { return Object.assign({}, me().codes); }
+
   // Deux progressions pour le meme pistolet : celle de Fish n'Der (par
   // defaut) et celle de l'Odyssee (jeu === 'odyssee').
   function champNiveau(jeu) { return jeu === 'odyssee' ? 'armeNiveauOdyssee' : 'armeNiveau'; }
@@ -1610,6 +1684,8 @@
     prises: prises, aPeche: aPeche, noterPrise: noterPrise,
     aShiny: aShiny, shinys: shinys,
     aLArme: aLArme, prendreArme: prendreArme,
+    cosmos: cosmos, prendreHache: prendreHache, abattreArbre: abattreArbre,
+    noterCode: noterCode, codes: codes,
     armeNiveau: armeNiveau, monterArme: monterArme,
     noyaux: noyaux, gagnerNoyaux: gagnerNoyaux, depenserNoyaux: depenserNoyaux,
     revetements: revetements, aRevetement: aRevetement,

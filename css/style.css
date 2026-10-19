@@ -4244,3 +4244,441 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
   .tel-go, .tel.is-bascule .tel-cv { animation: none; }
   .tel-panneau, .tel-lieu { animation-duration: .01s; }
 }
+
+/* ==========================================================
+   DinderTracker - la balise blanche de New York
+   Un symbole de localisation, rien dessus. Il plonge sur la ville, une
+   tablette attend un code, puis la camera recule jusqu'hors du systeme
+   solaire.
+   ========================================================== */
+
+.ny-pin {
+  position: absolute;
+  z-index: 3;
+  left: var(--x);
+  top: var(--y);
+  width: calc(30 * var(--px));
+  height: calc(41 * var(--px));
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: translate(-50%, -100%);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 0 calc(6 * var(--px)) rgba(255, 255, 255, .55));
+  cursor: pointer;
+  transition: transform .15s ease, filter .15s ease;
+}
+
+.ny-pin svg, .ny-ext svg { display: block; width: 100%; height: 100%; }
+
+.ny-pin:hover, .ny-pin:focus-visible {
+  transform: translate(-50%, -100%) scale(1.15);
+  filter: drop-shadow(0 0 calc(12 * var(--px)) rgba(255, 255, 255, .95));
+  outline: none;
+}
+
+/* Pendant la sequence, le reste du tracker s'efface. */
+.view--tracker.is-ny .pin,
+.view--tracker.is-ny .ny-pin,
+.view--tracker.is-ny .tracker-dg,
+.view--tracker.is-ny .tracker-rebours,
+.view--tracker.is-ny .faille-bandeau,
+.view--tracker.is-ny .tracker-onglets,
+.view--tracker.is-ny .spot-card {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .4s ease;
+}
+
+.ny {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  overflow: hidden;
+  background: #03050a;
+  line-height: 1.15;                 /* .pad impose line-height: 0 */
+  animation: ny-in .3s ease both;
+}
+
+.ny.is-sortie { animation: ny-out .4s ease both; }
+
+@keyframes ny-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ny-out { to { opacity: 0; } }
+
+.ny-zoom { position: absolute; inset: 0; will-change: transform; }
+
+.ny-zoom-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  image-rendering: pixelated;
+}
+
+.ny.is-espace .ny-zoom { opacity: 0; transition: opacity .9s ease; }
+
+/* Le viseur : quatre coins qui se resserrent sur le centre. */
+.ny-viseur {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70%;
+  height: 70%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.ny.is-plonge .ny-viseur { animation: ny-viseur 5s cubic-bezier(.5, 0, .2, 1) both; }
+.ny.is-recul .ny-viseur { display: none; }
+
+@keyframes ny-viseur {
+  from { width: 92%; height: 92%; opacity: .2; }
+  to   { width: 24%; height: 30%; opacity: 1; }
+}
+
+.ny-coin {
+  position: absolute;
+  width: calc(36 * var(--px));
+  height: calc(36 * var(--px));
+  border: calc(4 * var(--px)) solid #ffffff;
+  filter: drop-shadow(0 0 calc(6 * var(--px)) rgba(255, 255, 255, .7));
+}
+
+.ny-coin--hg { left: 0;  top: 0;    border-right: 0; border-bottom: 0; }
+.ny-coin--hd { right: 0; top: 0;    border-left: 0;  border-bottom: 0; }
+.ny-coin--bg { left: 0;  bottom: 0; border-right: 0; border-top: 0; }
+.ny-coin--bd { right: 0; bottom: 0; border-left: 0;  border-top: 0; }
+
+.ny-hud {
+  position: absolute;
+  z-index: 2;
+  left: calc(20 * var(--px));
+  bottom: calc(16 * var(--px));
+  margin: 0;
+  padding: calc(6 * var(--px)) calc(14 * var(--px));
+  background: rgba(0, 0, 0, .7);
+  border: calc(2 * var(--px)) solid rgba(255, 255, 255, .5);
+  border-radius: calc(8 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(20 * var(--px));
+  letter-spacing: calc(2 * var(--px));
+  color: #ffffff;
+  pointer-events: none;
+}
+
+.ny-hud:empty { display: none; }
+
+.ny-fermer {
+  position: absolute;
+  z-index: 6;
+  top: calc(14 * var(--px));
+  right: calc(14 * var(--px));
+  width: calc(48 * var(--px));
+  height: calc(48 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(255, 255, 255, .6);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .65);
+  font-size: calc(30 * var(--px));
+  line-height: 1;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* La petite tablette posee sur la ville : elle flotte et luit. */
+.ny-tablette {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  width: calc(60 * var(--px));
+  height: calc(78 * var(--px));
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  animation: ny-tablette-in .6s ease-out both, ny-tablette-flotte 2.6s .6s ease-in-out infinite;
+  filter: drop-shadow(0 0 calc(10 * var(--px)) rgba(58, 214, 240, .9));
+}
+
+.ny-tablette-img { width: 100%; height: 100%; image-rendering: pixelated; }
+
+.ny-tablette:hover, .ny-tablette:focus-visible {
+  filter: drop-shadow(0 0 calc(18 * var(--px)) rgba(58, 214, 240, 1));
+  outline: none;
+}
+
+@keyframes ny-tablette-in {
+  from { opacity: 0; transform: translate(-50%, -20%) scale(.4); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes ny-tablette-flotte {
+  0%, 100% { transform: translate(-50%, -50%); }
+  50%      { transform: translate(-50%, -58%); }
+}
+
+/* La tablette en grand : un ecran, et un pave de touches. */
+.ny-pave {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .55);
+}
+
+.ny-pave[hidden] { display: none; }
+
+.ny-pave-boitier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(12 * var(--px));
+  padding: calc(18 * var(--px)) calc(22 * var(--px)) calc(14 * var(--px));
+  background: #2c3142;
+  border: calc(5 * var(--px)) solid #151822;
+  border-radius: calc(18 * var(--px));
+  box-shadow: inset 0 calc(3 * var(--px)) 0 #4a5168, 0 0 calc(30 * var(--px)) rgba(58, 214, 240, .45);
+  animation: ny-pave-in .35s ease-out both;
+}
+
+@keyframes ny-pave-in {
+  from { opacity: 0; transform: scale(.3); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ny-pave.is-range .ny-pave-boitier { animation: ny-pave-out .45s ease-in both; }
+
+@keyframes ny-pave-out { to { opacity: 0; transform: scale(.2) translateY(calc(60 * var(--px))); } }
+
+.ny-pave.is-refus .ny-pave-boitier { animation: ny-refus .4s steps(6, end); }
+
+@keyframes ny-refus {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(calc(-10 * var(--px))); }
+  50%      { transform: translateX(calc(10 * var(--px))); }
+  75%      { transform: translateX(calc(-6 * var(--px))); }
+}
+
+.ny-pave-ecran {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  min-width: calc(400 * var(--px));
+  padding: calc(12 * var(--px)) calc(16 * var(--px));
+  background: #0b2a30;
+  border: calc(3 * var(--px)) solid #151822;
+  border-radius: calc(6 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  color: #3ad6f0;
+}
+
+.ny-pave-invite { font-size: calc(16 * var(--px)); letter-spacing: calc(3 * var(--px)); }
+
+.ny-pave-code {
+  display: flex;
+  gap: calc(4 * var(--px));
+  min-height: calc(40 * var(--px));
+  align-items: center;
+  font-size: calc(30 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(2 * var(--px));
+}
+
+.ny-chiffre { color: #2a6a74; }
+.ny-chiffre.is-plein { color: #9af6ff; text-shadow: 0 0 calc(8 * var(--px)) #3ad6f0; }
+.ny-pave-code[data-etat="ok"] { color: #7cf0c8; text-shadow: 0 0 calc(12 * var(--px)) #7cf0c8; }
+.ny-pave-code[data-etat="refus"] { color: #ff8a8a; }
+
+.ny-pave-touches {
+  display: grid;
+  grid-template-columns: repeat(3, calc(84 * var(--px)));
+  gap: calc(8 * var(--px));
+}
+
+.ny-touche {
+  height: calc(52 * var(--px));
+  border: calc(3 * var(--px)) solid #151822;
+  border-radius: calc(8 * var(--px));
+  background: #4a5168;
+  box-shadow: inset 0 calc(-4 * var(--px)) 0 #353b4f;
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(26 * var(--px));
+  font-weight: 700;
+  color: #eef2f8;
+  cursor: pointer;
+}
+
+.ny-touche:active { transform: translateY(calc(2 * var(--px))); box-shadow: none; }
+.ny-touche--ok { background: #1f7a8a; box-shadow: inset 0 calc(-4 * var(--px)) 0 #155966; }
+
+.ny-pave-retour {
+  border: 0;
+  background: none;
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(16 * var(--px));
+  color: #8a92a4;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* L'espace, peint au pixel par-dessus la carte qui s'efface. */
+.ny-espace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  animation: ny-in .9s ease both;
+}
+
+/* La balise au-dela : le meme symbole, la tete pleine, l'embleme dedans. */
+.ny-ext {
+  position: absolute;
+  z-index: 3;
+  left: var(--x);
+  top: var(--y);
+  width: calc(96 * var(--px));
+  height: calc(128 * var(--px));
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: translate(-50%, -100%);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 0 calc(10 * var(--px)) rgba(255, 255, 255, .6));
+  pointer-events: none;
+}
+
+.ny-ext[hidden] { display: none; }
+
+.ny-ext-embleme {
+  position: absolute;
+  left: 14%;
+  top: 14%;
+  width: 70%;
+  pointer-events: none;
+}
+
+/* Elle tombe du ciel, clignote comme un signal qui s'accroche, puis se
+   plante dans le sol. */
+.ny-ext.is-pose { animation: ny-ext-pose 1.4s cubic-bezier(.3, 0, .4, 1) both; }
+
+@keyframes ny-ext-pose {
+  0%   { transform: translate(-50%, -420%) scale(.6); opacity: 0; }
+  12%  { opacity: 1; }
+  18%  { opacity: .2; }
+  24%  { opacity: 1; }
+  30%  { opacity: .4; }
+  36%  { opacity: 1; }
+  70%  { transform: translate(-50%, -100%) scale(1.08, .9); }
+  82%  { transform: translate(-50%, -106%) scale(.96, 1.05); }
+  100% { transform: translate(-50%, -100%) scale(1); opacity: 1; }
+}
+
+.ny-ext.is-pose.is-arrive {
+  animation: ny-ext-pouls 1.8s ease-in-out infinite;
+}
+
+/* Le decrochage : la toile tremble par a-coups, les teintes sautent. */
+.ny.is-glitch .ny-espace { animation: ny-secousse .32s steps(3, end) infinite; }
+
+@keyframes ny-secousse {
+  0%   { transform: translate(0, 0); filter: none; }
+  33%  { transform: translate(calc(-6 * var(--px)), calc(3 * var(--px))); filter: hue-rotate(90deg) saturate(1.6); }
+  66%  { transform: translate(calc(5 * var(--px)), calc(-2 * var(--px))); filter: hue-rotate(-60deg) contrast(1.4); }
+  100% { transform: translate(0, 0); filter: none; }
+}
+
+.ny-glitch-mot {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(54 * var(--px));
+  letter-spacing: calc(8 * var(--px));
+  color: #ffffff;
+  text-shadow: calc(-4 * var(--px)) 0 #d65cff, calc(4 * var(--px)) 0 #3ad6f0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.ny-glitch-mot:empty { display: none; }
+
+.ny-ext.is-arrive {
+  pointer-events: auto;
+  cursor: pointer;
+  animation: ny-ext-pouls 1.8s ease-in-out infinite;
+}
+
+.ny-ext.is-arrive:hover, .ny-ext.is-arrive:focus-visible {
+  filter: drop-shadow(0 0 calc(22 * var(--px)) rgba(255, 255, 255, 1));
+  outline: none;
+}
+
+@keyframes ny-ext-pouls {
+  0%, 100% { filter: drop-shadow(0 0 calc(8 * var(--px)) rgba(255, 255, 255, .5)); }
+  50%      { filter: drop-shadow(0 0 calc(22 * var(--px)) rgba(200, 160, 255, 1)); }
+}
+
+/* Le mystere au bout du voyage. */
+.ny-mystere {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .6);
+  animation: ny-in .4s ease both;
+}
+
+.ny-mystere-carte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(18 * var(--px));
+  padding: calc(26 * var(--px)) calc(60 * var(--px));
+  background: #05060c;
+  border: calc(3 * var(--px)) solid #ffffff;
+  border-radius: calc(12 * var(--px));
+  box-shadow: 0 0 calc(30 * var(--px)) rgba(200, 160, 255, .6);
+}
+
+.ny-mystere-txt {
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(96 * var(--px));
+  letter-spacing: calc(12 * var(--px));
+  color: #ffffff;
+  text-shadow: calc(-3 * var(--px)) 0 #d65cff, calc(3 * var(--px)) 0 #3ad6f0;
+  animation: ny-glitch 2.2s steps(1, end) infinite;
+}
+
+@keyframes ny-glitch {
+  0%, 86%, 100% { transform: none; clip-path: none; }
+  88% { transform: translateX(calc(-6 * var(--px))); clip-path: inset(0 0 55% 0); }
+  91% { transform: translateX(calc(5 * var(--px)));  clip-path: inset(40% 0 0 0); }
+  94% { transform: translateX(calc(-2 * var(--px))); clip-path: inset(20% 0 30% 0); }
+}
+
+.ny-mystere-btn {
+  padding: calc(8 * var(--px)) calc(26 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(255, 255, 255, .6);
+  border-radius: calc(8 * var(--px));
+  background: none;
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(20 * var(--px));
+  color: #fff;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ny, .ny.is-sortie, .ny-tablette, .ny-pave-boitier, .ny-espace,
+  .ny.is-plonge .ny-viseur, .ny-ext.is-arrive, .ny-mystere, .ny-mystere-txt,
+  .ny-pave.is-refus .ny-pave-boitier, .ny-pave.is-range .ny-pave-boitier,
+  .ny-ext.is-pose, .ny-ext.is-pose.is-arrive, .ny.is-glitch .ny-espace { animation: none; }
+}

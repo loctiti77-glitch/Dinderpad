@@ -26,6 +26,13 @@ const TAILLES = { duel: [64, 80] };
 
 const OUTLINE = [14, 12, 26, 255];      // le cerne, presque noir mais bleute
 
+// Les Dinders dont l'image en pied ne fait pas un bon sprite. Their
+// Creator y est assis dans son fauteuil volant : reduit a 64 x 80, il ne
+// restait qu'une masse verte. On part de sa pose debout, masque porte.
+const SOURCES = {
+  'their-creator': ROOT + '/assets/games/wade/createur-mf.webp'
+};
+
 // Reduit une image a la grille voulue en gardant sa silhouette centree.
 async function grille(entree, W, H, couleurs) {
   const img = sharp(entree)
@@ -83,7 +90,7 @@ async function sprite(entree, sortie, W, H, couleurs) {
   const choix = process.argv.slice(2);
   for (const id of (choix.length ? choix : IDS)) {
     for (const [taille, [W, H]] of Object.entries(TAILLES)) {
-      await sprite(ROOT + '/assets/dinders/full/' + id + '.webp',
+      await sprite(SOURCES[id] || ROOT + '/assets/dinders/full/' + id + '.webp',
                    path.join(OUT, taille, id + '.png'),
                    W, H, 28);
     }
