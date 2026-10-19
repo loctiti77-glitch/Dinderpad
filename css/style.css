@@ -377,6 +377,92 @@ html, body {
   height: calc(var(--btn) * .60 * 20 / 32 * var(--px));
 }
 
+.nav-ico--pause {
+  width:  calc(var(--btn) * .44 * var(--px));
+  height: calc(var(--btn) * .44 * var(--px));
+}
+
+/* La pause n'existe que dans un jeu ; elle y remplace l'accueil. */
+.nav-btn--pause { display: none; }
+body.is-plein.is-jeu .pad-nav .nav-btn--pause { display: block; }
+body.is-plein.is-jeu .pad-nav [data-pad-home] { display: none; }
+
+/* ---------- Le panneau de pause ---------- */
+.pause {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 14, .72);
+  backdrop-filter: blur(3px);
+  animation: pause-in .25s ease-out both;
+}
+
+@keyframes pause-in { from { opacity: 0; } to { opacity: 1; } }
+
+.pause-boite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  min-width: min(340px, 86vw);
+  padding: 26px 30px 24px;
+  background: linear-gradient(180deg, #0d1a2c, #060c18);
+  border: 3px solid #00f1fd;
+  border-radius: 18px;
+  box-shadow: 0 0 30px rgba(0, 241, 253, .45), inset 0 0 20px rgba(0, 241, 253, .12);
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.15;
+  color: #e8f8ff;
+  animation: pause-boite .3s cubic-bezier(.2, .9, .3, 1.2) both;
+}
+
+@keyframes pause-boite { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.pause-jeu { font-size: 14px; letter-spacing: 3px; text-transform: uppercase; color: #8ef3ff; }
+
+.pause-titre {
+  font-size: clamp(38px, 6vw, 60px);
+  letter-spacing: 10px;
+  text-shadow: 0 0 18px rgba(0, 241, 253, .9);
+}
+
+.pause-btn {
+  width: 100%;
+  padding: 12px 18px;
+  border: 2px solid rgba(142, 243, 255, .55);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .35);
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  color: #e8f8ff;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .1s ease;
+}
+
+.pause-btn:hover, .pause-btn:focus-visible {
+  border-color: #00f1fd;
+  background: rgba(0, 241, 253, .16);
+  outline: none;
+}
+
+.pause-btn:active { transform: scale(.97); }
+
+.pause-btn--reprendre {
+  background: #00b8c8;
+  border-color: #00f1fd;
+  color: #021018;
+}
+
+.pause-btn--reprendre:hover, .pause-btn--reprendre:focus-visible { background: #2ee6f5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pause, .pause-boite { animation: none; }
+}
+
 .nav-btn:hover,
 .nav-btn:focus-visible {
   transform: scale(1.06);
@@ -4625,8 +4711,61 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
   50%      { filter: drop-shadow(0 0 calc(22 * var(--px)) rgba(200, 160, 255, 1)); }
 }
 
-/* Le mystere au bout du voyage. */
-.ny-mystere {
+/* ==========================================================
+   Azhrakonr
+   Le code a quatre cases sur la balise lointaine, le compte a rebours,
+   puis la parole du devoreur.
+   ========================================================== */
+
+/* La balise s'efface quand il arrive. */
+.ny .ny-ext.is-verrou { pointer-events: none; }
+.ny .ny-ext.is-pose.is-cache { opacity: 0; pointer-events: none; transition: opacity .8s ease; animation: none; }
+
+/* Azhrakonr au loin : l'illustration en pleine definition, ses bords
+   fondus dans l'espace. Le script la deplace et la grandit en continu. */
+.azh-loin {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: 100%;
+  transform-origin: 50% 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 42%, transparent 100%);
+          mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 42%, transparent 100%);
+}
+
+/* Ses mains : il monte du bas, seuls le haut et les cotes se fondent. */
+.azh-mains {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  pointer-events: none;
+  will-change: transform;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20%),
+                      linear-gradient(to right, transparent 0, #000 8%, #000 92%, transparent 100%);
+  -webkit-mask-composite: source-in;
+          mask-image: linear-gradient(to bottom, transparent 0, #000 20%),
+                      linear-gradient(to right, transparent 0, #000 8%, #000 92%, transparent 100%);
+          mask-composite: intersect;
+}
+
+.azh-loin[hidden], .azh-mains[hidden] { display: none; }
+
+/* La planete, le temps de la venue : ses gros pixels, mais un glissement
+   continu. */
+.azh-planete {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 50% 50%;
+  image-rendering: pixelated;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.azh-code {
   position: absolute;
   inset: 0;
   z-index: 7;
@@ -4634,25 +4773,39 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, .6);
-  animation: ny-in .4s ease both;
+  animation: ny-in .35s ease both;
 }
 
-.ny-mystere-carte {
+.azh-code[hidden] { display: none; }
+
+.azh-code-boite {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: calc(18 * var(--px));
-  padding: calc(26 * var(--px)) calc(60 * var(--px));
+  gap: calc(12 * var(--px));
+  padding: calc(18 * var(--px)) calc(26 * var(--px)) calc(14 * var(--px));
   background: #05060c;
   border: calc(3 * var(--px)) solid #ffffff;
   border-radius: calc(12 * var(--px));
   box-shadow: 0 0 calc(30 * var(--px)) rgba(200, 160, 255, .6);
+  animation: ny-pave-in .35s ease-out both;
 }
 
-.ny-mystere-txt {
+.azh-code.is-refus .azh-code-boite { animation: azh-refus .45s ease-in-out; }
+
+@keyframes azh-refus {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(calc(-10 * var(--px))); }
+  45%      { transform: translateX(calc(9 * var(--px))); }
+  70%      { transform: translateX(calc(-5 * var(--px))); }
+  88%      { transform: translateX(calc(2 * var(--px))); }
+}
+.azh-code.is-range .azh-code-boite { animation: ny-pave-out .45s ease-in both; }
+
+.azh-code-titre {
   font-family: "Courier New", Courier, monospace;
-  font-size: calc(96 * var(--px));
-  letter-spacing: calc(12 * var(--px));
+  font-size: calc(54 * var(--px));
+  letter-spacing: calc(10 * var(--px));
   color: #ffffff;
   text-shadow: calc(-3 * var(--px)) 0 #d65cff, calc(3 * var(--px)) 0 #3ad6f0;
   animation: ny-glitch 2.2s steps(1, end) infinite;
@@ -4665,20 +4818,181 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
   94% { transform: translateX(calc(-2 * var(--px))); clip-path: inset(20% 0 30% 0); }
 }
 
-.ny-mystere-btn {
-  padding: calc(8 * var(--px)) calc(26 * var(--px));
-  border: calc(2 * var(--px)) solid rgba(255, 255, 255, .6);
-  border-radius: calc(8 * var(--px));
-  background: none;
-  font-family: "Courier New", Courier, monospace;
-  font-size: calc(20 * var(--px));
-  color: #fff;
-  cursor: pointer;
+/* Quatre cases de deux chiffres, chacune a la couleur de son jeu. */
+.azh-cases { display: flex; align-items: center; gap: calc(8 * var(--px)); }
+
+.azh-case {
+  --c: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  min-width: calc(86 * var(--px));
+  padding: calc(8 * var(--px)) calc(8 * var(--px)) calc(6 * var(--px));
+  border: calc(3 * var(--px)) solid var(--c);
+  border-radius: calc(10 * var(--px));
+  background: color-mix(in srgb, var(--c) 14%, #05060c);
+  box-shadow: 0 0 calc(10 * var(--px)) color-mix(in srgb, var(--c) 45%, transparent);
 }
+
+.azh-case.is-pleine { box-shadow: 0 0 calc(20 * var(--px)) var(--c); }
+
+.azh-case-chiffres {
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(30 * var(--px));
+  font-weight: 700;
+  color: var(--c);
+  white-space: pre;
+}
+
+.azh-tiret { font-family: "Courier New", Courier, monospace; font-size: calc(30 * var(--px)); color: #6a6380; }
+
+.azh-code-mot {
+  margin: 0;
+  min-height: calc(22 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  font-size: calc(18 * var(--px));
+  letter-spacing: calc(3 * var(--px));
+  color: #a99ad8;
+}
+
+.azh-code[data-etat="refus"] .azh-code-mot { color: #ff8a8a; }
+.azh-code[data-etat="ok"] .azh-code-mot { color: #7cf0c8; text-shadow: 0 0 calc(10 * var(--px)) #7cf0c8; }
+
+/* Le compte a rebours : un chiffre rouge qui bat, et l'ecran qui vire. */
+.azh-rebours {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 14%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  font-family: "Courier New", Courier, monospace;
+  pointer-events: none;
+  animation: ny-in .4s ease both;
+}
+
+.azh-rebours.is-fin { animation: ny-out .5s ease both; }
+
+.azh-rebours-mot {
+  font-size: calc(18 * var(--px));
+  letter-spacing: calc(5 * var(--px));
+  color: #ff9b9b;
+}
+
+.azh-rebours-n {
+  font-size: calc(110 * var(--px));
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 0 calc(18 * var(--px)) #ff2a4a, 0 0 calc(40 * var(--px)) #ff2a4a;
+}
+
+.azh-rebours-n.is-tic { animation: azh-tic .5s ease-out; }
+
+@keyframes azh-tic {
+  from { transform: scale(1.5); opacity: .4; }
+  to   { transform: none; opacity: 1; }
+}
+
+.ny.is-alerte::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  box-shadow: inset 0 0 calc(120 * var(--px)) rgba(255, 30, 60, .55);
+  animation: azh-alerte 1s ease-in-out infinite;
+}
+
+@keyframes azh-alerte {
+  0%, 100% { opacity: .25; }
+  50%      { opacity: 1; }
+}
+
+/* La parole du devoreur, au bas de l'ecran. */
+.azh-dialogue {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: calc(18 * var(--px));
+  transform: translateX(-50%);
+  width: min(86%, calc(820 * var(--px)));
+  box-sizing: border-box;
+  padding: calc(14 * var(--px)) calc(22 * var(--px)) calc(16 * var(--px));
+  background: rgba(4, 6, 22, .9);
+  border: calc(3 * var(--px)) solid #3a8cff;
+  border-radius: calc(10 * var(--px));
+  box-shadow: 0 0 calc(24 * var(--px)) rgba(58, 140, 255, .6), inset 0 0 calc(20 * var(--px)) rgba(58, 140, 255, .2);
+  font-family: "Courier New", Courier, monospace;
+  cursor: pointer;
+  animation: azh-dialogue-in .5s ease-out both;
+}
+
+@keyframes azh-dialogue-in {
+  from { opacity: 0; transform: translate(-50%, calc(20 * var(--px))); }
+  to   { opacity: 1; transform: translateX(-50%); }
+}
+
+.azh-dialogue-nom {
+  position: absolute;
+  top: calc(-16 * var(--px));
+  left: calc(18 * var(--px));
+  padding: calc(3 * var(--px)) calc(12 * var(--px));
+  background: #3a8cff;
+  border-radius: calc(6 * var(--px));
+  font-size: calc(16 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(4 * var(--px));
+  color: #04061a;
+}
+
+.azh-dialogue-txt {
+  margin: calc(6 * var(--px)) 0 0;
+  min-height: calc(52 * var(--px));
+  font-size: calc(24 * var(--px));
+  color: #e6efff;
+  text-shadow: 0 0 calc(8 * var(--px)) rgba(120, 180, 255, .6);
+}
+
+.azh-dialogue-suite {
+  position: absolute;
+  right: calc(16 * var(--px));
+  bottom: calc(8 * var(--px));
+  font-size: calc(16 * var(--px));
+  color: #6aaeff;
+  opacity: 0;
+}
+
+.azh-dialogue.is-fini:not(.is-derniere) .azh-dialogue-suite { animation: azh-suite .8s steps(2, end) infinite; }
+
+@keyframes azh-suite { from { opacity: 1; } to { opacity: 0; } }
+
+.azh-dialogue-btn {
+  position: absolute;
+  right: calc(14 * var(--px));
+  bottom: calc(-18 * var(--px));
+  padding: calc(5 * var(--px)) calc(18 * var(--px));
+  border: calc(2 * var(--px)) solid #3a8cff;
+  border-radius: calc(8 * var(--px));
+  background: #04061a;
+  font-family: inherit;
+  font-size: calc(16 * var(--px));
+  color: #e6efff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+
+.azh-dialogue.is-derniere.is-fini .azh-dialogue-btn { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
   .ny, .ny.is-sortie, .ny-tablette, .ny-pave-boitier, .ny-espace,
-  .ny.is-plonge .ny-viseur, .ny-ext.is-arrive, .ny-mystere, .ny-mystere-txt,
+  .ny.is-plonge .ny-viseur, .ny-ext.is-arrive,
   .ny-pave.is-refus .ny-pave-boitier, .ny-pave.is-range .ny-pave-boitier,
-  .ny-ext.is-pose, .ny-ext.is-pose.is-arrive, .ny.is-glitch .ny-espace { animation: none; }
+  .ny-ext.is-pose, .ny-ext.is-pose.is-arrive, .ny.is-glitch .ny-espace,
+  .azh-code, .azh-code-boite, .azh-code-titre, .azh-rebours, .azh-rebours-n.is-tic,
+  .ny.is-alerte::after, .azh-dialogue, .azh-dialogue-suite { animation: none; }
 }

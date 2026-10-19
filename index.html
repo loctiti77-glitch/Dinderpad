@@ -7,9 +7,9 @@
      mouliner a la peche. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>DinderPad</title>
-<link rel="stylesheet" href="css/style.css?v=20261019c">
-<link rel="stylesheet" href="css/game.css?v=20261019c">
-<link rel="stylesheet" href="css/cartes.css?v=20261016a">
+<link rel="stylesheet" href="css/style.css?v=20261020a">
+<link rel="stylesheet" href="css/game.css?v=20261020d">
+<link rel="stylesheet" href="css/cartes.css?v=20261020a">
 <script src="js/transition.js?v=20261013d"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/icon/favicon-16.png">
@@ -112,21 +112,32 @@
           </span>
           <span class="nav-label">Accueil</span>
         </a>
+        <!-- Dans un jeu en plein ecran, la pause remplace l'accueil. -->
+        <button class="nav-btn nav-btn--pause" type="button" data-pad-pause aria-label="Pause">
+          <span class="nav-btn-face">
+            <svg class="nav-ico nav-ico--pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <rect x="5" y="4" width="5" height="16" rx="1.2"/>
+              <rect x="14" y="4" width="5" height="16" rx="1.2"/>
+            </svg>
+          </span>
+          <span class="nav-label">Pause</span>
+        </button>
       </nav>
 
     </div>
   </main>
 
-  <script src="js/dinderpad.js?v=20261019b"></script>
+  <script src="js/pause.js?v=20261020a"></script>
+  <script src="js/dinderpad.js?v=20261020b"></script>
   <script src="js/tracker-stellaire.js?v=20261013d"></script>
-  <script src="js/tracker-ny.js?v=20261019c"></script>
+  <script src="js/tracker-ny.js?v=20261020b"></script>
   <script src="js/pad.js?v=20261013d"></script>
   <script src="js/views.js?v=20261019b"></script>
   <script src="js/game-palettes.js?v=20261013d"></script>
   <script src="js/game-sprites.js?v=20261019a"></script>
-  <script src="js/game-monde.js?v=20261019a"></script>
+  <script src="js/game-monde.js?v=20261020b"></script>
   <script src="js/game-intro.js?v=20261013d"></script>
-  <script src="js/game-poissons.js?v=20261013d"></script>
+  <script src="js/game-poissons.js?v=20261020a"></script>
   <script src="js/arme.js?v=20261013d"></script>
   <script src="js/requin.js?v=20261013d"></script>
   <script src="js/odyssey-vie.js?v=20261013d"></script>
@@ -135,13 +146,13 @@
   <script src="js/odyssey-gardiens.js?v=20261013d"></script>
   <script src="js/odyssey-stellaire.js?v=20261013d"></script>
   <script src="js/founder-campagne.js?v=20261013d"></script>
-  <script src="js/founder-war.js?v=20261016f"></script>
+  <script src="js/founder-war.js?v=20261020e"></script>
   <script src="js/peche-materiel.js?v=20261013d"></script>
-  <script src="js/fishing.js?v=20261019b"></script>
+  <script src="js/fishing.js?v=20261020c"></script>
   <script src="js/cosmos.js?v=20261019b"></script>
-  <script src="js/registre.js?v=20261019c"></script>
+  <script src="js/registre.js?v=20261020c"></script>
   <script src="js/peche-boutique.js?v=20261013d"></script>
-  <script src="js/odyssey.js?v=20261013d"></script>
+  <script src="js/odyssey.js?v=20261020c"></script>
   <script src="js/badges.js?v=20261013d"></script>
   <script src="js/artefacts.js?v=20261015a"></script>
   <script src="js/telescope.js?v=20261016f"></script>
@@ -149,12 +160,12 @@
   <script src="js/wade-rendu.js?v=20261017e"></script>
   <script src="js/wade-son.js?v=20261017j"></script>
   <script src="js/wade-pantins.js?v=20261017e"></script>
-  <script src="js/wade-minijeux.js?v=20261017a"></script>
+  <script src="js/wade-minijeux.js?v=20261020a"></script>
   <script src="js/wade-secrets.js?v=20261016g"></script>
-  <script src="js/wade.js?v=20261017k"></script>
-  <script src="js/cartes.js?v=20261013d"></script>
+  <script src="js/wade.js?v=20261020d"></script>
+  <script src="js/cartes.js?v=20261020a"></script>
   <script src="js/niveaux.js?v=20261016b"></script>
-  <script src="js/router.js?v=20261016b"></script>
+  <script src="js/router.js?v=20261020a"></script>
   <script src="js/access.js?v=20261013d"></script>
 </body>
 </html>

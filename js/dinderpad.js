@@ -208,6 +208,12 @@
       },
       view: 'registre',
       acquis: function () { return !!window.REGISTRE && window.REGISTRE.trouves().length > 0; } },
+    { id: 'pelle', name: 'Pelle',
+      sub: 'Trouvée derrière le cabanon',
+      img: null,
+      visuel: function () { return window.ODYSSEE && window.ODYSSEE.pelleUrl ? window.ODYSSEE.pelleUrl() : null; },
+      detail: function () { return me().fouilles['altera-nain'] ? 'Elle a déjà servi' : 'Trouvée derrière le cabanon'; },
+      view: 'teleportail', acquis: function () { return aLaPelle(); } },
     { id: 'teleportail', name: 'Téléportail',
       sub: 'Tombé du ciel',
       // L'image du joueur si elle est la ; sinon celle que le jeu peint.
@@ -555,6 +561,9 @@
       // Les codes deja entres quelque part, avec la date de la premiere
       // fois : c'est ce que le Registre consigne.
       codes: {},
+      // La pelle de l'Odyssee, trouvee derriere le cabanon de la Terre, et
+      // ce qu'elle a deja deterre.
+      pelle: false, fouilles: {},
       // L'Odyssee : la telecommande, les mondes ou l'on a pose le pied,
       // ce qu'on y a scanne, et le chapitre atteint.
       telecommande: false,
@@ -605,6 +614,8 @@
     if (!Array.isArray(p.cosmos.abattus)) p.cosmos.abattus = [];
     if (typeof p.cosmos.brisee !== 'boolean') p.cosmos.brisee = false;
     if (!p.codes || typeof p.codes !== 'object') p.codes = {};
+    if (typeof p.pelle !== 'boolean') p.pelle = false;
+    if (!p.fouilles || typeof p.fouilles !== 'object') p.fouilles = {};
     if (!p.spookinder || typeof p.spookinder !== 'object') p.spookinder = {};
     if (typeof p.spookinder.xp !== 'number') p.spookinder.xp = 0;
     if (!Array.isArray(p.spookinder.nuits)) p.spookinder.nuits = [];
@@ -1262,6 +1273,24 @@
 
   function codes() { return Object.assign({}, me().codes); }
 
+  // ---------- La pelle ----------
+  function aLaPelle() { return !!me().pelle; }
+  function prendrePelle() {
+    var p = me();
+    if (p.pelle) return false;
+    p.pelle = true;
+    save();
+    return true;
+  }
+  function noterFouille(id) {
+    var p = me();
+    if (p.fouilles[id]) return false;
+    p.fouilles[id] = Date.now();
+    save();
+    return true;
+  }
+  function aFouille(id) { return !!me().fouilles[id]; }
+
   // Deux progressions pour le meme pistolet : celle de Fish n'Der (par
   // defaut) et celle de l'Odyssee (jeu === 'odyssee').
   function champNiveau(jeu) { return jeu === 'odyssee' ? 'armeNiveauOdyssee' : 'armeNiveau'; }
@@ -1686,6 +1715,7 @@
     aLArme: aLArme, prendreArme: prendreArme,
     cosmos: cosmos, prendreHache: prendreHache, abattreArbre: abattreArbre,
     noterCode: noterCode, codes: codes,
+    aLaPelle: aLaPelle, prendrePelle: prendrePelle, noterFouille: noterFouille, aFouille: aFouille,
     armeNiveau: armeNiveau, monterArme: monterArme,
     noyaux: noyaux, gagnerNoyaux: gagnerNoyaux, depenserNoyaux: depenserNoyaux,
     revetements: revetements, aRevetement: aRevetement,

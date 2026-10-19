@@ -121,7 +121,9 @@
   function cartesPoissons() {
     var P = window.POISSONS;
     if (!P) return [];
-    return P.publiques().map(function (f) {
+    // Toutes les especes non secretes, vagues passees comprises : une
+    // carte deja tiree ne disparait pas quand sa vague s'acheve.
+    return P.LISTE.filter(function (f) { return !f.secret; }).map(function (f) {
       var r = P.rarete(f.rarete), rang = P.RARETES.indexOf(r);
       var cm = f.cm ? f.cm[1] : 30;
       return {
@@ -130,8 +132,10 @@
         rarete: RARETE_POISSON[f.rarete] || 'commune',
         pixel: true,
         image: function () { return P.url(f.id); },
-        texte: f.texte || (f.radioactif
-          ? 'Il ne mord que dans les lacs irradiés. On le reconnaît à sa lueur.'
+        texte: f.texte || (P.vagueDe && P.vagueDe(f) === 'magma'
+          ? 'Il nage dans la lave des lacs de magma. On le reconnaît à sa braise.'
+          : f.radioactif
+          ? 'Il mordait dans les lacs irradiés, avant que le magma ne les recouvre.'
           : f.evolueDe ? 'Une forme que l’on ne pêche pas : elle se mérite.'
           : 'Un habitant des lacs de Fish n’Der, de ' + f.cm[0] + ' à ' + cm + ' cm.'),
         attaques: [{ nom: 'Coup de queue', val: Math.round(4 + rang * 9 + cm / 8) }],

@@ -1247,6 +1247,59 @@
 
   var PV_MAX = 100;
 
+  // ==========================================================
+  //  La pelle, le cabanon, et ce qui dort sous le nain mauve
+  // ==========================================================
+
+  var pelleCv = null;
+  function pelleCanvas() {
+    if (pelleCv) return pelleCv;
+    var c = document.createElement('canvas');
+    c.width = 10; c.height = 26;
+    var x = c.getContext('2d');
+    function p(px, py, w, h, col) { x.fillStyle = col; x.fillRect(px, py, w, h); }
+    p(3, 0, 5, 2, '#151822');                  // la poignee
+    p(4, 1, 3, 1, '#8a5a2b');
+    p(4, 2, 3, 13, '#151822'); p(5, 2, 1, 13, '#a87038');   // le manche
+    p(1, 14, 9, 11, '#151822');                // le fer
+    p(2, 15, 7, 8, '#9aa4b4'); p(2, 15, 2, 7, '#c4ccd8');
+    p(3, 23, 5, 2, '#7a8394');
+    pelleCv = c;
+    return c;
+  }
+  var pelleUrlCache = null;
+  function pelleUrl() {
+    if (pelleUrlCache) return pelleUrlCache;
+    var c = document.createElement('canvas');
+    c.width = 60; c.height = 88;
+    var x = c.getContext('2d');
+    x.imageSmoothingEnabled = false;
+    x.translate(30, 44); x.rotate(0.35);
+    x.drawImage(pelleCanvas(), -15, -39, 30, 78);
+    pelleUrlCache = c.toDataURL('image/png');
+    return pelleUrlCache;
+  }
+
+  // Le cabanon : trois cases de large, des planches, un toit de tuiles et
+  // une porte. (sx, sy) est le pied de la facade.
+  function dessinerCabanon(ctx, sx, sy) {
+    var L = 3 * TS, x0 = Math.round(sx - L / 2), y0 = Math.round(sy);
+    function p(px, py, w, h, col) { ctx.fillStyle = col; ctx.fillRect(x0 + px, y0 + py, w, h); }
+    p(2, -4, L - 4, 5, 'rgba(0,0,0,.3)');                  // l'ombre au sol
+    p(0, -46, L, 46, '#151822');
+    p(1, -45, L - 2, 44, '#7a5230');                       // les murs de planches
+    for (var i = 0; i < L - 2; i += 6) p(1 + i, -45, 1, 44, '#5c3c20');
+    p(1, -45, L - 2, 2, '#9a6a3c');
+    p(30, -30, 13, 29, '#151822'); p(31, -29, 11, 28, '#4a2c16');   // la porte
+    p(39, -16, 2, 2, '#c9a227');
+    p(8, -34, 12, 10, '#151822'); p(9, -33, 10, 8, '#2a3a4e'); p(14, -33, 1, 8, '#151822');  // la fenetre
+    // Le toit, qui deborde.
+    p(-4, -62, L + 8, 18, '#151822');
+    p(-3, -61, L + 6, 16, '#8a2e22');
+    for (var j = 0; j < 3; j++) p(-3, -58 + j * 5, L + 6, 1, '#5e1c14');
+    p(-3, -61, L + 6, 2, '#b04634');
+  }
+
   function ecranMonde(jeu, idAstre, ou) {
     var a = V.astre(idAstre);
     if (!a) { location.hash = '#teleportail'; return; }
@@ -1304,6 +1357,11 @@
     holo.type = 'button';
     holo.hidden = true;
     boutons.appendChild(holo);
+    // Ramasser la pelle, ou creuser au pied du nain mauve.
+    var pelleB = el('button', 'ody-pelle', '');
+    pelleB.type = 'button';
+    pelleB.hidden = true;
+    boutons.appendChild(pelleB);
     scene.appendChild(boutons);
 
     var retour = el('a', 'ody-retour');
@@ -1320,6 +1378,18 @@
     jeu.appendChild(scene);
 
     var g = lune ? construireLune() : construireCarte(a);
+
+    // Le cabanon du fond du jardin, sur la Terre, et la pelle oubliee
+    // derriere. On ne la voit pas depuis le point d'arrivee : il faut en
+    // faire le tour.
+    var CABANON = a.id === 'terre' ? { x0: 31, x1: 33, y0: 21, y1: 22 } : null;
+    // Couchee contre le mur du fond : seul le bout du manche depasse du toit.
+    var PELLE = CABANON ? { x: 32.6 * TS, y: 21.05 * TS } : null;
+    if (CABANON) {
+      for (var cy0 = CABANON.y0; cy0 <= CABANON.y1; cy0++)
+        for (var cx0 = CABANON.x0; cx0 <= CABANON.x1; cx0++) g[cy0][cx0] = T.STRUCTURE;
+      g[20][32] = T.SOL;
+    }
     var libres = accessibles(g);
     var cur = V.curiosite(a.id);
     var lieu = lune ? { x: Math.floor(GROTTE.x), y: Math.floor(DEVANT_GROTTE.y) - 1 }
@@ -1485,11 +1555,190 @@
         holo.title = 'Réaffronter ' + gardien.nom + ' en hologramme';
         holo.setAttribute('aria-label', holo.title);
       }
+      var geste = libre ? gestePelle() : null;
+      pelleB.hidden = !geste;
+      if (geste && pelleB.dataset.geste !== geste) {
+        pelleB.dataset.geste = geste;
+        pelleB.textContent = geste === 'prendre' ? 'PRENDRE LA PELLE' : 'CREUSER';
+      }
       tir.hidden = !(libre || etat === 'scan') || !cibleTir;
       if (!tir.hidden) {
         var A = window.ARME;
         var pret = maintenant() - dernierTir >= (A ? A.niveauJeu('odyssee').cadence : 620);
         tir.classList.toggle('is-recharge', !pret);
+      }
+    }
+
+    // ---------- La pelle ----------
+    var nainMauve = a.id === 'altera'
+      ? choses.filter(function (c) { return c.o.id === 'nain-inverse'; })[0] : null;
+
+    function gestePelle() {
+      if (!balade) return null;
+      var ch = balade.chef;
+      if (PELLE && !DP.aLaPelle() && Math.hypot(ch.x - PELLE.x, ch.y - PELLE.y) < 34) return 'prendre';
+      if (nainMauve && DP.aLaPelle() && Math.hypot(ch.x - nainMauve.x, ch.y - nainMauve.y) < 36) return 'creuser';
+      return null;
+    }
+
+    pelleB.addEventListener('click', function () {
+      var geste = gestePelle();
+      if (geste === 'prendre') prendrePelle();
+      else if (geste === 'creuser') creuser();
+    });
+
+    function prendrePelle() {
+      DP.prendrePelle();
+      etat = 'fiche';
+      majBoutons();
+      panneau.hidden = false;
+      panneau.textContent = '';
+      var box = el('div', 'ody-trouvaille');
+      box.appendChild(el('strong', 'ody-trouvaille-titre', 'UNE PELLE'));
+      var im = el('img', 'ody-trouvaille-img');
+      im.src = pelleUrl();
+      im.alt = '';
+      box.appendChild(im);
+      box.appendChild(el('p', 'ody-trouvaille-txt', 'Couchée derrière le cabanon, la terre encore collée au fer.'));
+      box.appendChild(el('p', 'ody-trouvaille-txt ody-trouvaille-txt--sous', 'Ajoutée à tes Items. Il doit bien y avoir un endroit où creuser.'));
+      var ok = el('button', 'ody-trouvaille-btn', 'OK');
+      ok.type = 'button';
+      ok.addEventListener('click', function () {
+        panneau.hidden = true;
+        panneau.textContent = '';
+        etat = 'libre';
+      });
+      box.appendChild(ok);
+      panneau.appendChild(box);
+      ok.focus();
+    }
+
+    // Creuser au pied du nain mauve : on descend dans la terre d'Altera,
+    // et treize pierres precieuses apparaissent, une a une, le long du
+    // puits. Treize : la paire de l'Odyssee pour la balise d'Azhrakonr.
+    var NB_PIERRES = 13;
+    function creuser() {
+      etat = 'fiche';
+      majBoutons();
+      var fosse = el('div', 'ody-fosse');
+      var W = 320, H = 200;
+      var cvf = el('canvas', 'ody-fosse-cv');
+      cvf.width = W; cvf.height = H;
+      fosse.appendChild(cvf);
+      var compte = el('span', 'ody-fosse-compte', '');
+      fosse.appendChild(compte);
+      var fin = el('div', 'ody-fosse-fin');
+      fin.hidden = true;
+      fosse.appendChild(fin);
+      scene.appendChild(fosse);
+      var x = cvf.getContext('2d');
+      x.imageSmoothingEnabled = false;
+
+      var PROF = 1400, DUREE = reduit ? 1500 : 14000;
+      var STRATES = [a.palette.sol, a.palette.sol2 || a.palette.sol, '#6a4a32', '#5a3e2a',
+                     a.palette.roche, a.palette.rocheOmbre || '#3a3a3a', '#2a2030', '#1c1424'];
+      var TEINTES = ['#ff4a6a', '#4ac0ff', '#7cf05a', '#ffd23a', '#c86aff', '#ff8a2a', '#7cf0e8'];
+      var pierres = [];
+      for (var i = 0; i < NB_PIERRES; i++) {
+        pierres.push({ y: 110 + i * ((PROF - 220) / (NB_PIERRES - 1)), cote: i % 2 ? 1 : -1,
+                       c: TEINTES[i % TEINTES.length], vue: false, t: 0 });
+      }
+      var t0 = performance.now(), vues = 0;
+
+      function gemme(px, py, c, eclat) {
+        x.fillStyle = '#151822';
+        x.fillRect(px - 4, py - 3, 9, 7); x.fillRect(px - 3, py - 4, 7, 9);
+        x.fillStyle = c;
+        x.fillRect(px - 3, py - 2, 7, 5); x.fillRect(px - 2, py - 3, 5, 7);
+        x.fillStyle = 'rgba(255,255,255,.75)';
+        x.fillRect(px - 2, py - 2, 2, 2);
+        if (eclat > 0) {
+          x.fillStyle = 'rgba(255,255,255,' + eclat.toFixed(2) + ')';
+          var r = 4 + (1 - eclat) * 10;
+          x.fillRect(Math.round(px - r), py, Math.round(r * 2), 1);
+          x.fillRect(px, Math.round(py - r), 1, Math.round(r * 2));
+        }
+      }
+
+      function image(t) {
+        if (!vivant() || !fosse.parentNode) return;
+        var k = Math.min(1, (t - t0) / DUREE);
+        var e = k * k * (3 - 2 * k);
+        var fond = e * PROF;                       // la profondeur atteinte
+        var camY = Math.max(0, fond - H * 0.6);
+
+        // Les strates, de plus en plus sombres.
+        for (var y = 0; y < H; y += 2) {
+          var wy = y + camY;
+          var si = Math.min(STRATES.length - 1, Math.floor(wy / (PROF / STRATES.length)));
+          x.fillStyle = wy < 18 ? '#0d0a18' : STRATES[si];
+          x.fillRect(0, y, W, 2);
+        }
+        // Des cailloux dans la terre, fixes.
+        for (var c = 0; c < 70; c++) {
+          var cy = (c * 97) % PROF, cxp = (c * 53) % W;
+          var sy = cy - camY;
+          if (sy < -4 || sy > H) continue;
+          x.fillStyle = 'rgba(0,0,0,.22)';
+          x.fillRect(cxp, Math.round(sy), 3 + (c % 3), 2);
+        }
+        // Le puits, creuse jusqu'ou l'on est.
+        x.fillStyle = '#0c0812';
+        x.fillRect(W / 2 - 22, Math.round(18 - camY), 44, Math.max(0, Math.round(fond - 18)));
+        x.fillStyle = 'rgba(0,0,0,.4)';
+        x.fillRect(W / 2 - 22, Math.round(18 - camY), 4, Math.max(0, Math.round(fond - 18)));
+        x.fillRect(W / 2 + 18, Math.round(18 - camY), 4, Math.max(0, Math.round(fond - 18)));
+
+        // Les pierres, qui se revelent quand le puits les atteint.
+        pierres.forEach(function (p) {
+          if (!p.vue && fond >= p.y) {
+            p.vue = true; p.t = t; vues++;
+            compte.textContent = '◆ ' + vues;
+            compte.classList.remove('is-tic'); void compte.offsetWidth; compte.classList.add('is-tic');
+          }
+          if (!p.vue) return;
+          var py = Math.round(p.y - camY);
+          if (py < -10 || py > H + 10) return;
+          var eclat = Math.max(0, 1 - (t - p.t) / 700);
+          gemme(Math.round(W / 2 + p.cote * 28), py, p.c, eclat);
+        });
+
+        // La pelle, qui creuse au fond du puits.
+        var coup = reduit ? 0 : Math.abs(Math.sin(t / 140)) * 6;
+        var pc = pelleCanvas();
+        x.save();
+        x.translate(W / 2 + 4, Math.round(fond - camY - 4 - coup));
+        x.rotate(0.3);
+        x.drawImage(pc, -pc.width, -pc.height * 2, pc.width * 2, pc.height * 2);
+        x.restore();
+        // La terre qui gicle.
+        if (!reduit && k < 1) {
+          for (var m = 0; m < 6; m++) {
+            var ph = ((t / 300) + m / 6) % 1;
+            x.fillStyle = STRATES[Math.min(STRATES.length - 1, Math.floor(fond / (PROF / STRATES.length)))];
+            x.fillRect(Math.round(W / 2 + Math.sin(m * 2.1) * (8 + ph * 20)), Math.round(fond - camY - 6 - Math.sin(ph * 3.14) * 18), 3, 3);
+          }
+        }
+
+        if (k >= 1 && fin.hidden) finir();
+        if (k < 1 || !fin.hidden) requestAnimationFrame(image);
+      }
+      requestAnimationFrame(image);
+
+      function finir() {
+        fin.hidden = false;
+        DP.noterCode('azh-pierres');
+        fin.appendChild(el('strong', 'ody-fosse-titre', NB_PIERRES + ' PIERRES PRÉCIEUSES'));
+        fin.appendChild(el('p', 'ody-fosse-txt', 'Enterrées une à une sous le nain mauve, le long d’un seul puits. Quelqu’un les a comptées avant toi.'));
+        var remonter = el('button', 'ody-trouvaille-btn', 'REMONTER');
+        remonter.type = 'button';
+        remonter.addEventListener('click', function () {
+          DP.noterFouille('altera-nain');
+          fosse.classList.add('is-sortie');
+          plusTard(function () { fosse.remove(); etat = 'libre'; }, reduit ? 0 : 400);
+        });
+        fin.appendChild(remonter);
+        remonter.focus();
       }
     }
 
@@ -1813,6 +2062,29 @@
     // --- Ce qu'on peint avec le decor, a sa profondeur ---
     function extras(t) {
       var out = [];
+
+      // Le cabanon, et la pelle derriere lui tant qu'on ne l'a pas prise.
+      if (CABANON) {
+        out.push({ x: (CABANON.x0 + CABANON.x1 + 1) / 2 * TS, y: (CABANON.y1 + 1) * TS - 1,
+          dessin: function (ctx, sx, sy) { dessinerCabanon(ctx, sx, sy); } });
+        if (!DP.aLaPelle()) {
+          out.push({ x: PELLE.x, y: PELLE.y,
+            dessin: function (ctx, sx, sy) {
+              var pc = pelleCanvas();
+              ctx.save();
+              ctx.imageSmoothingEnabled = false;
+              ctx.translate(Math.round(sx), Math.round(sy));
+              ctx.rotate(0.25);
+              ctx.drawImage(pc, -pc.width / 2, -pc.height + 4);
+              ctx.restore();
+              // Un reflet sur le fer, de temps en temps.
+              if (!reduit && Math.floor(t / 1700) % 3 === 0) {
+                ctx.fillStyle = 'rgba(255,255,255,' + (1 - (t % 1700) / 1700).toFixed(2) + ')';
+                ctx.fillRect(Math.round(sx) - 2, Math.round(sy) - 4, 3, 1);
+              }
+            } });
+        }
+      }
 
       choses.forEach(function (c) {
         out.push({
@@ -2209,6 +2481,8 @@
         });
         dire(menace ? (DP.aLArme() ? 'Une créature attaque — TIRER !'
                                    : 'Une créature attaque. Sans arme, mieux vaut fuir.')
+          : gestePelle() === 'prendre' ? 'Une pelle, couchée derrière le cabanon.'
+          : gestePelle() === 'creuser' ? 'La terre est meuble, au pied du nain mauve.'
           : cible ? (DP.aScanne(cible.sujet.id) ? cible.sujet.nom + ' — déjà au carnet.'
                                                 : 'Quelque chose à portée de scanner.')
           : (repaire && !bossBattu() && (lune ? balade.chef.y < 13 * TS : presDuRepaire(170)))
@@ -2378,7 +2652,7 @@
   window.VIEWS['odyssee-carnet'] = { title: 'Carnet du scanner', render: viewCarnet };
 
   window.ODYSSEE = {
-    visuel: visuel, compteAstres: compteAstres,
+    visuel: visuel, compteAstres: compteAstres, pelleUrl: pelleUrl,
     construireCarte: construireCarte, placeCuriosite: placeCuriosite,
     accessibles: accessibles, construireLune: construireLune,
     BASE: BASE, GROTTE: GROTTE, DEVANT_GROTTE: DEVANT_GROTTE, PV_MAX: PV_MAX,

@@ -120,6 +120,34 @@
       forme: 'rond', motif: 'lueur', poids: 1.5, pente: 4.5,
       cm: [20, 60],  c: ['#1d2410', '#c8f02a', '#f4ff8a'] },
 
+    // ---- Speciaux : la vague Magma ----
+    // Elle a remplace la Radioactivite : les lacs fluo se sont changes en
+    // lave. Memes poids, memes pentes que la vague d'avant.
+    { id: 'poisson-braise', nom: 'Poisson-Braise', rarete: 'special', sousRarete: 'commun', vague: 'magma',
+      forme: 'classique', motif: 'lueur', poids: 28, pente: -0.5,
+      cm: [12, 30],  c: ['#4a1a10', '#ff8a3a', '#ffc04a'] },
+    { id: 'carpe-basalte', nom: 'Carpe de Basalte', rarete: 'special', sousRarete: 'commun', vague: 'magma',
+      forme: 'plat', motif: 'ecailles', poids: 24, pente: -0.3,
+      cm: [30, 80],  c: ['#2e2624', '#6e5c52', '#ff5a1e'] },
+    { id: 'sandre-lave', nom: 'Sandre de Lave', rarete: 'special', sousRarete: 'peu', vague: 'magma',
+      forme: 'long', motif: 'rayures', poids: 19, pente: 0.2,
+      cm: [35, 85],  c: ['#6a2410', '#ffa040', '#2a0c06'] },
+    { id: 'anguille-coulee', nom: 'Anguille de Coulée', rarete: 'special', sousRarete: 'peu', vague: 'magma',
+      forme: 'anguille', motif: 'lueur', poids: 13, pente: 0.8,
+      cm: [40, 110], c: ['#3a120a', '#ff6a1e', '#ffd23a'] },
+    { id: 'crabe-obsidienne', nom: 'Crabe d’Obsidienne', rarete: 'special', sousRarete: 'rare', vague: 'magma',
+      forme: 'crabe', motif: 'aucun', poids: 9, pente: 1.4,
+      cm: [10, 30],  c: ['#1c1622', '#4e3e5e', '#ff5a2a'] },
+    { id: 'meduse-ardente', nom: 'Méduse Ardente', rarete: 'special', sousRarete: 'rare', vague: 'magma',
+      forme: 'meduse', motif: 'aucun', poids: 5, pente: 2.2,
+      cm: [20, 55],  c: ['#ff7a2a', '#ffe0a0', '#d8401e'] },
+    { id: 'salamandre', nom: 'Salamandre Primordiale', rarete: 'special', sousRarete: 'legende', vague: 'magma',
+      forme: 'triton', motif: 'points', poids: 3, pente: 3,
+      cm: [14, 34],  c: ['#c8301e', '#ffb04a', '#ffe27a'] },
+    { id: 'coeur-du-volcan', nom: 'Cœur du Volcan', rarete: 'special', sousRarete: 'legende', vague: 'magma',
+      forme: 'rond', motif: 'lueur', poids: 1.5, pente: 4.5,
+      cm: [20, 60],  c: ['#2a0a06', '#ff4a1e', '#ffe27a'] },
+
     // ---- Les evolutions ----
     // Elles ne mordent pas tant qu'on ne les a pas vues eclore : c'est la
     // meme espece, repetee assez souvent, qui finit par changer de forme
@@ -165,6 +193,14 @@
       radioactif: true, evolueDe: 'meduse-atomique', seuil: 3,
       poids: 2, pente: 2.5, forme: 'meduse', motif: 'aucun',
       cm: [40, 95],  c: ['#e8ff6a', '#ffffd8', '#a8d81e'] },
+    { id: 'braise-vive', nom: 'Braise Vive', rarete: 'special', sousRarete: 'rare',
+      vague: 'magma', evolueDe: 'poisson-braise', seuil: 8,
+      poids: 6, pente: 0.6, forme: 'classique', motif: 'lueur',
+      cm: [26, 58],  c: ['#7a1e0a', '#ffd06a', '#fff2b0'] },
+    { id: 'meduse-solaire', nom: 'Méduse Solaire', rarete: 'special', sousRarete: 'legende',
+      vague: 'magma', evolueDe: 'meduse-ardente', seuil: 3,
+      poids: 2, pente: 2.5, forme: 'meduse', motif: 'aucun',
+      cm: [40, 95],  c: ['#ffb02a', '#fff6d0', '#ff5a1e'] },
 
     // ---- Les especes secretes ----
     // Elles ne figurent nulle part : ni case grisee, ni silhouette, ni
@@ -196,6 +232,11 @@
       cm: [30, 80],  c: ['#1a2208', '#d8ff3a', '#ffffc0'],
       condition: { eau: 'radio', canne: 'radioactive', chance: 0.012 },
       indice: 'Il dort au fond des eaux fluo, et seule la Canne Radioactive va l’y chercher.' },
+    { id: 'phenix-des-profondeurs', nom: 'Phénix des Profondeurs', rarete: 'special', sousRarete: 'legende',
+      secret: true, vague: 'magma', forme: 'classique', motif: 'irise',
+      cm: [40, 90],  c: ['#ff5a1e', '#fff0b0', '#ffd23a'],
+      condition: { eau: 'magma', lancers: 20, chance: 0.012 },
+      indice: 'Il ne s’élève de la lave qu’après une longue séance au bord du magma.' },
     { id: 'leviathan', nom: 'Léviathan d’Eau Douce', rarete: 'legende', secret: true,
       forme: 'long', motif: 'ecailles',
       cm: [200, 420], c: ['#1f2a3a', '#43586e', '#7ce0ff'],
@@ -211,21 +252,41 @@
 
   function estBase(f) { return !f.evolueDe && !f.secret; }
 
-  // Les deux viviers de base : l'eau claire et l'eau irradiee.
-  function vivier(radioactif) {
+  // ---------- Les vagues ----------
+  // Les Speciaux viennent par vagues. Une seule nage a la fois, dans les
+  // lacs speciaux de la carte ; celles d'avant ne mordent plus, et le
+  // carnet ne garde que ce qu'on en a pris.
+  var VAGUE = 'magma';
+  var VAGUES = {
+    radio: { nom: 'Radioactivité', eaux: 'Lacs irradiés', titre: 'PRISE IRRADIÉE !' },
+    magma: { nom: 'Magma', eaux: 'Lacs de magma', titre: 'PRISE DU MAGMA !' }
+  };
+
+  function estSpecial(f) { return f.rarete === 'special'; }
+  function vagueDe(f) { return f.vague || (f.radioactif ? 'radio' : null); }
+  // Une espece d'une vague passee : elle ne revient plus.
+  function ancienne(f) { var v = vagueDe(f); return !!v && v !== VAGUE; }
+
+  // Les deux viviers de base : l'eau claire, et les lacs speciaux de la
+  // vague en cours.
+  function vivier(special) {
     return POISSONS.filter(function (f) {
-      return estBase(f) && !!f.radioactif === !!radioactif;
+      return estBase(f) && estSpecial(f) === !!special && !ancienne(f);
     });
   }
 
-  // Les evolutions de cette eau-la. Sans argument, toutes.
-  function evolutions(radioactif) {
+  // Les evolutions de cette eau-la. Sans argument, toutes celles qui
+  // nagent encore.
+  function evolutions(special) {
     return POISSONS.filter(function (f) {
-      if (!f.evolueDe) return false;
-      if (radioactif === undefined) return true;
-      return !!f.radioactif === !!radioactif;
+      if (!f.evolueDe || ancienne(f)) return false;
+      if (special === undefined) return true;
+      return estSpecial(f) === !!special;
     });
   }
+
+  // Les especes des vagues passees, pour le carnet.
+  function anciennes() { return POISSONS.filter(function (f) { return ancienne(f) && !f.secret; }); }
 
   function secrets() { return POISSONS.filter(function (f) { return !!f.secret; }); }
 
@@ -239,7 +300,8 @@
 
   // Ce que le carnet affiche d'office : tout sauf les secretes. C'est ce
   // total-la qu'on montre au joueur, pour ne pas trahir le reste.
-  function publiques() { return POISSONS.filter(function (f) { return !f.secret; }); }
+  // Les vagues passees n'y comptent plus : on ne peut plus les completer.
+  function publiques() { return POISSONS.filter(function (f) { return !f.secret && !ancienne(f); }); }
 
   function parId(id) {
     for (var i = 0; i < POISSONS.length; i++) if (POISSONS[i].id === id) return POISSONS[i];
@@ -287,8 +349,10 @@
 
   function secretPossible(f, ctx) {
     var c = f.condition || {};
+    // "irradie" dit que la ligne est dans un lac special : son eau est
+    // celle de la vague en cours.
     if (c.eau && c.eau !== 'toute') {
-      if (c.eau !== (ctx.irradie ? 'radio' : 'claire')) return false;
+      if (c.eau !== (ctx.irradie ? VAGUE : 'claire')) return false;
     }
     if (c.canne && ctx.canne !== c.canne) return false;
     if (c.flotteur && ctx.flotteur !== c.flotteur) return false;
@@ -653,6 +717,8 @@
     SHINYS: SHINYS, CHANCE_SHINY: CHANCE_SHINY,
     vivier: vivier, evolutions: evolutions, secrets: secrets,
     evolutionDe: evolutionDe, publiques: publiques, estBase: estBase,
+    VAGUE: VAGUE, VAGUES: VAGUES, vagueDe: vagueDe, ancienne: ancienne, anciennes: anciennes,
+    estSpecial: estSpecial,
     tirerSecret: tirerSecret, secretsPossibles: secretsPossibles,
     aShiny: aShiny, especesShiny: especesShiny, estShiny: estShiny,
     parId: parId, rarete: rarete, tirer: tirer, taille: taille,

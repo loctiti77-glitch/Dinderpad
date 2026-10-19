@@ -19,7 +19,10 @@
     CRISTAL: 23, STRUCTURE: 24,
     // Un arbre cosmique de Fish n'Der. La carte ne le peint pas : il
     // scintille, puis tombe sous la hache, et c'est le jeu qui le dessine.
-    ARBRE_COSMOS: 25
+    ARBRE_COSMOS: 25,
+    // Un arbre qui n'en est pas un : il se dessine comme les autres, mais
+    // on passe au travers. Le niveau 6 de The Founder War en cache.
+    ARBRE_FAUX: 26
   };
 
   // Ce qu'on ne traverse pas. L'eau se longe, elle ne se marche pas.
@@ -53,6 +56,15 @@
     ['#6a4210', '#a0661a', '#d89a2a', '#4e300c']
   ];
   var FEUILLES_MORTES = ['#a0561e', '#c0762a', '#7a3e16', '#d89a2a', '#8a2e14'];
+
+  // Les lacs speciaux, vague par vague : le fond, le bord, les reflets, les
+  // bulles, et ce qui bouge dessus (lueur qui respire, vaguelettes).
+  var SPECIAL = {
+    radio: { fond: '#6fa814', bord: '#9ad11e', reflet: '#c8f02a', bulle: '#e8ff8a',
+             lueur: 'rgba(232,255,138,', vague: 'rgba(240,255,170,.55)' },
+    magma: { fond: '#b8341a', bord: '#e0581e', reflet: '#ff9a2a', bulle: '#ffe27a',
+             lueur: 'rgba(255,170,60,', vague: 'rgba(255,220,130,.6)' }
+  };
 
   // La palette d'un astre. Sans elle, les tuiles de monde lointain se
   // peignent en gris : c'est le jeu qui fournit la sienne, par opts.
@@ -184,7 +196,7 @@
   function solTuile(x, g, tx, ty, opts) {
     var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
 
-    if (t === T.ARBRE_COSMOS) t = T.HERBE;
+    if (t === T.ARBRE_COSMOS || t === T.ARBRE_FAUX) t = T.HERBE;
     else if (t >= T.SOL) return solAstre(x, g, tx, ty, opts);
 
     if (estEau(t)) {
@@ -197,18 +209,21 @@
         if (!estEau(g[ny][nx])) bord = true;
       }
       var rad = t === T.EAU_RAD;
-      x.fillStyle = rad ? (bord ? '#9ad11e' : '#6fa814')
+      // Les lacs speciaux prennent la couleur de la vague en cours : fluo
+      // pour la Radioactivite, lave pour le Magma.
+      var SP = rad ? SPECIAL[(opts && opts.vague) || 'radio'] || SPECIAL.radio : null;
+      x.fillStyle = rad ? (bord ? SP.bord : SP.fond)
                         : (bord ? '#2a68c4' : '#1d4f9c');
       x.fillRect(px, py, TS, TS);
-      x.fillStyle = rad ? (bord ? '#c8f02a' : '#9ad11e')
+      x.fillStyle = rad ? (bord ? SP.reflet : SP.bord)
                         : (bord ? '#3f82dd' : '#2a68c4');
       for (i = 0; i < 5; i++) {
         n = bruit(tx, ty, 10 + i);
         x.fillRect(px + (n * 18 | 0), py + i * 5 + 1, 6, 2);
       }
-      // Quelques bulles remontent du fond irradie.
+      // Quelques bulles remontent du fond.
       if (rad) {
-        x.fillStyle = '#e8ff8a';
+        x.fillStyle = SP.bulle;
         for (i = 0; i < 3; i++) {
           n = bruit(tx, ty, 190 + i);
           x.fillRect(px + 3 + (n * 17 | 0), py + 3 + ((bruit(tx, ty, 195 + i) * 17) | 0), 2, 2);
@@ -390,6 +405,7 @@
     var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
 
     if (t === T.ARBRE_COSMOS) return;
+    if (t === T.ARBRE_FAUX) t = T.ARBRE;
     if (t >= T.SOL) { objetAstre(x, g, tx, ty, opts); return; }
 
     if (t === T.ROSEAU) {
@@ -520,6 +536,18 @@
       x.fillStyle = '#767c8c'; x.fillRect(px + 4, py + 6, TS - 10, 7);
       x.fillStyle = '#8f95a6'; x.fillRect(px + 6, py + 7, 5, 3);
       x.fillStyle = '#43485a'; x.fillRect(px + 10, py + 12, 7, 3);
+      return;
+    }
+
+    if (t === T.EAU_RAD && opts && opts.vague === 'magma') {
+      // Un bloc de basalte qui flotte sur la lave, fendu de braise.
+      if (bruit(tx, ty, 182) > 0.9) {
+        x.fillStyle = '#2a2224'; x.fillRect(px + 5, py + 8, 14, 9);
+        x.fillStyle = '#3e3436'; x.fillRect(px + 6, py + 8, 10, 4);
+        x.fillStyle = '#ff7a2a'; x.fillRect(px + 9, py + 12, 5, 1);
+        x.fillRect(px + 13, py + 11, 1, 2);
+        x.fillStyle = 'rgba(255,200,90,.35)'; x.fillRect(px + 4, py + 17, 16, 2);
+      }
       return;
     }
 
@@ -835,6 +863,8 @@
       ctx.drawImage(f.canvas, pose * f.L, (p.dir || 0) * f.H, f.L, f.H, sx, sy, f.L, f.H);
     }
 
+    var SPV = SPECIAL[(cfg.opts && cfg.opts.vague) || 'radio'] || SPECIAL.radio;
+
     function dessiner(t) {
       ctx.drawImage(monde, cam.x | 0, cam.y | 0, VUE_W, VUE_H, 0, 0, VUE_W, VUE_H);
 
@@ -845,13 +875,13 @@
           if (!g[ty] || !estEau(g[ty][tx])) continue;
           var px = tx * TS - cam.x, py = ty * TS - cam.y;
           var rad = g[ty][tx] === T.EAU_RAD;
-          // L'eau irradiee respire : sa lueur monte et descend.
+          // Le lac special respire : sa lueur monte et descend.
           if (rad) {
             var pulse = 0.12 + 0.1 * Math.sin(t / 420 + tx * 0.5 + ty * 0.3);
-            ctx.fillStyle = 'rgba(232,255,138,' + pulse.toFixed(2) + ')';
+            ctx.fillStyle = SPV.lueur + pulse.toFixed(2) + ')';
             ctx.fillRect(px, py, TS, TS);
           }
-          ctx.fillStyle = rad ? 'rgba(240,255,170,.55)' : 'rgba(190,225,255,.5)';
+          ctx.fillStyle = rad ? SPV.vague : 'rgba(190,225,255,.5)';
           var o = ((Math.sin(t0 + tx * 0.7 + ty) * 7) | 0) + 8;
           ctx.fillRect(px + o, py + 6, 7, 2);
           ctx.fillRect(px + (TS - o - 6), py + 15, 5, 2);

@@ -191,6 +191,7 @@
   var NOMS_NUIT = ['', '1re nuit', '2e nuit', '3e nuit', '4e nuit', '5e nuit', '6e nuit', 'Nuit personnalisée'];
 
   var HEURE = 60;                       // secondes de jeu par heure de nuit
+  var FIXE = 5;                         // secondes sous le regard d'un animatronique avant qu'il attaque
 
   // Ceux qui s'enhardissent a mesure que la nuit avance, heure par heure.
   var MONTEE = { 2: ['faith'], 3: ['faith', 'charlie', 'stephen'], 4: ['faith', 'charlie', 'stephen'] };
@@ -419,7 +420,7 @@
     }
     ctx.save();
     if (o.alpha != null) ctx.globalAlpha = o.alpha;
-    ctx.drawImage(TRAVAIL, 0, 0, G.W, G.H, G.x0 - off, G.y0, G.W, G.H);
+    ctx.drawImage(TRAVAIL, 0, 0, G.W, G.H, G.x0 - off + (o.dx || 0), G.y0 + (o.dy || 0), G.W, G.H);
     ctx.restore();
   }
 
@@ -558,6 +559,7 @@
       porteG: false, porteD: false, animG: 0, animD: 0,
       lumG: false, lumD: false,
       cam: false, camVue: '01', bascule: 0, glitch: 0, camT: 0,
+      peurCam: 0,
       pan: null, pointeur: 0.5, tire: null,
       panne: false, panneT: 0, panneFin: 0, panneNoir: 0, boite: false,
       vusG: false, vusD: false, coupsStephen: 0,
@@ -1234,12 +1236,22 @@
         if (vivants) {
           var G = cadre(sc, 'base', pose, img);
           if (G) L.push({ d: G.dist, f: function (off) {
-            animer(G, quoi, k + '|' + cle, off, null, bruitDe(0.5, 0, true));
+            // Celui qui nous fixe tremble de plus en plus fort : au bout de
+            // FIXE secondes sous son regard, il attaque.
+            var st0 = quoi === 'cam' && !e.fini && A[cle] && VIVANTS[k + '|' + cle] && VIVANTS[k + '|' + cle].st;
+            var peur = st0 ? Math.min(1, (st0.fixeT || 0) / FIXE) : 0;
+            var o = null;
+            if (peur > 0 && !reduit) {
+              var amp = 2 + peur * peur * 26;
+              o = { dx: amp * Math.sin(e.t * 47 + peur * 3), dy: amp * 0.45 * Math.sin(e.t * 61 + 1) };
+              e.peurCam = Math.max(e.peurCam, peur);
+            }
+            animer(G, quoi, k + '|' + cle, off, o, bruitDe(0.5, 0, true));
             if (quoi !== 'cam' || e.fini || !A[cle]) return;
             var st = VIVANTS[k + '|' + cle] && VIVANTS[k + '|' + cle].st;
             if (!st) return;
             st.fixeT = st.regard > 0.9 ? (st.fixeT || 0) + dtImage : 0;
-            if (st.fixeT > 3) attaque(cle);
+            if (st.fixeT > FIXE) attaque(cle);
           } });
           return;
         }
@@ -1297,11 +1309,60 @@
       ctx.drawImage(t, pied[0] * K - wp / 2 - off + hasard(-4, 4), pied[1] * K - hp + hasard(-3, 3));
     }
 
+    // L'etiquette du carton du haut, dans la chambre froide : un numero
+    // de serie dont deux chiffres ne sont pas de la meme encre. C'est la
+    // paire de Wade and Friends, pour la balise d'Azhrakonr.
+    var SERIE = { avant: '4258', code: '96', apres: '34' };
+    var etiquetteCv = null;
+    function etiquette() {
+      if (etiquetteCv) return etiquetteCv;
+      var c = toile(220, 120), x = c.getContext('2d');
+      x.fillStyle = '#e9e2cf'; x.fillRect(0, 0, 220, 120);
+      x.fillStyle = 'rgba(120,100,60,.18)'; x.fillRect(0, 88, 220, 32);
+      x.strokeStyle = '#3a3226'; x.lineWidth = 3; x.strokeRect(4, 4, 212, 112);
+      x.fillStyle = '#2a241c';
+      x.font = 'bold 19px Consolas, monospace';
+      x.textBaseline = 'top';
+      x.fillText('NUMÉRO DE SÉRIE :', 14, 16);
+      x.font = 'bold 34px Consolas, monospace';
+      var px = 14;
+      [[SERIE.avant, '#1c1812'], [SERIE.code, '#e01e24'], [SERIE.apres, '#1c1812']].forEach(function (p) {
+        x.fillStyle = p[1];
+        x.fillText(p[0], px, 48);
+        px += x.measureText(p[0]).width;
+      });
+      // Les barres d'un code-barres, pour faire vrai.
+      x.fillStyle = '#2a241c';
+      for (var i = 0; i < 46; i++) if ((i * 7 + 3) % 5 < 3) x.fillRect(14 + i * 4, 92, 2 + (i % 3 === 0 ? 1 : 0), 18);
+      etiquetteCv = c;
+      return c;
+    }
+
+    // Collee sur la face avant du carton du haut de la pile de gauche (le
+    // carton B, pose sur le A), en perspective : on projette trois de ses
+    // coins et l'on deforme l'image a leur mesure.
+    function etiquetteSerie(off) {
+      function pt(x, y) { var p = R.projeter('froid', [x, y, 4.39]); return [p[0] * K - off, p[1] * K]; }
+      var hg = pt(-2.36, 1.33), hd = pt(-1.84, 1.33), bg = pt(-2.36, 1.0);
+      var im = etiquette();
+      ctx.save();
+      ctx.transform((hd[0] - hg[0]) / im.width, (hd[1] - hg[1]) / im.width,
+                       (bg[0] - hg[0]) / im.height, (bg[1] - hg[1]) / im.height, hg[0], hg[1]);
+      ctx.globalAlpha = 0.86;
+      ctx.drawImage(im, 0, 0);
+      // La chambre froide est mal eclairee : l'etiquette aussi.
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(8,12,20,.32)';
+      ctx.fillRect(0, 0, im.width, im.height);
+      ctx.restore();
+    }
+
     function dessinerCamera(dt) {
       var k = e.camVue, cam = CAMS[k];
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, VW, VH);
       e.camT += dt;
+      e.serieT = k === '07' ? (e.serieT || 0) + dt : 0;
       if (!cam.scene) {
         // La cuisine : la camera est morte, on n'a que le son.
         ctx.globalAlpha = 0.5;
@@ -1332,10 +1393,24 @@
           u = Math.max(0, Math.min(1, (u - 0.12) / 0.76));
           u = u * u * (3 - 2 * u);
           var off = max ? max * u : (rendu.w * K - VW) / 2;
+          // Sous un regard qui dure, toute l'image se met a trembler, et le
+          // grain monte : la camera elle-meme a peur.
+          var peurAvant = e.peurCam || 0;
+          e.peurCam = 0;
+          var secoue = peurAvant > 0.35 && !reduit ? (peurAvant - 0.35) * 14 : 0;
+          if (secoue) e.glitch = Math.max(e.glitch, (peurAvant - 0.35) * 0.4);
+          ctx.save();
+          if (secoue) ctx.translate(secoue * Math.sin(e.t * 39), secoue * 0.6 * Math.sin(e.t * 53 + 2));
           ctx.imageSmoothingEnabled = true;
           ctx.drawImage(rendu.canvas, -off, 0, rendu.w * K, rendu.h * K);
           e.vue = { cle: cam.scene, rendu: rendu, off: off };
           occupants(k).forEach(function (o) { o.f(off); });
+          if (k === '07') {
+            etiquetteSerie(off);
+            // Trois secondes devant l'etiquette : elle est lue.
+            if (e.serieT > 3 && !e.serieLue) { e.serieLue = true; DP.noterCode('azh-serie'); }
+          }
+          ctx.restore();
           if (sec) sec.dessiner(cam.scene, ctx, off, K, VW, VH);
           if (k === '09') dessinerCourse(off);
         }

@@ -81,8 +81,8 @@
   // ==========================================================
 
   // Les plans d'eau, decrits en cases : centre, demi-largeur, demi-hauteur.
-  // "radio" marque les eaux irradiees : elles ne rendent que des especes
-  // Speciales, et se voient de loin a leur jaune fluo.
+  // "radio" marque les lacs speciaux : ils ne rendent que les Speciaux de
+  // la vague en cours (aujourd'hui le Magma), et se voient de loin.
   var LACS = [
     { x: 13, y: 8,  rx: 7,   ry: 4.4 },
     { x: 33, y: 7,  rx: 8.5, ry: 4 },
@@ -318,6 +318,13 @@
       action.type = 'button';
       action.hidden = true;
       scene.appendChild(action);
+
+      // Sur le ponton, on peut aussi plonger. Le bouton est a part : au
+      // bout du ponton, on veut garder "Lancer".
+      var plongerB = el('button', 'pe-plonger', 'PLONGER');
+      plongerB.type = 'button';
+      plongerB.hidden = true;
+      scene.appendChild(plongerB);
 
       // La minicarte : la carte entiere en un coup d'oeil, avec les
       // eaux, la cabane, la souche et le point ou l'on se tient. Elle est
@@ -1041,6 +1048,274 @@
         ctx.drawImage(fr, Math.round(ex - larg / 2), Math.round(fy - fr.height), Math.round(larg), fr.height);
       }
 
+      // ---------- Sous l'eau ----------
+      // Du ponton, on plonge dans le grand lac. On nage parmi les poissons
+      // du carnet ; l'un d'eux est en papier, et porte un nombre ecrit a
+      // l'encre : la paire de Fish n'Der pour la balise d'Azhrakonr.
+      var CODE_PAPIER = '43';
+
+      // Le poisson en papier : un origami, plie en triangles, l'encre dessus.
+      var papierCv = null;
+      function poissonPapier() {
+        if (papierCv) return papierCv;
+        var c = document.createElement('canvas');
+        c.width = 30; c.height = 18;
+        var x = c.getContext('2d');
+        function p(px, py, w, h, col) { x.fillStyle = col; x.fillRect(px, py, w, h); }
+        // Le corps : deux triangles plies, et la queue.
+        x.fillStyle = '#f4efe2';
+        x.beginPath(); x.moveTo(2, 9); x.lineTo(12, 2); x.lineTo(22, 9); x.lineTo(12, 16); x.closePath(); x.fill();
+        x.fillStyle = '#e2dac6';
+        x.beginPath(); x.moveTo(12, 9); x.lineTo(22, 9); x.lineTo(12, 16); x.closePath(); x.fill();
+        x.fillStyle = '#f4efe2';
+        x.beginPath(); x.moveTo(21, 9); x.lineTo(29, 3); x.lineTo(27, 9); x.lineTo(29, 15); x.closePath(); x.fill();
+        // Les plis.
+        p(12, 2, 1, 14, '#c9bea4');
+        p(3, 9, 18, 1, '#c9bea4');
+        // L'oeil, a l'encre.
+        p(5, 7, 2, 2, '#1a2236');
+        // Le nombre, ecrit petit sur le flanc.
+        var CH = { '4': ['101', '101', '111', '001', '001'], '3': ['111', '001', '011', '001', '111'] };
+        CODE_PAPIER.split('').forEach(function (d, i) {
+          (CH[d] || []).forEach(function (l, j) {
+            for (var k = 0; k < 3; k++) if (l[k] === '1') p(9 + i * 4 + k, 4 + j, 1, 1, '#1d3a8a');
+          });
+        });
+        // Le cerne.
+        x.globalCompositeOperation = 'destination-over';
+        x.strokeStyle = '#1a2236'; x.lineWidth = 1;
+        x.beginPath(); x.moveTo(1.5, 9); x.lineTo(12, 1.5); x.lineTo(22, 8.5); x.lineTo(29.5, 2.5);
+        x.lineTo(27.5, 9); x.lineTo(29.5, 15.5); x.lineTo(22, 9.5); x.lineTo(12, 16.5); x.closePath(); x.stroke();
+        papierCv = c;
+        return c;
+      }
+
+      var plongee = null;
+
+      function surLePonton() {
+        var c = balade.caseDuChef();
+        return balade.tuile(c[0], c[1]) === T.PONTON;
+      }
+
+      function plonger() {
+        if (etat !== 'repos' || plongee) return;
+        etat = 'plongee';
+        majAction();
+        plongerB.hidden = true;
+        scene.classList.add('is-plouf');
+        dire('Plouf !');
+        plusTard(function () { if (vivant()) ouvrirFond(); }, reduit ? 0 : 450);
+      }
+
+      function ouvrirFond() {
+        scene.classList.remove('is-plouf');
+        var W = 320, H = 210, LW = W * 3;           // le lac fait trois ecrans de large
+        var fond = el('div', 'pe-fond');
+        var cvf = el('canvas', 'pe-fond-cv');
+        cvf.width = W; cvf.height = H;
+        fond.appendChild(cvf);
+        var aide = el('p', 'pe-fond-aide', 'Sous l’eau. Nage parmi les poissons.');
+        fond.appendChild(aide);
+        var remonter = el('button', 'pe-fond-remonter', 'REMONTER');
+        remonter.type = 'button';
+        fond.appendChild(remonter);
+        scene.insertBefore(fond, stick);
+        scene.classList.add('is-sousleau');
+        var x = cvf.getContext('2d');
+        x.imageSmoothingEnabled = false;
+
+        // Les habitants : les especes d'eau claire du carnet, a toutes les
+        // profondeurs, et le poisson en papier, loin vers l'est.
+        var vivier = P.vivier(false);
+        var nageurs = [];
+        for (var i = 0; i < 26; i++) {
+          var f = vivier[(i * 7) % vivier.length];
+          nageurs.push({
+            f: f, x: bruit(i, 3, 501) * LW, y: 30 + bruit(i, 5, 502) * (H - 70),
+            v: (8 + bruit(i, 7, 503) * 16) * (bruit(i, 9, 504) > 0.5 ? 1 : -1),
+            ph: bruit(i, 11, 505) * 6.3
+          });
+        }
+        // Il nage vers l'ouest, tete en avant : ainsi son nombre se lit a l'endroit.
+        var papier = { x: LW * 0.8, y: H * 0.55, v: -6, ph: 1.2, papier: true };
+        nageurs.push(papier);
+
+        // Les algues et les rochers du fond, poses une fois.
+        var algues = [];
+        for (var a = 0; a < 40; a++) {
+          algues.push({ x: bruit(a, 1, 511) * LW, h: 14 + bruit(a, 2, 512) * 34,
+                        c: bruit(a, 3, 513) > 0.5 ? '#2f7a34' : '#3f9c42' });
+        }
+
+        var nageur = { x: 40, y: 50, dir: 2, pas: 0, vx: 0, vy: 0 };
+        var camX = 0, trouve = false, fini = false;
+        var touches = {}, dirStick = { x: 0, y: 0 };
+        var CLES = { arrowleft: 'g', q: 'g', a: 'g', arrowright: 'd', d: 'd',
+                     arrowup: 'h', z: 'h', w: 'h', arrowdown: 'b', s: 'b' };
+        function clavier(e) {
+          var c = CLES[(e.key || '').toLowerCase()];
+          if (!c) return;
+          e.preventDefault();
+          touches[c] = e.type === 'keydown';
+        }
+        window.addEventListener('keydown', clavier);
+        window.addEventListener('keyup', clavier);
+
+        // Le meme joystick qu'a la surface, lu a part : la marche est figee.
+        var tenu = false, centre = { x: 0, y: 0 }, rayon = 1;
+        function prendre(e) {
+          var r = stick.getBoundingClientRect();
+          rayon = r.width / 2; centre.x = r.left + rayon; centre.y = r.top + rayon;
+          tenu = true; bouger(e);
+        }
+        function bouger(e) {
+          if (!tenu) return;
+          var dx = e.clientX - centre.x, dy = e.clientY - centre.y;
+          var d = Math.sqrt(dx * dx + dy * dy) || 1, k = Math.min(1, d / (rayon * 0.72));
+          dirStick.x = dx / d * k; dirStick.y = dy / d * k;
+          pomme.style.transform = 'translate(' + (dirStick.x * rayon * 0.5) + 'px,' + (dirStick.y * rayon * 0.5) + 'px)';
+        }
+        function lacher() { tenu = false; dirStick.x = dirStick.y = 0; pomme.style.transform = ''; }
+        stick.addEventListener('pointerdown', prendre);
+        stick.addEventListener('pointermove', bouger);
+        stick.addEventListener('pointerup', lacher);
+        stick.addEventListener('pointercancel', lacher);
+
+        var avant = 0;
+        function image(t) {
+          if (fini || !vivant()) return;
+          var dt = avant ? Math.min(0.05, (t - avant) / 1000) : 0;
+          avant = t;
+
+          // La nage : un peu d'elan, freinee par l'eau.
+          var ix = dirStick.x + (touches.d ? 1 : 0) - (touches.g ? 1 : 0);
+          var iy = dirStick.y + (touches.b ? 1 : 0) - (touches.h ? 1 : 0);
+          var n = Math.hypot(ix, iy);
+          if (n > 1) { ix /= n; iy /= n; }
+          nageur.vx += (ix * 70 - nageur.vx) * Math.min(1, dt * 3);
+          nageur.vy += (iy * 70 - nageur.vy) * Math.min(1, dt * 3);
+          nageur.x = Math.max(10, Math.min(LW - 10, nageur.x + nageur.vx * dt));
+          nageur.y = Math.max(22, Math.min(H - 26, nageur.y + nageur.vy * dt));
+          if (Math.abs(nageur.vx) > 6) nageur.dir = nageur.vx < 0 ? 1 : 2;
+          nageur.pas += (Math.abs(nageur.vx) + Math.abs(nageur.vy)) * dt * 0.25;
+          camX = Math.max(0, Math.min(LW - W, nageur.x - W / 2));
+
+          // L'eau : plus sombre vers le fond, des rais de lumiere.
+          var gr = x.createLinearGradient(0, 0, 0, H);
+          gr.addColorStop(0, '#2a78c8'); gr.addColorStop(0.5, '#1a4f94'); gr.addColorStop(1, '#0c2a54');
+          x.fillStyle = gr; x.fillRect(0, 0, W, H);
+          // La surface, qui ondule.
+          x.fillStyle = 'rgba(200,235,255,.5)';
+          for (var s = 0; s < W; s += 4) x.fillRect(s, 6 + Math.round(Math.sin((s + camX) / 18 + t / 500) * 2), 4, 1);
+          x.fillStyle = 'rgba(180,225,255,.08)';
+          for (var r = 0; r < 6; r++) {
+            var rx = ((r * 173 - camX * 0.4) % (W + 80) + W + 80) % (W + 80) - 40;
+            x.beginPath(); x.moveTo(rx, 0); x.lineTo(rx + 26, 0); x.lineTo(rx + 70, H); x.lineTo(rx + 34, H); x.closePath(); x.fill();
+          }
+          // Le fond de sable, les algues qui ondulent.
+          x.fillStyle = '#b8a46a'; x.fillRect(0, H - 14, W, 14);
+          x.fillStyle = '#9a8656';
+          for (var q = 0; q < W; q += 7) x.fillRect(q, H - 14 + ((q * 13 + camX) % 5), 3, 2);
+          algues.forEach(function (al) {
+            var ax = Math.round(al.x - camX);
+            if (ax < -10 || ax > W + 10) return;
+            x.fillStyle = al.c;
+            for (var y = 0; y < al.h; y += 2) {
+              var ox = Math.round(Math.sin(t / 700 + y / 8 + al.x) * (y / al.h) * 4);
+              x.fillRect(ax + ox, H - 14 - y, 2, 2);
+            }
+          });
+
+          // Les poissons.
+          nageurs.forEach(function (o) {
+            o.x += o.v * dt;
+            if (o.x < -40) o.x = LW + 30; else if (o.x > LW + 40) o.x = -30;
+            var oy = o.y + Math.sin(t / 900 + o.ph) * 6;
+            var sx = Math.round(o.x - camX), sy = Math.round(oy);
+            if (sx < -40 || sx > W + 40) return;
+            var fe = o.papier ? null : P.feuille(o.f.id, false);
+            var cvx = o.papier ? poissonPapier() : fe && fe.canvas;
+            if (!cvx) return;
+            var w = o.papier ? 30 : fe.L, h = o.papier ? 18 : fe.H;
+            x.save();
+            x.translate(sx, sy);
+            // Les sprites regardent a gauche : ceux qui vont a droite se retournent.
+            if (o.v > 0) x.scale(-1, 1);
+            if (o.papier) x.rotate(Math.sin(t / 600 + o.ph) * 0.12);
+            x.drawImage(cvx, -Math.round(w / 2), -Math.round(h / 2), w, h);
+            x.restore();
+          });
+
+          // Le plongeur : le Dinder de la partie, de profil, des bulles au-dessus.
+          var fd = window.CHIBI && window.CHIBI.feuille(choisi);
+          if (fd) {
+            var pose = Math.floor(nageur.pas) % fd.poses;
+            x.drawImage(fd.canvas, pose * fd.L, nageur.dir * fd.H, fd.L, fd.H,
+                        Math.round(nageur.x - camX - fd.L / 2), Math.round(nageur.y - fd.H / 2), fd.L, fd.H);
+          }
+          for (var b = 0; b < 3; b++) {
+            var ph = ((t / 1400) + b / 3) % 1;
+            x.fillStyle = 'rgba(220,245,255,' + (0.8 * (1 - ph)).toFixed(2) + ')';
+            x.fillRect(Math.round(nageur.x - camX + Math.sin(ph * 9 + b) * 3), Math.round(nageur.y - 16 - ph * 30), 2, 2);
+          }
+
+          // Tout pres du poisson en papier, on lit ce qu'il porte.
+          var py = papier.y + Math.sin(t / 900 + papier.ph) * 6;
+          if (!trouve && Math.hypot(nageur.x - papier.x, nageur.y - py) < 32) {
+            trouve = true;
+            montrerPapier();
+          }
+          requestAnimationFrame(image);
+        }
+        requestAnimationFrame(image);
+
+        function montrerPapier() {
+          var box = el('div', 'pe-prise-box pe-prise-box--papier');
+          box.appendChild(el('p', 'pe-prise-titre', 'UN POISSON EN PAPIER ?'));
+          var im = el('img', 'pe-papier-img');
+          var big = document.createElement('canvas');
+          big.width = 150; big.height = 90;
+          var bx = big.getContext('2d');
+          bx.imageSmoothingEnabled = false;
+          bx.drawImage(poissonPapier(), 0, 0, 150, 90);
+          im.src = big.toDataURL('image/png');
+          im.alt = '';
+          box.appendChild(im);
+          box.appendChild(el('p', 'pe-cosmo-chiffres', CODE_PAPIER));
+          box.appendChild(el('p', 'pe-prise-txt', 'Plié avec soin, et quelqu’un a écrit un nombre sur son flanc.'));
+          fond.appendChild(box);
+          aide.textContent = 'Un nombre, écrit à l’encre : ' + CODE_PAPIER + '.';
+          DP.noterCode('azh-papier');
+          plusTard(function () { if (box.parentNode) box.classList.add('is-sortie'); }, reduit ? 2500 : 5000);
+          plusTard(function () { if (box.parentNode) box.remove(); }, reduit ? 2600 : 5400);
+        }
+
+        function sortir() {
+          if (fini) return;
+          fini = true;
+          window.removeEventListener('keydown', clavier);
+          window.removeEventListener('keyup', clavier);
+          stick.removeEventListener('pointerdown', prendre);
+          stick.removeEventListener('pointermove', bouger);
+          stick.removeEventListener('pointerup', lacher);
+          stick.removeEventListener('pointercancel', lacher);
+          lacher();
+          fond.classList.add('is-sortie');
+          plusTard(function () {
+            fond.remove();
+            scene.classList.remove('is-sousleau');
+            plongee = null;
+            etat = 'repos';
+            dire('Tu remontes sur le ponton, trempé.');
+            majAction();
+          }, reduit ? 0 : 450);
+        }
+        remonter.addEventListener('click', sortir);
+        plongee = { sortir: sortir, nageur: nageur, papier: papier };
+      }
+
+      plongerB.addEventListener('click', plonger);
+
       // Les feuilles mortes qui se detachent des arbres en vue. Une sur
       // deux seulement, chacune a son rythme : un bois qui se depouille,
       // pas une averse.
@@ -1278,6 +1553,7 @@
         prise.textContent = '';
         var box = el('div', 'pe-prise-box');
         box.dataset.rarete = f.rarete;
+        if (P.vagueDe(f)) box.dataset.vague = P.vagueDe(f);
         box.style.setProperty('--r', r.couleur);
         if (brillant) box.classList.add('is-shiny');
         if (f.secret) box.classList.add('is-secret');
@@ -1287,7 +1563,7 @@
         var titre = brillant ? 'BRILLANT !'
                   : f.secret ? 'ESPÈCE SECRÈTE !'
                   : neuf ? 'NOUVELLE ESPÈCE !'
-                  : f.rarete === 'special' ? 'PRISE IRRADIÉE !'
+                  : f.rarete === 'special' ? ((P.VAGUES[P.vagueDe(f)] || {}).titre || 'PRISE SPÉCIALE !')
                   : 'Belle prise !';
         box.appendChild(el('p', 'pe-prise-titre', titre));
         var im = el('img', 'pe-prise-img');
@@ -1326,7 +1602,7 @@
            : f.secret && neuf ? f.nom + ' existait donc vraiment.'
            : f.secret ? f.nom + ' est revenu au bout de la ligne.'
            : f.rarete === 'special'
-             ? f.nom + ' remonte des eaux irradiées' +
+             ? f.nom + (P.vagueDe(f) === 'magma' ? ' remonte de la lave' : ' remonte des eaux irradiées') +
                (neuf ? ' et rejoint ton carnet.' : '.')
            : neuf ? f.nom + ' rejoint ton carnet.'
            : f.nom + ', ' + cm + ' cm pour ' + P.poidsTexte(kg) + '.');
@@ -1355,6 +1631,7 @@
         prise.textContent = '';
         var box = el('div', 'pe-prise-box pe-evo');
         box.dataset.rarete = evo.rarete;
+        if (P.vagueDe(evo)) box.dataset.vague = P.vagueDe(evo);
         box.style.setProperty('--r', r.couleur);
 
         var titre = el('p', 'pe-prise-titre', 'Quoi ?!');
@@ -1423,7 +1700,7 @@
       var MINI_FOND = {};
       MINI_FOND[T.EAU] = '#2a68c4';
       MINI_FOND[T.ROSEAU] = '#2f6e2c';
-      MINI_FOND[T.EAU_RAD] = '#9ad11e';
+      MINI_FOND[T.EAU_RAD] = P.VAGUE === 'magma' ? '#e0581e' : '#9ad11e';
       MINI_FOND[T.SABLE] = '#dcc98c';
       MINI_FOND[T.CHEMIN] = '#a5794a';
       // Le bois d'automne. Les arbres cosmiques se fondent dans la masse :
@@ -1798,7 +2075,7 @@
         canvas: cv,
         stick: stick, pomme: pomme,
         // C'est l'automne au bord des lacs.
-        opts: { cabane: CABANE, automne: true },
+        opts: { cabane: CABANE, automne: true, vague: P.VAGUE },
         depart: ou ? { x: ou.x, y: ou.y } : DEPART,
         direction: ou ? ou.dir : undefined,
         troupe: [choisi],
@@ -1916,6 +2193,8 @@
           }
           devantLaSouche = armeAuSol && faceALaSouche();
           devantArbre = arbreDevant();
+          var ponton = etat === 'repos' && !plongee && surLePonton();
+          if (plongerB.hidden === ponton) plongerB.hidden = !ponton;
           if (etat !== 'repos') return;
           if (ART) ART.ramasser(cachesP, balade.chef);
           majAction();
@@ -1938,7 +2217,7 @@
                      ? 'Une vieille souche, au milieu des arbres.'
                    : canneAuSol ? 'Une canne à pêche flotte non loin.'
                    : devantCabane ? 'La Poissonnerie est ouverte.'
-                   : devantRad ? 'Eau irradiée : ici ne mordent que des Spéciaux.'
+                   : devantRad ? (P.VAGUE === 'magma' ? 'Lac de magma' : 'Eau irradiée') + ' : ici ne mordent que des Spéciaux.'
                    : pretALancer() && DP.leurreMonte()
                      ? 'Leurre à la ligne : ce que tu lances va répondre.'
                    : pretALancer() ? 'Face à l’eau : lance ta ligne.'
@@ -1957,7 +2236,8 @@
           cm = cm || P.taille(f);
           commencerLutte(f, cm, P.poids(f, cm), false);
         },
-        balade: function () { return balade; }
+        balade: function () { return balade; },
+        plongee: function () { return plongee; }
       };
 
       // Le nettoyage quand on quitte l'ecran.
@@ -2050,6 +2330,7 @@
       var r = P.rarete(P.sousRarete(f));
       var n = el('div', 'pe-fiche');
       n.dataset.rarete = f.rarete;
+      if (P.vagueDe(f)) n.dataset.vague = P.vagueDe(f);
       n.dataset.sousRarete = P.sousRarete(f);
       if (f.rarete === 'special') n.classList.add('pe-fiche--special');
       n.dataset.poisson = f.id;
@@ -2162,8 +2443,9 @@
 
     function eaux(f) {
       if (f.secret) return 'Inconnues — elle ne vient qu’à certaines conditions';
-      return f.radioactif ? 'Lacs irradiés, au nord-est et au sud-est'
-                          : 'Lacs et rivière d’eau claire';
+      if (P.ancienne(f)) return (P.VAGUES[P.vagueDe(f)] || {}).eaux + ' — une vague passée, qui ne revient plus';
+      if (P.estSpecial(f)) return (P.VAGUES[P.VAGUE] || {}).eaux + ', au nord-est et au sud-est';
+      return 'Lacs et rivière d’eau claire';
     }
 
     function ouvrirFiche(f, e) {
@@ -2174,6 +2456,7 @@
 
       var carte = el('div', 'pe-detail-carte');
       carte.dataset.rarete = f.rarete;
+      if (P.vagueDe(f)) carte.dataset.vague = P.vagueDe(f);
       carte.dataset.poisson = f.id;
       // Le cadre dit ce que la prise a de remarquable — brillante, ou
       // secrete — et la pastille garde la couleur de la rarete. Poser
@@ -2206,6 +2489,9 @@
       }
       if (f.radioactif) {
         chips.appendChild(el('span', 'pe-detail-chip pe-detail-chip--rad', 'Irradié'));
+      }
+      if (P.vagueDe(f) === 'magma') {
+        chips.appendChild(el('span', 'pe-detail-chip pe-detail-chip--magma', 'Magma'));
       }
       titres.appendChild(chips);
       tete.appendChild(titres);
@@ -2278,8 +2564,11 @@
     }
 
     section('Eaux claires', P.vivier(false));
-    section('Spéciaux — eaux irradiées', P.vivier(true), 'pe-section--rad');
+    section('Spéciaux — vague ' + P.VAGUES[P.VAGUE].nom, P.vivier(true), 'pe-section--' + P.VAGUE);
     section('Évolutions', P.evolutions(), 'pe-section--evo');
+    // Les vagues passees : seules les especes prises restent, sans total.
+    section('Ancienne vague — Radioactivité', P.anciennes().filter(function (f) { return prises[f.id]; }),
+            'pe-section--rad pe-section--ancienne', true);
     section('Secrets', P.secrets().filter(function (f) { return prises[f.id]; }),
             'pe-section--secret', true);
 

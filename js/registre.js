@@ -22,9 +22,11 @@
     tracker:     { nom: 'DinderTracker',    c: '#2f8a3a', img: 'assets/items/dindertracker.webp' },
     peche:       { nom: 'Fish n’Der',       c: '#6a4ad0', img: 'assets/games/icones/fish-n-der.webp' },
     wade:        { nom: 'Wade and Friends', c: '#a8321e', img: 'assets/games/icones/wade-and-friends.webp' },
+    founder:     { nom: 'The Founder War',  c: '#c8302a', img: 'assets/games/icones/founder-war.webp' },
+    odyssee:     { nom: 'The Odyssey of Dinder', c: '#2a8a7a', img: 'assets/games/icones/odyssey.webp' },
     teleportail: { nom: 'Téléportail',      c: '#1f6aa8', img: 'assets/items/teleportail.webp' }
   };
-  var ORDRE = ['tracker', 'peche', 'wade', 'teleportail'];
+  var ORDRE = ['tracker', 'founder', 'peche', 'odyssee', 'wade', 'teleportail'];
 
   // La categorie ouverte, gardee le temps de la session.
   var filtre = 'tout';
@@ -73,6 +75,14 @@
       utilite: 'Décroche le tracker de la Terre et le cale sur le système stellaire : la carte d’Altéra.'
     });
 
+    var TN = window.TRACKER_NY;
+    if (c.azhrakonr && TN) r.push({
+      id: 'azhrakonr', rub: 'tracker', titre: 'Le code de la balise lointaine',
+      code: TN.AZH.map(function (p) { return p.code; }).join('-'), date: c.azhrakonr,
+      ou: 'La balise plantée hors du système solaire, au bout de la tablette de New York.',
+      utilite: 'Appelle Azhrakonr, le dévoreur.'
+    });
+
     var cos = DP.cosmos();
     if (cos.abattus.length) {
       var C = window.COSMOS;
@@ -88,6 +98,18 @@
                       : 'Inconnue tant que les cinq fragments ne sont pas réunis.'
       });
     }
+
+    // Les quatre paires de la balise lointaine, chacune dans son jeu.
+    var BALISE = 'la balise d’Azhrakonr, hors du système solaire.';
+    if (c['azh-h']) r.push({ id: 'azh-h', rub: 'founder', titre: 'L’énigme de H', date: c['azh-h'],
+      etapes: ['Prendre un cube', 'Le couper en trois dans la largeur, la hauteur et la profondeur', 'Compter les petits cubes'],
+      ou: 'Le jardin caché derrière les arbres du niveau 6.', utilite: 'La case rouge du code de ' + BALISE });
+    if (c['azh-papier']) r.push({ id: 'azh-papier', rub: 'peche', titre: 'Le poisson en papier', code: '43', date: c['azh-papier'],
+      ou: 'Sous l’eau, en plongeant du ponton.', utilite: 'La case bleue du code de ' + BALISE });
+    if (c['azh-pierres']) r.push({ id: 'azh-pierres', rub: 'odyssee', titre: 'Les pierres sous le nain', code: '13', date: c['azh-pierres'],
+      ou: 'Sous le nain de jardin mauve d’Altéra, avec la pelle du cabanon.', utilite: 'La case verte du code de ' + BALISE });
+    if (c['azh-serie']) r.push({ id: 'azh-serie', rub: 'wade', titre: 'Le numéro de série', code: '4258 96 34', date: c['azh-serie'],
+      ou: 'Le carton du haut, caméra 07, chambre froide.', utilite: 'Les deux chiffres d’une autre encre : la case jaune du code de ' + BALISE });
 
     NUITS.forEach(function (w) {
       if (!DP.has(w.dinder)) return;

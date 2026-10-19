@@ -16,9 +16,12 @@
   padding: .55em;
   border: .32em solid var(--r);
   border-radius: 1.1em;
+  /* Le fond de la famille couvre toute la carte : le reflet, le motif,
+     puis le fond. Seul le cadre de l'illustration garde le sien. */
   background:
     linear-gradient(160deg, rgba(255, 255, 255, .1) 0%, transparent 34%),
-    linear-gradient(180deg, #23232e 0%, #0c0c12 100%);
+    var(--motif, linear-gradient(transparent, transparent)),
+    var(--fond, linear-gradient(180deg, #23232e 0%, #0c0c12 100%));
   box-shadow: 0 .3em .9em rgba(0, 0, 0, .6), inset 0 0 0 .1em rgba(0, 0, 0, .7);
   color: #f2f2f6;
   font-family: "Segoe UI", "Trebuchet MS", system-ui, sans-serif;
@@ -183,30 +186,18 @@ button.carte { transition: transform .15s ease, box-shadow .15s ease; }
   color: #fff;
 }
 
-/* ---------- Le fond du texte, selon la famille ----------
-   Seule la partie basse change : les attaques, la defense et la
-   description posent sur un panneau propre a ce que la carte represente.
-   L'illustration, elle, garde son cadre de rarete. */
+/* ---------- Le fond, selon la famille ----------
+   Toute la carte porte le fond propre a ce qu'elle represente (--fond et
+   son --motif, poses sur .carte). L'illustration, elle, garde son cadre
+   de rarete. Le bas garde un liseré discret, pour que le texte se lise. */
 
 .carte-corps {
   position: relative;
   margin: 0 -.05em;
   padding: .32em .34em .2em;
   border-radius: .45em;
-  background: var(--fond, rgba(255, 255, 255, .03));
-  box-shadow: inset 0 0 0 .08em var(--lisere, rgba(255, 255, 255, .08)), inset 0 .6em 1.2em rgba(0, 0, 0, .35);
-  isolation: isolate;
-}
-/* Le motif, par-dessus le fond, sous le texte. */
-.carte-corps::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--motif, none);
-  opacity: .9;
-  pointer-events: none;
+  background: rgba(0, 0, 0, .16);
+  box-shadow: inset 0 0 0 .08em var(--lisere, rgba(255, 255, 255, .08));
 }
 .carte-corps .carte-ligne { background: var(--ligne, rgba(255, 255, 255, .06)); }
 
@@ -275,6 +266,37 @@ button.carte { transition: transform .15s ease, box-shadow .15s ease; }
 .carte[data-famille="boss"] .carte-ligne--def .carte-ligne-val { color: #ffe08a; }
 .carte[data-famille="boss"] .carte-texte { color: #f0c8b8; }
 
+/* Dinder legendaire : le blanc et l'or. Un ivoire lumineux, des rayons
+   et des paillettes dorees ; le texte passe en sombre pour se lire. */
+.carte[data-famille="dinders"][data-rarete="legendaire"] {
+  --fond: radial-gradient(120% 80% at 50% 0%, #fffdf4 0%, #fbf1d4 45%, #ecd59a 100%);
+  --motif: repeating-conic-gradient(from 0deg at 50% 22%, rgba(214, 168, 60, .13) 0deg 5deg, transparent 5deg 15deg),
+           radial-gradient(.14em .14em at 14% 62%, #d8a83a 50%, transparent 55%),
+           radial-gradient(.18em .18em at 82% 70%, #e8bf4a 50%, transparent 55%),
+           radial-gradient(.12em .12em at 30% 86%, #d8a83a 50%, transparent 55%),
+           radial-gradient(.16em .16em at 70% 90%, #f0cc5a 50%, transparent 55%),
+           radial-gradient(.12em .12em at 90% 44%, #d8a83a 50%, transparent 55%),
+           radial-gradient(.12em .12em at 8% 40%, #e8bf4a 50%, transparent 55%);
+  --lisere: rgba(196, 146, 40, .55);
+  --ligne: rgba(214, 168, 60, .16);
+  color: #2e2208;
+}
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-nom { color: #2e2208; text-shadow: 0 .06em 0 rgba(255, 255, 255, .8); }
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-famille,
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-rarete { color: #a8741a; }
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-sous {
+  background: linear-gradient(90deg, #c8922a, #f0cc5a 50%, #c8922a);
+  color: #fffaf0;
+  text-shadow: 0 .06em 0 rgba(90, 60, 10, .6);
+}
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-corps { background: rgba(255, 255, 255, .45); }
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-ligne-nom { color: #3a2a0a; }
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-ligne--atq { border-left-color: #d8a83a; }
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-ligne--def { border-left-color: #b8862a; }
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-ligne-val { color: #9a6410; }
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-ligne--def .carte-ligne-val { color: #7a5410; }
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-texte { color: #5a4620; }
+.carte[data-famille="dinders"][data-rarete="legendaire"] .carte-pied { color: #8a7040; }
 /* ---------- Les raretes ---------- */
 
 .carte[data-rarete="rare"] { box-shadow: 0 .3em .9em rgba(0, 0, 0, .6), 0 0 .7em rgba(69, 176, 255, .45); }

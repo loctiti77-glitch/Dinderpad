@@ -129,23 +129,62 @@
     var x = cv.getContext('2d');
     x.imageSmoothingEnabled = false;
 
-    // Les commandes tactiles : une croix et un bouton.
+    // Les commandes a l'ecran : un joystick a gauche, le bouton A a droite.
     var pad = el('div', 'wfj-pad');
     var touches = {};
-    function btn(cls, txt, cle) {
-      var b = el('button', 'wfj-btn ' + cls, txt);
-      b.type = 'button';
-      b.addEventListener('pointerdown', function (ev) { ev.preventDefault(); touches[cle] = true; appui(cle); });
-      ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (t) {
-        b.addEventListener(t, function () { touches[cle] = false; });
+    var btnA = el('button', 'wfj-btn wfj-btn--a', 'A');
+    btnA.type = 'button';
+    btnA.addEventListener('pointerdown', function (ev) { ev.preventDefault(); touches.action = true; appui('action'); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (t) {
+      btnA.addEventListener(t, function () { touches.action = false; });
+    });
+    pad.appendChild(btnA);
+
+    // Le joystick : il traduit une direction en fleches enfoncees, pour
+    // que les jeux n'aient rien a changer. Une fleche qui s'enfonce
+    // compte comme un appui (un saut, un pas de cote).
+    var stick = el('div', 'wfj-stick');
+    var pomme = el('div', 'wfj-pomme');
+    stick.appendChild(pomme);
+    pad.appendChild(stick);
+    var SEUIL = 0.38, DIRS = ['gauche', 'droite', 'haut', 'bas'];
+    var tenu = false, centre = { x: 0, y: 0 }, rayon = 1;
+    function orienter(dx, dy) {
+      var voulu = { gauche: dx < -SEUIL, droite: dx > SEUIL, haut: dy < -SEUIL, bas: dy > SEUIL };
+      DIRS.forEach(function (d) {
+        if (voulu[d] && !touches[d]) { touches[d] = true; appui(d); }
+        else if (!voulu[d] && touches[d] && touches['stick-' + d]) touches[d] = false;
+        touches['stick-' + d] = voulu[d];
       });
-      pad.appendChild(b);
     }
-    btn('wfj-btn--g', '◀', 'gauche'); btn('wfj-btn--d', '▶', 'droite');
-    btn('wfj-btn--h', '▲', 'haut'); btn('wfj-btn--b', '▼', 'bas');
-    btn('wfj-btn--a', 'A', 'action');
+    function bouger(ev) {
+      if (!tenu) return;
+      var dx = (ev.clientX - centre.x) / rayon, dy = (ev.clientY - centre.y) / rayon;
+      var n = Math.sqrt(dx * dx + dy * dy);
+      if (n > 1) { dx /= n; dy /= n; }
+      pomme.style.transform = 'translate(' + (dx * rayon * 0.55).toFixed(1) + 'px,' + (dy * rayon * 0.55).toFixed(1) + 'px)';
+      orienter(dx, dy);
+    }
+    function lacher() {
+      tenu = false;
+      stick.classList.remove('is-actif');
+      pomme.style.transform = '';
+      orienter(0, 0);
+    }
+    stick.addEventListener('pointerdown', function (ev) {
+      ev.preventDefault();
+      var r = stick.getBoundingClientRect();
+      rayon = r.width / 2;
+      centre.x = r.left + rayon; centre.y = r.top + rayon;
+      tenu = true;
+      stick.classList.add('is-actif');
+      try { stick.setPointerCapture(ev.pointerId); } catch (e) {}
+      bouger(ev);
+    });
+    stick.addEventListener('pointermove', bouger);
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (t) { stick.addEventListener(t, lacher); });
     box.appendChild(pad);
-    var quitterB = el('button', 'wfj-quitter', 'ÉCHAP · QUITTER');
+    var quitterB = el('button', 'wfj-quitter', 'QUITTER');
     quitterB.type = 'button';
     quitterB.addEventListener('click', function () { finir(false); });
     box.appendChild(quitterB);

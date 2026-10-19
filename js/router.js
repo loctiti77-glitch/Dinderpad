@@ -86,6 +86,8 @@
     nav.classList.toggle('is-hidden', home);
     screen.classList.toggle('is-hidden', home);
     body.classList.toggle('is-home', home);
+    // Un jeu : le bouton pause prend la place du retour au DinderPad.
+    body.classList.toggle('is-jeu', !home && !!(window.PAUSE && window.PAUSE.JEUX[name]));
 
     view.textContent = '';
     view.className = 'view';

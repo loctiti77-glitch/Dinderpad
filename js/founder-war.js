@@ -802,6 +802,17 @@
       // close.
       var def = defNiveau() || {};
       var quete = def.quete || {};
+
+      // ---------- La faille du niveau 6 ----------
+      // Au coin sud-ouest, quelques arbres de la lisiere ne sont pas des
+      // arbres : on passe au travers, l'image se brouille, et le bord de la
+      // carte mene a un jardin que personne n'a plante. Rien ne l'annonce.
+      var FAILLE6 = def.n === 6;
+      var ARBRE_FAUX = M.T.ARBRE_FAUX;
+      if (FAILLE6) {
+        [[2, 26], [3, 26], [2, 27], [3, 27]].forEach(function (c) { g[c[1]][c[0]] = ARBRE_FAUX; });
+      }
+      var ailleurs = false, tAilleurs = 0;
       var horloge = el('div', 'fw-quete');
       var qTitre = el('span', 'fw-quete-titre', '');
       var qLignes = el('div', 'fw-quete-lignes');
@@ -984,7 +995,14 @@
         direction: DIRS.haut,
         troupe: equipe,
         vivant: vivant,
-        fige: function () { return arrive; },
+        fige: function () { return arrive || ailleurs; },
+
+        // Dans les faux arbres, l'image se brouille ; tout au bord, on passe.
+        surCase: function (cx, cy, tuile) {
+          if (!FAILLE6 || ailleurs || arrive) return;
+          scene.classList.toggle('is-faille-arbres', tuile === ARBRE_FAUX);
+          if (tuile === ARBRE_FAUX && cy >= MH - 1) passerLaFaille();
+        },
 
         // Celui qui attend au milieu de son arene : le sbire du niveau,
         // ou Le Fondateur lui-meme au dernier palier. Trie en profondeur
@@ -1091,6 +1109,7 @@
         },
 
         chaqueImage: function (t) {
+          if (ailleurs) return;
           if (ART) ART.ramasser(cachesF, balade.chef);
           if (!arrive) avancerQuete(t || performance.now());
           var c = balade.caseDuChef();
@@ -1116,6 +1135,169 @@
         entrer: function () { entrer.click(); },
         poser: function (x, y) { balade.chef.x = x; balade.chef.y = y; }
       };
+
+      // ---------- Le jardin de H ----------
+      // Une prairie fleurie, et rien d'autre. Un chemin de miettes mene a
+      // H, qui attend la. Il ne donne pas son nombre : il le fait trouver.
+      // Assez grand pour que la camera suive : on arrive au milieu du bas,
+      // H attend tout au nord-est.
+      var JW = 46, JH = 32;
+      var JARDIN_DEPART = { x: 18 * TS + 12, y: 26 * TS + 12 };
+      var H_CASE = { x: 38, y: 5 };
+      var MIETTES_JALONS = [[18, 25], [15, 22], [13, 18], [16, 15], [21, 16], [25, 19], [29, 17],
+                            [30, 13], [27, 10], [29, 7], [33, 8], [36, 7], [38, 6]];
+      var DIALOGUE_H = [
+        { qui: 'h', texte: 'Tiens. Quelqu’un a trouvé la faille dans les arbres.' },
+        { qui: 'dinder', texte: 'Où est-ce qu’on est ?' },
+        { qui: 'h', texte: 'Dans un coin que Le Fondateur a oublié de construire. Il n’y pousse que des fleurs.' },
+        { qui: 'h', texte: 'On m’a confié un nombre, pour la balise qui brille hors du système. Je n’ai pas le droit de le dire.' },
+        { qui: 'dinder', texte: 'Alors pourquoi nous attendre ?' },
+        { qui: 'h', texte: 'Parce que je peux te le faire trouver. Écoute bien.' },
+        { qui: 'h', texte: 'Prends un cube. Coupe-le en trois dans la largeur, en trois dans la hauteur, en trois dans la profondeur.' },
+        { qui: 'h', texte: 'Compte les petits cubes que tu obtiens. C’est mon nombre. La case rouge est à moi.' },
+        { qui: 'dinder', texte: '…' },
+        { qui: 'h', texte: 'Retourne à ta forêt. Ici, le temps ne compte pas : ton chrono t’attend où tu l’as laissé.' }
+      ];
+
+      function passerLaFaille() {
+        if (ailleurs) return;
+        ailleurs = true;
+        tAilleurs = performance.now();
+        scene.classList.remove('is-faille-arbres');
+        scene.classList.add('is-faille-passe');
+        plusTard(function () {
+          if (!vivant()) return;
+          scene.classList.remove('is-faille-passe');
+          ouvrirJardin();
+        }, reduit ? 0 : 1100);
+      }
+
+      function ouvrirJardin() {
+        var jardin = el('div', 'fw-jardin');
+        var cvj = el('canvas', 'fw-canvas');
+        var vueJ = M.vue(JW, JH);
+        cvj.width = vueJ.L; cvj.height = vueJ.H;
+        jardin.appendChild(cvj);
+        var txt = el('div', 'fw-hud fw-hud--jardin');
+        txt.appendChild(el('span', 'fw-hud-txt', 'Un jardin que personne n’a planté.'));
+        jardin.appendChild(txt);
+        scene.insertBefore(jardin, cv.nextSibling);
+        scene.classList.add('is-jardin');
+
+        // La prairie : des fleurs partout, une lisiere d'arbres, rien d'autre.
+        var gj = [], x, y;
+        for (y = 0; y < JH; y++) {
+          gj.push([]);
+          for (x = 0; x < JW; x++) {
+            var bordJ = x < 1 || y < 1 || x >= JW - 1 || y >= JH - 1;
+            gj[y].push(bordJ ? ARBRE : (bruit(x, y, 61) < 0.45 ? FLEUR : HERBE));
+          }
+        }
+
+        // Les miettes, semees le long des jalons, un peu de travers.
+        var miettes = [];
+        for (var k = 0; k < MIETTES_JALONS.length - 1; k++) {
+          var a = MIETTES_JALONS[k], b = MIETTES_JALONS[k + 1];
+          var ax = (a[0] + 0.5) * TS, ay = (a[1] + 0.5) * TS;
+          var bx = (b[0] + 0.5) * TS, by = (b[1] + 0.5) * TS;
+          var n = Math.max(1, Math.round(Math.hypot(bx - ax, by - ay) / 11));
+          for (var i = 0; i < n; i++) {
+            var u = i / n;
+            miettes.push({
+              x: ax + (bx - ax) * u + (bruit(k, i, 71) - 0.5) * 8,
+              y: ay + (by - ay) * u + (bruit(k, i, 72) - 0.5) * 8,
+              taille: bruit(k, i, 73) > 0.5 ? 4 : 3
+            });
+          }
+        }
+
+        var hx = (H_CASE.x + 0.5) * TS, hy = (H_CASE.y + 0.5) * TS;
+        var parle = false;
+        var jb = M.Balade({
+          grille: gj, canvas: cvj, stick: stick, pomme: pomme,
+          depart: JARDIN_DEPART, direction: DIRS.haut, troupe: equipe,
+          vitesse: 80,
+          vivant: function () { return vivant() && !!jardin.parentNode; },
+          fige: function () { return parle; },
+          avant: function (ctx, cam) {
+            // Les miettes, couchees dans l'herbe.
+            miettes.forEach(function (m) {
+              var sx = Math.round(m.x - cam.x), sy = Math.round(m.y - cam.y);
+              if (sx < -4 || sy < -4 || sx > cvj.width + 4 || sy > cvj.height + 4) return;
+              // Une miette de pain : croute doree, mie claire, une ombre.
+              ctx.fillStyle = 'rgba(0,0,0,.35)';
+              ctx.fillRect(sx - 1, sy + 1, m.taille + 2, 2);
+              ctx.fillStyle = '#8a5a22';
+              ctx.fillRect(sx - 1, sy - 1, m.taille + 2, m.taille);
+              ctx.fillStyle = '#f6e2b0';
+              ctx.fillRect(sx, sy - 1, m.taille, m.taille - 1);
+            });
+          },
+          extras: function (t) {
+            return [{ id: 'h', x: hx, y: hy, dir: DIRS.bas, fixe: true }];
+          },
+          chaqueImage: function () {
+            if (parle) return;
+            if (Math.hypot(jb.chef.x - hx, jb.chef.y - (hy + 14)) < 44) parler();
+          }
+        });
+
+        // Pour les essais : la marche du jardin.
+        if (scene._fw) scene._fw.jardin = jb;
+
+        function parler() {
+          parle = true;
+          scene.classList.add('is-h-parle');
+          var dial = el('div', 'fw-h-dial');
+          var portrait = el('img', 'fw-h-portrait');
+          portrait.src = DP.dinderFull('h');
+          portrait.alt = 'H';
+          dial.appendChild(portrait);
+          var bulle = el('div', 'fw-bulle fw-bulle--h');
+          var qui = el('span', 'fw-bulle-qui', '');
+          var t = el('p', 'fw-bulle-txt', '');
+          bulle.appendChild(qui);
+          bulle.appendChild(t);
+          dial.appendChild(bulle);
+          var suite = el('button', 'fw-btn fw-btn--go fw-h-suite', 'SUITE');
+          suite.type = 'button';
+          dial.appendChild(suite);
+          jardin.appendChild(dial);
+
+          var i = 0;
+          function ligne() {
+            var l = DIALOGUE_H[i], h = l.qui === 'h';
+            dial.classList.toggle('is-h', h);
+            qui.textContent = h ? 'H' : ((DP.byId(equipe[0]) || {}).name || 'Ton équipe');
+            t.textContent = l.texte;
+            suite.textContent = i >= DIALOGUE_H.length - 1 ? 'REPASSER PAR LA FAILLE' : 'SUITE';
+          }
+          suite.addEventListener('click', function () {
+            i++;
+            if (i === DIALOGUE_H.length - 3) DP.noterCode('azh-h');
+            if (i >= DIALOGUE_H.length) return retour();
+            ligne();
+          });
+          ligne();
+        }
+
+        function retour() {
+          jb.arreter();
+          jardin.classList.add('is-sortie');
+          scene.classList.add('is-faille-passe');
+          plusTard(function () {
+            if (!vivant()) return;
+            jardin.remove();
+            scene.classList.remove('is-faille-passe', 'is-jardin', 'is-h-parle');
+            // Le temps passe au jardin ne compte pas.
+            if (debutQuete) debutQuete += performance.now() - tAilleurs;
+            balade.chef.x = DEPART.x;
+            balade.chef.y = DEPART.y;
+            balade.chef.dir = DIRS.haut;
+            ailleurs = false;
+          }, reduit ? 0 : 900);
+        }
+      }
 
       entrer.addEventListener('click', function () {
         if (arrive) return;
@@ -1334,7 +1516,7 @@
       function menuDe(c) {
         // Le chronometre demarre quand le joueur peut agir pour la
         // premiere fois, pas avant : l'annonce du premier tour ne compte pas.
-        if (!etat.depart) etat.depart = Date.now();
+        if (!etat.depart) etat.depart = performance.now();
         menu.textContent = '';
         var t = el('p', 'fw-menu-qui', c.nom + (c.forme ? ' — ' + c.forme : ''));
         menu.appendChild(t);
@@ -1572,7 +1754,7 @@
         var gagne = DP.earn(prime.cle, prime.n);
         if (prime.evos) DP.gagnerEvos(prime.evos);
 
-        var chrono = etat.depart ? Math.round((Date.now() - etat.depart) / 1000) : 0;
+        var chrono = etat.depart ? Math.round((performance.now() - etat.depart) / 1000) : 0;
 
         // L'experience des Dinders : tout le monde en prend, ceux qui
         // tiennent debout un peu plus.
