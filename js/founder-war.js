@@ -168,6 +168,12 @@
     'golden-freddy': [
       { nom: 'Hallucination',       degats: [180, 230], etourdit: 0.8 },
       { nom: 'Costume Vide',        degats: [110, 140], faiblesse: 0.8, drain: true }
+    ],
+    // Le devoreur, une fois vaincu, mange pour vous. Rien ne frappe plus
+    // fort : ni Golden Freddy, ni ce qui est remonte de la faille.
+    'azhrakonr': [
+      { nom: 'Dévoreur de Mondes',  degats: [250, 320], drain: true },
+      { nom: 'Regard du Néant',     degats: [130, 170], etourdit: 1, faiblesse: 0.8 }
     ]
   };
 

@@ -59,12 +59,24 @@
     brillant:  { nom: 'Brillant',  pv: 1.4,  vitesse: 1.1, gain: 2, noyaux: 3,
                  couleurs: ['#a8842a', '#f0c85a', '#fff6cf'], oeil: '#ffffff' },
     irradie:   { nom: 'Irradié',   pv: 1.25, vitesse: 1.2, gain: 1, noyaux: 4,
-                 couleurs: ['#4a6b16', '#8fbf1e', '#e8ff6a'], oeil: '#eaff3a' }
+                 couleurs: ['#4a6b16', '#8fbf1e', '#e8ff6a'], oeil: '#eaff3a' },
+    // Ceux des lacs de magma : une croute de basalte sur le dos, fendue
+    // de lave, un ventre en fusion et des flammes au bout des nageoires.
+    magma:     { nom: 'de Magma',  pv: 1.35, vitesse: 1.15, gain: 1, noyaux: 5,
+                 couleurs: ['#2a1d1b', '#4e3630', '#ff7a1e'], oeil: '#ffe27a', lave: true }
   };
 
   var CHANCE_BRILLANT = 32;     // une rencontre sur trente-deux
   var CHANCE_IRRADIE = 0.4;     // en eau fluo seulement
   var CHANCE_RENCONTRE = 16;    // un lancer sur seize, arme au poing
+
+  // La variante que donne un lac special : elle suit la vague en cours.
+  // Dans la lave, rien ne survit qui ne soit lui-meme de lave.
+  function varianteDuLac() {
+    var P = window.POISSONS;
+    return P && P.VAGUE === 'magma' ? 'magma' : 'irradie';
+  }
+  function estSpeciale(v) { return v === 'irradie' || v === 'magma'; }
 
   function parId(id) {
     for (var i = 0; i < REQUINS.length; i++) if (REQUINS[i].id === id) return REQUINS[i];
@@ -95,7 +107,10 @@
 
   function tirerVariante(irradieLac) {
     if (Math.floor(Math.random() * CHANCE_BRILLANT) === 0) return 'brillant';
-    if (irradieLac && Math.random() < CHANCE_IRRADIE) return 'irradie';
+    if (irradieLac) {
+      var v = varianteDuLac();
+      if (v === 'magma' || Math.random() < CHANCE_IRRADIE) return v;
+    }
     return 'normal';
   }
 
@@ -318,6 +333,82 @@
       if (bas - trou >= 0) p(126 + i, CY + trou, 1, bas - trou + 1, dos);
       if (i % 3 === 0 && haut - trou >= 2) p(126 + i, CY - haut, 1, 2, arete);
     }
+
+    if (q.lave) lave(p, q);
+  }
+
+  // ---------- La livree de magma ----------
+  // Par-dessus la silhouette : la croute de basalte se fend, la lave
+  // brille dans les fentes, le ventre rougeoie, des flammes lechent le
+  // haut des nageoires et des gouttes tombent sous le ventre. Le hasard
+  // est fixe : chaque requin de magma porte les memes fissures.
+  var LAVE = { coeur: '#fff2a0', vive: '#ffc23a', chaude: '#ff7a1e', sombre: '#c8341a' };
+
+  function lave(p, q) {
+    var graine = 7;
+    function hasard() { graine = (graine * 16807) % 2147483647; return graine / 2147483647; }
+    var x, i, g;
+
+    // Le ventre en fusion : une bande vive le long de la ligne de
+    // flottaison, et le dessous qui rougeoie.
+    for (x = 50; x <= 124; x++) {
+      g = galbe(x);
+      p(x, CY + 1, 1, 1, LAVE.vive);
+      if (g.bas > 4) p(x, CY + 2, 1, 1, x % 3 ? LAVE.chaude : LAVE.vive);
+    }
+
+    // Les fissures : des lignes brisees qui partent du dos et descendent
+    // le flanc. Un trait sombre de chaque cote, la lave au milieu.
+    var departs = [34, 46, 62, 76, 90, 104, 116];
+    departs.forEach(function (x0, n) {
+      g = galbe(x0);
+      var cx = x0, cy = CY - g.haut + 2 + (n % 2);
+      var long = 6 + Math.round(hasard() * (g.haut + g.bas) * 0.7);
+      for (i = 0; i < long; i++) {
+        var gg = galbe(Math.round(cx));
+        if (!gg || cy > CY + gg.bas - 2) break;
+        p(Math.round(cx) - 1, cy, 1, 1, LAVE.sombre);
+        p(Math.round(cx), cy, 1, 1, i % 4 === 1 ? LAVE.coeur : LAVE.vive);
+        p(Math.round(cx) + 1, cy, 1, 1, LAVE.chaude);
+        // Une branche, de loin en loin.
+        if (i === 3 && n % 2 === 0) {
+          for (var b = 1; b <= 4; b++) p(Math.round(cx) + b, cy + Math.round(b * 0.6), 1, 1, LAVE.chaude);
+        }
+        cy++;
+        cx += hasard() < 0.5 ? -0.6 : 0.9;
+      }
+    });
+
+    // Des flammes sur la crete de l'aileron dorsal, et sur le lobe haut
+    // de la queue : trois tons, la pointe la plus claire.
+    function flamme(fx, fy, h) {
+      p(fx, fy - h, 1, h, LAVE.sombre);
+      p(fx + 1, fy - h + 1, 1, h - 1, LAVE.chaude);
+      p(fx, fy - h + 2, 1, Math.max(1, h - 3), LAVE.vive);
+      p(fx + 1, fy - 2, 1, 1, LAVE.coeur);
+    }
+    for (i = 0; i < 28; i += 3) {
+      var k = i / 27;
+      var h = Math.round(23 * Math.sin(Math.pow(k, 0.42) * Math.PI));
+      g = galbe(58 + i);
+      if (h > 4) flamme(58 + i, CY - g.haut - h + 1, 3 + ((i * 7) % 4));
+    }
+    for (i = 30; i <= 40; i += 3) {
+      var u = i / 40;
+      flamme(126 + i, CY - Math.round(4 + u * 26) + 1, 2 + (i % 3));
+    }
+
+    // Les gouttes qui tombent du ventre.
+    [[60, 3], [78, 5], [96, 2], [112, 4]].forEach(function (d) {
+      g = galbe(d[0]);
+      var y0 = CY + g.bas;
+      p(d[0], y0, 1, d[1], LAVE.chaude);
+      p(d[0], y0 + d[1], 2, 2, LAVE.vive);
+    });
+
+    // L'oeil brule plus fort que le reste.
+    p(30, CY - 9, 4, 3, LAVE.vive);
+    p(31, CY - 8, 2, 1, LAVE.coeur);
   }
 
   function cerner(ctx) {
@@ -364,7 +455,7 @@
     dessiner(function (px, py, w, h, col) {
       x.fillStyle = col;
       x.fillRect(px, py, w, h);
-    }, { couleurs: m.couleurs || f.couleurs, oeil: m.oeil || f.oeil }, BEANCE[pose]);
+    }, { couleurs: m.couleurs || f.couleurs, oeil: m.oeil || f.oeil, lave: !!m.lave }, BEANCE[pose]);
     cerner(x);
     cache[cle] = { canvas: cv, L: L, H: H };
     return cache[cle];
@@ -399,6 +490,9 @@
   function Duel(cfg) {
     var bete = cfg.bete;
     var irradieLac = !!cfg.irradie;
+    // Le decor suit l'eau ou nage la bete : lave, eau fluo, ou eau claire.
+    var enLave = bete.variante === 'magma' || (irradieLac && varianteDuLac() === 'magma');
+    var fluo = !enLave && (bete.variante === 'irradie' || irradieLac);
     var A = window.ARME;
     var nv = A ? A.niveau() : { degats: 6, cadence: 620, n: 1 };
 
@@ -671,7 +765,11 @@
       if (!ctx) return;
       // L'eau, plus sombre vers le fond.
       var g = ctx.createLinearGradient(0, 0, 0, CV_H);
-      if (bete.variante === 'irradie' || irradieLac) {
+      if (enLave) {
+        // La lave : orange vif sous la surface, rouge sombre au fond.
+        g.addColorStop(0, '#ffb43a'); g.addColorStop(0.3, '#e0501a');
+        g.addColorStop(0.7, '#8a1e0e'); g.addColorStop(1, '#2a0806');
+      } else if (fluo) {
         g.addColorStop(0, '#b6e838'); g.addColorStop(0.42, '#5d8a14');
         g.addColorStop(1, '#1b2a0c');
       } else {
@@ -682,7 +780,7 @@
       ctx.fillRect(0, 0, CV_L, CV_H);
 
       // La surface, tout en haut : une bande claire et ses vaguelettes.
-      var clair = (bete.variante === 'irradie' || irradieLac) ? '#d8ff6a' : '#a8d8ff';
+      var clair = enLave ? '#fff0a0' : fluo ? '#d8ff6a' : '#a8d8ff';
       ctx.fillStyle = clair;
       ctx.globalAlpha = 0.5;
       ctx.fillRect(0, 0, CV_L, 3);
@@ -695,8 +793,8 @@
 
       // Les rais de lumiere qui descendent de la surface.
       ctx.save();
-      ctx.globalAlpha = 0.09;
-      ctx.fillStyle = '#eaf7ff';
+      ctx.globalAlpha = enLave ? 0.12 : 0.09;
+      ctx.fillStyle = enLave ? '#ffe27a' : '#eaf7ff';
       for (var r = 0; r < 5; r++) {
         var bx = ((r * 113 + (reduit ? 0 : t / 40)) % (CV_L + 160)) - 80;
         ctx.beginPath();
@@ -706,12 +804,32 @@
       }
       ctx.restore();
 
-      // Les bulles.
-      ctx.fillStyle = 'rgba(224,244,255,.30)';
-      for (var b = 0; b < 26; b++) {
-        var bxx = (b * 97) % CV_L;
-        var byy = CV_H - (((reduit ? b * 40 : t / (9 + (b % 5) * 3) + b * 43)) % (CV_H + 40));
-        ctx.fillRect(bxx, byy, 2 + (b % 3), 2 + (b % 3));
+      // Les bulles — dans la lave, des braises qui montent en
+      // clignotant, et de grosses cloques sombres qui crevent.
+      if (enLave) {
+        for (var e = 0; e < 34; e++) {
+          var exx = (e * 97 + Math.round(reduit ? 0 : Math.sin(t / 700 + e) * 6)) % CV_L;
+          var eyy = CV_H - (((reduit ? e * 40 : t / (7 + (e % 5) * 3) + e * 43)) % (CV_H + 40));
+          var vif = reduit ? 1 : 0.5 + 0.5 * Math.sin(t / 120 + e * 1.7);
+          ctx.fillStyle = 'rgba(255,' + (190 + (e % 3) * 25) + ',90,' + (0.35 + 0.5 * vif).toFixed(2) + ')';
+          ctx.fillRect(exx, eyy, 2 + (e % 2), 2 + (e % 2));
+        }
+        for (var cq = 0; cq < 6; cq++) {
+          var vie = reduit ? 0.5 : ((t / 2600 + cq * 0.37) % 1);
+          var cqx = (cq * 83 + 40) % CV_L, cqy = CV_H - 18 - (cq % 3) * 22;
+          ctx.fillStyle = 'rgba(60,10,6,' + (0.55 * (1 - vie)).toFixed(2) + ')';
+          ctx.beginPath(); ctx.arc(cqx, cqy, 3 + vie * 9, 0, 6.3); ctx.fill();
+          ctx.strokeStyle = 'rgba(255,200,90,' + (0.6 * (1 - vie)).toFixed(2) + ')';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      } else {
+        ctx.fillStyle = 'rgba(224,244,255,.30)';
+        for (var b = 0; b < 26; b++) {
+          var bxx = (b * 97) % CV_L;
+          var byy = CV_H - (((reduit ? b * 40 : t / (9 + (b % 5) * 3) + b * 43)) % (CV_H + 40));
+          ctx.fillRect(bxx, byy, 2 + (b % 3), 2 + (b % 3));
+        }
       }
 
       // Le sang, sous la bete : il monte et se dilue.
@@ -928,7 +1046,7 @@
       // bete sert de coup de pouce aux raretes — elle a avale plus gros.
       var P = window.POISSONS;
       if (P) {
-        var radio = bete.variante === 'irradie' || irradieLac;
+        var radio = estSpeciale(bete.variante) || irradieLac;
         var chance = (f.palier - 1) / 4;
         for (var i = 0; i < f.poissons * m.gain; i++) {
           var p2 = P.tirer(chance, radio, DP.aPeche);
@@ -955,7 +1073,8 @@
 
       DP.noterRequin(f.id, {
         brillant: bete.variante === 'brillant',
-        irradie: bete.variante === 'irradie'
+        irradie: bete.variante === 'irradie',
+        magma: bete.variante === 'magma'
       });
       return out;
     }

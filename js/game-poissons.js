@@ -122,30 +122,32 @@
 
     // ---- Speciaux : la vague Magma ----
     // Elle a remplace la Radioactivite : les lacs fluo se sont changes en
-    // lave. Memes poids, memes pentes que la vague d'avant.
+    // lave. Memes poids, memes pentes que la vague d'avant — mais des
+    // betes a elles : chacune a sa silhouette propre (voir "Les formes du
+    // magma", plus bas), pas un poisson irradie repeint en orange.
     { id: 'poisson-braise', nom: 'Poisson-Braise', rarete: 'special', sousRarete: 'commun', vague: 'magma',
-      forme: 'classique', motif: 'lueur', poids: 28, pente: -0.5,
+      forme: 'braise', motif: 'aucun', poids: 28, pente: -0.5,
       cm: [12, 30],  c: ['#4a1a10', '#ff8a3a', '#ffc04a'] },
     { id: 'carpe-basalte', nom: 'Carpe de Basalte', rarete: 'special', sousRarete: 'commun', vague: 'magma',
-      forme: 'plat', motif: 'ecailles', poids: 24, pente: -0.3,
+      forme: 'basalte', motif: 'aucun', poids: 24, pente: -0.3,
       cm: [30, 80],  c: ['#2e2624', '#6e5c52', '#ff5a1e'] },
     { id: 'sandre-lave', nom: 'Sandre de Lave', rarete: 'special', sousRarete: 'peu', vague: 'magma',
-      forme: 'long', motif: 'rayures', poids: 19, pente: 0.2,
+      forme: 'lave', motif: 'aucun', poids: 19, pente: 0.2,
       cm: [35, 85],  c: ['#6a2410', '#ffa040', '#2a0c06'] },
     { id: 'anguille-coulee', nom: 'Anguille de Coulée', rarete: 'special', sousRarete: 'peu', vague: 'magma',
-      forme: 'anguille', motif: 'lueur', poids: 13, pente: 0.8,
+      forme: 'coulee', motif: 'aucun', poids: 13, pente: 0.8,
       cm: [40, 110], c: ['#3a120a', '#ff6a1e', '#ffd23a'] },
     { id: 'crabe-obsidienne', nom: 'Crabe d’Obsidienne', rarete: 'special', sousRarete: 'rare', vague: 'magma',
-      forme: 'crabe', motif: 'aucun', poids: 9, pente: 1.4,
+      forme: 'obsidienne', motif: 'aucun', poids: 9, pente: 1.4,
       cm: [10, 30],  c: ['#1c1622', '#4e3e5e', '#ff5a2a'] },
     { id: 'meduse-ardente', nom: 'Méduse Ardente', rarete: 'special', sousRarete: 'rare', vague: 'magma',
-      forme: 'meduse', motif: 'aucun', poids: 5, pente: 2.2,
+      forme: 'flamme', motif: 'aucun', poids: 5, pente: 2.2,
       cm: [20, 55],  c: ['#ff7a2a', '#ffe0a0', '#d8401e'] },
     { id: 'salamandre', nom: 'Salamandre Primordiale', rarete: 'special', sousRarete: 'legende', vague: 'magma',
-      forme: 'triton', motif: 'points', poids: 3, pente: 3,
+      forme: 'salamandre', motif: 'aucun', poids: 3, pente: 3,
       cm: [14, 34],  c: ['#c8301e', '#ffb04a', '#ffe27a'] },
     { id: 'coeur-du-volcan', nom: 'Cœur du Volcan', rarete: 'special', sousRarete: 'legende', vague: 'magma',
-      forme: 'rond', motif: 'lueur', poids: 1.5, pente: 4.5,
+      forme: 'volcan', motif: 'aucun', poids: 1.5, pente: 4.5,
       cm: [20, 60],  c: ['#2a0a06', '#ff4a1e', '#ffe27a'] },
 
     // ---- Les evolutions ----
@@ -195,11 +197,11 @@
       cm: [40, 95],  c: ['#e8ff6a', '#ffffd8', '#a8d81e'] },
     { id: 'braise-vive', nom: 'Braise Vive', rarete: 'special', sousRarete: 'rare',
       vague: 'magma', evolueDe: 'poisson-braise', seuil: 8,
-      poids: 6, pente: 0.6, forme: 'classique', motif: 'lueur',
+      poids: 6, pente: 0.6, forme: 'brasier', motif: 'aucun',
       cm: [26, 58],  c: ['#7a1e0a', '#ffd06a', '#fff2b0'] },
     { id: 'meduse-solaire', nom: 'Méduse Solaire', rarete: 'special', sousRarete: 'legende',
       vague: 'magma', evolueDe: 'meduse-ardente', seuil: 3,
-      poids: 2, pente: 2.5, forme: 'meduse', motif: 'aucun',
+      poids: 2, pente: 2.5, forme: 'soleil', motif: 'aucun',
       cm: [40, 95],  c: ['#ffb02a', '#fff6d0', '#ff5a1e'] },
 
     // ---- Les especes secretes ----
@@ -233,7 +235,7 @@
       condition: { eau: 'radio', canne: 'radioactive', chance: 0.012 },
       indice: 'Il dort au fond des eaux fluo, et seule la Canne Radioactive va l’y chercher.' },
     { id: 'phenix-des-profondeurs', nom: 'Phénix des Profondeurs', rarete: 'special', sousRarete: 'legende',
-      secret: true, vague: 'magma', forme: 'classique', motif: 'irise',
+      secret: true, vague: 'magma', forme: 'phenix', motif: 'aucun',
       cm: [40, 90],  c: ['#ff5a1e', '#fff0b0', '#ffd23a'],
       condition: { eau: 'magma', lancers: 20, chance: 0.012 },
       indice: 'Il ne s’élève de la lave qu’après une longue séance au bord du magma.' },
@@ -427,7 +429,11 @@
   // de 80 cm ne pese pas ce que pese une carpe de 80 cm.
   var CARRURE = {
     classique: 1, long: 0.75, plat: 1.35, rond: 2.1, raie: 1.25,
-    meduse: 0.5, crabe: 0.7, ecrevisse: 0.45, anguille: 0.4, triton: 0.45
+    meduse: 0.5, crabe: 0.7, ecrevisse: 0.45, anguille: 0.4, triton: 0.45,
+    // Les formes du magma.
+    braise: 1, brasier: 1.1, basalte: 1.5, lave: 0.8, coulee: 0.45,
+    obsidienne: 0.75, flamme: 0.5, soleil: 0.55, salamandre: 0.5,
+    volcan: 2.2, phenix: 0.9
   };
 
   function poids(f, cm) {
@@ -526,6 +532,8 @@
 
   function dessiner(p, f) {
     var cx = 17, cy = 11;
+
+    if (MAGMA[f.forme]) { MAGMA[f.forme](p, f); return; }
 
     if (f.forme === 'classique' || f.forme === 'long' || f.forme === 'plat') {
       var rx = f.forme === 'long' ? 12 : (f.forme === 'plat' ? 8 : 10);
@@ -644,6 +652,281 @@
     queue(p, 26, cy, 6, 5, f.c[2]);
     oeil(p, 8, cy - 2);
   }
+
+  // ==========================================================
+  //  Les formes du magma
+  // ==========================================================
+  // Chaque espece de la vague Magma a son propre dessin : flammes,
+  // croute de basalte, coulees, verre volcanique. Les tons de feu sont
+  // communs a toutes ; c[0..2] donnent la couleur propre de chacune.
+  var FEU = { coeur: '#fff4b0', vive: '#ffc23a', chaude: '#ff7a1e', sombre: '#b8301a' };
+
+  // Une langue de feu qui monte, sa base en (x, yBas). La pointe est
+  // claire, le bord sombre.
+  function langue(p, x, yBas, h, large) {
+    if (h <= 0) return;
+    p(x, yBas - h + 1, 1, h, FEU.sombre);
+    if (large) p(x + 1, yBas - h + 2, 1, h - 1, FEU.chaude);
+    p(x, yBas - h + 2, 1, Math.max(1, h - 2), FEU.chaude);
+    if (h > 2) p(x + (large ? 1 : 0), yBas - Math.floor(h / 2), 1, 1, FEU.vive);
+    p(x, yBas - h + 1, 1, 1, FEU.vive);
+  }
+
+  function braiseCorps(p, f, cx, cy, rx, ry, hauteurs) {
+    ovale(p, cx, cy, rx, ry, f.c[0]);
+    ovale(p, cx + 1, cy + ry - 2, rx - 3, 1, f.c[1]);
+    // Les flammes de la crete, de hauteurs inegales.
+    hauteurs.forEach(function (h, i) { langue(p, cx - rx + 2 + i * 2, cy - ry, h, true); });
+    // Les braises qui couvent sous la peau.
+    [[-4, -2], [1, 0], [4, -3], [-1, 2], [6, 1]].forEach(function (b, i) {
+      p(cx + b[0], cy + b[1], i % 2 ? 1 : 2, 1, i % 2 ? FEU.vive : f.c[2]);
+    });
+    // La queue fourchue, en trois langues de feu.
+    var qx = cx + rx;
+    for (var i = 0; i < 8; i++) {
+      p(qx + i, cy - 1 - Math.round(i * 0.85), 1, 2, i > 4 ? FEU.vive : FEU.chaude);
+      p(qx + i, cy + Math.round(i * 0.85), 1, 2, i > 4 ? FEU.vive : FEU.chaude);
+      if (i < 5) p(qx + i, cy, 1, 1, i > 2 ? FEU.coeur : FEU.chaude);
+    }
+    p(cx - rx, cy + 1, 2, 1, '#2a0a06');              // la bouche
+    oeil(p, cx - rx + 2, cy - 2, true);
+  }
+
+  var MAGMA = {
+    // Poisson-Braise : un charbon vivant, crete et queue en flammes.
+    braise: function (p, f) {
+      braiseCorps(p, f, 15, 11, 9, 5, [3, 5, 2, 6, 3, 4, 2]);
+      langue(p, 15, 18, 2, false);
+    },
+
+    // Braise Vive : le meme, devenu brasier — plus gros, les flammes
+    // jusqu'au bord de la case et des etincelles autour.
+    brasier: function (p, f) {
+      braiseCorps(p, f, 15, 12, 10, 6, [5, 8, 4, 9, 6, 7, 4, 6, 3]);
+      langue(p, 13, 20, 2, false); langue(p, 17, 20, 3, false);
+      [[3, 3], [28, 2], [33, 6], [2, 16], [30, 19]].forEach(function (e, i) {
+        p(e[0], e[1], 1, 1, i % 2 ? FEU.coeur : FEU.vive);
+      });
+    },
+
+    // Carpe de Basalte : un bloc de roche taillee en orgues, joints de
+    // lave entre les plaques, nageoires en marches d'escalier.
+    basalte: function (p, f) {
+      var dy, w;
+      for (dy = -7; dy <= 7; dy++) {
+        w = 11 - Math.max(0, Math.abs(dy) - 4) * 2;
+        p(15 - w, 11 + dy, w * 2 + 1, 1, f.c[0]);
+      }
+      // Les plaques, en relief clair.
+      [[7, 6, 5, 4], [13, 5, 5, 5], [19, 6, 5, 4], [9, 12, 5, 4], [15, 12, 5, 4], [21, 11, 3, 4]].forEach(function (q) {
+        p(q[0], q[1], q[2], q[3], f.c[1]);
+        p(q[0], q[1], q[2], 1, '#8a786c');
+      });
+      // Les joints de lave entre elles.
+      p(12, 5, 1, 13, f.c[2]); p(18, 4, 1, 14, f.c[2]); p(24, 6, 1, 10, f.c[2]);
+      p(6, 10, 19, 1, f.c[2]);
+      p(12, 10, 1, 1, FEU.coeur); p(18, 10, 1, 1, FEU.coeur);
+      // La crete en marches, et la queue en bloc.
+      p(10, 2, 2, 2, f.c[1]); p(14, 1, 3, 3, f.c[1]); p(19, 2, 2, 2, f.c[1]);
+      p(27, 7, 3, 9, f.c[0]); p(30, 4, 4, 15, f.c[0]);
+      p(30, 11, 4, 1, f.c[2]); p(31, 5, 1, 4, f.c[1]); p(31, 14, 1, 4, f.c[1]);
+      // La gueule carree, l'oeil comme une braise.
+      p(4, 12, 3, 1, '#14100e');
+      p(6, 7, 2, 2, '#141018'); p(6, 7, 1, 1, FEU.vive);
+    },
+
+    // Sandre de Lave : tout en longueur, la croute sur le dos, et le
+    // ventre qui fond et goutte.
+    lave: function (p, f) {
+      ovale(p, 16, 8, 12, 3, f.c[0]);
+      ovale(p, 17, 10, 9, 1, f.c[1]);
+      // La tete en fusion.
+      ovale(p, 6, 8, 3, 2, f.c[1]);
+      p(4, 9, 2, 1, '#2a0a06');
+      // Les fentes de lave en travers du dos.
+      [10, 15, 20, 24].forEach(function (x, i) {
+        p(x, 6, 1, 4, FEU.vive);
+        p(x + 1, 7 + (i % 2), 1, 1, FEU.coeur);
+      });
+      // La crete d'epines sombres.
+      for (var x = 11; x <= 21; x += 2) p(x, 3 + (x % 4 ? 1 : 0), 1, 3 - (x % 4 ? 1 : 0), f.c[2]);
+      // Les gouttes qui pendent du ventre.
+      [[8, 3], [12, 6], [17, 2], [21, 7], [25, 4]].forEach(function (d) {
+        p(d[0], 11, 1, d[1], FEU.chaude);
+        p(d[0], 11 + d[1], 2, 2, FEU.vive);
+        p(d[0], 12 + d[1], 1, 1, FEU.coeur);
+      });
+      // La queue qui retombe, comme une coulee qui se fige.
+      for (var i = 0; i < 6; i++) p(28 + i, 6 + Math.round(i * 0.5), 1, 5 + i, f.c[2]);
+      p(28, 8, 6, 1, FEU.chaude);
+      oeil(p, 6, 7, true);
+    },
+
+    // Anguille de Coulee : un ruisseau de lave qui ondule, couvert de
+    // plaques de croute ; le coeur luit entre elles.
+    coulee: function (p, f) {
+      for (var x = 4; x < 32; x++) {
+        var y = 11 + Math.round(Math.sin((x - 4) / 4.4) * 3.6);
+        p(x, y - 2, 1, 5, f.c[1]);
+        if (((x - 4) >> 2) % 2 === 0) { p(x, y - 3, 1, 3, f.c[0]); p(x, y + 2, 1, 1, f.c[0]); }
+        else p(x, y - 3, 1, 1, f.c[0]);
+        if (x % 4 === 2) p(x, y, 1, 1, FEU.coeur);
+        if (x % 7 === 3) p(x, y + 3, 1, 2, FEU.chaude);
+      }
+      var yq = 11 + Math.round(Math.sin(28 / 4.4) * 3.6);
+      p(32, yq - 1, 2, 3, f.c[2]); p(34, yq, 1, 1, FEU.coeur);
+      // La tete, plus massive, et sa machoire de croute.
+      p(1, 9, 5, 5, f.c[1]); p(1, 8, 5, 2, f.c[0]); p(0, 12, 3, 1, '#2a0a06');
+      oeil(p, 2, 10, true);
+    },
+
+    // Crabe d'Obsidienne : une carapace de verre noir taillee en
+    // facettes, fendue de lave, et une pince bien plus grosse que l'autre.
+    obsidienne: function (p, f) {
+      var dy, w;
+      for (dy = -6; dy <= 6; dy++) {
+        w = Math.round(10 - Math.abs(dy) * 1.3);
+        p(20 - w, 11 + dy, w * 2 + 1, 1, f.c[0]);
+      }
+      // Les facettes : un triangle clair, des aretes blanches.
+      for (dy = -5; dy <= 0; dy++) p(14 + Math.abs(dy), 11 + dy, 6 - Math.abs(dy), 1, f.c[1]);
+      p(15, 7, 4, 1, '#cfc6ee'); p(14, 8, 1, 1, '#cfc6ee'); p(23, 9, 3, 1, '#8a7aa8');
+      // La fente de lave en diagonale.
+      for (var i = 0; i < 9; i++) p(18 + Math.round(i * 0.6), 6 + i, 1, 1, i % 3 === 1 ? FEU.coeur : f.c[2]);
+      // Les pointes du dos.
+      p(15, 3, 1, 2, f.c[1]); p(19, 2, 1, 3, f.c[1]); p(23, 3, 1, 2, f.c[1]);
+      // La grosse pince, ouverte, la lave au creux ; la petite, dessous.
+      p(3, 2, 7, 6, f.c[0]); p(3, 4, 4, 2, f.c[2]); p(3, 4, 1, 1, FEU.coeur); p(9, 6, 3, 3, f.c[0]);
+      p(6, 15, 4, 3, f.c[0]); p(5, 16, 2, 1, f.c[2]); p(9, 14, 3, 2, f.c[0]);
+      // Les pattes, en lames.
+      for (var l = 0; l < 3; l++) {
+        p(23 + l * 3, 16, 1, 3, f.c[0]); p(24 + l * 3, 19, 1, 2, f.c[1]);
+      }
+      // Les yeux sur leurs tiges, comme deux braises.
+      p(12, 5, 1, 3, f.c[0]); p(12, 4, 1, 1, FEU.vive);
+      p(14, 4, 1, 3, f.c[0]); p(14, 3, 1, 1, FEU.vive);
+    },
+
+    // Meduse Ardente : une cloche en forme de flamme, des filaments qui
+    // ondulent et se terminent en braises.
+    flamme: function (p, f) {
+      var DEMI = [0, 1, 1, 2, 3, 4, 5, 6, 7, 8, 8, 7];
+      DEMI.forEach(function (h, i) { p(17 - h, 1 + i, h * 2 + 1, 1, f.c[0]); });
+      // Deux langues qui s'echappent des flancs.
+      langue(p, 11, 6, 3, false); langue(p, 23, 6, 3, false); langue(p, 17, 1, 2, false);
+      for (var i = 5; i < 12; i++) { var h = DEMI[i] - 3; if (h > 0) p(17 - h, 1 + i, h * 2 + 1, 1, f.c[1]); }
+      p(16, 8, 3, 2, FEU.coeur);
+      for (var t = 0; t < 5; t++) {
+        var x = 11 + t * 3, long = 5 + ((t * 2) % 5), dx = 0;
+        for (var k = 0; k < long; k++) {
+          dx = (k + t) % 4 < 2 ? 0 : (t % 2 ? 1 : -1);
+          p(x + dx, 13 + k, 1, 1, f.c[2]);
+        }
+        p(x + dx, 13 + long, 1, 1, FEU.vive);
+      }
+    },
+
+    // Meduse Solaire : une cloche ronde, une couronne de rayons tout
+    // autour, et de longs filaments chauffes a blanc.
+    soleil: function (p, f) {
+      for (var r = 0; r < 12; r++) {
+        var a = Math.PI + r * Math.PI / 11;
+        for (var d = 8; d <= 10; d++) {
+          p(Math.round(17 + Math.cos(a) * d * 1.25), Math.round(8 + Math.sin(a) * d * 0.8), 1, 1,
+            d === 10 ? FEU.vive : f.c[2]);
+        }
+      }
+      ovale(p, 17, 8, 7, 5, f.c[0]);
+      p(10, 8, 15, 4, f.c[0]);
+      ovale(p, 17, 7, 4, 3, f.c[1]);
+      p(16, 6, 2, 2, '#ffffff');
+      for (var t = 0; t < 7; t++) {
+        var x = 11 + t * 2, long = 5 + ((t * 3) % 5);
+        p(x, 12, 1, long, t % 2 ? FEU.vive : f.c[2]);
+        p(x, 12 + long, 1, 1, FEU.coeur);
+      }
+    },
+
+    // Salamandre Primordiale : un lezard de feu, quatre pattes, une
+    // crete de flammes le long du dos et la queue enroulee.
+    salamandre: function (p, f) {
+      ovale(p, 17, 12, 10, 2, f.c[0]);
+      ovale(p, 6, 11, 4, 3, f.c[0]);
+      p(9, 13, 17, 1, f.c[1]); p(3, 13, 5, 1, f.c[1]);
+      // Les pattes, ecartees, les doigts au sol.
+      [10, 13, 21, 24].forEach(function (x, i) {
+        p(x, 14, 1, 3, f.c[0]);
+        p(x - 1, 17, 3, 1, i % 2 ? f.c[1] : f.c[0]);
+      });
+      // La crete de flammes.
+      for (var x = 7; x <= 25; x += 2) langue(p, x, 9, 2 + ((x * 5) % 3), false);
+      // La queue, qui remonte et s'enroule.
+      [[27, 12], [28, 12], [29, 11], [30, 10], [31, 9], [32, 8], [33, 8], [34, 9], [34, 10], [33, 11], [32, 11]]
+        .forEach(function (q, i) { p(q[0], q[1], 1, 2, i > 7 ? FEU.chaude : f.c[0]); });
+      // Les taches claires.
+      [[13, 11], [18, 11], [23, 12], [6, 9]].forEach(function (q) { p(q[0], q[1], 1, 1, f.c[2]); });
+      p(2, 12, 3, 1, '#2a0a06');
+      oeil(p, 4, 10);
+    },
+
+    // Coeur du Volcan : un cone de roche noire, le cratere qui crache, des
+    // coulees sur les flancs et un coeur de lave qui bat au milieu.
+    volcan: function (p, f) {
+      for (var y = 5; y <= 19; y++) {
+        var hw = Math.round(3 + (y - 5) * 0.75);
+        p(17 - hw, y, hw * 2 + 1, 1, f.c[0]);
+      }
+      // Des rochers plus clairs.
+      [[11, 15, 3], [20, 13, 2], [14, 18, 4], [22, 17, 3], [16, 9, 2]].forEach(function (r) {
+        p(r[0], r[1], r[2], 1, '#4a1e14');
+      });
+      // Le cratere, et ce qu'il crache.
+      p(14, 5, 7, 1, f.c[1]); p(15, 4, 5, 1, f.c[2]);
+      langue(p, 16, 3, 3, false); langue(p, 18, 3, 4, true);
+      p(13, 1, 1, 1, FEU.vive); p(21, 0, 1, 1, FEU.coeur); p(23, 2, 1, 1, FEU.vive);
+      // Les coulees le long des flancs.
+      p(13, 6, 1, 5, f.c[1]); p(12, 11, 1, 3, f.c[1]); p(21, 6, 1, 7, f.c[1]); p(22, 13, 1, 2, FEU.vive);
+      // Le coeur, et les fissures qui en partent.
+      ovale(p, 17, 13, 3, 3, f.c[1]);
+      p(16, 12, 3, 2, f.c[2]); p(17, 12, 1, 1, '#ffffff');
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (d) {
+        for (var k = 4; k <= 7; k++) p(17 + d[0] * k, 13 + d[1] * Math.round(k * 0.7), 1, 1, f.c[1]);
+      });
+      // Les nageoires de pierre, l'oeil en fente.
+      p(7, 15, 3, 3, f.c[0]); p(25, 15, 3, 3, f.c[0]);
+      p(12, 9, 2, 1, f.c[2]);
+    },
+
+    // Phenix des Profondeurs : un poisson-oiseau, l'aile pectorale
+    // deployee, une aigrette sur la tete et trois longues plumes de
+    // traine qui se terminent en ocelles.
+    phenix: function (p, f) {
+      // Les plumes de traine, derriere le corps.
+      for (var i = 0; i <= 12; i++) {
+        var c = i < 4 ? f.c[0] : i < 9 ? FEU.chaude : f.c[2];
+        p(21 + i, 11 - Math.round(Math.pow(i / 12, 1.4) * 8), 1, 1, c);
+        p(21 + i, 11, 1, 1, c);
+        p(21 + i, 11 + Math.round(Math.pow(i / 12, 1.4) * 8), 1, 1, c);
+      }
+      [[33, 2], [34, 10], [33, 18]].forEach(function (o) {
+        p(o[0], o[1], 2, 2, f.c[2]); p(o[0], o[1], 1, 1, FEU.coeur);
+      });
+      ovale(p, 14, 11, 8, 4, f.c[0]);
+      ovale(p, 15, 13, 5, 1, f.c[1]);
+      // L'aile, balayee vers l'arriere, chaque plume pointee de clair.
+      for (var k = 0; k <= 10; k++) {
+        var x = 12 + k, haut = 10 - Math.round(k * 0.85);
+        p(x, haut, 1, 11 - haut, f.c[2]);
+        p(x, haut, 1, 1, k % 2 ? FEU.coeur : FEU.chaude);
+      }
+      p(12, 10, 10, 1, FEU.chaude);
+      // L'aigrette.
+      p(7, 4, 1, 3, f.c[2]); p(9, 3, 1, 4, FEU.chaude); p(11, 4, 1, 3, f.c[2]);
+      p(9, 3, 1, 1, FEU.coeur);
+      p(5, 11, 2, 1, f.c[2]);
+      oeil(p, 8, 9, true);
+    }
+  };
 
   // Le cerne sombre, comme pour les sprites de balade.
   function cerner(ctx) {

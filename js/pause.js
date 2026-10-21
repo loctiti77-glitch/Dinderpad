@@ -208,6 +208,19 @@
       location.hash = '';
     });
     boite.appendChild(quitter);
+    // La musique de fond (js/musique-jeux.js) : Wade a la sienne, a part.
+    var MJ = window.MUSIQUE_JEUX;
+    if (MJ && jeu !== 'wade') {
+      var musique = el('button', 'pause-btn pause-btn--musique', '');
+      musique.type = 'button';
+      var majMusique = function () {
+        musique.textContent = MJ.muet() ? '♪ Musique : coupée' : '♪ Musique : activée';
+        musique.setAttribute('aria-pressed', MJ.muet() ? 'false' : 'true');
+      };
+      musique.addEventListener('click', function () { MJ.basculerMuet(); majMusique(); });
+      majMusique();
+      boite.appendChild(musique);
+    }
     panneau.appendChild(boite);
     // Un clic a cote du panneau ne fait rien : seul "Reprendre" relance.
     document.body.appendChild(panneau);

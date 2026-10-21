@@ -80,6 +80,8 @@
       gagne: 'Premier requin brillant abattu.' },
     { id: 'irradie', nom: 'Irradié', c: ['#4a6b16', '#a8d81e', '#e8ff6a'],
       gagne: 'Premier requin irradié abattu.' },
+    { id: 'magma', nom: 'Magma', c: ['#2a1d1b', '#ff7a1e', '#ffe27a'],
+      gagne: 'Premier requin de magma abattu.' },
     { id: 'selenite', nom: 'Sélénite', c: ['#cfc7b4', '#efe8d6', '#e8483a'],
       gagne: 'Le Sélénophage abattu, sur la Lune.', odyssee: true },
 
@@ -301,6 +303,7 @@
   function revetementPour(id, variante) {
     if (variante === 'brillant' && !DP.aRevetement('prisme')) return 'prisme';
     if (variante === 'irradie' && !DP.aRevetement('irradie')) return 'irradie';
+    if (variante === 'magma' && !DP.aRevetement('magma')) return 'magma';
     var r = PAR_REQUIN[id];
     return r && !DP.aRevetement(r) ? r : null;
   }
@@ -591,6 +594,8 @@
           '✦ ' + e.brillants));
         if (e.irradies) marques.appendChild(el('span', 'ar-marque ar-marque--irradie',
           '☢ ' + e.irradies));
+        if (e.magmas) marques.appendChild(el('span', 'ar-marque ar-marque--magma',
+          '🔥 ' + e.magmas));
         n.appendChild(marques);
       } else {
         n.appendChild(el('span', 'ar-trophee-vide', '?'));

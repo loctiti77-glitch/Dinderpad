@@ -27,9 +27,10 @@
   };
 
   // Quelques Dinders sortent du lot de leur rarete. Golden Freddy, le
-  // secret de Spookinder, ecrase tout : pres du double de Threat, en
-  // degats comme en points de vie.
-  var FORCE_DINDER = { 'golden-freddy': 3 };
+  // secret de Spookinder, ecrase presque tout : pres du double de Threat,
+  // en degats comme en points de vie. Au-dessus de lui, seul Azhrakonr,
+  // le devoreur de la balise lointaine : le meilleur Dinder du jeu.
+  var FORCE_DINDER = { 'golden-freddy': 3, 'azhrakonr': 4.2 };
 
   function forceRarete(id) {
     if (FORCE_DINDER[id]) return FORCE_DINDER[id];
@@ -161,7 +162,9 @@
     'foxy-the-fox-pirate':
       { nom: 'Pirate’s Cove', degats: [200, 255], ultime: true, faiblesse: 0.5 },
     'golden-freddy':
-      { nom: 'IT’S ME', degats: [520, 650], ultime: true, etourdit: 1, soinTous: 80 }
+      { nom: 'IT’S ME', degats: [520, 650], ultime: true, etourdit: 1, soinTous: 80 },
+    'azhrakonr':
+      { nom: 'Le Dernier Repas', degats: [720, 900], ultime: true, etourdit: 1, soinTous: 100, bouclier: 80 }
   };
 
   var NIVEAU_ULTIME = 6;

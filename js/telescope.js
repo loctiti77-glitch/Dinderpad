@@ -357,6 +357,13 @@
     function sysDe(id) { return disposition().filter(function (s) { return s.id === id; })[0]; }
 
     // ---------- Le fond : des etoiles, et les deux nebuleuses ----------
+    // Il deborde un peu de l'ecran : le telephone qui penche le fait
+    // glisser (js/inclinaison.js), sans jamais montrer son bord.
+    function poserFond() {
+      var pc = window.INCLINAISON ? window.INCLINAISON.lire() : { x: 0, y: 0 };
+      var m = Math.min(W, H) * 0.045;
+      x.drawImage(fond(), -m + pc.x * m, -m + pc.y * m, W + 2 * m, H + 2 * m);
+    }
     var FONDS = {};
     function fond() {
       var k = W + 'x' + H;
@@ -595,7 +602,7 @@
       var sApp = Math.exp(Math.log(0.05) * (1 - e));
       x.save();
       x.translate(W / 2, H / 2); x.scale(1 + (1 - e) * 0.12, 1 + (1 - e) * 0.12); x.translate(-W / 2, -H / 2);
-      x.drawImage(fond(), 0, 0, W, H);
+      poserFond();
       x.restore();
       if (k < 1) {
         // Les etoiles qui filent pendant l'approche.
@@ -664,7 +671,7 @@
     function dessinerPlanete(k) {
       var a = etat.choisi, F = FORME[a.id] || {};
       if (a === AILLEURS) { dessinerAilleurs(k); return; }
-      x.drawImage(fond(), 0, 0, W, H);
+      poserFond();
       var R = Math.min(W, H) * 0.3 * (0.35 + 0.65 * k), cx = W / 2, cy = H * 0.54;
       if (a.etoile) {
         etoile(cx, cy, R * 0.82, etat.t, a.systeme === 'stellaire');
@@ -1163,6 +1170,7 @@
       cv.style.cursor = p ? 'pointer' : '';
     });
     cv.addEventListener('pointerdown', function (ev) {
+      if (window.INCLINAISON) window.INCLINAISON.demander();
       if (etat.mode !== 'systeme' || etat.intro < 1) return;
       var p = sous(ev);
       if (p && p.a === TROU) traverser();

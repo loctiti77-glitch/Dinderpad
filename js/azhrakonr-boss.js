@@ -98,23 +98,67 @@
     var banniere = el('div', 'azb-banniere');
     stage.appendChild(banniere);
 
-    // Les commandes a l'ecran.
+    // Les commandes a l'ecran, pour le tactile : a gauche une croix qui
+    // suit le pouce — on glisse de gauche a droite sans lever le doigt —,
+    // a droite sauter et tirer. Chaque doigt est suivi a part : on peut
+    // courir, sauter et tirer en meme temps.
     var cmd = el('div', 'azb-cmd');
+    var touches = {};
+    cmd.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+
+    var pad = el('div', 'azb-pad');
+    pad.setAttribute('aria-hidden', 'true');
+    var padG = el('span', 'azb-pad-g', '◀'), padD = el('span', 'azb-pad-d', '▶');
+    pad.appendChild(padG); pad.appendChild(padD);
+    var doigtPad = null;
+    function suivrePad(ev) {
+      var r = pad.getBoundingClientRect();
+      var k = (ev.clientX - r.left) / Math.max(1, r.width);
+      // Une petite zone morte au milieu : le pouce pose au centre ne
+      // fait pas avancer.
+      touches.g = k < 0.44;
+      touches.d = k > 0.56;
+      padG.classList.toggle('is-on', !!touches.g);
+      padD.classList.toggle('is-on', !!touches.d);
+    }
+    function lacherPad() {
+      doigtPad = null;
+      touches.g = touches.d = false;
+      padG.classList.remove('is-on'); padD.classList.remove('is-on');
+    }
+    pad.addEventListener('pointerdown', function (ev) {
+      ev.preventDefault();
+      doigtPad = ev.pointerId;
+      try { pad.setPointerCapture(ev.pointerId); } catch (e) {}
+      suivrePad(ev);
+    });
+    pad.addEventListener('pointermove', function (ev) { if (ev.pointerId === doigtPad) suivrePad(ev); });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (t) {
+      pad.addEventListener(t, function (ev) { if (ev.pointerId === doigtPad) lacherPad(); });
+    });
+    cmd.appendChild(pad);
+
     function bouton(cls, txt, cle) {
       var b = el('button', 'azb-btn ' + cls, txt);
       b.type = 'button';
-      b.addEventListener('pointerdown', function (ev) { ev.preventDefault(); touches[cle] = true; if (cle === 'saut') sauter(); });
-      ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (t) {
-        b.addEventListener(t, function () { touches[cle] = false; });
+      b.tabIndex = -1;
+      b.addEventListener('pointerdown', function (ev) {
+        ev.preventDefault();
+        try { b.setPointerCapture(ev.pointerId); } catch (e) {}
+        touches[cle] = true;
+        b.classList.add('is-on');
+        if (cle === 'saut') sauter();
+        if (cle === 'tir') tirer();
+      });
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (t) {
+        b.addEventListener(t, function () { touches[cle] = false; b.classList.remove('is-on'); });
       });
       cmd.appendChild(b);
       return b;
     }
-    var touches = {};
-    bouton('azb-btn--g', '◀', 'g');
-    bouton('azb-btn--d', '▶', 'd');
-    bouton('azb-btn--saut', 'SAUTER', 'saut');
-    bouton('azb-btn--tir', 'TIRER', 'tir');
+    bouton('azb-btn--saut', 'SAUT', 'saut');
+    bouton('azb-btn--tir', 'TIR', 'tir');
+    cmd.appendChild(el('span', 'azb-tourner', '↻ Plus grand à l’horizontale'));
     stage.appendChild(cmd);
     box.appendChild(stage);
     hote.appendChild(box);
@@ -509,17 +553,22 @@
       var bgG = ctx.createRadialGradient(W / 2, H * 0.38, 50, W / 2, H * 0.45, W * 0.75);
       bgG.addColorStop(0, rage ? 'rgb(' + (40 + rageAmt * 30) + ',10,40)' : '#10175a'); bgG.addColorStop(1, '#03040f');
       ctx.fillStyle = bgG; ctx.fillRect(0, 0, W, H);
-      // Des nebuleuses lointaines, qui derivent.
+      // Des nebuleuses lointaines, qui derivent. Le telephone qui penche
+      // fait glisser l'espace : les nebuleuses un peu, les etoiles plus,
+      // les plus grosses (les plus proches) davantage.
+      var pc = window.INCLINAISON ? window.INCLINAISON.lire() : { x: 0, y: 0 };
       ctx.globalCompositeOperation = 'lighter';
       [[0.2, 0.25, 520, rage ? '160,30,70' : '90,50,200'], [0.82, 0.3, 480, rage ? '200,60,40' : '40,90,220'],
        [0.5, 0.08, 420, rage ? '120,20,60' : '140,60,220']].forEach(function (n, i) {
-        var gx = W * n[0] + Math.sin(T * 0.07 + i) * 40, gy = H * n[1] + Math.cos(T * 0.05 + i) * 30;
+        var gx = W * n[0] + Math.sin(T * 0.07 + i) * 40 + pc.x * 30, gy = H * n[1] + Math.cos(T * 0.05 + i) * 30 + pc.y * 24;
         glow(gx, gy, n[2], n[3], 0.22);
       });
       ctx.globalCompositeOperation = 'source-over';
       bg.forEach(function (s) {
+        var prof = 40 + s.r * 45;
+        var sx = (((s.x + pc.x * prof) % W) + W) % W, sy = (((s.y + pc.y * prof) % (H * 0.8)) + H * 0.8) % (H * 0.8);
         ctx.fillStyle = 'rgba(200,215,255,' + (0.25 + 0.35 * Math.pow(Math.sin(T * 1.3 + s.p), 2)) + ')';
-        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.29); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx, sy, s.r, 0, 6.29); ctx.fill();
       });
 
       var sh = reduit ? shake * 0.25 : shake;

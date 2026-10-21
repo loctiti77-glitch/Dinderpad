@@ -5112,28 +5112,98 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
 .azb.is-rage .azb-banniere strong { text-shadow: 0 0 22px rgba(255, 59, 92, .9); }
 .azb-banniere small { display: block; margin-top: 8px; font-size: clamp(11px, 1.4cqw, 16px); letter-spacing: .24em; color: #8d97d6; font-weight: 500; }
 
-/* Les commandes : deux fleches a gauche, sauter et tirer a droite. */
-.azb-cmd { position: absolute; inset: 0; pointer-events: none; }
-.azb-btn {
+/* Les commandes tactiles : la croix a gauche, sauter et tirer a droite.
+   La taille suit le plus petit cote de l'arene (cqmin) : en paysage sur
+   un telephone, c'est la hauteur qui manque, pas la largeur. Avec une
+   souris, elles s'effacent : le clavier suffit. */
+.azb { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
+.azb-cmd {
+  --azb-b: clamp(58px, 17cqmin, 96px);
   position: absolute;
-  bottom: 3%;
-  width: clamp(48px, 7cqw, 86px);
-  height: clamp(48px, 7cqw, 86px);
+  inset: 0;
+  pointer-events: none;
+}
+.azb-pad, .azb-btn {
+  position: absolute;
+  bottom: max(12px, 4cqmin, env(safe-area-inset-bottom));
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.azb-pad {
+  left: max(12px, 4cqmin, env(safe-area-inset-left));
+  width: calc(var(--azb-b) * 2.3);
+  height: var(--azb-b);
+  display: flex;
+  border: 2px solid rgba(120, 140, 255, .45);
+  border-radius: calc(var(--azb-b) / 2);
+  background: rgba(14, 18, 60, .55);
+  overflow: hidden;
+}
+.azb-pad span {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: #e8ecff;
+  font-size: calc(var(--azb-b) * .34);
+  transition: background .08s;
+}
+.azb-pad span.is-on { background: rgba(63, 214, 255, .32); }
+.azb-btn {
+  width: var(--azb-b);
+  height: var(--azb-b);
+  padding: 0;
   border: 2px solid rgba(120, 140, 255, .45);
   border-radius: 50%;
   background: rgba(14, 18, 60, .55);
   color: #e8ecff;
-  font: 700 clamp(11px, 1.3cqw, 15px) / 1 "Courier New", monospace;
+  font: 700 calc(var(--azb-b) * .2) / 1 "Courier New", monospace;
   letter-spacing: .06em;
-  pointer-events: auto;
-  touch-action: none;
   cursor: pointer;
 }
-.azb-btn:active { background: rgba(63, 214, 255, .3); }
-.azb-btn--g { left: 14%; }
-.azb-btn--d { left: calc(12% + clamp(56px, 8cqw, 96px)); }
-.azb-btn--saut { right: calc(4% + clamp(56px, 8cqw, 96px)); }
-.azb-btn--tir { right: 4%; border-color: rgba(63, 214, 255, .8); box-shadow: 0 0 14px rgba(63, 214, 255, .4); }
+.azb-btn.is-on { background: rgba(63, 214, 255, .32); transform: scale(.94); }
+.azb-btn--tir {
+  right: max(12px, 4cqmin, env(safe-area-inset-right));
+  border-color: rgba(63, 214, 255, .8);
+  box-shadow: 0 0 14px rgba(63, 214, 255, .4);
+}
+/* Sauter, un peu plus haut et en retrait : le pouce passe de l'un a
+   l'autre en arc, comme sur une manette. */
+.azb-btn--saut {
+  right: calc(max(12px, 4cqmin, env(safe-area-inset-right)) + var(--azb-b) * 1.1);
+  bottom: calc(max(12px, 4cqmin, env(safe-area-inset-bottom)) + var(--azb-b) * .45);
+}
+.azb-tourner { display: none; }
+
+@media (hover: hover) and (pointer: fine) {
+  .azb-cmd { display: none; }
+}
+
+/* Au tactile, les coeurs quittent le coin des commandes, ou le pouce les
+   cacherait : ils montent sous la barre de vie du boss. */
+@media (pointer: coarse) {
+  .azb-coeurs { left: 4%; top: max(78px, 21cqh); bottom: auto; }
+}
+
+/* En portrait, l'arene entiere doit rester visible : elle se cale en
+   largeur, au milieu, et les commandes prennent la bande du bas, hors
+   de l'action. */
+@container (orientation: portrait) {
+  .azb-cv { object-fit: contain; }
+  .azb-cmd { --azb-b: clamp(62px, 19cqw, 92px); }
+  .azb-coeurs { left: 50%; transform: translateX(-50%); top: calc(50% + 33.4cqw + 8px); bottom: auto; }
+  .azb-tourner {
+    display: block;
+    position: absolute;
+    left: 0; right: 0;
+    top: calc(50% + 33.4cqw + 50px);
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: #6f78b8;
+  }
+  .azb-banniere { top: calc(50% - 30cqw); }
+}
 
 .azb-choix {
   position: absolute;

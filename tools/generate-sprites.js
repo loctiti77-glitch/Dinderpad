@@ -17,9 +17,9 @@ const IDS = [
   'calder-veyne-veinburner', 'carl-sinars-cardinal-sin', 'edgar-marks-grincrusher',
   'he-melt', 'v', 'a', 'h', 'multinder', 'gart-kervelor-king-of-karsovia',
   // Wade and Friends.
-  'wade-wolhunter', 'stephen-sharkodon', 'faith-faisandoir', 'charlie-capsule', 'their-creator',
-  // Le devoreur de la balise lointaine.
-  'azhrakonr'
+  'wade-wolhunter', 'stephen-sharkodon', 'faith-faisandoir', 'charlie-capsule', 'their-creator'
+  // Azhrakonr n'est pas ici : reduit, son casque devenait illisible. Son
+  // sprite est dessine a la main par tools/dessiner-azhrakonr.js.
 ];
 
 // Une seule taille : celle du duel. Les sprites de balade de la foret ne

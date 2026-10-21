@@ -3039,6 +3039,7 @@ span.bq-ligne-img { width: calc(28 * var(--px)); height: calc(28 * var(--px)); }
 .ar-marque { font-size: calc(12 * var(--px)); }
 .ar-marque--brillant { color: #ffd166; }
 .ar-marque--irradie  { color: #c8f02a; }
+.ar-marque--magma    { color: #ff9a3a; }
 
 /* ---------- Les revetements ---------- */
 

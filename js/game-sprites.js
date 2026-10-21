@@ -229,8 +229,10 @@
       chemise: '#141318', cravate: '#2fbf55', poignets: '#141318'
     },
     // Azhrakonr, le devoreur : casque a cimier et cornes, visiere de ciel
-    // etoile, armure sombre parcourue de bleu, cape de nuit.
+    // etoile, armure sombre parcourue de bleu, cape de nuit. Pas de
+    // cheveux ni de sourire : on ne voit jamais que son casque.
     'azhrakonr': {
+      casque: '#262d66', casqueClair: '#8e9ad0', casqueLueur: '#3fd6ff', casqueVide: '#0d1236',
       piques: 'dresse', cheveux: '#2a3170', cheveuxClair: '#3fd6ff',
       peau: '#20264a', visiere: '#2a5aff', demi: false, oeil: null, visiereLueur: true,
       torse: '#1c1f40', accent: '#3fd6ff', bas: '#151834', chaussures: '#0c0e22',
@@ -380,6 +382,66 @@
     hublot(p, c, 7, 10);
     hublot(p, c, 13, 10);
     p(8, 16, 8, 1, fo);                            // la jointure de la machoire
+  }
+
+  // Le casque d'Azhrakonr : un dome, une crete haute parcourue de bleu
+  // avec son anneau au front, deux cornes en croissant qui montent de
+  // chaque cote, des disques aux tempes et la visiere : le vide etoile.
+  function casqueDevoreur(p, c, dos, profil) {
+    var f = c.casque, fo = ombre(f, 0.65), fc = c.casqueClair, l = c.casqueLueur, v = c.casqueVide;
+    if (profil) {
+      // La corne du cote qu'on voit, qui part de la tempe vers l'arriere
+      // et remonte.
+      p(3, 8, 4, 3, f); p(1, 4, 3, 5, f); p(1, 0, 2, 4, f);
+      p(2, 1, 1, 7, l); p(3, 9, 2, 1, fc);
+      p(6, 6, 13, 12, f);                          // le crane
+      p(6, 6, 13, 1, fc);
+      p(6, 6, 1, 11, fo);
+      p(7, 2, 9, 4, f);                            // la crete, vue en long
+      p(7, 2, 9, 1, fc);
+      p(8, 3, 7, 1, l);
+      p(9, 10, 3, 3, fc); p(10, 11, 1, 1, l);      // le disque de la tempe
+      p(13, 9, 7, 6, v);                           // la visiere
+      p(13, 9, 7, 1, c.visiere);
+      p(19, 10, 1, 4, c.visiere);
+      p(15, 11, 1, 1, '#ffffff'); p(17, 13, 1, 1, '#8fb4ff');
+      p(14, 15, 5, 3, ombre(fc, 0.6));             // le bas du masque
+      p(14, 15, 5, 1, fc);
+      return;
+    }
+    // Les cornes, de face : elles sortent des tempes et montent.
+    [[4, 10, 3, 2], [2, 7, 3, 4], [1, 3, 2, 5], [1, 0, 1, 3]].forEach(function (r) {
+      p(r[0], r[1], r[2], r[3], f);
+      p(23 - r[0] - r[2] + 1, r[1], r[2], r[3], f);
+    });
+    p(2, 2, 1, 7, l); p(21, 2, 1, 7, l);
+    p(3, 9, 2, 1, fc); p(19, 9, 2, 1, fc);
+    // Le dome et la crete.
+    p(7, 4, 10, 2, f);
+    p(5, 6, 14, 12, f);
+    p(5, 6, 1, 11, fc); p(18, 6, 1, 11, fo);
+    p(10, 0, 4, 7, f);
+    p(10, 0, 1, 7, fc); p(13, 0, 1, 7, fo);
+    p(11, 1, 2, 4, l);
+    if (dos) {
+      p(11, 6, 2, 11, fo);                         // l'arete du crane
+      p(11, 8, 2, 1, l);
+      return;
+    }
+    // L'anneau du front.
+    p(10, 6, 4, 3, l); p(11, 7, 2, 1, v);
+    // Les disques des tempes.
+    p(4, 11, 2, 3, fc); p(18, 11, 2, 3, fc);
+    p(4, 12, 1, 1, l); p(19, 12, 1, 1, l);
+    // La visiere : le vide, quelques etoiles, un liseré bleu.
+    p(6, 10, 12, 5, v);
+    p(6, 10, 12, 1, c.visiere);
+    p(8, 12, 1, 1, '#ffffff'); p(12, 11, 1, 1, '#8fb4ff'); p(15, 13, 1, 1, '#ffffff'); p(10, 14, 1, 1, '#8fb4ff');
+    p(9, 12, 1, 1, l); p(14, 12, 1, 1, l);
+    // Le bas du masque.
+    p(8, 15, 8, 3, ombre(fc, 0.6));
+    p(8, 15, 8, 1, fc);
+    p(11, 16, 2, 2, fo);
   }
 
   // Le sourire : deux rangees de dents cernees de sombre.
@@ -665,6 +727,7 @@
       p(10, 18, 4, 2, c.chemise || '#141318');     // le col noir, sous le masque
       return masqueMarteau(p, c, dos, profil);
     }
+    if (c.casque) return casqueDevoreur(p, c, dos, profil);
     if (c.oreilles) oreilles(p, c);
 
     if (c.capuche) {

@@ -159,7 +159,17 @@
   //  La balise et la sequence
   // ==========================================================
 
+  // La balise de New York ne se montre qu'a qui a reuni les quatre
+  // paires du code, une dans chaque mini-jeu. Avant, rien sur la carte :
+  // pas meme un indice qu'elle existe.
+  var CODES_AZH = ['azh-h', 'azh-papier', 'azh-pierres', 'azh-serie'];
+  function quatreCodes() {
+    var c = DP.codes();
+    return CODES_AZH.every(function (id) { return !!c[id]; });
+  }
+
   function poser(view, carte) {
+    if (!quatreCodes()) return;
     var pin = el('button', 'ny-pin');
     pin.type = 'button';
     pin.setAttribute('aria-label', 'Localisation');
@@ -212,6 +222,9 @@
 
     pin.addEventListener('click', function () {
       if (scene) return;
+      // L'espace suivra les mouvements du telephone : la permission se
+      // demande pendant ce clic.
+      if (window.INCLINAISON) window.INCLINAISON.demander();
       view.classList.add('is-ny');
       scene = el('div', 'ny');
       minuteurs = [];
@@ -460,12 +473,17 @@
         }
       }
 
+      // Le telephone qui penche fait glisser les etoiles, les proches
+      // plus que les lointaines (js/inclinaison.js).
+      function penche() { return window.INCLINAISON ? window.INCLINAISON.lire() : { x: 0, y: 0 }; }
+
       function ciel(t, decalage) {
         buf.fill(FOND);
+        var pc = penche();
         for (var i = 0; i < etoiles.length; i++) {
           var s = etoiles[i];
-          var x = (((s.x - decalage * s.par) % W) + W) % W | 0;
-          var y = s.y | 0;
+          var x = (((s.x - decalage * s.par + pc.x * s.par * 12) % W) + W) % W | 0;
+          var y = (((s.y + pc.y * s.par * 12) % H) + H) % H | 0;
           var b = s.b * (reduit ? 1 : 0.75 + 0.25 * Math.sin(t / 500 + s.ph));
           var g = (b * 230) | 0;
           buf[y * W + x] = rgba(g, g, Math.min(255, g + 20));
@@ -1093,11 +1111,13 @@
         var fond = c.createRadialGradient(w * 0.5, h * 0.38, 0, w * 0.5, h * 0.45, Math.hypot(w, h) * 0.7);
         fond.addColorStop(0, '#120c34'); fond.addColorStop(0.55, '#07061a'); fond.addColorStop(1, '#020208');
         c.fillStyle = fond; c.fillRect(0, 0, w, h);
-        // Les nebuleuses, qui derivent lentement.
-        var tt = now / 1000;
+        // Les nebuleuses, qui derivent lentement — et glissent un peu
+        // quand le telephone penche ; les etoiles, plus encore.
+        var tt = now / 1000, pc = penche(), amp = Math.min(w, h) * 0.06;
         [[0.28, 0.3, 0.55, '150,80,255', 0.22], [0.74, 0.36, 0.5, '60,110,255', 0.2], [0.52, 0.12, 0.4, '214,92,255', 0.14]]
           .forEach(function (n, i) {
-            var x = w * (n[0] + Math.sin(tt * 0.05 + i) * 0.02), y = h * (n[1] + Math.cos(tt * 0.04 + i) * 0.02), r = Math.max(w, h) * n[2];
+            var x = w * (n[0] + Math.sin(tt * 0.05 + i) * 0.02) + pc.x * amp * 0.3,
+                y = h * (n[1] + Math.cos(tt * 0.04 + i) * 0.02) + pc.y * amp * 0.3, r = Math.max(w, h) * n[2];
             var g = c.createRadialGradient(x, y, 0, x, y, r);
             g.addColorStop(0, 'rgba(' + n[3] + ',' + n[4] + ')');
             g.addColorStop(1, 'rgba(' + n[3] + ',0)');
@@ -1106,7 +1126,8 @@
         // Les etoiles : un scintillement doux, un halo pour les grosses.
         ETOILES_HD.forEach(function (s) {
           var a = s.b * (reduit ? 1 : 0.65 + 0.35 * Math.sin(tt * 1.6 + s.ph));
-          var x = s.x * w, y = s.y * h;
+          var x = (((s.x * w + pc.x * amp * s.par) % w) + w) % w,
+              y = (((s.y * h + pc.y * amp * s.par) % h) + h) % h;
           if (s.r > 1.2) {
             var g = c.createRadialGradient(x, y, 0, x, y, s.r * 4);
             g.addColorStop(0, 'rgba(' + s.c + ',' + (a * 0.5).toFixed(3) + ')');
@@ -1133,7 +1154,12 @@
         if (SON) {
           if (u >= V2 && u < V3) SON.nappeTension(0.3 + 0.7 * Math.min(1, (u - V2) / VENUE.approche));
           if (u >= V3 && !azh.sonPlonge) { azh.sonPlonge = true; SON.choc(1); SON.grondement(VENUE.plonge / 1000 + 0.6, 0.8); SON.nappeTension(0.55); }
-          if (u >= V5 && !azh.sonMontee) { azh.sonMontee = true; SON.grondement(VENUE.montee / 1000, 0.9); }
+          if (u >= V5 && !azh.sonMontee) {
+            azh.sonMontee = true;
+            // Il remonte : le moment le plus terrifiant de la venue.
+            SON.grondement(VENUE.montee / 1000, 0.7);
+            if (SON.montee) SON.montee(VENUE.montee / 1000);
+          }
           if (u >= V6 && !azh.sonTenue) { azh.sonTenue = true; SON.choc(0.9); SON.nappeTension(0.35); }
         }
 
@@ -1263,7 +1289,11 @@
             var choix = el('div', 'azh-dialogue-choix');
             var combat = el('button', 'azh-dialogue-btn azh-dialogue-btn--combat', 'L’AFFRONTER');
             combat.type = 'button';
-            combat.addEventListener('click', function (e) { e.stopPropagation(); affronter(d); });
+            combat.addEventListener('click', function (e) {
+              e.stopPropagation();
+              if (window.INCLINAISON) window.INCLINAISON.demander();
+              affronter(d);
+            });
             var part = el('button', 'azh-dialogue-btn', 'Fuir');
             part.type = 'button';
             part.addEventListener('click', function (e) { e.stopPropagation(); sortir(); });

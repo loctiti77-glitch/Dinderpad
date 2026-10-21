@@ -1356,6 +1356,7 @@
     e.n++;
     if (opts && opts.brillant) e.brillants++;
     if (opts && opts.irradie) e.irradies++;
+    if (opts && opts.magma) e.magmas = (e.magmas || 0) + 1;
     p.requins[id] = e;
     save();
     return e;

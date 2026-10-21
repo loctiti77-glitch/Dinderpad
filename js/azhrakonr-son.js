@@ -543,6 +543,100 @@
     g.gain.exponentialRampToValueAtTime(0.0001, t + duree);
   }
 
+  // ---------- Il remonte jusqu'a la planete ----------
+  // Le moment ou il surgit du bas de l'ecran, les mains ouvertes. Tout
+  // monte ensemble pendant "duree" secondes : un grave qu'on sent plus
+  // qu'on ne l'entend, un amas de scies en triton qui glisse vers le haut
+  // en s'ouvrant, des cordes suraigues qui grincent en tremolo, un
+  // souffle qui enfle, un coeur qui s'emballe et sa gorge, d'abord un
+  // grognement, puis un hurlement. A la fin, quand ses mains se
+  // referment : un impact de cuivres saturés, et le glas.
+  function montee(duree) {
+    if (!pret()) return;
+    var t = maintenant(), D = Math.max(1, duree || 4), fin = t + D;
+
+    // Le grave : sous l'audible, il fait trembler le reste.
+    var gs = gain(0.0001), so = osc('sine', 22, gs), so2 = osc('triangle', 33, gs);
+    so.frequency.setValueAtTime(22, t); so.frequency.exponentialRampToValueAtTime(48, fin);
+    so2.frequency.setValueAtTime(33, t); so2.frequency.exponentialRampToValueAtTime(72, fin);
+    gs.gain.setValueAtTime(0.0001, t);
+    gs.gain.exponentialRampToValueAtTime(0.7, fin - 0.2);
+    gs.gain.exponentialRampToValueAtTime(0.0001, fin + 1.6);
+    [so, so2].forEach(function (o) { o.start(t); o.stop(fin + 1.7); });
+
+    // L'amas : la, si bemol, mi bemol — un triton et une seconde
+    // mineure, qui montent ensemble de quatre demi-tons.
+    var ga = gain(0.0001), lp = filtre('lowpass', 160, 3, ga);
+    lp.frequency.setValueAtTime(160, t); lp.frequency.exponentialRampToValueAtTime(3600, fin);
+    var sat = saturation(28, lp);
+    [0, 1, 6, 12, 13].forEach(function (n) {
+      [-0.25, 0.25].forEach(function (d) {
+        var f0 = note(n, LA) * (1 + d / 100);
+        var o = osc('sawtooth', f0, sat);
+        o.frequency.setValueAtTime(f0, t);
+        o.frequency.exponentialRampToValueAtTime(f0 * Math.pow(2, 4 / 12), fin);
+        o.start(t); o.stop(fin + 0.3);
+      });
+    });
+    versSalle(ga, 0.5);
+    ga.gain.setValueAtTime(0.0001, t);
+    ga.gain.exponentialRampToValueAtTime(0.42, fin - 0.05);
+    ga.gain.exponentialRampToValueAtTime(0.0001, fin + 0.25);
+
+    // Les cordes suraigues, en tremolo serre, qui grimpent elles aussi.
+    var gc = gain(0.0001), hp = filtre('highpass', 900, 0.7, gc);
+    var trem = ac.createGain(); trem.gain.value = 0.6; trem.connect(hp);
+    var lfo = osc('square', 13, ac.createGain()), lg = ac.createGain(); lg.gain.value = 0.4;
+    lfo.disconnect(); lfo.connect(lg); lg.connect(trem.gain);
+    lfo.frequency.setValueAtTime(13, t); lfo.frequency.linearRampToValueAtTime(22, fin);
+    [36, 37, 42].forEach(function (n) {
+      var f0 = note(n, LA);
+      var o = osc('sawtooth', f0, trem);
+      o.frequency.setValueAtTime(f0, t);
+      o.frequency.exponentialRampToValueAtTime(f0 * Math.pow(2, 7 / 12), fin);
+      o.start(t); o.stop(fin + 0.2);
+    });
+    lfo.start(t); lfo.stop(fin + 0.2);
+    versSalle(gc, 0.8);
+    gc.gain.setValueAtTime(0.0001, t);
+    gc.gain.exponentialRampToValueAtTime(0.0001, t + D * 0.25);
+    gc.gain.exponentialRampToValueAtTime(0.11, fin - 0.05);
+    gc.gain.exponentialRampToValueAtTime(0.0001, fin + 0.15);
+
+    // Le souffle qui enfle, comme un appel d'air.
+    var gb = gain(0.0001), bp = filtre('bandpass', 220, 1.2, gb);
+    bp.frequency.setValueAtTime(220, t); bp.frequency.exponentialRampToValueAtTime(4200, fin);
+    var b = bruit(bp, true); b.start(t); b.stop(fin + 0.3);
+    gb.gain.setValueAtTime(0.0001, t);
+    gb.gain.exponentialRampToValueAtTime(0.5, fin - 0.05);
+    gb.gain.exponentialRampToValueAtTime(0.0001, fin + 0.2);
+
+    // Le coeur, de plus en plus vite.
+    for (var c = 0, tc = t; tc < fin - 0.15; c++) {
+      coeur(maitre, tc, 0.45 + 0.5 * (tc - t) / D);
+      tc += Math.max(0.24, 0.85 - (tc - t) / D * 0.65);
+    }
+
+    // Sa gorge : un grognement qui monte, puis le hurlement.
+    gueule({ duree: D * 0.7, hauteur: [30, 42, 58], de: VOYELLES.o, vers: VOYELLES.a, fort: 0.55, sature: 90, tremble: 14 });
+    gueule({ duree: D * 0.45, hauteur: [70, 150, 110], de: VOYELLES.a, vers: VOYELLES.è, fort: 0.75, sature: 120, tremble: 33, retard: D * 0.58 });
+
+    // L'impact : des cuivres graves saturés, longs, et le glas dessous.
+    var gi = gain(0.0001), lpi = filtre('lowpass', 2400, 1.5, gi);
+    lpi.frequency.setValueAtTime(2400, fin);
+    lpi.frequency.exponentialRampToValueAtTime(260, fin + 3.2);
+    var sati = saturation(40, lpi);
+    [0, 0.6, 7, 12].forEach(function (n, i) {
+      var o = osc('sawtooth', note(n, LA / 2) * (i === 1 ? 1.003 : 1), sati);
+      o.start(fin); o.stop(fin + 3.6);
+    });
+    versSalle(gi, 0.9);
+    gi.gain.setValueAtTime(0.0001, fin);
+    gi.gain.exponentialRampToValueAtTime(0.55, fin + 0.04);
+    gi.gain.exponentialRampToValueAtTime(0.0001, fin + 3.4);
+    glas(maitre, note(-12, LA * 2), fin, 0.55);
+  }
+
   function choc(fort) {
     if (!pret()) return;
     var t = maintenant(), g = gain(0.0001), o = osc('sine', 90, g);
@@ -1029,7 +1123,7 @@
   window.AZHRAKONR_SON = {
     pret: pret, nappeDebut: nappeDebut, nappeTension: nappeTension, nappeFin: nappeFin,
     arriveeDebut: arriveeDebut, arriveeAttenuer: arriveeAttenuer,
-    bip: bip, grondement: grondement, choc: choc,
+    bip: bip, grondement: grondement, choc: choc, montee: montee,
     voix: voix, voixLigne: voixLigne, voixIntro: voixIntro, voixFin: voixFin,
     musiqueDebut: musiqueDebut, musiqueRage: musiqueRage, musiqueFin: musiqueFin,
     tir: tir, impact: impact, blesse: blesse, charge: charge, salve: salve, chute: chute,
