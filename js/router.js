@@ -143,6 +143,8 @@
     // milieu du bord gauche (css/style.css). Echap fait de meme.
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || e.defaultPrevented || !body.classList.contains('is-plein')) return;
+      // Une scene du tracker passee en plein ecran gere Echap elle-meme.
+      if (document.querySelector('.ny')) return;
       var retour = nav && nav.querySelector('[data-pad-home]');
       if (!retour) return;
       e.preventDefault();
@@ -156,6 +158,9 @@
   // Permet a une vue de se redessiner apres avoir change l'etat.
   window.ROUTER = {
     reload: function () { show(current, currentArg); },
+    // Une rubrique peut passer d'elle-meme en plein ecran, le temps d'une
+    // scene (la venue d'Azhrakonr, dans le DinderTracker).
+    pleinEcran: function (oui) { pleinEcran(!!oui); },
     go: function (name) { location.hash = name ? '#' + name : ''; }
   };
 

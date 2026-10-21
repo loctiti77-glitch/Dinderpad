@@ -8427,3 +8427,6 @@ body.is-locked .pad-titre { display: none; }
 .pe-scene.is-sousleau > .pe-hud,
 .pe-scene.is-sousleau > .pe-action { display: none; }
 .fw-scene.is-h-parle > .fw-stick { display: none; }
+
+/* Sous l'eau, le joystick reste au-dessus de la scene. */
+.pe-scene.is-sousleau > .pe-stick { z-index: 4; }

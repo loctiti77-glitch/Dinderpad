@@ -169,6 +169,7 @@
     carte.appendChild(pin);
 
     var scene = null;          // la sequence en cours, s'il y en a une
+    var pleinActif = false;    // la scene a-t-elle pris tout l'ecran ?
     var minuteurs = [];
     var anim = 0;
 
@@ -176,11 +177,15 @@
 
     function vivant() { return scene && document.body.contains(scene); }
 
+    var SON = window.AZHRAKONR_SON;
+
     function sortir() {
+      if (SON) SON.couper();
       minuteurs.forEach(clearTimeout);
       minuteurs = [];
       if (anim) cancelAnimationFrame(anim);
       anim = 0;
+      if (plongee) { plongee.arreter(); plongee = null; }
       window.removeEventListener('keydown', auClavier);
       if (scene && scene.parentNode) {
         var s = scene;
@@ -189,6 +194,8 @@
       }
       scene = null;
       view.classList.remove('is-ny');
+      if (pleinActif && window.ROUTER && window.ROUTER.pleinEcran) window.ROUTER.pleinEcran(false);
+      pleinActif = false;
       pin.focus();
     }
 
@@ -201,7 +208,7 @@
     }
 
     // ---------- 1. La plongee sur New York ----------
-    var pave = null, saisie = '', affichage = null, verrou = false;
+    var pave = null, saisie = '', affichage = null, verrou = false, plongee = null;
 
     pin.addEventListener('click', function () {
       if (scene) return;
@@ -217,10 +224,16 @@
       zoom.style.transformOrigin = (NX * 100) + '% ' + (NYY * 100) + '%';
       scene.appendChild(zoom);
 
-      // Le viseur du tracker, qui se resserre sur la ville.
-      var viseur = el('div', 'ny-viseur');
-      ['hg', 'hd', 'bg', 'bd'].forEach(function (c) { viseur.appendChild(el('span', 'ny-coin ny-coin--' + c)); });
-      scene.appendChild(viseur);
+      // La plongee en haute definition, si elle est la : la carte en
+      // pixels ne sert plus que de texture au recul.
+      var HD = window.NY_PLONGEE;
+      if (!HD) {
+        var viseur = el('div', 'ny-viseur');
+        ['hg', 'hd', 'bg', 'bd'].forEach(function (c) { viseur.appendChild(el('span', 'ny-coin ny-coin--' + c)); });
+        scene.appendChild(viseur);
+      } else {
+        zoom.classList.add('is-texture');
+      }
 
       var hud = el('p', 'ny-hud', '');
       scene.appendChild(hud);
@@ -231,12 +244,30 @@
       fermer.addEventListener('click', sortir);
       scene.appendChild(fermer);
 
+      // Couper ou remettre le son de la scene.
+      var sonB = el('button', 'ny-son', '');
+      sonB.type = 'button';
+      function majSon() {
+        var m = SON && SON.muet();
+        sonB.textContent = m ? '🔇' : '🔊';
+        sonB.setAttribute('aria-label', m ? 'Remettre le son' : 'Couper le son');
+      }
+      sonB.addEventListener('click', function () { if (SON) SON.basculerMuet(); majSon(); });
+      majSon();
+      if (SON) scene.appendChild(sonB);
+
       carte.appendChild(scene);
       window.addEventListener('keydown', auClavier);
+      if (HD) {
+        if (SON) SON.pret();
+        plongee = HD.lancer(scene, carte, { son: SON, reduit: reduit, duree: DUREE.zoom });
+      }
 
       var fin = 'translate(' + ((0.5 - NX) * 100).toFixed(3) + '%,' +
                 ((0.5 - NYY) * 100).toFixed(3) + '%) scale(' + ZOOM + ')';
-      if (zoom.animate && !reduit) {
+      if (HD) {
+        // rien : la toile s'en charge
+      } else if (zoom.animate && !reduit) {
         zoom.animate([{ transform: 'translate(0,0) scale(1)' }, { transform: fin }],
                      { duration: DUREE.zoom, easing: 'cubic-bezier(.5,0,.2,1)', fill: 'forwards' });
       } else {
@@ -259,7 +290,7 @@
       }, 90);
       minuteurs.push(lecture);
 
-      plusTard(function () { if (vivant()) poserTablette(); }, DUREE.zoom + 150);
+      plusTard(function () { if (vivant()) poserTablette(); }, DUREE.zoom + (HD && !reduit ? 900 : 150));
     });
 
     function poserTablette() {
@@ -268,7 +299,8 @@
       t.type = 'button';
       t.setAttribute('aria-label', 'Tablette');
       var im = el('img', 'ny-tablette-img');
-      im.src = tablette();
+      im.src = window.NY_PLONGEE ? window.NY_PLONGEE.tablette() : tablette();
+      if (window.NY_PLONGEE) t.classList.add('is-hd');
       im.alt = '';
       t.appendChild(im);
       t.addEventListener('click', ouvrirPave);
@@ -345,6 +377,8 @@
       }
       verrou = true;
       DP.noterCode('ny');
+      // Le voyage commence, et sa musique avec lui.
+      if (SON) { SON.pret(); SON.voyageDebut(); }
       pave.classList.add('is-ok');
       majAffichage('ok');
       plusTard(function () {
@@ -764,6 +798,20 @@
       ext.addEventListener('click', ouvrirCodeAzh);
       scene.appendChild(ext);
 
+      // La toile couvre la scene sans se deformer (object-fit: cover) : en
+      // plein ecran, ses bords peuvent deborder. Ce qui se pose par-dessus
+      // passe par cette correspondance.
+      function mesure() {
+        var sw = scene.clientWidth, sh = scene.clientHeight;
+        var k = Math.max(sw / W, sh / H);
+        return { k: k, ox: (sw - W * k) / 2, oy: (sh - H * k) / 2 };
+      }
+      function poserBalise() {
+        var m = mesure();
+        ext.style.setProperty('--x', (m.ox + POINT.x * m.k).toFixed(1) + 'px');
+        ext.style.setProperty('--y', (m.oy + POINT.y * m.k).toFixed(1) + 'px');
+      }
+
       var mot = el('strong', 'ny-glitch-mot', '');
       scene.appendChild(mot);
 
@@ -869,6 +917,17 @@
         verrouAzh = true;
         DP.noterCode('azhrakonr');
         majCases('ok');
+        // Ce qui arrive merite tout l'ecran : le DinderPad s'efface.
+        if (window.ROUTER && window.ROUTER.pleinEcran) {
+          window.ROUTER.pleinEcran(true);
+          pleinActif = true;
+        }
+        // Le son s'eveille avec le code : une nappe grave qui va monter.
+        if (SON) {
+          SON.pret();
+          SON.arriveeDebut();
+          SON.nappeTension(0.1);
+        }
         plusTard(function () {
           if (!vivant()) return;
           window.removeEventListener('keydown', clavierAzh);
@@ -900,6 +959,7 @@
             return venue();
           }
           n.textContent = String(reste);
+          if (SON) { SON.bip(reste); SON.nappeTension(0.1 + (REBOURS - reste) / REBOURS * 0.3); }
           n.classList.remove('is-tic');
           void n.offsetWidth;
           n.classList.add('is-tic');
@@ -955,32 +1015,136 @@
       }
 
       function venue() {
+        if (SON) { SON.choc(0.6); SON.nappeTension(0.3); }
         azh = { etat: 'venue', t0: performance.now() };
         ext.classList.add('is-cache');
         hud.textContent = '???';
         poserCalquePlanete();
+        poserCielHD();
+        scene.classList.add('is-venue');
       }
 
       // Une courbe douce, aux deux bouts.
       function doux(k) { k = Math.max(0, Math.min(1, k)); return k * k * k * (k * (k * 6 - 15) + 10); }
+
+      // La ruee : quand il arrive, l'espace lui-meme se precipite derriere
+      // lui. Des trainees d'etoiles jaillissent de son centre, de plus en
+      // plus longues et de plus en plus vives a mesure qu'il approche, puis
+      // retombent quand il plonge.
+      var RUEE = [];
+      for (var ri = 0; ri < 90; ri++) {
+        RUEE.push({ a: Math.random() * 6.283, v: 0.35 + Math.random() * 0.9, ph: Math.random(),
+                    c: Math.random() < 0.7 ? '150,200,255' : (Math.random() < 0.5 ? '255,255,255' : '120,120,255') });
+      }
+      // Le ciel de la venue, en haute definition : une toile a la taille
+      // reelle de l'ecran, ou les etoiles, les nebuleuses et la ruee sont
+      // lisses. La planete garde ses gros pixels, sur son propre calque.
+      var cielHD = null, cielCtx = null, ETOILES_HD = [];
+      function poserCielHD() {
+        cielHD = el('canvas', 'azh-ciel');
+        scene.insertBefore(cielHD, imLoin);
+        cielCtx = cielHD.getContext('2d');
+        for (var i = 0; i < 420; i++) {
+          ETOILES_HD.push({ x: Math.random(), y: Math.random(), r: 0.35 + Math.pow(Math.random(), 3) * 1.8,
+                            b: 0.4 + Math.random() * 0.6, ph: Math.random() * 6.3, par: 0.2 + Math.random() * 0.8,
+                            c: Math.random() < 0.15 ? '170,190,255' : (Math.random() < 0.1 ? '255,210,230' : '255,255,255') });
+        }
+      }
+
+      function ruee(c, now, u, w, h) {
+        if (reduit || u < V2 || u > V4 + 600) return;
+        var k = Math.min(1, (u - V2) / VENUE.approche);
+        var force = u > V3 ? Math.max(0, 1 - (u - V3) / (VENUE.plonge + 600)) : Math.pow(k, 0.8);
+        if (force <= 0.01) return;
+        var cx = w * 0.5, cy = h * 0.4, portee = Math.hypot(w, h);
+        c.save();
+        c.globalCompositeOperation = 'lighter';
+        c.lineCap = 'round';
+        RUEE.forEach(function (p) {
+          var ph = (p.ph + now / 1000 * p.v * (0.6 + force * 2.2)) % 1;
+          var d0 = 12 + ph * ph * portee * 0.7;
+          var long = 8 + force * (30 + ph * 260);
+          var a = Math.min(1, ph * 3) * (1 - ph) * force * 1.2;
+          var x0 = cx + Math.cos(p.a) * d0, y0 = cy + Math.sin(p.a) * d0;
+          var x1 = cx + Math.cos(p.a) * (d0 + long), y1 = cy + Math.sin(p.a) * (d0 + long);
+          var g = c.createLinearGradient(x0, y0, x1, y1);
+          g.addColorStop(0, 'rgba(' + p.c + ',0)');
+          g.addColorStop(1, 'rgba(' + p.c + ',' + a.toFixed(3) + ')');
+          c.strokeStyle = g;
+          c.lineWidth = 1 + ph * 3.2 * force;
+          c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+        });
+        var lg = c.createRadialGradient(cx, cy, 0, cx, cy, 80 + force * 260);
+        lg.addColorStop(0, 'rgba(110,160,255,' + (0.4 * force).toFixed(3) + ')');
+        lg.addColorStop(1, 'rgba(90,150,255,0)');
+        c.fillStyle = lg;
+        c.fillRect(0, 0, w, h);
+        c.restore();
+      }
+
+      function cielImage(now, u) {
+        if (!cielHD) return;
+        var dpr = Math.min(2, window.devicePixelRatio || 1);
+        var w = scene.clientWidth, h = scene.clientHeight;
+        var L = Math.round(w * dpr), Ht = Math.round(h * dpr);
+        if (cielHD.width !== L || cielHD.height !== Ht) { cielHD.width = L; cielHD.height = Ht; }
+        var c = cielCtx;
+        c.setTransform(dpr, 0, 0, dpr, 0, 0);
+        var fond = c.createRadialGradient(w * 0.5, h * 0.38, 0, w * 0.5, h * 0.45, Math.hypot(w, h) * 0.7);
+        fond.addColorStop(0, '#120c34'); fond.addColorStop(0.55, '#07061a'); fond.addColorStop(1, '#020208');
+        c.fillStyle = fond; c.fillRect(0, 0, w, h);
+        // Les nebuleuses, qui derivent lentement.
+        var tt = now / 1000;
+        [[0.28, 0.3, 0.55, '150,80,255', 0.22], [0.74, 0.36, 0.5, '60,110,255', 0.2], [0.52, 0.12, 0.4, '214,92,255', 0.14]]
+          .forEach(function (n, i) {
+            var x = w * (n[0] + Math.sin(tt * 0.05 + i) * 0.02), y = h * (n[1] + Math.cos(tt * 0.04 + i) * 0.02), r = Math.max(w, h) * n[2];
+            var g = c.createRadialGradient(x, y, 0, x, y, r);
+            g.addColorStop(0, 'rgba(' + n[3] + ',' + n[4] + ')');
+            g.addColorStop(1, 'rgba(' + n[3] + ',0)');
+            c.fillStyle = g; c.fillRect(0, 0, w, h);
+          });
+        // Les etoiles : un scintillement doux, un halo pour les grosses.
+        ETOILES_HD.forEach(function (s) {
+          var a = s.b * (reduit ? 1 : 0.65 + 0.35 * Math.sin(tt * 1.6 + s.ph));
+          var x = s.x * w, y = s.y * h;
+          if (s.r > 1.2) {
+            var g = c.createRadialGradient(x, y, 0, x, y, s.r * 4);
+            g.addColorStop(0, 'rgba(' + s.c + ',' + (a * 0.5).toFixed(3) + ')');
+            g.addColorStop(1, 'rgba(' + s.c + ',0)');
+            c.fillStyle = g; c.fillRect(x - s.r * 4, y - s.r * 4, s.r * 8, s.r * 8);
+          }
+          c.fillStyle = 'rgba(' + s.c + ',' + a.toFixed(3) + ')';
+          c.beginPath(); c.arc(x, y, s.r, 0, 6.283); c.fill();
+        });
+        ruee(c, now, u, w, h);
+      }
 
       function imageAzh(now) {
         var u = now - azh.t0;
         var pose = u < V5
           ? poseEntre(POSES.finale, POSES.loin, doux(u / VENUE.recul))
           : poseEntre(POSES.loin, POSES.tenue, doux((u - V5) / VENUE.montee));
-        // Le ciel seul, sur la toile.
-        lieu(now, { z: pose.r / PL.R, fx: W / 2, fy: H / 2, sansPlanete: true });
+        // Le ciel : la toile en gros pixels, le temps que le ciel en haute
+        // definition la remplace en fondu ; ensuite, lui seul.
+        if (u < VENUE.recul + 300) lieu(now, { z: pose.r / PL.R, fx: W / 2, fy: H / 2, sansPlanete: true });
+        cielImage(now, u);
 
-        // Les mesures de l'ecran : la toile y est etiree sur toute la scene.
-        var sw = scene.clientWidth, sh = scene.clientHeight;
-        var kx = sw / W, ky = sh / H;
+        // Les sons de la venue, chacun a son moment.
+        if (SON) {
+          if (u >= V2 && u < V3) SON.nappeTension(0.3 + 0.7 * Math.min(1, (u - V2) / VENUE.approche));
+          if (u >= V3 && !azh.sonPlonge) { azh.sonPlonge = true; SON.choc(1); SON.grondement(VENUE.plonge / 1000 + 0.6, 0.8); SON.nappeTension(0.55); }
+          if (u >= V5 && !azh.sonMontee) { azh.sonMontee = true; SON.grondement(VENUE.montee / 1000, 0.9); }
+          if (u >= V6 && !azh.sonTenue) { azh.sonTenue = true; SON.choc(0.9); SON.nappeTension(0.35); }
+        }
+
+        // Les mesures de l'ecran, et la correspondance avec la toile.
+        var sh = scene.clientHeight, mm = mesure();
 
         // La planete : son centre et son rayon, convertis en pixels d'ecran.
         var flotte = u > V6 && !reduit ? Math.sin((u - V6) / 1100) * 3 : 0;
         calquePlanete.style.transform =
-          'translate3d(' + (pose.x * kx - D / 2).toFixed(2) + 'px,' + (pose.y * ky - D / 2 + flotte).toFixed(2) + 'px,0)' +
-          ' scale(' + (pose.r / PL.R * kx).toFixed(4) + ')';
+          'translate3d(' + (mm.ox + pose.x * mm.k - D / 2).toFixed(2) + 'px,' + (mm.oy + pose.y * mm.k - D / 2 + flotte).toFixed(2) + 'px,0)' +
+          ' scale(' + (pose.r / PL.R * mm.k).toFixed(4) + ')';
 
         // Il nait au fond de l'espace, au milieu de l'ecran, et grandit
         // lentement, puis de plus en plus vite.
@@ -991,9 +1155,12 @@
           var dy = 0;
           if (u >= V3) {
             // Il plonge sous l'ecran.
+            // Il descend jusqu'a ce que le haut de ses cornes ait passe le
+            // bas de l'ecran : il disparait vraiment avant de remonter.
             var p = doux((u - V3) / VENUE.plonge);
-            dy = p * sh * 1.4;
             echelle *= 1 + p * 0.3;
+            var demiH = (imLoin.offsetHeight || sh) * echelle / 2;
+            dy = p * (sh * 0.62 + demiH + 60);
             tremble = 4 * Math.sin(p * Math.PI);
           }
           imLoin.hidden = false;
@@ -1027,6 +1194,24 @@
         }
       }
 
+      // ---------- Le combat ----------
+      // Le dialogue fini, on peut lui tenir tete. Le combat prend toute la
+      // scene ; vaincu, il rejoint la collection.
+      function affronter(dial) {
+        var B = window.AZHRAKONR_BOSS;
+        if (!B || scene.querySelector('.azb')) return;
+        dial.classList.add('is-sortie');
+        scene.classList.add('is-combat');
+        hud.textContent = '';
+        // La musique de son arrivee s'eteint : celle du combat prend le relais.
+        if (SON) { SON.voixFin(); SON.nappeFin(1.2); }
+        plusTard(function () {
+          if (!vivant()) return;
+          dial.remove();
+          B.lancer({ hote: scene, victoire: sortir, fuite: sortir });
+        }, reduit ? 0 : 500);
+      }
+
       // ---------- Le devoreur parle ----------
       function dialogue() {
         var d = el('div', 'azh-dialogue');
@@ -1037,39 +1222,54 @@
         d.appendChild(suite);
         scene.appendChild(d);
 
-        var i = 0, c = 0, ecrit = null;
+        var i = 0, c = 0, ecrit = null, intro = false;
         function ligne() {
+          intro = false;
           var l = DIALOGUE[i];
           c = 0;
           txt.textContent = '';
           d.classList.remove('is-fini');
           clearInterval(ecrit);
+          if (SON) SON.voixLigne(true);
           ecrit = setInterval(function () {
             if (!vivant()) return clearInterval(ecrit);
             c++;
             txt.textContent = l.slice(0, c);
-            if (c >= l.length) { clearInterval(ecrit); ecrit = null; d.classList.add('is-fini'); }
+            if (SON) SON.voix(l.charAt(c - 1));
+            if (c >= l.length) {
+              clearInterval(ecrit); ecrit = null; d.classList.add('is-fini');
+              if (SON) SON.voixLigne(false);
+            }
           }, reduit ? 1 : 42);
           minuteurs.push(ecrit);
         }
         function avancer() {
+          // Un clic pendant qu'il inspire : il parle tout de suite.
+          if (intro) return ligne();
           if (ecrit) {
             // Un clic pendant qu'il parle : la phrase s'affiche d'un coup.
             clearInterval(ecrit); ecrit = null;
             txt.textContent = DIALOGUE[i];
             d.classList.add('is-fini');
+            if (SON) SON.voixLigne(false);
             return;
           }
           if (i >= DIALOGUE.length - 1) return;
           i++;
           ligne();
-          // La derniere phrase dite, il n'y a plus qu'a partir.
+          // La derniere phrase dite : l'affronter, ou fuir.
           if (i === DIALOGUE.length - 1) {
             d.classList.add('is-derniere');
-            var part = el('button', 'azh-dialogue-btn', 'Revenir');
+            var choix = el('div', 'azh-dialogue-choix');
+            var combat = el('button', 'azh-dialogue-btn azh-dialogue-btn--combat', 'L’AFFRONTER');
+            combat.type = 'button';
+            combat.addEventListener('click', function (e) { e.stopPropagation(); affronter(d); });
+            var part = el('button', 'azh-dialogue-btn', 'Fuir');
             part.type = 'button';
             part.addEventListener('click', function (e) { e.stopPropagation(); sortir(); });
-            d.appendChild(part);
+            choix.appendChild(combat);
+            choix.appendChild(part);
+            d.appendChild(choix);
           }
         }
         d.addEventListener('click', avancer);
@@ -1077,7 +1277,12 @@
           if (!vivant()) return window.removeEventListener('keydown', clavier);
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); avancer(); }
         });
-        ligne();
+        // Il inspire, il gronde... puis il parle.
+        if (SON && !reduit) {
+          SON.voixIntro();
+          intro = true;
+          plusTard(function () { if (vivant() && intro) ligne(); }, 2300);
+        } else ligne();
       }
 
       var debut = performance.now();
@@ -1101,9 +1306,19 @@
         }
       }
 
+      var sonGlitch = false;
       function boucle(now) {
         if (!vivant()) return;
         var t = now - debut;
+        // La musique suit les etapes du voyage.
+        if (SON) {
+          if (t < T1) SON.voyagePhase('terre');
+          else if (t < T2) SON.voyagePhase('systeme');
+          else if (t < T3) SON.voyagePhase('cap');
+          else if (t < T4) { if (!sonGlitch) { sonGlitch = true; SON.voyageGlitch(DUREE.glitch / 1000); } }
+          else if (t < T5) SON.voyagePhase('approche');
+          else SON.voyagePhase('lieu');
+        }
         if (t < T1) {
           image1(now, t / T1);
           hud.textContent = t < T1 * 0.45 ? 'NEW YORK' : 'TERRE';
@@ -1165,7 +1380,7 @@
             }, reduit ? 0 : 1500);
           }
           if (azh && azh.etat === 'venue') imageAzh(now);
-          else lieu(now);
+          else { lieu(now); poserBalise(); }
         }
         anim = requestAnimationFrame(boucle);
       }

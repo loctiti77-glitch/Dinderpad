@@ -1147,7 +1147,9 @@
                         c: bruit(a, 3, 513) > 0.5 ? '#2f7a34' : '#3f9c42' });
         }
 
-        var nageur = { x: 40, y: 50, dir: 2, pas: 0, vx: 0, vy: 0 };
+        // Il entre dans l'eau par la surface, tete la premiere.
+        var nageur = { x: 60, y: -14, dir: 2, pas: 0, vx: 0, vy: 0 };
+        var debutPlongee = 0, bulles = [];
         var camX = 0, trouve = false, fini = false;
         var touches = {}, dirStick = { x: 0, y: 0 };
         var CLES = { arrowleft: 'g', q: 'g', a: 'g', arrowright: 'd', d: 'd',
@@ -1187,15 +1189,23 @@
           var dt = avant ? Math.min(0.05, (t - avant) / 1000) : 0;
           avant = t;
 
+          // Le plongeon : une seconde ou il descend, avant de nager.
+          if (!debutPlongee) debutPlongee = t;
+          var entre = Math.min(1, (t - debutPlongee) / (reduit ? 1 : 950));
+          if (entre < 1) {
+            var ee = 1 - Math.pow(1 - entre, 3);
+            nageur.y = -14 + ee * 78;
+            if (Math.random() < 0.6) bulles.push({ x: nageur.x + (Math.random() - 0.5) * 10, y: nageur.y - 6, v: 20 + Math.random() * 30, t: t });
+          }
           // La nage : un peu d'elan, freinee par l'eau.
-          var ix = dirStick.x + (touches.d ? 1 : 0) - (touches.g ? 1 : 0);
-          var iy = dirStick.y + (touches.b ? 1 : 0) - (touches.h ? 1 : 0);
+          var ix = entre < 1 ? 0 : dirStick.x + (touches.d ? 1 : 0) - (touches.g ? 1 : 0);
+          var iy = entre < 1 ? 0 : dirStick.y + (touches.b ? 1 : 0) - (touches.h ? 1 : 0);
           var n = Math.hypot(ix, iy);
           if (n > 1) { ix /= n; iy /= n; }
           nageur.vx += (ix * 70 - nageur.vx) * Math.min(1, dt * 3);
           nageur.vy += (iy * 70 - nageur.vy) * Math.min(1, dt * 3);
           nageur.x = Math.max(10, Math.min(LW - 10, nageur.x + nageur.vx * dt));
-          nageur.y = Math.max(22, Math.min(H - 26, nageur.y + nageur.vy * dt));
+          if (entre >= 1) nageur.y = Math.max(22, Math.min(H - 26, nageur.y + nageur.vy * dt));
           if (Math.abs(nageur.vx) > 6) nageur.dir = nageur.vx < 0 ? 1 : 2;
           nageur.pas += (Math.abs(nageur.vx) + Math.abs(nageur.vy)) * dt * 0.25;
           camX = Math.max(0, Math.min(LW - W, nageur.x - W / 2));
@@ -1246,18 +1256,48 @@
             x.restore();
           });
 
-          // Le plongeur : le Dinder de la partie, de profil, des bulles au-dessus.
+          // Le plongeur : le Dinder de la partie, de profil. Il penche dans
+          // le sens ou il nage, ondule a chaque battement, et flotte a
+          // l'arret. Au plongeon, il entre tete la premiere.
           var fd = window.CHIBI && window.CHIBI.feuille(choisi);
+          var vit = Math.hypot(nageur.vx, nageur.vy);
+          var nage = Math.min(1, vit / 55);
+          var face = nageur.dir === 1 ? -1 : 1;
           if (fd) {
-            var pose = Math.floor(nageur.pas) % fd.poses;
-            x.drawImage(fd.canvas, pose * fd.L, nageur.dir * fd.H, fd.L, fd.H,
-                        Math.round(nageur.x - camX - fd.L / 2), Math.round(nageur.y - fd.H / 2), fd.L, fd.H);
+            var pose = Math.floor(nageur.pas * 1.6) % fd.poses;
+            // Il nage couche vers l'avant ; il releve la tete pour monter,
+            // la baisse pour descendre.
+            var couche = Math.abs(nageur.vx) > 6 ? 0.9 * nage : 0;
+            // A la verticale, il reste droit : on ne penche qu'en nageant de cote.
+            var incl = couche ? Math.atan2(nageur.vy, Math.abs(nageur.vx) + 18) * 0.6 * nage : 0;
+            var battement = Math.sin(t / (90 + 400 * (1 - nage)));
+            var ondule = reduit ? 0 : battement * (0.04 + 0.13 * nage);
+            var flotte = reduit ? 0 : Math.sin(t / 700) * 2 * (1 - nage);
+            var tete = entre < 1 ? (1 - entre) * 1.45 : 0;      // tete en bas, au plongeon
+            x.save();
+            x.translate(Math.round(nageur.x - camX), Math.round(nageur.y + flotte));
+            x.rotate(face * (couche + incl + tete) + ondule);
+            x.scale(1 + battement * 0.05 * nage, 1 - battement * 0.04 * nage);
+            x.drawImage(fd.canvas, pose * fd.L, nageur.dir * fd.H, fd.L, fd.H, -fd.L / 2, -fd.H / 2, fd.L, fd.H);
+            x.restore();
           }
-          for (var b = 0; b < 3; b++) {
-            var ph = ((t / 1400) + b / 3) % 1;
-            x.fillStyle = 'rgba(220,245,255,' + (0.8 * (1 - ph)).toFixed(2) + ')';
-            x.fillRect(Math.round(nageur.x - camX + Math.sin(ph * 9 + b) * 3), Math.round(nageur.y - 16 - ph * 30), 2, 2);
+          // Les bulles : une trainee aux pieds quand il nage, et un filet qui
+          // monte de sa tete.
+          if (!reduit && Math.random() < 0.08 + nage * 0.5) {
+            bulles.push({ x: nageur.x - face * (8 + Math.random() * 6), y: nageur.y + 6 + (Math.random() - 0.5) * 6,
+                          v: 14 + Math.random() * 22, t: t });
           }
+          if (!reduit && Math.random() < 0.05) bulles.push({ x: nageur.x + face * 4, y: nageur.y - 14, v: 30, t: t });
+          bulles = bulles.filter(function (bu) {
+            var age = (t - bu.t) / 1000;
+            if (age > 1.6) return false;
+            var by = bu.y - age * bu.v;
+            if (by < 8) return false;
+            x.fillStyle = 'rgba(220,245,255,' + (0.85 * (1 - age / 1.6)).toFixed(2) + ')';
+            var tb = age < 0.6 ? 1 : 2;
+            x.fillRect(Math.round(bu.x - camX + Math.sin(age * 8 + bu.t) * 2), Math.round(by), tb, tb);
+            return true;
+          });
 
           // Tout pres du poisson en papier, on lit ce qu'il porte.
           var py = papier.y + Math.sin(t / 900 + papier.ph) * 6;

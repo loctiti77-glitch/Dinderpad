@@ -228,6 +228,15 @@
       torse: '#1f8a3a', accent: '#176a2c', bas: '#1c7a33', chaussures: '#101014',
       chemise: '#141318', cravate: '#2fbf55', poignets: '#141318'
     },
+    // Azhrakonr, le devoreur : casque a cimier et cornes, visiere de ciel
+    // etoile, armure sombre parcourue de bleu, cape de nuit.
+    'azhrakonr': {
+      piques: 'dresse', cheveux: '#2a3170', cheveuxClair: '#3fd6ff',
+      peau: '#20264a', visiere: '#2a5aff', demi: false, oeil: null, visiereLueur: true,
+      torse: '#1c1f40', accent: '#3fd6ff', bas: '#151834', chaussures: '#0c0e22',
+      armure: '#4a5a9a', cape: '#1a2a7a', gemme: '#3fd6ff',
+      couronne: '#3a4a9a', couronneGemme: '#3fd6ff'
+    },
     // Golden Freddy : Freddy en or terni, et deux orbites vides.
     'golden-freddy': {
       anim: 'ours', fourrure: '#b8902a', museau: '#d8b850', yeux: '#f4f0e8',

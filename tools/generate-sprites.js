@@ -17,7 +17,9 @@ const IDS = [
   'calder-veyne-veinburner', 'carl-sinars-cardinal-sin', 'edgar-marks-grincrusher',
   'he-melt', 'v', 'a', 'h', 'multinder', 'gart-kervelor-king-of-karsovia',
   // Wade and Friends.
-  'wade-wolhunter', 'stephen-sharkodon', 'faith-faisandoir', 'charlie-capsule', 'their-creator'
+  'wade-wolhunter', 'stephen-sharkodon', 'faith-faisandoir', 'charlie-capsule', 'their-creator',
+  // Le devoreur de la balise lointaine.
+  'azhrakonr'
 ];
 
 // Une seule taille : celle du duel. Les sprites de balade de la foret ne

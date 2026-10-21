@@ -164,6 +164,7 @@
   }
 
   function chargerTout() {
+    if (window.WADE_NUIT) window.WADE_NUIT.preparer();
     Object.keys(PERSOS).forEach(function (p) {
       ['base', 'horror', 'endo'].forEach(function (r) { image(p + '-' + r); });
     });
@@ -408,11 +409,14 @@
     x.globalCompositeOperation = 'source-over';
     x.clearRect(0, 0, G.W, G.H);
     var s = G.hp / 1200;
-    if (!G.cuve) ombre(x, G.cx - G.x0 + (q.dx || 0) * s, G.bas - G.y0, G.wp * (q.ech || 1));
+    // Les yeux seuls : on le devine un peu penche, la tete sous le linteau,
+    // pour que ses yeux luisent bien dans l'embrasure.
+    var penche = o.seulsYeux ? G.hp * 0.13 : 0;
+    if (!G.cuve && !o.seulsYeux) ombre(x, G.cx - G.x0 + (q.dx || 0) * s, G.bas - G.y0, G.wp * (q.ech || 1));
     PANT.dessiner(x, G.img, image(G.img), q,
-      { s: s, tx: G.cx - G.x0 - 400 * s, ty: G.bas - G.y0 - 1200 * s, vw: G.W, vh: G.H },
+      { s: s, tx: G.cx - G.x0 - 400 * s, ty: G.bas - G.y0 - 1200 * s + penche, vw: G.W, vh: G.H },
       { ecl: G.ecl, lum: o.lum, yeux: q.yeux * (o.yeux == null ? 1 : o.yeux),
-        eau: G.cuve ? [0.18, 0.5, 0.7] : null, alpha: G.cuve ? 0.85 : 1, taillesYeux: o.tailleYeux });
+        eau: G.cuve ? [0.18, 0.5, 0.7] : null, alpha: o.seulsYeux ? 0 : G.cuve ? 0.85 : 1, taillesYeux: o.tailleYeux });
     if (G.masque) {
       x.globalCompositeOperation = 'destination-in';
       x.drawImage(G.masque, 0, 0);
@@ -720,6 +724,20 @@
 
     // ---------- Le regard et les clics dans le bureau ----------
 
+    // Le point (X, Y) de la toile tombe-t-il sur le 96 de l'etiquette ? On
+    // inverse la deformation qui l'a posee en perspective.
+    function sur96(X, Y) {
+      var c = coinsEtiquette;
+      if (!c || !ZONE96) return false;
+      var ax = (c.hd[0] - c.hg[0]) / c.w, ay = (c.hd[1] - c.hg[1]) / c.w;
+      var bx = (c.bg[0] - c.hg[0]) / c.h, by = (c.bg[1] - c.hg[1]) / c.h;
+      var det = ax * by - ay * bx;
+      if (!det) return false;
+      var dx = X - c.hg[0], dy = Y - c.hg[1];
+      var u = (dx * by - dy * bx) / det, v = (ax * dy - ay * dx) / det;
+      return u >= ZONE96.x0 - 6 && u <= ZONE96.x1 + 6 && v >= ZONE96.y0 - 6 && v <= ZONE96.y1 + 6;
+    }
+
     function versToile(ev) {
       var b = cv.getBoundingClientRect();
       var s = Math.max(b.width / VW, b.height / VH);
@@ -743,6 +761,18 @@
       if (e.pause || e.fini) return;
       var p = versToile(ev);
       if (!e.cam && !e.bascule && boutonSous(p[0], p[1])) return;
+      if (e.cam && e.camVue === '07' && !e.bascule && sur96(p[0], p[1])) {
+        // Deux clics rapproches sur le 96 : la paire est notee.
+        if (e.t - (e.serieClic || -99) < 0.6) {
+          e.serieClic = -99;
+          e.serieValide = e.t;
+          SON.reveiller();
+          DP.noterCode('azh-serie');
+        } else {
+          e.serieClic = e.t;
+        }
+        return;
+      }
       // Un endroit de la piece : c'est peut-etre une piste.
       if (sec && !e.bascule && e.vue) {
         var pt = R.point(e.vue.cle, e.vue.rendu, (p[0] + e.vue.off) / K, p[1] / K);
@@ -926,6 +956,23 @@
       SON.couper();
       var cleP = apparence(k) + '#sale';
       var duree = (surCam ? 0.6 : 0) + 1.35;
+      var N = window.WADE_NUIT;
+      if (N && !ENDOS && N.pret(k)) {
+        // Le jumpscare de la nuit : la lampe qui lache, lui dans
+        // l'encadrement, puis sur nous, la machoire qui claque. Il crie
+        // lui-meme au moment ou il se jette.
+        var fondN = toile(VW, VH);
+        fondN.getContext('2d').drawImage(cv, 0, 0);
+        // Il se jette sur nous tout de suite : ni tablette arrachee, ni
+        // embrasure qui clignote avant.
+        e.peur = { k: k, cle: cleP, t: N.CRI, st: null, fond: fondN,
+                   de: 'porte', nuit: N.nouvelle(k), bureau: null };
+        setTimeout(function () {
+          e.peur = null;
+          defaite(k);
+        }, reduit ? 900 : (N.DUREE - N.CRI + 0.7) * 1000);
+        return;
+      }
       if (animes() && PANT.squelette(cleP) && pret(image(cleP))) {
         // Ce qu'on voyait juste avant : il surgit par-dessus.
         var fond = toile(VW, VH);
@@ -948,6 +995,9 @@
         setTimeout(function () { hote.classList.remove('is-neige'); defaite(k); }, reduit ? 300 : 1500);
       }, reduit ? 900 : duree * 1000);
     }
+
+    hote._attaque = attaque;   // pour les essais
+    hote._etat = function () { return { A: A, e: e }; };
 
     function heuresTenues() { return Math.min(6, Math.floor(e.t / HEURE)); }
 
@@ -1186,10 +1236,11 @@
         if (!on || e.panne || lache) return;
         var la = qui(c === 'g' ? 'PG' : 'PD');
         var variante = c === 'g' ? 'lumG' : 'lumD', pose = c === 'g' ? 'porteG' : 'porteD';
+        // On ne le voit pas : il n'y a que ses yeux qui luisent dans l'embrasure.
         la.forEach(function (k) {
-          if (!animes()) { poserCalque(calque('bureau', variante, pose, apparence(k)), off, tic(k)); return; }
+          if (!animes()) return;
           var G = cadre('bureau', variante, pose, apparence(k) + '#sale');
-          if (G) animer(G, 'porte', 'porte|' + k, off, { depuis: e.t - A[k].arrive, lum: 0.2, tailleYeux: 1.6 },
+          if (G) animer(G, 'porte', 'porte|' + k, off, { depuis: e.t - A[k].arrive, seulsYeux: true, yeux: 1.25, tailleYeux: 2 },
                         bruitDe(0.9, c === 'g' ? -0.8 : 0.8));
         });
       });
@@ -1313,6 +1364,8 @@
     // de serie dont deux chiffres ne sont pas de la meme encre. C'est la
     // paire de Wade and Friends, pour la balise d'Azhrakonr.
     var SERIE = { avant: '4258', code: '96', apres: '34' };
+    var ZONE96 = null;                  // ou le 96 est ecrit, sur l'etiquette
+    var coinsEtiquette = null;          // ses trois coins a l'ecran, a la derniere image
     var etiquetteCv = null;
     function etiquette() {
       if (etiquetteCv) return etiquetteCv;
@@ -1329,7 +1382,9 @@
       [[SERIE.avant, '#1c1812'], [SERIE.code, '#e01e24'], [SERIE.apres, '#1c1812']].forEach(function (p) {
         x.fillStyle = p[1];
         x.fillText(p[0], px, 48);
-        px += x.measureText(p[0]).width;
+        var w = x.measureText(p[0]).width;
+        if (p[0] === SERIE.code) ZONE96 = { x0: px - 4, x1: px + w + 4, y0: 42, y1: 86 };
+        px += w;
       });
       // Les barres d'un code-barres, pour faire vrai.
       x.fillStyle = '#2a241c';
@@ -1345,6 +1400,7 @@
       function pt(x, y) { var p = R.projeter('froid', [x, y, 4.39]); return [p[0] * K - off, p[1] * K]; }
       var hg = pt(-2.36, 1.33), hd = pt(-1.84, 1.33), bg = pt(-2.36, 1.0);
       var im = etiquette();
+      coinsEtiquette = { hg: hg, hd: hd, bg: bg, w: im.width, h: im.height };
       ctx.save();
       ctx.transform((hd[0] - hg[0]) / im.width, (hd[1] - hg[1]) / im.width,
                        (bg[0] - hg[0]) / im.height, (bg[1] - hg[1]) / im.height, hg[0], hg[1]);
@@ -1354,6 +1410,23 @@
       ctx.globalAlpha = 1;
       ctx.fillStyle = 'rgba(8,12,20,.32)';
       ctx.fillRect(0, 0, im.width, im.height);
+      // Un premier clic sur le 96 le souligne ; le second le valide, et il
+      // s'allume un moment.
+      if (ZONE96) {
+        var ilya = e.t - (e.serieClic || -99), valide = e.t - (e.serieValide || -99);
+        if (valide < 2.5) {
+          var a = 1 - valide / 2.5;
+          ctx.strokeStyle = 'rgba(255,220,90,' + a.toFixed(2) + ')';
+          ctx.lineWidth = 6;
+          ctx.strokeRect(ZONE96.x0 - 4, ZONE96.y0 - 4, ZONE96.x1 - ZONE96.x0 + 8, ZONE96.y1 - ZONE96.y0 + 8);
+          ctx.fillStyle = 'rgba(255,220,90,' + (a * 0.35).toFixed(2) + ')';
+          ctx.fillRect(ZONE96.x0, ZONE96.y0, ZONE96.x1 - ZONE96.x0, ZONE96.y1 - ZONE96.y0);
+        } else if (ilya < 0.6) {
+          ctx.strokeStyle = 'rgba(255,255,255,' + (0.7 * (1 - ilya / 0.6)).toFixed(2) + ')';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(ZONE96.x0, ZONE96.y0, ZONE96.x1 - ZONE96.x0, ZONE96.y1 - ZONE96.y0);
+        }
+      }
       ctx.restore();
     }
 
@@ -1362,7 +1435,6 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, VW, VH);
       e.camT += dt;
-      e.serieT = k === '07' ? (e.serieT || 0) + dt : 0;
       if (!cam.scene) {
         // La cuisine : la camera est morte, on n'a que le son.
         ctx.globalAlpha = 0.5;
@@ -1405,11 +1477,7 @@
           ctx.drawImage(rendu.canvas, -off, 0, rendu.w * K, rendu.h * K);
           e.vue = { cle: cam.scene, rendu: rendu, off: off };
           occupants(k).forEach(function (o) { o.f(off); });
-          if (k === '07') {
-            etiquetteSerie(off);
-            // Trois secondes devant l'etiquette : elle est lue.
-            if (e.serieT > 3 && !e.serieLue) { e.serieLue = true; DP.noterCode('azh-serie'); }
-          }
+          if (k === '07') etiquetteSerie(off);
           ctx.restore();
           if (sec) sec.dessiner(cam.scene, ctx, off, K, VW, VH);
           if (k === '09') dessinerCourse(off);
@@ -1501,12 +1569,17 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, VW, VH);
 
+      if (p.nuit && u >= 0) {
+        window.WADE_NUIT.dessiner(ctx, p.nuit, u, dt, VW, VH, reduit);
+        return;
+      }
+
       if (u < 0) {
         var v = p.t;
         if (v < 0.35) {
           // Le flux qui se dechire, et lui qui passe dedans, par eclats.
           ctx.drawImage(p.fond, 0, 0);
-          if (Math.floor(v * 22) % 3 !== 1) {
+          if (Rg && p.st && Math.floor(v * 22) % 3 !== 1) {
             var qv = PANT.poser('vision', p.st, p.t, dt, true);
             var sv = VH * (0.16 + v * 0.5) / Rg.tete[2];
             PANT.dessiner(ctx, key, im, qv,

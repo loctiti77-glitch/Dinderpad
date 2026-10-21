@@ -109,7 +109,7 @@
     if (c['azh-pierres']) r.push({ id: 'azh-pierres', rub: 'odyssee', titre: 'Les pierres sous le nain', code: '13', date: c['azh-pierres'],
       ou: 'Sous le nain de jardin mauve d’Altéra, avec la pelle du cabanon.', utilite: 'La case verte du code de ' + BALISE });
     if (c['azh-serie']) r.push({ id: 'azh-serie', rub: 'wade', titre: 'Le numéro de série', code: '4258 96 34', date: c['azh-serie'],
-      ou: 'Le carton du haut, caméra 07, chambre froide.', utilite: 'Les deux chiffres d’une autre encre : la case jaune du code de ' + BALISE });
+      ou: 'Le carton du haut de la pile de gauche, caméra 07 : deux clics sur les chiffres rouges.', utilite: 'Les deux chiffres d’une autre encre : la case jaune du code de ' + BALISE });
 
     NUITS.forEach(function (w) {
       if (!DP.has(w.dinder)) return;

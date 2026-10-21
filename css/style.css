@@ -4618,6 +4618,9 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
   width: 100%;
   height: 100%;
   image-rendering: pixelated;
+  /* En plein ecran, la scene change de forme : l'espace la couvre sans
+     se deformer. */
+  object-fit: cover;
   animation: ny-in .9s ease both;
 }
 
@@ -4995,4 +4998,283 @@ body.is-plein .pad-nav [data-pad-back] { display: none; }
   .ny-ext.is-pose, .ny-ext.is-pose.is-arrive, .ny.is-glitch .ny-espace,
   .azh-code, .azh-code-boite, .azh-code-titre, .azh-rebours, .azh-rebours-n.is-tic,
   .ny.is-alerte::after, .azh-dialogue, .azh-dialogue-suite { animation: none; }
+}
+
+/* Les deux choix, la derniere phrase dite. */
+.azh-dialogue-choix {
+  position: absolute;
+  right: calc(14 * var(--px));
+  bottom: calc(-22 * var(--px));
+  display: flex;
+  gap: calc(10 * var(--px));
+}
+.azh-dialogue-choix .azh-dialogue-btn { position: static; }
+.azh-dialogue-btn--combat {
+  border-color: #ff3b5c;
+  background: #2a0612;
+  font-weight: 700;
+  letter-spacing: calc(2 * var(--px));
+  box-shadow: 0 0 calc(14 * var(--px)) rgba(255, 59, 92, .6);
+}
+.azh-dialogue.is-sortie { animation: ny-out .5s ease both; }
+
+/* ==========================================================
+   Le combat contre Azhrakonr
+   L'arene garde le format de la maquette (3/2) et se centre dans la
+   scene ; tout autour, le meme noir que son fond.
+   ========================================================== */
+
+.azb {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #03040f;
+  line-height: 1.15;
+  animation: ny-in .6s ease both;
+  font-family: "Courier New", Courier, monospace;
+  color: #e8ecff;
+}
+
+/* L'arene occupe tout l'ecran : la toile le couvre sans se deformer,
+   quitte a rogner un peu le haut et le bas. */
+.azb-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.azb { container-type: size; }
+
+.azb-cv { display: block; width: 100%; height: 100%; object-fit: cover; touch-action: none; }
+
+.azb-hud {
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  padding: 2% 4%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+.azb-plaque { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.azb-nom {
+  font-weight: 700;
+  letter-spacing: .32em;
+  font-size: clamp(13px, 2.3cqw, 26px);
+  text-shadow: 0 0 18px rgba(63, 214, 255, .7);
+}
+.azb-phase, .azb-coup { font-size: clamp(10px, 1.3cqw, 14px); letter-spacing: .18em; text-transform: uppercase; color: #8d97d6; }
+.azb.is-rage .azb-phase { color: #ff3b5c; }
+.azb-barre {
+  position: relative;
+  height: clamp(8px, 1.4cqw, 16px);
+  background: rgba(0, 0, 20, .7);
+  border: 1px solid rgba(160, 180, 255, .4);
+  transform: skewX(-18deg);
+}
+.azb-barre i { position: absolute; inset: 0; transform-origin: left; }
+.azb-retard { background: #ffd36b; transition: transform .9s .35s ease-out; }
+.azb-vie { background: linear-gradient(90deg, #1f5bff, #3fd6ff); transition: transform .15s; }
+.azb.is-rage .azb-vie { background: linear-gradient(90deg, #8a0b3a, #ff3b5c); }
+.azb-mi { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; background: rgba(255, 255, 255, .6); }
+
+/* Les coeurs du joueur, en bas a gauche. */
+.azb-coeurs {
+  position: absolute;
+  left: 3%;
+  bottom: 3%;
+  display: flex;
+  gap: 4px;
+  font-size: clamp(16px, 2.6cqw, 32px);
+  color: #ff3b5c;
+  text-shadow: 0 0 10px rgba(255, 59, 92, .8);
+  pointer-events: none;
+}
+.azb-coeur.is-vide { color: #3a2030; text-shadow: none; }
+.azb.is-touche .azb-coeurs { animation: azb-coeur .4s ease; }
+@keyframes azb-coeur { 0%, 100% { transform: none; } 30% { transform: scale(1.3); } }
+
+.azb-banniere {
+  position: absolute;
+  left: 0; right: 0; top: 40%;
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: .3em;
+  opacity: 0;
+  transition: opacity .4s;
+  pointer-events: none;
+}
+.azb-banniere.is-on { opacity: 1; }
+.azb-banniere strong { display: block; font-size: clamp(20px, 4.4cqw, 54px); text-shadow: 0 0 22px rgba(63, 214, 255, .8); }
+.azb.is-rage .azb-banniere strong { text-shadow: 0 0 22px rgba(255, 59, 92, .9); }
+.azb-banniere small { display: block; margin-top: 8px; font-size: clamp(11px, 1.4cqw, 16px); letter-spacing: .24em; color: #8d97d6; font-weight: 500; }
+
+/* Les commandes : deux fleches a gauche, sauter et tirer a droite. */
+.azb-cmd { position: absolute; inset: 0; pointer-events: none; }
+.azb-btn {
+  position: absolute;
+  bottom: 3%;
+  width: clamp(48px, 7cqw, 86px);
+  height: clamp(48px, 7cqw, 86px);
+  border: 2px solid rgba(120, 140, 255, .45);
+  border-radius: 50%;
+  background: rgba(14, 18, 60, .55);
+  color: #e8ecff;
+  font: 700 clamp(11px, 1.3cqw, 15px) / 1 "Courier New", monospace;
+  letter-spacing: .06em;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: pointer;
+}
+.azb-btn:active { background: rgba(63, 214, 255, .3); }
+.azb-btn--g { left: 14%; }
+.azb-btn--d { left: calc(12% + clamp(56px, 8cqw, 96px)); }
+.azb-btn--saut { right: calc(4% + clamp(56px, 8cqw, 96px)); }
+.azb-btn--tir { right: 4%; border-color: rgba(63, 214, 255, .8); box-shadow: 0 0 14px rgba(63, 214, 255, .4); }
+
+.azb-choix {
+  position: absolute;
+  left: 0; right: 0; top: 58%;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+.azb-gros {
+  padding: 12px 28px;
+  border: 2px solid #3fd6ff;
+  border-radius: 8px;
+  background: rgba(14, 18, 60, .85);
+  color: #e8ecff;
+  font: 700 clamp(13px, 1.6cqw, 18px) / 1 "Courier New", monospace;
+  letter-spacing: .2em;
+  cursor: pointer;
+}
+.azb-gros:hover, .azb-gros:focus-visible { background: rgba(63, 214, 255, .25); outline: none; }
+.azb-gros--plat { border-color: rgba(160, 180, 255, .4); background: none; }
+
+/* La victoire : il se rassemble, et rejoint la collection. */
+.azb-gain {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4%;
+  background: radial-gradient(circle at 40% 50%, rgba(40, 70, 200, .5), rgba(3, 4, 15, .92) 65%);
+  animation: ny-in .9s ease both;
+}
+.azb-gain-rayons {
+  position: absolute;
+  left: 30%; top: 50%;
+  width: 120cqh; height: 120cqh;
+  margin: -60cqh 0 0 -60cqh;
+  background: repeating-conic-gradient(rgba(120, 180, 255, .18) 0deg 8deg, transparent 8deg 22deg);
+  border-radius: 50%;
+  animation: azb-rayons 14s linear infinite;
+  pointer-events: none;
+}
+@keyframes azb-rayons { to { transform: rotate(360deg); } }
+.azb-gain-img {
+  position: relative;
+  height: 86%;
+  filter: drop-shadow(0 0 30px rgba(63, 140, 255, .8));
+  animation: azb-gain-img 1.6s cubic-bezier(.2, .8, .3, 1) both;
+}
+@keyframes azb-gain-img {
+  from { opacity: 0; transform: scale(.4); filter: brightness(4) blur(12px); }
+  to   { opacity: 1; transform: none; filter: drop-shadow(0 0 30px rgba(63, 140, 255, .8)); }
+}
+.azb-gain-txt {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  animation: ny-in .8s 1s ease both;
+}
+.azb-gain-haut { font-size: clamp(11px, 1.4cqw, 16px); letter-spacing: .3em; color: #ffd36b; text-transform: uppercase; }
+.azb-gain-nom { font-size: clamp(26px, 5cqw, 60px); letter-spacing: .12em; text-shadow: 0 0 24px rgba(63, 214, 255, .9); }
+.azb-gain-forme { font-size: clamp(13px, 1.8cqw, 20px); color: #a8b4ff; }
+.azb-gain-rar { padding: 3px 10px; border: 1px solid #ff3b5c; border-radius: 4px; color: #ff6a84; font-size: clamp(11px, 1.3cqw, 14px); letter-spacing: .2em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .azb, .azb-gain, .azb-gain-rayons, .azb-gain-img, .azb-gain-txt, .azb.is-touche .azb-coeurs { animation: none; }
+}
+
+/* Le ciel de la venue, en haute definition : il recouvre en fondu le ciel
+   en gros pixels. */
+.azh-ciel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  animation: azh-ciel-in 2.6s ease both;
+}
+@keyframes azh-ciel-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Le bouton du son, a cote de la croix. */
+.ny-son {
+  position: absolute;
+  z-index: 6;
+  top: calc(14 * var(--px));
+  right: calc(72 * var(--px));
+  width: calc(48 * var(--px));
+  height: calc(48 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(255, 255, 255, .6);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .65);
+  font-size: calc(22 * var(--px));
+  line-height: 1;
+  cursor: pointer;
+}
+.ny-son:hover, .ny-son:focus-visible { border-color: #fff; outline: none; }
+
+@media (prefers-reduced-motion: reduce) { .azh-ciel { animation: none; } }
+
+/* La plongee sur New York, en haute definition. */
+.ny-plongee {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ny-zoom.is-texture { opacity: 0; }
+
+.ny-tablette.is-hd {
+  width: calc(84 * var(--px));
+  height: calc(112 * var(--px));
+  filter: drop-shadow(0 0 calc(14 * var(--px)) rgba(58, 214, 240, .85));
+  animation: ny-tablette-hd .9s cubic-bezier(.2, .8, .2, 1) both, ny-tablette-flotte 2.6s .9s ease-in-out infinite;
+}
+
+.ny-tablette.is-hd .ny-tablette-img { image-rendering: auto; }
+
+/* Sous la tablette, le faisceau qui la projette. */
+.ny-tablette.is-hd::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 140%;
+  height: calc(26 * var(--px));
+  transform: translate(-50%, calc(6 * var(--px)));
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(120, 240, 255, .55), rgba(58, 214, 240, 0) 70%);
+  pointer-events: none;
+}
+
+@keyframes ny-tablette-hd {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(.2) rotateY(90deg); filter: brightness(4) drop-shadow(0 0 calc(30 * var(--px)) #9af6ff); }
+  60%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08) rotateY(0); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ny-tablette.is-hd { animation: none; }
 }

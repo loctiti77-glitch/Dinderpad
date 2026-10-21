@@ -109,7 +109,6 @@
       { nom: 'Le pôle hexagonal', type: 'Tempête', dinders: [] }
     ],
     uranus: [
-      { nom: 'La bouche du trou de ver', type: 'Anomalie', dinders: ['dr-islas-final-form', 'dr-islas-singularity'], note: 'Le passage entre les deux systèmes.' },
       { nom: 'Le ciel couché', type: 'Atmosphère', dinders: [] }
     ],
     neptune: [
@@ -164,15 +163,24 @@
   LIEUX.soleil = [
     { nom: 'La couronne', type: 'Plasma', dinders: [], note: 'Des jets plus hauts que dix Terres, qui retombent en boucles.' },
     { nom: 'Les taches sombres', type: 'Surface', dinders: [], note: 'Des zones plus froides, grandes comme des planètes.' },
-    { nom: 'Le noyau', type: 'Cœur', dinders: [], note: 'Quinze millions de degrés. Le Télescope n’y voit que du blanc.' }
+    { nom: 'Le noyau', type: 'Cœur', dinders: [], note: 'Quinze millions de degrés. Le Télescope n’y voit que du blanc.' },
+    { nom: 'La bouche du trou de ver', type: 'Anomalie', dinders: ['dr-islas-final-form', 'dr-islas-singularity'], note: 'Le passage entre les deux systèmes.' }
   ];
   LIEUX['etoile-stellaire'] = [
     { nom: 'La surface assoiffée', type: 'Surface', dinders: [], note: 'Elle a bu la chaleur de Cryos jusqu’à la glace.' },
     { nom: 'Le cœur rallumé', type: 'Cœur', dinders: [], note: 'Il ne brûle que depuis la chute du Soleil Noyé.' },
-    { nom: 'L’embouchure du trou de ver', type: 'Anomalie', dinders: ['dr-islas-final-form', 'dr-islas-singularity'], note: 'L’autre bout du passage ouvert depuis Uranus.' }
+    { nom: 'L’embouchure du trou de ver', type: 'Anomalie', dinders: ['dr-islas-final-form', 'dr-islas-singularity'], note: 'L’autre bout du passage ouvert depuis le Soleil.' }
   ];
   // Celui qui a fait les animatroniques travaillait derriere la cuisine.
   LIEUX.altera.forEach(function (l) { if (l.nom === 'La Maison du Burger') l.dinders.push('their-creator'); });
+  // De l'autre cote du trou de ver : un espace sans nom, et la planete
+  // ou se tient Azhrakonr.
+  LIEUX.ailleurs = [
+    { nom: 'La balise lointaine', type: 'Anomalie', dinders: ['azhrakonr'], note: 'Le signal qu’on suivait depuis New York. Il venait d’ici.' },
+    { nom: 'Les failles', type: 'Fractures', dinders: [], note: 'Elles partent du pied de la balise, et elles s’élargissent.' }
+  ];
+  var AILLEURS = { id: 'ailleurs', nom: '???', code: '??-?', systeme: 'ailleurs', sous: 'Au-delà du trou de ver' };
+  var TROU = { id: 'trou-de-ver', nom: 'Trou de ver' };
 
   // La taille relative des mondes, et ce qui les distingue a l'oeil.
   var FORME = {
@@ -481,16 +489,16 @@
     // systemes. Un coeur noir, l'anneau de lumiere courbee autour, le
     // disque de matiere qui tourne en spirale (et dont l'image passe
     // par-dessus le coeur), et deux courants qui s'y engouffrent : l'un
-    // part d'Uranus, l'autre sort vers l'etoile du systeme stellaire.
+    // part du Soleil, l'autre sort vers l'Etoile qui boit.
     function trouDeVer(Pos) {
-      var u = Pos.filter(function (p) { return p.a.id === 'uranus'; })[0], st = sysDe('stellaire');
-      if (!u || !st) return;
+      var so = sysDe('solaire'), st = sysDe('stellaire');
+      if (!so || !st) return;
       var V = vortex(), R = V.r, cx = V.x, cy = V.y, t = etat.t;
       x.save();
       x.globalCompositeOperation = 'lighter';
       // Les deux courants : des grains qui filent sur une courbe et
       // tournoient en arrivant.
-      [[u.x, u.y, 1, [120, 220, 255]], [st.c[0], st.c[1], -1, [200, 140, 255]]].forEach(function (c, j) {
+      [[so.c[0], so.c[1], 1, [255, 210, 130]], [st.c[0], st.c[1], -1, [200, 140, 255]]].forEach(function (c, j) {
         var ax = c[0], ay = c[1];
         var mx = (ax + cx) / 2, my = Math.min(ay, cy) - H * 0.12;
         for (var i = 0; i < 70; i++) {
@@ -655,6 +663,7 @@
     var GRAND = toile(10, 10);
     function dessinerPlanete(k) {
       var a = etat.choisi, F = FORME[a.id] || {};
+      if (a === AILLEURS) { dessinerAilleurs(k); return; }
       x.drawImage(fond(), 0, 0, W, H);
       var R = Math.min(W, H) * 0.3 * (0.35 + 0.65 * k), cx = W / 2, cy = H * 0.54;
       if (a.etoile) {
@@ -742,6 +751,260 @@
         dessinerPlanete(1 - Math.pow(1 - k3, 3));
         x.fillStyle = 'rgba(220,245,255,' + Math.max(0, 1 - k3 * 2.5).toFixed(2) + ')'; x.fillRect(0, 0, W, H);
       }
+    }
+
+    // ---------- Le trou de ver : la traversee, et ce qu'il y a derriere ----------
+    // On plonge dans le coeur noir ; un tunnel d'anneaux de lumiere file
+    // autour de nous en tournoyant ; un eclair blanc, et l'on debouche
+    // dans un autre espace : celui de la planete aux failles, ou se
+    // tient Azhrakonr.
+    var TRAVERSEE = reduit ? 0.5 : 3.2, musique = false;
+    var imMains = new Image(); imMains.src = 'assets/items/azhrakonr-mains.webp';
+    var imEmbleme = new Image(); imEmbleme.src = 'assets/items/localext.webp';
+    // Son illustration s'arrete net en bas : on la fond dans l'espace.
+    var mainsFondues = null;
+    function mains() {
+      if (mainsFondues || !imMains.complete || !imMains.naturalWidth) return mainsFondues;
+      var c = toile(1024, 683), f = c.getContext('2d');
+      f.drawImage(imMains, 0, 0, 1024, 683);
+      f.globalCompositeOperation = 'destination-in';
+      var g = f.createLinearGradient(0, 0, 0, 683);
+      g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(0.72, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      f.fillStyle = g; f.fillRect(0, 0, 1024, 683);
+      mainsFondues = c;
+      return c;
+    }
+
+    function traverser() {
+      fermerPanneau();
+      etat.mode = 'faille'; etat.voyage = 0; etat.survol = null;
+      cv.style.cursor = '';
+      box.classList.add('is-voyage');
+      woosh();
+      setTimeout(woosh, 1100);
+      grondement(TRAVERSEE);
+      texturePlanete();
+      var S = window.AZHRAKONR_SON;
+      if (S && S.pret()) { S.voyageDebut('lieu'); musique = true; }
+    }
+
+    // Un grondement qui enfle pendant la traversee, puis un coup sourd.
+    function grondement(d) {
+      var a = audio(); if (!a) return;
+      var t = a.currentTime, o = a.createOscillator(), o2 = a.createOscillator(), g = a.createGain(), f = a.createBiquadFilter();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(40, t); o.frequency.exponentialRampToValueAtTime(90, t + d * 0.8);
+      o2.type = 'sawtooth'; o2.frequency.setValueAtTime(40.6, t); o2.frequency.exponentialRampToValueAtTime(91, t + d * 0.8);
+      f.type = 'lowpass'; f.frequency.setValueAtTime(120, t); f.frequency.exponentialRampToValueAtTime(900, t + d * 0.8);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + d * 0.75); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(f); o2.connect(f); f.connect(g); g.connect(a.destination);
+      o.start(t); o2.start(t); o.stop(t + d + 0.05); o2.stop(t + d + 0.05);
+      var b = a.createOscillator(), gb = a.createGain();
+      b.type = 'sine'; b.frequency.setValueAtTime(70, t + d * 0.86); b.frequency.exponentialRampToValueAtTime(28, t + d * 0.86 + 1.2);
+      gb.gain.setValueAtTime(0.0001, t + d * 0.86); gb.gain.exponentialRampToValueAtTime(0.4, t + d * 0.86 + 0.02); gb.gain.exponentialRampToValueAtTime(0.0001, t + d * 0.86 + 1.4);
+      b.connect(gb); gb.connect(a.destination); b.start(t + d * 0.86); b.stop(t + d * 0.86 + 1.5);
+    }
+
+    function dessinerTraversee(u) {
+      var V = vortex();
+      if (u < 1) {
+        // On fonce dans le coeur : il grossit jusqu'a tout avaler.
+        var e = u * u * u, zs = 1 + e * 12;
+        dessinerSysteme({ x: W / 2 + (V.x - W / 2) * (1 - e), y: H / 2 + (V.y - H / 2) * (1 - e), s: zs, fx: V.x, fy: V.y });
+        // Puis son noir s'ouvre et avale tout l'ecran.
+        var rn = V.r * zs * 1.1 + Math.max(W, H) * lisse(Math.max(0, (u - 0.45) / 0.55));
+        var gn = x.createRadialGradient(W / 2, H / 2, rn * 0.7, W / 2, H / 2, rn);
+        gn.addColorStop(0, '#000'); gn.addColorStop(1, 'rgba(0,0,0,0)');
+        x.fillStyle = gn; x.fillRect(0, 0, W, H);
+      } else {
+        tunnel(u - 1);
+      }
+      // L'eclair de la sortie, puis l'autre espace dessous.
+      var fin = TRAVERSEE - 0.55;
+      if (u > fin - 0.15) {
+        if (u > fin) dessinerAilleurs(1);
+        var f = u < fin ? (u - (fin - 0.15)) / 0.15 : 1 - (u - fin) / 0.55;
+        x.fillStyle = 'rgba(245,235,255,' + Math.max(0, Math.min(1, f)).toFixed(3) + ')';
+        x.fillRect(0, 0, W, H);
+      }
+    }
+
+    function tunnel(v) {
+      var cx = W / 2, cy = H / 2, t = etat.t, M = Math.max(W, H);
+      x.fillStyle = '#020006'; x.fillRect(0, 0, W, H);
+      x.save();
+      x.globalCompositeOperation = 'lighter';
+      var avance = v * (1.2 + v * 0.9);           // on accelere
+      // La lumiere au bout, qui grandit.
+      var bout = M * (0.03 + 0.5 * Math.pow(Math.min(1, v / 1.9), 3));
+      var gb = x.createRadialGradient(cx, cy, 0, cx, cy, bout * 3);
+      gb.addColorStop(0, 'rgba(255,250,255,.95)'); gb.addColorStop(0.25, 'rgba(210,160,255,.45)'); gb.addColorStop(1, 'rgba(120,60,220,0)');
+      x.fillStyle = gb; x.fillRect(cx - bout * 3, cy - bout * 3, bout * 6, bout * 6);
+      // Les anneaux : ils viennent du fond, grossissent et passent sur nous.
+      var N = 30;
+      for (var i = 0; i < N; i++) {
+        var z = ((i / N - avance * 0.55) % 1 + 1) % 1;
+        var zz = 0.035 + z * 1.4, r = M * 0.09 / zz;
+        if (r > M * 1.6) continue;
+        var ang = t * 0.8 + i * 0.5;
+        var ox = Math.cos(t * 1.3 + i * 0.4) * M * 0.05 * z, oy = Math.sin(t * 1.1 + i * 0.3) * M * 0.04 * z;
+        var col = i % 3 === 0 ? '120,220,255' : i % 3 === 1 ? '190,130,255' : '255,110,220';
+        var a = Math.min(1, z * 5) * Math.min(1, (1 - z) * 1.5);
+        x.strokeStyle = 'rgba(' + col + ',' + (a * 0.65).toFixed(3) + ')';
+        x.lineWidth = Math.max(1, 2.2 / zz);
+        x.beginPath(); x.ellipse(cx + ox, cy + oy, r, r * 0.9, ang * 0.25, 0, Math.PI * 2); x.stroke();
+      }
+      // Les grains qui filent le long des parois, en spirale.
+      for (var j = 0; j < 260; j++) {
+        var zp = ((hash3(j, 1, 31) - avance * (0.6 + hash3(j, 2, 31) * 0.5)) % 1 + 1) % 1;
+        var zq = 0.03 + zp * 1.3, rp = M * 0.1 / zq;
+        if (rp > M) continue;
+        var ap = hash3(j, 3, 31) * Math.PI * 2 + t * 1.6 + zp * 4;
+        var l = rp * 0.18 * (0.5 + v);
+        var x0 = cx + Math.cos(ap) * rp, y0 = cy + Math.sin(ap) * rp * 0.9;
+        var al = Math.min(1, zp * 4) * Math.min(1, (1 - zp) * 2) * 0.8;
+        x.strokeStyle = j % 4 ? 'rgba(200,170,255,' + al.toFixed(2) + ')' : 'rgba(140,230,255,' + al.toFixed(2) + ')';
+        x.lineWidth = 1 + 1.5 * (1 - zp);
+        x.beginPath(); x.moveTo(x0, y0); x.lineTo(x0 + Math.cos(ap) * l, y0 + Math.sin(ap) * l * 0.9); x.stroke();
+      }
+      x.restore();
+      // Les bords de l'image s'assombrissent : on est dedans.
+      var vg = x.createRadialGradient(cx, cy, M * 0.25, cx, cy, M * 0.75);
+      vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.7)');
+      x.fillStyle = vg; x.fillRect(0, 0, W, H);
+    }
+
+    // Le ciel d'ailleurs : plus sombre, des nebuleuses magenta et violettes.
+    var FONDS_A = {};
+    function fondAilleurs() {
+      var k = W + 'x' + H;
+      if (FONDS_A[k]) return FONDS_A[k];
+      var c = toile(Math.round(W * DPR), Math.round(H * DPR)), f = c.getContext('2d');
+      f.scale(DPR, DPR);
+      f.fillStyle = '#040109'; f.fillRect(0, 0, W, H);
+      [[0.18, 0.3, [200, 50, 200]], [0.82, 0.25, [110, 60, 255]], [0.5, 0.1, [214, 92, 255]], [0.3, 0.85, [60, 80, 220]],
+       [0.75, 0.8, [170, 40, 140]], [0.55, 0.5, [80, 30, 160]]].forEach(function (n, i) {
+        var cx = n[0] * W, cy = n[1] * H, r = (0.3 + hash3(i, 3, 17) * 0.3) * Math.max(W, H);
+        var g = f.createRadialGradient(cx, cy, 0, cx, cy, r);
+        g.addColorStop(0, 'rgba(' + n[2].join(',') + ',.2)'); g.addColorStop(1, 'rgba(' + n[2].join(',') + ',0)');
+        f.fillStyle = g; f.fillRect(0, 0, W, H);
+      });
+      for (var i = 0; i < 700; i++) {
+        var b = hash3(i, 9, 17), s = b > 0.97 ? 2 : b > 0.85 ? 1.4 : 0.9;
+        f.fillStyle = 'rgba(' + (210 + b * 45) + ',' + (190 + b * 50) + ',255,' + (0.2 + b * 0.7).toFixed(2) + ')';
+        f.fillRect(hash3(i, 7, 17) * W, hash3(i, 8, 17) * H, s, s);
+      }
+      FONDS_A[k] = c;
+      return c;
+    }
+
+    // La planete : une sphere sombre, grenue, criblee de crateres,
+    // eclairee d'en haut a gauche ; et ses failles, peintes a part.
+    var PLA = null;
+    function texturePlanete() {
+      if (PLA) return PLA;
+      var S = 300, c = toile(S, S), f = c.getContext('2d'), im = f.createImageData(S, S), d = im.data;
+      for (var j = 0; j < S; j++) for (var i = 0; i < S; i++) {
+        var nx = (i + 0.5) / S * 2 - 1, ny = (j + 0.5) / S * 2 - 1, q = nx * nx + ny * ny;
+        if (q > 1) continue;
+        var nz = Math.sqrt(1 - q);
+        var n = fbm3(nx * 3 + 7, ny * 3, nz * 3);
+        var cr = bruit3(nx * 9, ny * 9, nz * 9 + 3);
+        var lum = 0.18 + 0.95 * Math.max(0, -0.55 * nx - 0.45 * ny + 0.7 * nz);
+        var r = (26 + n * 30) * lum, g = (12 + n * 14) * lum, b = (44 + n * 40) * lum;
+        if (cr > 0.72) { r *= 0.55; g *= 0.55; b *= 0.65; }
+        var o = (j * S + i) * 4;
+        d[o] = Math.min(255, r); d[o + 1] = Math.min(255, g); d[o + 2] = Math.min(255, b);
+        d[o + 3] = q > 0.985 ? Math.round((1 - q) / 0.015 * 255) : 255;
+      }
+      f.putImageData(im, 0, 0);
+      // Les failles : des lignes brisees qui partent du pied de la balise.
+      var failles = [];
+      for (var k = 0; k < 7; k++) {
+        var pts = [[0, -0.96]], ang = Math.PI * (0.18 + k / 6 * 0.64) + (hash3(k, 1, 23) - 0.5) * 0.3, px = 0, py = -0.96;
+        for (var m = 0; m < 9; m++) {
+          px += Math.cos(ang) * (0.07 + hash3(k, m, 24) * 0.06);
+          py += Math.sin(ang) * (0.06 + hash3(k, m, 25) * 0.05);
+          ang += (hash3(k, m, 26) - 0.5) * 0.8;
+          if (px * px + py * py > 0.95) break;
+          pts.push([px, py]);
+        }
+        failles.push(pts);
+      }
+      PLA = { c: c, failles: failles };
+      return PLA;
+    }
+
+    function dessinerAilleurs(k) {
+      var t = etat.t, P = texturePlanete();
+      x.drawImage(fondAilleurs(), 0, 0, W, H);
+      var lui = !DP.has('azhrakonr');
+      var R = Math.min(W, H) * (lui ? 0.17 : 0.24) * (0.4 + 0.6 * k), cx = W / 2, cy = H * (lui ? 0.6 : 0.55);
+      // Azhrakonr, immense, derriere : la planete repose entre ses mains.
+      if (lui && mains()) {
+        var souffle = Math.sin(t * 0.7);
+        var sc = (2 * R * 1.9) / 680 * (1 + souffle * 0.01);
+        var iw = 1024 * sc, ih = 683 * sc;
+        x.save();
+        x.globalAlpha = Math.min(1, k * 1.5);
+        x.drawImage(mains(), cx - 512 * sc, cy + R * 0.55 - 545 * sc + souffle * R * 0.03, iw, ih);
+        x.restore();
+        // Son regard : une lueur qui palpite sous le casque.
+        var ey = cy + R * 0.55 - 545 * sc + 330 * sc, pe = 0.5 + 0.5 * Math.sin(t * 2.1);
+        var ge = x.createRadialGradient(cx, ey, 0, cx, ey, R * 0.6);
+        ge.addColorStop(0, 'rgba(120,200,255,' + (0.25 + pe * 0.25).toFixed(2) + ')'); ge.addColorStop(1, 'rgba(60,120,255,0)');
+        x.save(); x.globalCompositeOperation = 'lighter'; x.fillStyle = ge; x.fillRect(cx - R, ey - R, R * 2, R * 2); x.restore();
+      }
+      // L'atmosphere : un halo violet.
+      var ga = x.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.3);
+      ga.addColorStop(0, 'rgba(150,100,255,.45)'); ga.addColorStop(1, 'rgba(150,100,255,0)');
+      x.fillStyle = ga; x.beginPath(); x.arc(cx, cy, R * 1.3, 0, Math.PI * 2); x.fill();
+      x.drawImage(P.c, cx - R, cy - R, R * 2, R * 2);
+      x.strokeStyle = 'rgba(190,150,255,.8)'; x.lineWidth = Math.max(1, R * 0.012);
+      x.beginPath(); x.arc(cx, cy, R, 0, Math.PI * 2); x.stroke();
+      // Les failles respirent.
+      var pouls = reduit ? 0.8 : 0.55 + 0.4 * Math.sin(t * 2.3);
+      x.save();
+      x.beginPath(); x.arc(cx, cy, R, 0, Math.PI * 2); x.clip();
+      x.globalCompositeOperation = 'lighter';
+      x.shadowColor = 'rgba(214,92,255,1)'; x.shadowBlur = R * 0.08;
+      x.strokeStyle = 'rgba(230,110,255,' + pouls.toFixed(2) + ')';
+      x.lineWidth = Math.max(1, R * 0.014); x.lineJoin = 'round';
+      P.failles.forEach(function (pts) {
+        x.beginPath();
+        pts.forEach(function (p, i) { if (i) x.lineTo(cx + p[0] * R, cy + p[1] * R); else x.moveTo(cx + p[0] * R, cy + p[1] * R); });
+        x.stroke();
+      });
+      x.restore();
+      // La balise, plantee au sommet : sa colonne de lumiere, ses ondes,
+      // et l'embleme.
+      var bx = cx, by = cy - R * 0.96;
+      var col = x.createLinearGradient(0, by - H, 0, by);
+      col.addColorStop(0, 'rgba(220,200,255,0)'); col.addColorStop(1, 'rgba(230,210,255,' + (0.25 + 0.1 * Math.sin(t * 3)).toFixed(2) + ')');
+      x.fillStyle = col; x.fillRect(bx - R * 0.04, by - H, R * 0.08, H); x.fillRect(bx - R * 0.012, by - H, R * 0.024, H);
+      for (var o = 0; o < 3; o++) {
+        var ph = reduit ? o / 3 : ((t * 0.55) + o / 3) % 1;
+        x.strokeStyle = 'rgba(220,190,255,' + (0.7 * (1 - ph)).toFixed(2) + ')'; x.lineWidth = 1.2;
+        x.beginPath(); x.ellipse(bx, by, R * (0.04 + ph * 0.5), R * (0.04 + ph * 0.5) * 0.2, 0, 0, Math.PI * 2); x.stroke();
+      }
+      var hp = R * 0.26, wp = hp * 0.72;
+      x.save();
+      x.translate(bx, by);
+      x.beginPath();
+      x.moveTo(0, 0);
+      x.bezierCurveTo(-wp * 0.15, -hp * 0.3, -wp * 0.5, -hp * 0.45, -wp * 0.5, -hp * 0.68);
+      x.arc(0, -hp * 0.68, wp * 0.5, Math.PI, 0);
+      x.bezierCurveTo(wp * 0.5, -hp * 0.45, wp * 0.15, -hp * 0.3, 0, 0);
+      x.closePath();
+      x.shadowColor = 'rgba(255,255,255,.8)'; x.shadowBlur = R * 0.06;
+      x.fillStyle = '#ffffff'; x.fill();
+      x.shadowBlur = 0;
+      x.strokeStyle = '#151822'; x.lineWidth = Math.max(1, R * 0.008); x.stroke();
+      if (imEmbleme.complete && imEmbleme.naturalWidth) {
+        var ew = wp * 0.78, eh = ew * imEmbleme.naturalHeight / imEmbleme.naturalWidth;
+        x.drawImage(imEmbleme, -ew / 2, -hp * 0.68 - eh / 2, ew, eh);
+      }
+      x.restore();
+      lieuxSur(cx, cy, R);
     }
 
     // ---------- L'interface : la fiche, les lieux ----------
@@ -864,6 +1127,7 @@
     }
 
     function retourSysteme() {
+      if (musique && window.AZHRAKONR_SON) { window.AZHRAKONR_SON.voyageFin(1.5); musique = false; }
       etat.mode = 'systeme'; etat.lieux = []; etat.choisi = null;
       box.classList.remove('is-planete');
       if (cartes) { cartes.remove(); cartes = null; }
@@ -884,7 +1148,13 @@
         var d = Math.hypot(mx - S.c[0], my - S.c[1]);
         if (ETOILES[S.id] && d < base() * 2.6) best = { p: { a: ETOILES[S.id], x: S.c[0], y: S.c[1], r: base() * 2.1, s: S } };
       });
-      return best && best.p;
+      if (best) return best.p;
+      // Le trou de ver, s'il est la.
+      if (sysDe('stellaire')) {
+        var V = vortex();
+        if (Math.hypot(mx - V.x, my - V.y) < V.r * 3.2) return { a: TROU, x: V.x, y: V.y, r: V.r };
+      }
+      return null;
     }
     cv.addEventListener('pointermove', function (ev) {
       if (etat.mode !== 'systeme' || etat.intro < 1) return;
@@ -895,7 +1165,8 @@
     cv.addEventListener('pointerdown', function (ev) {
       if (etat.mode !== 'systeme' || etat.intro < 1) return;
       var p = sous(ev);
-      if (p) fiche(p.a); else fermerPanneau();
+      if (p && p.a === TROU) traverser();
+      else if (p) fiche(p.a); else fermerPanneau();
     });
 
     // ---------- Le son : quelques bips d'instrument ----------
@@ -929,7 +1200,12 @@
     // ---------- La boucle ----------
     var avant = 0, raf = 0;
     function image(ms) {
-      if (!document.body.contains(box)) { window.removeEventListener('resize', taille); if (ac) try { ac.close(); } catch (e) {} return; }
+      if (!document.body.contains(box)) {
+        window.removeEventListener('resize', taille);
+        if (ac) try { ac.close(); } catch (e) {}
+        if (musique && window.AZHRAKONR_SON) window.AZHRAKONR_SON.voyageFin(0.8);
+        return;
+      }
       var dt = avant ? Math.min(0.05, (ms - avant) / 1000) : 0;
       avant = ms;
       etat.t += dt;
@@ -940,6 +1216,10 @@
         etat.voyage += dt;
         dessinerVoyage(etat.voyage);
         if (etat.voyage >= 1.1) arriver();
+      } else if (etat.mode === 'faille') {
+        etat.voyage += dt;
+        dessinerTraversee(etat.voyage);
+        if (etat.voyage >= TRAVERSEE) { etat.choisi = AILLEURS; arriver(); }
       } else dessinerPlanete(1);
       raf = requestAnimationFrame(image);
     }

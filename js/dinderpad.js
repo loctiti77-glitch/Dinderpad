@@ -133,7 +133,11 @@
     // Friends, quand le batiment brule : seule sa version au fauteuil
     // entre dans la collection. "secret" : sa case ne doit pas annoncer
     // qu'il existe.
-    { id: 'their-creator',                     name: 'Their Creator', form: '',                  rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', secret: true, desc: '' }
+    { id: 'their-creator',                     name: 'Their Creator', form: '',                  rarity: 'Threat',       universe: 'SSt-03', horsTirage: true, collection: 'wade', serie: 'Wade and Friends', secret: true, desc: '' },
+    // Le devoreur venu d'au-dela de la balise lointaine : on ne l'obtient
+    // qu'en le battant, au bout de la sequence du DinderTracker.
+    { id: 'azhrakonr',                         name: 'Azhrakonr',     form: 'Le Dévoreur',       rarity: 'Threat',       universe: '???',    horsTirage: true, secret: true,
+      desc: 'Il a faim depuis avant vos étoiles. Une fois, une seule, on lui a refusé un monde.' }
   ];
 
   // Le palier de l'ancien pass Spookinder qui rendait chacun d'eux : un
