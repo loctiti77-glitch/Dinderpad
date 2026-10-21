@@ -229,14 +229,15 @@
       chemise: '#141318', cravate: '#2fbf55', poignets: '#141318'
     },
     // Azhrakonr, le devoreur : casque a cimier et cornes, visiere de ciel
-    // etoile, armure sombre parcourue de bleu, cape de nuit. Pas de
-    // cheveux ni de sourire : on ne voit jamais que son casque.
+    // etoile, armure sombre parcourue de bleu. Pas de cheveux ni de
+    // sourire : on ne voit jamais que son casque. Pas de cape ni
+    // d'epaulieres non plus : il doit garder la carrure des autres.
     'azhrakonr': {
-      casque: '#262d66', casqueClair: '#8e9ad0', casqueLueur: '#3fd6ff', casqueVide: '#0d1236',
+      casque: '#34408c', casqueClair: '#a8b4e8', casqueLueur: '#3fd6ff', casqueVide: '#0d1236',
       piques: 'dresse', cheveux: '#2a3170', cheveuxClair: '#3fd6ff',
       peau: '#20264a', visiere: '#2a5aff', demi: false, oeil: null, visiereLueur: true,
-      torse: '#1c1f40', accent: '#3fd6ff', bas: '#151834', chaussures: '#0c0e22',
-      armure: '#4a5a9a', cape: '#1a2a7a', gemme: '#3fd6ff',
+      torse: '#262c5c', accent: '#3fd6ff', bas: '#1c2148', chaussures: '#0c0e22',
+      gemme: '#3fd6ff',
       couronne: '#3a4a9a', couronneGemme: '#3fd6ff'
     },
     // Golden Freddy : Freddy en or terni, et deux orbites vides.
@@ -384,64 +385,168 @@
     p(8, 16, 8, 1, fo);                            // la jointure de la machoire
   }
 
-  // Le casque d'Azhrakonr : un dome, une crete haute parcourue de bleu
-  // avec son anneau au front, deux cornes en croissant qui montent de
-  // chaque cote, des disques aux tempes et la visiere : le vide etoile.
+  // ---------- Azhrakonr ----------
+  // Ni cheveux ni sourire : un casque et une armure, dessines d'apres son
+  // illustration. Ils tiennent dans la place d'un Dinder ordinaire.
+
+  // Une forme par rangees : [y, x debut, x fin].
+  function rangees(p, R, col) {
+    R.forEach(function (r) { p(r[1], r[0], r[2] - r[1] + 1, 1, col); });
+  }
+
+  var DOME_FACE = [[3, 9, 14], [4, 7, 16], [5, 6, 17], [6, 5, 18], [7, 5, 18], [8, 5, 18], [9, 5, 18],
+                   [10, 5, 18], [11, 5, 18], [12, 6, 17], [13, 6, 17], [14, 7, 16], [15, 8, 15], [16, 9, 14], [17, 10, 13]];
+  var DOME_PROFIL = [[3, 8, 13], [4, 7, 15], [5, 6, 16], [6, 6, 17], [7, 6, 17], [8, 6, 17], [9, 6, 18], [10, 6, 18],
+                     [11, 6, 18], [12, 6, 18], [13, 7, 17], [14, 9, 17], [15, 11, 17], [16, 13, 16]];
+
+  // Le casque : un dome arrondi, une crete a trois lames parcourue de
+  // bleu, l'anneau du front, deux cornes en croissant, des disques aux
+  // tempes, la visiere incurvee — le vide etoile, deux fentes qui
+  // luisent — et le masque qui se resserre en pointe sous elle.
   function casqueDevoreur(p, c, dos, profil) {
-    var f = c.casque, fo = ombre(f, 0.65), fc = c.casqueClair, l = c.casqueLueur, v = c.casqueVide;
+    var f = c.casque, fo = ombre(f, 0.6), fc = c.casqueClair, l = c.casqueLueur, v = c.casqueVide;
+    var lv = ombre(l, 1.5), masque = ombre(fc, 0.62);
     if (profil) {
-      // La corne du cote qu'on voit, qui part de la tempe vers l'arriere
-      // et remonte.
-      p(3, 8, 4, 3, f); p(1, 4, 3, 5, f); p(1, 0, 2, 4, f);
-      p(2, 1, 1, 7, l); p(3, 9, 2, 1, fc);
-      p(6, 6, 13, 12, f);                          // le crane
-      p(6, 6, 13, 1, fc);
-      p(6, 6, 1, 11, fo);
-      p(7, 2, 9, 4, f);                            // la crete, vue en long
-      p(7, 2, 9, 1, fc);
-      p(8, 3, 7, 1, l);
-      p(9, 10, 3, 3, fc); p(10, 11, 1, 1, l);      // le disque de la tempe
-      p(13, 9, 7, 6, v);                           // la visiere
-      p(13, 9, 7, 1, c.visiere);
-      p(19, 10, 1, 4, c.visiere);
-      p(15, 11, 1, 1, '#ffffff'); p(17, 13, 1, 1, '#8fb4ff');
-      p(14, 15, 5, 3, ombre(fc, 0.6));             // le bas du masque
-      p(14, 15, 5, 1, fc);
+      rangees(p, DOME_PROFIL, f);
+      p(7, 4, 4, 1, fc); p(6, 5, 1, 8, fc); p(18, 9, 1, 4, fo);
+      // La crete, vue en long : trois lames, la lueur au milieu.
+      p(8, 0, 6, 3, f); p(8, 0, 6, 1, fc); p(9, 1, 4, 1, l); p(12, 1, 1, 1, lv);
+      p(14, 1, 1, 2, fo);
+      // Le disque de la tempe, et la corne qui en part vers l'arriere
+      // pour remonter en croissant.
+      p(8, 9, 3, 3, fc); p(9, 10, 1, 1, l);
+      [[7, 9], [6, 8], [5, 7], [4, 6], [4, 5], [4, 4], [5, 3], [5, 2]].forEach(function (q, i) {
+        p(q[0], q[1], 1, 1, i > 2 && i < 6 ? l : fc);
+      });
+      p(5, 8, 1, 1, f); p(5, 6, 1, 2, f);
+      // La visiere, a l'avant, et le masque en pointe.
+      rangees(p, [[8, 13, 18], [9, 13, 18], [10, 14, 18], [11, 15, 18]], v);
+      p(13, 8, 6, 1, c.visiere);
+      p(15, 9, 1, 1, '#ffffff'); p(17, 11, 1, 1, '#8fb4ff'); p(16, 10, 2, 1, l);
+      rangees(p, [[12, 14, 18], [13, 14, 17], [14, 15, 17], [15, 15, 17], [16, 15, 16]], masque);
+      p(14, 12, 5, 1, fc); p(16, 13, 1, 3, fo);
       return;
     }
-    // Les cornes, de face : elles sortent des tempes et montent.
-    [[4, 10, 3, 2], [2, 7, 3, 4], [1, 3, 2, 5], [1, 0, 1, 3]].forEach(function (r) {
-      p(r[0], r[1], r[2], r[3], f);
-      p(23 - r[0] - r[2] + 1, r[1], r[2], r[3], f);
+    // Les cornes en croissant : elles sortent des tempes, s'ecartent et
+    // remontent ; un liseré bleu les suit.
+    var CORNE = [[4, 10], [3, 9], [3, 8], [2, 8], [2, 7], [2, 6], [2, 5], [2, 4], [3, 3], [3, 2], [4, 1]];
+    CORNE.forEach(function (q, i) {
+      var col = i === 0 || i > 8 ? fc : f;
+      p(q[0], q[1], 1, 1, col); p(23 - q[0], q[1], 1, 1, col);
     });
-    p(2, 2, 1, 7, l); p(21, 2, 1, 7, l);
-    p(3, 9, 2, 1, fc); p(19, 9, 2, 1, fc);
-    // Le dome et la crete.
-    p(7, 4, 10, 2, f);
-    p(5, 6, 14, 12, f);
-    p(5, 6, 1, 11, fc); p(18, 6, 1, 11, fo);
-    p(10, 0, 4, 7, f);
-    p(10, 0, 1, 7, fc); p(13, 0, 1, 7, fo);
-    p(11, 1, 2, 4, l);
+    p(3, 4, 1, 4, l); p(20, 4, 1, 4, l);
+    // Le dome.
+    rangees(p, DOME_FACE, f);
+    p(9, 3, 3, 1, fc); p(7, 4, 2, 1, fc); p(6, 5, 1, 1, fc); p(5, 6, 1, 5, fc);
+    p(18, 6, 1, 5, fo); p(17, 12, 1, 2, fo);
+    // La crete : trois lames, la grande au milieu.
+    p(11, 0, 2, 5, f); p(10, 1, 1, 4, fc); p(13, 1, 1, 4, fo);
+    p(11, 0, 1, 4, l); p(12, 0, 1, 4, lv);
+    p(9, 2, 1, 2, fo); p(14, 2, 1, 2, fo);
     if (dos) {
-      p(11, 6, 2, 11, fo);                         // l'arete du crane
-      p(11, 8, 2, 1, l);
+      p(11, 5, 2, 12, fo);                         // l'arete du crane
+      p(11, 7, 2, 1, l); p(11, 11, 2, 1, l);
+      p(6, 9, 12, 1, fo);
       return;
     }
-    // L'anneau du front.
-    p(10, 6, 4, 3, l); p(11, 7, 2, 1, v);
+    // L'anneau du front : argent, le coeur bleu.
+    p(10, 5, 4, 2, fc); p(11, 5, 2, 1, lv); p(11, 6, 2, 1, l);
     // Les disques des tempes.
-    p(4, 11, 2, 3, fc); p(18, 11, 2, 3, fc);
-    p(4, 12, 1, 1, l); p(19, 12, 1, 1, l);
-    // La visiere : le vide, quelques etoiles, un liseré bleu.
-    p(6, 10, 12, 5, v);
-    p(6, 10, 12, 1, c.visiere);
-    p(8, 12, 1, 1, '#ffffff'); p(12, 11, 1, 1, '#8fb4ff'); p(15, 13, 1, 1, '#ffffff'); p(10, 14, 1, 1, '#8fb4ff');
-    p(9, 12, 1, 1, l); p(14, 12, 1, 1, l);
-    // Le bas du masque.
-    p(8, 15, 8, 3, ombre(fc, 0.6));
-    p(8, 15, 8, 1, fc);
-    p(11, 16, 2, 2, fo);
+    p(5, 8, 2, 3, fc); p(17, 8, 2, 3, fc);
+    p(5, 9, 1, 1, l); p(18, 9, 1, 1, l);
+    // La visiere incurvee : le vide etoile, deux fentes qui luisent.
+    rangees(p, [[8, 7, 16], [9, 7, 16], [10, 8, 15], [11, 9, 14]], v);
+    p(7, 8, 10, 1, c.visiere);
+    p(8, 9, 1, 1, '#ffffff'); p(15, 9, 1, 1, '#8fb4ff'); p(12, 11, 1, 1, '#ffffff');
+    p(9, 10, 2, 1, l); p(13, 10, 2, 1, l);
+    // Le masque, qui se resserre en pointe, sa grille et son arete.
+    rangees(p, [[12, 8, 15], [13, 8, 15], [14, 9, 14], [15, 10, 13], [16, 11, 12]], masque);
+    p(8, 12, 8, 1, fc);
+    p(11, 12, 2, 5, fc);
+    p(9, 13, 1, 2, fo); p(14, 13, 1, 2, fo);
+  }
+
+  // Son armure : des epaulieres rondes cerclees d'argent, l'anneau de la
+  // poitrine, une ceinture et son anneau, le tabard central qui luit, un
+  // manteau qui s'evase, double d'un ciel etoile, et des bottes blindees.
+  function corpsDevoreur(p, c, pas, profil, dos) {
+    var f = c.casque, fo = ombre(f, 0.6), fc = c.casqueClair, l = c.casqueLueur, v = c.casqueVide;
+    var m = c.torse, mo = ombre(m, 0.7), lv = ombre(l, 1.5);
+    var etoile = function (x, y, col) { p(x, y, 1, 1, col || '#ffffff'); };
+
+    if (profil) {
+      var av = 12 + (pas > 0 ? 2 : 0), ar = 8 - (pas < 0 ? 2 : 0);
+      // Les jambes, puis le manteau par-dessus.
+      p(ar, 28, 4, 4, fo); p(av, 28, 4, 4, f);
+      p(ar, 32, 5, 2, '#0c0e22'); p(av, 32, 5, 2, '#0c0e22');
+      p(av, 32, 5, 1, fc); p(av + 1, 29, 1, 1, l);
+      rangees(p, [[19, 8, 16], [20, 7, 16], [21, 7, 16], [22, 7, 16], [23, 7, 16], [24, 6, 16],
+                  [25, 6, 16], [26, 5, 15], [27, 4, 15], [28, 4, 13], [29, 3, 11]], m);
+      // La doublure etoilee, qui se voit a l'arriere du manteau.
+      rangees(p, [[25, 6, 7], [26, 5, 6], [27, 4, 6], [28, 4, 6], [29, 3, 5]], v);
+      etoile(5, 27); etoile(6, 25, '#8fb4ff'); etoile(4, 29, '#8fb4ff');
+      p(16, 20, 1, 7, mo);
+      // L'anneau de la poitrine, de biais, et la ceinture.
+      p(14, 20, 2, 3, fc); p(15, 21, 1, 1, l);
+      p(7, 25, 10, 1, f); p(14, 25, 2, 1, l);
+      // L'epauliere et le bras.
+      var b = 20 + (pas > 0 ? 1 : 0);
+      p(9, 18, 6, 3, f); p(9, 18, 6, 1, fc); p(10, 20, 4, 1, l);
+      p(11, b + 1, 3, 5, m); p(11, b + 4, 3, 1, l);
+      p(11, b + 6, 3, 2, f);
+      return;
+    }
+
+    // Les jambes blindees et leurs bottes.
+    var levee = pas < 0 ? 'g' : (pas > 0 ? 'd' : '');
+    var bg = levee === 'g' ? 30 : 32, bd = levee === 'd' ? 30 : 32;
+    p(7, 28, 4, bg - 28, f); p(13, 28, 4, bd - 28, f);
+    p(7, 28, 1, bg - 28, fc); p(13, 28, 1, bd - 28, fc);
+    p(8, bg - 2, 2, 1, l); p(14, bd - 2, 2, 1, l);
+    p(6, bg, 5, 2, '#0c0e22'); p(13, bd, 5, 2, '#0c0e22');
+    p(6, bg, 5, 1, fc); p(13, bd, 5, 1, fc);
+
+    // Le manteau, qui s'evase en bas.
+    rangees(p, [[19, 6, 17], [20, 6, 17], [21, 6, 17], [22, 6, 17], [23, 6, 17], [24, 6, 17],
+                [25, 6, 17], [26, 5, 18], [27, 5, 18], [28, 4, 19], [29, 4, 19]], m);
+    if (dos) {
+      // De dos : le manteau ouvert sur le ciel etoile qu'il porte en
+      // doublure, et une arete d'argent le long du dos.
+      rangees(p, [[21, 8, 15], [22, 8, 15], [23, 8, 15], [24, 7, 16], [25, 7, 16], [26, 7, 16], [27, 6, 17], [28, 6, 17]], v);
+      etoile(9, 22); etoile(14, 23, '#8fb4ff'); etoile(11, 25); etoile(8, 27, '#8fb4ff'); etoile(15, 27); etoile(12, 28, '#8fb4ff');
+      p(11, 19, 2, 2, fc);
+      p(6, 19, 1, 10, fc); p(17, 19, 1, 10, fo);
+    } else {
+      // Les pans du manteau, doubles d'etoiles, de part et d'autre.
+      rangees(p, [[26, 5, 6], [27, 5, 6], [28, 4, 6], [29, 4, 6]], v);
+      rangees(p, [[26, 17, 18], [27, 17, 18], [28, 17, 19], [29, 17, 19]], v);
+      etoile(5, 28); etoile(18, 27, '#8fb4ff'); etoile(6, 26, '#8fb4ff'); etoile(18, 29);
+      p(7, 26, 1, 4, fc); p(16, 26, 1, 4, fc);
+      p(17, 19, 1, 7, mo);
+      // L'anneau de la poitrine : argent, le vide au milieu, liseré bleu.
+      p(10, 19, 4, 4, fc); p(11, 20, 2, 2, l); p(11, 20, 1, 1, v);
+      // La ceinture et son anneau.
+      p(6, 24, 12, 2, f); p(6, 24, 12, 1, fc);
+      p(11, 24, 2, 2, l);
+      // Le tabard qui descend, borde d'argent, la lueur au milieu.
+      p(10, 26, 4, 4, fo); p(10, 26, 1, 4, fc); p(13, 26, 1, 4, fc);
+      p(11, 26, 2, 3, l); p(11, 29, 2, 1, lv);
+    }
+
+    // Les epaulieres rondes, cerclees d'argent, un trait bleu.
+    [[3, 0], [16, 1]].forEach(function (e) {
+      var x = e[0];
+      p(x + 1, 18, 3, 1, fc);
+      p(x, 19, 5, 3, f);
+      p(x, 19, 5, 1, fc);
+      p(x + 1, 20, 3, 1, l);
+      p(x, 21, 5, 1, fo);
+    });
+    // Les bras, et les gantelets aux poignets lumineux.
+    var gg = 22 + (pas > 0 ? 1 : 0), gd = 22 + (pas < 0 ? 1 : 0);
+    p(4, gg, 3, 4, m); p(17, gd, 3, 4, m);
+    p(4, gg + 3, 3, 1, l); p(17, gd + 3, 3, 1, l);
+    p(4, gg + 4, 3, 2, f); p(17, gd + 4, 3, 2, f);
   }
 
   // Le sourire : deux rangees de dents cernees de sombre.
@@ -841,6 +946,12 @@
 
     var profil = dir === DIRS.gauche || dir === DIRS.droite;
     var dos = dir === DIRS.haut;
+
+    if (c.casque) {
+      corpsDevoreur(p, c, pas, profil, dos);
+      tete(p, c, dos, profil);
+      return;
+    }
 
     jambes(p, c, pas, profil);
     buste(p, c, pas, profil, dos);

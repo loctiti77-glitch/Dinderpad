@@ -1,4 +1,4 @@
-// L'espace qui suit le telephone.
+// L'espace qui suit le telephone (et, sur ordinateur, la souris).
 //
 // Sur un telephone ou une tablette, pencher l'appareil fait glisser le
 // fond etoile : les etoiles proches bougent plus que les lointaines, et
@@ -18,7 +18,7 @@
                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var cible = { x: 0, y: 0 }, lisse = { x: 0, y: 0 };
-  var neutre = null, ecoute = false, demande = false, dernier = 0;
+  var neutre = null, ecoute = false, accorde = false, dernier = 0, capteur = 0;
   var AMPLITUDE = 22;                      // degres pour aller au bout
 
   function borne(v) { return Math.max(-1, Math.min(1, v)); }
@@ -31,6 +31,7 @@
 
   function surOrientation(e) {
     if (e.beta == null || e.gamma == null) return;
+    capteur = performance.now();
     var b = e.beta, g = e.gamma, a = angleEcran(), x, y;
     // Les axes de l'appareil, ramenes a ceux de l'ecran tel qu'on le tient.
     if (a === 90)       { x = b;  y = -g; }
@@ -52,19 +53,34 @@
     window.addEventListener('orientationchange', function () { neutre = null; });
   }
 
-  // A appeler pendant un geste du joueur.
+  // A appeler pendant un geste du joueur. Tant que la permission n'est
+  // pas accordee, on la redemande au geste suivant.
   function demander() {
-    if (reduit || demande || !('DeviceOrientationEvent' in window)) return;
-    demande = true;
+    if (reduit || accorde || !('DeviceOrientationEvent' in window)) return;
+    ecouter();
     var DOE = window.DeviceOrientationEvent;
-    if (typeof DOE.requestPermission === 'function') {
-      try {
-        DOE.requestPermission().then(function (r) { if (r === 'granted') ecouter(); }, function () {});
-      } catch (e) {}
-    } else {
-      ecouter();
-    }
+    if (typeof DOE.requestPermission !== 'function') { accorde = true; return; }
+    try {
+      DOE.requestPermission().then(function (r) { if (r === 'granted') accorde = true; }, function () {});
+    } catch (e) {}
   }
+
+  // Sur un ordinateur, pas de capteur : c'est la souris qui fait glisser
+  // l'espace. Elle cede la place des que le capteur parle.
+  window.addEventListener('pointermove', function (e) {
+    if (e.pointerType !== 'mouse' || reduit) return;
+    if (capteur && performance.now() - capteur < 2000) return;
+    var w = window.innerWidth || 1, h = window.innerHeight || 1;
+    cible.x = borne((e.clientX / w - 0.5) * 2);
+    cible.y = borne((e.clientY / h - 0.5) * 2);
+  }, { passive: true });
+
+  // Le premier toucher, n'importe ou, suffit a demander la permission la
+  // ou elle ne se montre pas (Android) ; sur iPhone, les scenes la
+  // redemandent au bon moment.
+  var IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+            (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
+  if (!IOS) window.addEventListener('touchend', function () { demander(); }, { passive: true });
 
   // Le decalage du moment, adouci : on le lit a chaque image.
   function lire() {
@@ -77,11 +93,9 @@
     return lisse;
   }
 
-  // Sans permission a demander (Android), on ecoute des le depart.
-  if (!reduit && 'DeviceOrientationEvent' in window &&
-      typeof window.DeviceOrientationEvent.requestPermission !== 'function') {
-    ecouter();
-  }
+  // On ecoute des le depart : la ou il faut une permission, rien
+  // n'arrive avant qu'elle soit accordee, et c'est sans danger.
+  if (!reduit && 'DeviceOrientationEvent' in window) ecouter();
 
   window.INCLINAISON = { lire: lire, demander: demander };
 })();
