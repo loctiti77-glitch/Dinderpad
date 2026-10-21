@@ -361,7 +361,7 @@
     // glisser (js/inclinaison.js), sans jamais montrer son bord.
     function poserFond() {
       var pc = window.INCLINAISON ? window.INCLINAISON.lire() : { x: 0, y: 0 };
-      var m = Math.min(W, H) * 0.045;
+      var m = Math.min(W, H) * 0.08;
       x.drawImage(fond(), -m + pc.x * m, -m + pc.y * m, W + 2 * m, H + 2 * m);
     }
     var FONDS = {};

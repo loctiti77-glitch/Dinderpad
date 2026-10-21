@@ -8,8 +8,8 @@
 // Sur place, on marche, on croise ce qui vit, et on le scanne. Tout ce
 // qui est scanne entre dans le carnet du Teleportail.
 (function () {
-  var DP = window.DP, M = window.MONDE, V = window.ODYVIE;
-  if (!DP || !M || !V) return;
+  var DP = window.DP, M = window.MONDE, V = window.ODYVIE, TER = window.ODYTERRAIN;
+  if (!DP || !M || !V || !TER) return;
 
   function el(tag, cls, txt) {
     var n = document.createElement(tag);
@@ -22,12 +22,20 @@
                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var TS = M.TS, T = M.T;
-  var MW = 40, MH = 28;
-  var DEPART = { x: 20 * TS + 12, y: 22 * TS + 12 };
+  // Les grandes cartes (js/odyssey-terrain.js) : 120 x 84 cases, le point
+  // d'arrivee au milieu. O est l'endroit ou se pose l'ancienne carte de
+  // 40 x 28 quand on en garde le coeur (la Lune) ; les lieux fixes (la
+  // base lunaire, la grotte, le cabanon) sont donnes dans ce repere-la.
+  var MW = TER.MW, MH = TER.MH, DX = TER.DX, DY = TER.DY, O = TER.O;
+  var DEPART = { x: DX * TS + 12, y: DY * TS + 12 };
 
   // La partie en cours : le monde ou l'on se tient, et l'endroit exact.
   // Comme pour la peche, passer par le carnet ne doit pas tout perdre.
   var reprise = null;
+  // Ce que la visite a deja change : les noeuds ramasses, les rochers
+  // casses, la carte deja vue. Un passage par le carnet ne les efface pas ;
+  // un nouveau voyage, si.
+  var visite = null;
   var ECRANS = ['odyssee', 'teleportail', 'odyssee-carnet', 'armurerie'];
 
   window.addEventListener('hashchange', function () {
@@ -1008,107 +1016,12 @@
   //  La carte d'un monde
   // ==========================================================
 
-  function construireCarte(a) {
-    var g = [], x, y;
-    var bruit = M.bruit;
-    var sel = a.rang * 17;
+  function construireCarte(a) { return TER.construire(a); }
 
-    for (y = 0; y < MH; y++) {
-      g.push([]);
-      for (x = 0; x < MW; x++) {
-        g[y].push(bruit(x, y, sel) < 0.16 ? T.SOL_B : T.SOL);
-      }
-    }
-
-    // Les nappes : quelques mares, differentes d'un monde a l'autre.
-    for (var n = 0; n < 4; n++) {
-      var cx = 5 + Math.round(bruit(n, 1, sel + 3) * (MW - 10));
-      var cy = 4 + Math.round(bruit(n, 2, sel + 4) * (MH - 8));
-      var rx = 2 + Math.round(bruit(n, 3, sel + 5) * 4);
-      var ry = 2 + Math.round(bruit(n, 4, sel + 6) * 3);
-      for (y = cy - ry; y <= cy + ry; y++) {
-        for (x = cx - rx; x <= cx + rx; x++) {
-          if (x < 2 || y < 2 || x >= MW - 2 || y >= MH - 2) continue;
-          var dx = (x - cx) / rx, dy = (y - cy) / ry;
-          if (dx * dx + dy * dy <= 1) g[y][x] = T.LIQUIDE;
-        }
-      }
-    }
-
-    // Le relief, les gravats et les cristaux, selon l'astre.
-    for (y = 0; y < MH; y++) {
-      for (x = 0; x < MW; x++) {
-        if (g[y][x] === T.LIQUIDE) continue;
-        if (x < 2 || y < 2 || x >= MW - 2 || y >= MH - 2) { g[y][x] = T.ROCHE_A; continue; }
-        // On laisse degage autour du point d'arrivee.
-        if (Math.abs(x - 20) + Math.abs(y - 22) < 5) continue;
-        var b = bruit(x, y, sel + 1);
-        if (b < a.roche * 0.55) g[y][x] = T.ROCHE_A;
-        else if (b < a.roche + a.cristal) g[y][x] = T.CRISTAL;
-        else if (b < a.roche + a.cristal + 0.08) g[y][x] = T.GRAVATS;
-      }
-    }
-
-    // Le point d'arrivee reste toujours du sol nu : une nappe tiree au
-    // hasard pouvait tomber pile dessus, et le voyageur se posait au
-    // milieu de l'acide, incapable de bouger.
-    for (y = 18; y <= 26; y++) {
-      for (x = 16; x <= 24; x++) {
-        if (Math.abs(x - 20) + Math.abs(y - 22) <= 4) g[y][x] = T.SOL;
-      }
-    }
-
-    relier(g);
-    return g;
-  }
-
-  // Le relief tire au hasard coupe parfois la carte en poches : sur
-  // Mars, le point d'arrivee n'ouvrait que deux cents cases sur mille. On
-  // perce donc un passage depuis chaque poche isolee jusqu'au depart, en
-  // equerre, a travers la roche ou la glace. Le trace est deterministe :
-  // la meme planete a toujours les memes passages.
-  function relier(g) {
-    for (var tour = 0; tour < 40; tour++) {
-      var vu = accessibles(g), cible = null, x, y;
-      for (y = 2; y < MH - 2 && !cible; y++) {
-        for (x = 2; x < MW - 2 && !cible; x++) {
-          if (!M.BLOQUANT[g[y][x]] && !vu[x + ',' + y]) cible = [x, y];
-        }
-      }
-      if (!cible) return;
-      x = cible[0]; y = cible[1];
-      while (x !== 20) {
-        if (M.BLOQUANT[g[y][x]]) g[y][x] = T.GRAVATS;
-        x += x < 20 ? 1 : -1;
-      }
-      while (y !== 22) {
-        if (M.BLOQUANT[g[y][x]]) g[y][x] = T.GRAVATS;
-        y += y < 22 ? 1 : -1;
-      }
-    }
-  }
-
-  // Les cases qu'on atteint a pied depuis le point d'arrivee. Le relief
-  // est tire au hasard : sans ce reperage, une curiosite ou une bete
-  // pouvait tomber derriere un mur de rochers, a jamais hors d'atteinte.
-  function accessibles(g) {
-    var dep = [Math.floor(DEPART.x / TS), Math.floor(DEPART.y / TS)];
-    var vu = {}, file = [dep];
-    vu[dep[0] + ',' + dep[1]] = true;
-    while (file.length) {
-      var c = file.shift();
-      for (var k = 0; k < 4; k++) {
-        var nx = c[0] + [1, -1, 0, 0][k], ny = c[1] + [0, 0, 1, -1][k];
-        if (nx < 0 || ny < 0 || nx >= MW || ny >= MH) continue;
-        if (M.BLOQUANT[g[ny][nx]]) continue;
-        var cle = nx + ',' + ny;
-        if (vu[cle]) continue;
-        vu[cle] = true;
-        file.push([nx, ny]);
-      }
-    }
-    return vu;
-  }
+  // Les cases qu'on atteint a pied depuis le point d'arrivee, et le
+  // percement des poches isolees : voir js/odyssey-terrain.js.
+  function relier(g, dep) { TER.relier(g, dep); }
+  function accessibles(g) { return TER.accessibles(g, [Math.floor(DEPART.x / TS), Math.floor(DEPART.y / TS)]); }
 
   // Ou se plante la curiosite du monde : la case accessible la plus
   // eloignee du depart, avec un peu de place autour pour s'en approcher.
@@ -1123,22 +1036,22 @@
           if (vu[(x + [1, -1, 0, 0][k]) + ',' + (y + [0, 0, 1, -1][k])]) voisins++;
         }
         if (voisins < 3) continue;
-        var d = Math.abs(x - 20) + Math.abs(y - 22);
+        var d = Math.abs(x - DX) + Math.abs(y - DY);
         // Assez loin pour qu'il faille la chercher, pas au bout du monde.
-        if (d > loin && d <= 24) { loin = d; mieux = { x: x, y: y }; }
+        if (d > loin && d <= 40) { loin = d; mieux = { x: x, y: y }; }
       }
     }
-    return mieux || { x: 20, y: 18 };
+    return mieux || { x: DX, y: DY - 4 };
   }
 
   // Le repaire du gardien : le plus loin possible du point d'arrivee (en
   // chemin a parcourir), dans un endroit degage, et pas sur la curiosite.
   function placeRepaire(g, lieu) {
     var vu = accessibles(g);
-    var dist = {}, file = [[20, 22]], k;
-    dist['20,22'] = 0;
-    while (file.length) {
-      var c = file.shift();
+    var dist = {}, file = [[DX, DY]], k, tete = 0;
+    dist[DX + ',' + DY] = 0;
+    while (tete < file.length) {
+      var c = file[tete++];
       for (k = 0; k < 4; k++) {
         var nx = c[0] + [1, -1, 0, 0][k], ny = c[1] + [0, 0, 1, -1][k], cle = nx + ',' + ny;
         if (!vu[cle] || dist[cle] !== undefined) continue;
@@ -1160,7 +1073,7 @@
         loin = d; mieux = { tx: x, ty: y };
       }
     }
-    mieux = mieux || { tx: 20, ty: 10 };
+    mieux = mieux || { tx: DX, ty: DY - 12 };
     mieux.x = mieux.tx + 0.5; mieux.y = mieux.ty + 0.5;
     mieux.px = mieux.x * TS; mieux.py = mieux.y * TS;
     return mieux;
@@ -1173,12 +1086,21 @@
   // d'arrivee, des crateres, et au nord une falaise percee d'une grotte
   // immense. C'est de la que sort le Selenophage.
 
-  var BASE = { x0: 4, x1: 14, y0: 15, y1: 24 };
-  var GROTTE = { x: 19.5, y: 4.2, lx: 5.2, ly: 3.1 };      // en cases
-  var DEVANT_GROTTE = { x: 19.5, y: 8.2 };
+  // Les lieux du coeur, dans son repere de 40 x 28...
+  var BASE_L = { x0: 4, x1: 14, y0: 15, y1: 24 };
+  var GROTTE_L = { x: 19.5, y: 4.2 };
+  var DEVANT_L = { x: 19.5, y: 8.2 };
+  // ... et sur la grande carte.
+  var BASE = { x0: BASE_L.x0 + O.x, x1: BASE_L.x1 + O.x, y0: BASE_L.y0 + O.y, y1: BASE_L.y1 + O.y };
+  var GROTTE = { x: GROTTE_L.x + O.x, y: GROTTE_L.y + O.y, lx: 5.2, ly: 3.1 };      // en cases
+  var DEVANT_GROTTE = { x: DEVANT_L.x + O.x, y: DEVANT_L.y + O.y };
 
-  function construireLune() {
-    var g = [], x, y;
+  function construireLune(a) { return TER.construireAutour(a, coeurLune()); }
+
+  // L'ancienne carte de la Lune, telle quelle : 40 x 28 cases.
+  function coeurLune() {
+    var g = [], x, y, MW = 40, MH = 28;
+    var BASE = BASE_L, DEVANT_GROTTE = DEVANT_L;
     var bruit = M.bruit;
     for (y = 0; y < MH; y++) {
       g.push([]);
@@ -1231,14 +1153,13 @@
     for (y = 7; y <= 10; y++) {
       for (x = 16; x <= 23; x++) g[y][x] = T.SOL;
     }
-    relier(g);
     return g;
   }
 
   // La ou poser les objets de la base, dans l'enceinte.
   var PLACES_BASE = {
-    'module-habitation': [6, 17], 'sas-base': [10, 16], 'reacteur': [12, 22],
-    'serre-base': [6, 22], 'antenne-relais': [12, 18]
+    'module-habitation': [6 + O.x, 17 + O.y], 'sas-base': [10 + O.x, 16 + O.y], 'reacteur': [12 + O.x, 22 + O.y],
+    'serre-base': [6 + O.x, 22 + O.y], 'antenne-relais': [12 + O.x, 18 + O.y]
   };
 
   // ==========================================================
@@ -1308,6 +1229,10 @@
     DP.noterAstre(a.id);
     ongletSys = a.systeme;
     var lune = a.id === 'lune';
+    var CR = window.ODYCRAFT;
+    if (!ou || !visite || visite.astre !== a.id) {
+      visite = { astre: a.id, pris: {}, modifs: [], vu: new Uint8Array(MW * MH) };
+    }
 
     var scene = el('div', 'ody-scene');
     scene.dataset.astre = a.id;
@@ -1362,7 +1287,35 @@
     pelleB.type = 'button';
     pelleB.hidden = true;
     boutons.appendChild(pelleB);
+    // Ramasser, ouvrir un coffre, miner, forer : un seul bouton, qui dit
+    // ce qu'il fera.
+    var recolteB = el('button', 'ody-recolte', '');
+    recolteB.type = 'button';
+    recolteB.hidden = true;
+    boutons.appendChild(recolteB);
     scene.appendChild(boutons);
+
+    // Le sac, en haut, a cote du Teleportail.
+    var sacB = el('button', 'ody-sac');
+    sacB.type = 'button';
+    sacB.title = 'Sac (I)';
+    sacB.setAttribute('aria-label', 'Ouvrir le sac');
+    if (CR) {
+      var sacIm = el('img', 'ody-sac-img');
+      sacIm.src = CR.url('sac-toile');
+      sacIm.alt = '';
+      sacB.appendChild(sacIm);
+      sacB.appendChild(el('span', 'ody-sac-n', ''));
+      scene.appendChild(sacB);
+    }
+
+    // La mini-carte : la carte entiere en un pixel par case, couverte d'un
+    // brouillard qui se leve la ou l'on passe. Un clic l'agrandit.
+    var mini = el('canvas', 'ody-mini');
+    mini.width = MW; mini.height = MH;
+    mini.title = 'Carte';
+    mini.addEventListener('click', function () { mini.classList.toggle('is-grande'); });
+    scene.appendChild(mini);
 
     var retour = el('a', 'ody-retour');
     retour.href = '#teleportail';
@@ -1377,18 +1330,23 @@
 
     jeu.appendChild(scene);
 
-    var g = lune ? construireLune() : construireCarte(a);
+    var g = lune ? construireLune(a) : construireCarte(a);
+    var palette = TER.palette(a);
+    var optsCarte = { palette: palette, regions: true };
 
     // Le cabanon du fond du jardin, sur la Terre, et la pelle oubliee
     // derriere. On ne la voit pas depuis le point d'arrivee : il faut en
     // faire le tour.
-    var CABANON = a.id === 'terre' ? { x0: 31, x1: 33, y0: 21, y1: 22 } : null;
+    var CABANON = a.id === 'terre' ? { x0: 31 + O.x, x1: 33 + O.x, y0: 21 + O.y, y1: 22 + O.y } : null;
     // Couchee contre le mur du fond : seul le bout du manche depasse du toit.
-    var PELLE = CABANON ? { x: 32.6 * TS, y: 21.05 * TS } : null;
+    var PELLE = CABANON ? { x: (32.6 + O.x) * TS, y: (21.05 + O.y) * TS } : null;
     if (CABANON) {
-      for (var cy0 = CABANON.y0; cy0 <= CABANON.y1; cy0++)
-        for (var cx0 = CABANON.x0; cx0 <= CABANON.x1; cx0++) g[cy0][cx0] = T.STRUCTURE;
-      g[20][32] = T.SOL;
+      // Un peu de jardin degage autour, pour pouvoir en faire le tour.
+      for (var cy0 = CABANON.y0 - 2; cy0 <= CABANON.y1 + 2; cy0++)
+        for (var cx0 = CABANON.x0 - 2; cx0 <= CABANON.x1 + 2; cx0++) g[cy0][cx0] = T.SOL;
+      for (cy0 = CABANON.y0; cy0 <= CABANON.y1; cy0++)
+        for (cx0 = CABANON.x0; cx0 <= CABANON.x1; cx0++) g[cy0][cx0] = T.STRUCTURE;
+      relier(g);
     }
     var libres = accessibles(g);
     var cur = V.curiosite(a.id);
@@ -1403,7 +1361,7 @@
     var bossBattu = function () { return !gardien || BO.vaincu(gardien.id); };
     // L'artefact cache sur ce monde, loin de la curiosite et du repaire.
     var ART = window.ARTEFACTS;
-    var cachesO = ART ? ART.caches('odyssee', g, { x: 20, y: 22 }, {
+    var cachesO = ART ? ART.caches('odyssee', g, { x: DX, y: DY }, {
       carte: a.id, graine: 400 + Math.round(a.rang * 13),
       // Loin du repaire : on ne doit pas reveiller un gardien en ramassant.
       eviter: [lieu].concat(repaire && repaire.tx != null ? [{ x: repaire.tx, y: repaire.ty, loin: 10 }] : [])
@@ -1431,7 +1389,11 @@
                 dir: ou ? ou.dir : 0 };
 
     // --- Le voyageur ---
-    var pv = PV_MAX, dernierCoupRecu = -99999;
+    // Les PV max suivent l'armure portee.
+    function pvMax() { return PV_MAX + (CR ? CR.bonus().pv : 0); }
+    var pv = pvMax(), dernierCoupRecu = -99999;
+    // Ce que les consommables laissent derriere eux.
+    var bouclierPV = 0, regenJusqua = 0, repulsifJusqua = 0;
 
     // --- Les habitants ---
     // Un individu par espece, deux pour les plus communes. Les agressives
@@ -1442,7 +1404,7 @@
         var bx = 3 + Math.floor(M.bruit(graine, essai, a.rang * 13 + 7) * (MW - 6));
         var by = 3 + Math.floor(M.bruit(graine, essai + 500, a.rang * 13 + 8) * (MH - 6));
         if (!libres[bx + ',' + by]) continue;
-        if (Math.abs(bx - 20) + Math.abs(by - 22) < (loinDuDepart || 0)) continue;
+        if (Math.abs(bx - DX) + Math.abs(by - DY) < (loinDuDepart || 0)) continue;
         return [bx, by];
       }
       return [20, 18];
@@ -1450,11 +1412,13 @@
 
     var betes = [];
     V.vies(a.id).forEach(function (v, k) {
-      var n = v.palier <= 1 ? 2 : 1;
+      // La carte est neuf fois plus grande qu'avant : la faune suit, sans
+      // tout a fait suivre — les grosses betes restent rares.
+      var n = v.palier <= 1 ? 6 : v.palier === 2 ? 4 : 2;
       for (var i = 0; i < n; i++) {
         // Les agressives naissent a distance : on ne se fait pas mordre en
         // posant le pied sur un monde.
-        var c = caseLibreAuHasard(k * 11 + i, v.agressif ? 9 : 3);
+        var c = caseLibreAuHasard(k * 11 + i * 3, v.agressif ? 12 : 3);
         var f = V.force(v);
         betes.push({
           v: v, f: f, x: (c[0] + 0.5) * TS, y: (c[1] + 0.5) * TS,
@@ -1471,6 +1435,17 @@
       var c = lune && PLACES_BASE[o.id] ? PLACES_BASE[o.id] : caseLibreAuHasard(300 + k * 17, 4);
       return { o: o, x: (c[0] + 0.5) * TS, y: (c[1] + 0.5) * TS };
     });
+
+    // --- Ce qui se ramasse ---
+    var recoltes = CR ? TER.placer(g, a, [lieu, repaire && repaire.tx != null ? { x: repaire.tx, y: repaire.ty, loin: 8 } : null]
+      .filter(Boolean).concat(choses.map(function (c) { return { x: Math.floor(c.x / TS), y: Math.floor(c.y / TS), loin: 3 }; })))
+      : { noeuds: [], coffres: [] };
+    var noeuds = recoltes.noeuds, coffres = recoltes.coffres;
+    var ouverture = {};                // les coffres qui s'ouvrent : id -> instant
+    var envols = [], eclats = [], explosions = [];
+    var prise = null;                  // ce que le bouton RECOLTER fera
+    // Les rochers deja casses de cette visite.
+    visite.modifs.forEach(function (m) { g[m[1]][m[0]] = m[2]; });
 
     var balade = null;
     var cible = null, cibleTir = null;
@@ -1489,10 +1464,10 @@
     function dire(txt) { if (hudTxt.textContent !== txt) hudTxt.textContent = txt; }
 
     function majJauge() {
-      var k = pv / PV_MAX;
+      var k = pv / pvMax();
       jaugePlein.style.width = (k * 100).toFixed(1) + '%';
       jaugePlein.dataset.bas = k < 0.3 ? '1' : '0';
-      jaugeTxt.textContent = Math.ceil(pv) + ' / ' + PV_MAX;
+      jaugeTxt.textContent = Math.ceil(pv) + ' / ' + pvMax() + (bouclierPV > 0 ? '  ◈' + Math.ceil(bouclierPV) : '');
     }
 
     function tuileLibre(px, py) {
@@ -1560,6 +1535,18 @@
       if (geste && pelleB.dataset.geste !== geste) {
         pelleB.dataset.geste = geste;
         pelleB.textContent = geste === 'prendre' ? 'PRENDRE LA PELLE' : 'CREUSER';
+      }
+      recolteB.hidden = !libre || !prise;
+      if (prise && recolteB.dataset.quoi !== prise.quoi) {
+        recolteB.dataset.quoi = prise.quoi;
+        recolteB.textContent = prise.quoi;
+      }
+      if (CR) {
+        var nSac = DP.sacOdyssee();
+        var txtSac = nSac.cases.length + '/' + nSac.taille;
+        var bSac = sacB.querySelector('.ody-sac-n');
+        if (bSac.textContent !== txtSac) bSac.textContent = txtSac;
+        sacB.classList.toggle('is-plein', nSac.cases.length >= nSac.taille);
       }
       tir.hidden = !(libre || etat === 'scan') || !cibleTir;
       if (!tir.hidden) {
@@ -1846,10 +1833,11 @@
       if (t - dernierTir < nv.cadence) return;
       dernierTir = t;
       var b = cibleTir;
+      var deg = Math.round(nv.degats * (CR ? CR.bonus().degats : 1));
       tirs.push({ t0: t, x: b.x, y: b.y - 10 });
-      b.pv = Math.max(0, b.pv - nv.degats);
+      b.pv = Math.max(0, b.pv - deg);
       b.touche = t;
-      chiffres.push({ t0: t, x: b.x, y: b.y - 26, txt: '-' + nv.degats });
+      chiffres.push({ t0: t, x: b.x, y: b.y - 26, txt: '-' + deg });
 
       // Une bete qu'on blesse ne reste pas indifferente : les plus fortes
       // se retournent, les plus faibles detalent.
@@ -1870,6 +1858,7 @@
       DP.noterAbattu(b.v.id);
       chiffres.push({ t0: t, x: b.x, y: b.y - 40, txt: '+' + b.f.noyaux + ' ☀', noyau: true });
       dire(b.v.nom + ' abattu.');
+      if (CR) gagner(CR.butinBete(b.v, a), b.x, b.y);
       var A = window.ARME;
       if (A && A.recompenseOdyssee) {
         A.recompenseOdyssee(b.v.id).forEach(function (r, i) {
@@ -1902,10 +1891,16 @@
 
     // --- Les coups recus ---
     function encaisser(b, t) {
-      pv = Math.max(0, pv - b.f.degats);
+      var coup = b.f.degats;
+      if (bouclierPV > 0) {
+        var absorbe = Math.min(bouclierPV, coup);
+        bouclierPV -= absorbe; coup -= absorbe;
+        eclats.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 14, bouclier: true });
+      }
+      pv = Math.max(0, pv - coup);
       dernierCoupRecu = t;
       b.coup = t;
-      chiffres.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 30, txt: '-' + b.f.degats, moi: true });
+      chiffres.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 30, txt: coup ? '-' + coup : '◈', moi: true });
       scene.classList.remove('is-touche');
       void scene.offsetWidth;
       scene.classList.add('is-touche');
@@ -1959,7 +1954,7 @@
           gardien: gardien.id,
           holo: !!projection,
           parent: scene,
-          pvJoueur: pv, pvMax: PV_MAX,
+          pvJoueur: pv, pvMax: pvMax(),
           surFin: function (r) { pv = r.pvJoueur; majJauge(); },
           surSortie: function (r) {
             duel = null;
@@ -1971,6 +1966,7 @@
               else {
                 dire(lune ? 'La grotte est silencieuse.' : 'Le repaire est silencieux.');
                 ouvrirSuivante();
+                if (CR) gagner(CR.butinGardien(a), repaire ? repaire.px : balade.chef.x, repaire ? repaire.py : balade.chef.y);
               }
               majBoutons();
             } else {
@@ -2000,12 +1996,16 @@
     }
     surAppui(action, lancerScan);
     surAppui(tir, tirer);
+    surAppui(recolteB, function () { if (etat === 'libre' && prise) agir(); });
+    sacB.addEventListener('click', function () { if (etat === 'libre') ouvrirSac(); });
     surAppui(holo, function () {
       if (etat !== 'libre' || !gardien || !bossBattu()) return;
       reveillerMonstre(true);
     });
 
     var auClavier = function (e) {
+      if ((e.key === 'e' || e.key === 'E') && etat === 'libre' && prise) { e.preventDefault(); return agir(); }
+      if ((e.key === 'i' || e.key === 'I' || e.key === 'Tab') && etat === 'libre' && CR) { e.preventDefault(); return ouvrirSac(); }
       if (e.key === 'f' || e.key === 'F' || e.key === 'x' || e.key === 'X') {
         if (etat === 'boss') return;
         e.preventDefault();
@@ -2028,11 +2028,15 @@
 
       betes.forEach(function (b, i) {
         if (b.mort) return;
+        // Prise dans le givre : elle ne bouge ni ne mord.
+        if (b.gel > t) return;
         var dx = chefX - b.x, dy = chefY - b.y;
         var d = Math.hypot(dx, dy) || 1;
         var vx = 0, vy = 0, vit = 0;
 
-        if (b.fuite > t) {
+        if (repulsifJusqua > t && d < 170) {
+          vx = -dx / d; vy = -dy / d; vit = b.f.vitesse * 1.1;
+        } else if (b.fuite > t) {
           vx = -dx / d; vy = -dy / d; vit = b.f.vitesse * 1.3;
         } else if (b.agressif && chassent && d < 135) {
           if (d > 16) { vx = dx / d; vy = dy / d; vit = b.f.vitesse; }
@@ -2052,10 +2056,13 @@
         }
       });
 
-      // On se refait une sante quand plus rien ne mord depuis un moment.
-      if (pv > 0 && pv < PV_MAX && t - dernierCoupRecu > 4000 && etat !== 'boss') {
-        pv = Math.min(PV_MAX, pv + 4 * dt);
-        majJauge();
+      // On se refait une sante quand plus rien ne mord depuis un moment —
+      // plus vite et plus tot avec l'amulette, tout de suite avec l'elixir.
+      var rg = CR ? CR.bonus().regen : 1, pm = pvMax();
+      if (pv > pm) { pv = pm; majJauge(); }
+      if (pv > 0 && pv < pm && etat !== 'boss') {
+        if (regenJusqua > t) { pv = Math.min(pm, pv + 14 * dt); majJauge(); }
+        else if (t - dernierCoupRecu > (rg > 1 ? 2000 : 4000)) { pv = Math.min(pm, pv + 4 * rg * dt); majJauge(); }
       }
     }
 
@@ -2085,6 +2092,20 @@
             } });
         }
       }
+
+      noeuds.forEach(function (n) {
+        if (visite.pris[n.k]) return;
+        out.push({ x: n.x, y: n.y + 4, dessin: function (ctx, sx, sy) {
+          CR.dessinerNoeud(ctx, sx, sy - 4, n, t, palette, a, prise && prise.n === n);
+        } });
+      });
+      coffres.forEach(function (c) {
+        var ouvert = CR.coffreOuvert(c.id), t0 = ouverture[c.id];
+        var ouv = t0 ? Math.min(1, (t - t0) / 450) : ouvert ? 1 : 0;
+        out.push({ x: c.x, y: c.y + 4, dessin: function (ctx, sx, sy) {
+          CR.dessinerCoffre(ctx, sx, sy - 4, c, t, ouv, prise && prise.c === c);
+        } });
+      });
 
       choses.forEach(function (c) {
         out.push({
@@ -2391,6 +2412,7 @@
       }
 
       if (scan) dessinerScan(ctx, cam, t);
+      effets(ctx, cam, t);
 
       ctx.textAlign = 'center';
       ctx.font = 'bold 11px "Courier New", monospace';
@@ -2437,17 +2459,333 @@
       }
     }
 
+    // ==========================================================
+    //  La recolte, les coffres, les outils, le sac
+    // ==========================================================
+
+    // Ce qu'on a a portee : un noeud, un coffre ferme, ou la roche et le
+    // cristal qu'on a juste devant soi, si l'on a l'outil.
+    function chercherPrise() {
+      var ch = balade.chef, mieux = null, d0 = 26;
+      noeuds.forEach(function (n) {
+        if (visite.pris[n.k]) return;
+        var d = Math.hypot(n.x - ch.x, n.y - ch.y);
+        if (d < d0) { d0 = d; mieux = { n: n, quoi: 'RÉCOLTER' }; }
+      });
+      coffres.forEach(function (c) {
+        if (CR.coffreOuvert(c.id) || ouverture[c.id]) return;
+        var d = Math.hypot(c.x - ch.x, c.y - ch.y);
+        if (d < 30 && d < d0 + 6) { d0 = d; mieux = { c: c, quoi: 'OUVRIR' }; }
+      });
+      if (mieux) return mieux;
+      var dv = balade.caseDevant(), tx = dv[0], ty = dv[1];
+      if (tx < 2 || ty < 2 || tx >= MW - 2 || ty >= MH - 2) return null;
+      var tu = g[ty][tx];
+      if (tu === T.ROCHE_A && CR.aOutil('pioche')) return { tx: tx, ty: ty, quoi: 'MINER', type: 'roche' };
+      if (tu === T.CRISTAL && CR.aOutil('foreuse')) return { tx: tx, ty: ty, quoi: 'FORER', type: 'cristal' };
+      return null;
+    }
+
+    // Pres d'une poche scellee, sans l'outil qui l'ouvre : un mot, pour
+    // qu'on sache qu'il y a quelque chose derriere.
+    function indiceBarriere() {
+      if (!CR) return null;
+      var ch = balade.chef, TXT = {
+        pioche: 'Ces rochers forment un cercle trop parfait. Une pioche passerait.',
+        foreuse: 'Un anneau de cristal, et quelque chose qui brille au milieu. Il faudrait une foreuse.',
+        bottes: 'Un îlot au milieu du liquide. Il faudrait pouvoir marcher dessus.'
+      };
+      for (var i = 0; i < coffres.length; i++) {
+        var c = coffres[i];
+        if (!c.scelle || CR.coffreOuvert(c.id) || CR.aOutil(c.outil)) continue;
+        if (Math.hypot(c.x - ch.x, c.y - ch.y) < 5 * TS) return TXT[c.outil];
+      }
+      return null;
+    }
+
+    function agir() {
+      if (!prise || etat !== 'libre') return;
+      if (prise.n) recolter(prise.n);
+      else if (prise.c) ouvrirCoffre(prise.c);
+      else casser(prise.tx, prise.ty, prise.type);
+      prise = null;
+      majBoutons();
+    }
+
+    // Met une liste dans le sac, et montre ce qui y est entre : les icones
+    // s'envolent du point de recolte, les bandeaux s'empilent.
+    function gagner(liste, x, y) {
+      if (!liste.length) return { pris: [], laisse: [], reliques: [] };
+      var r = CR.empocher(liste), t = maintenant();
+      r.pris.forEach(function (gg, i) {
+        envols.push({ t0: t + i * 90, id: gg.id, x: x, y: y - 8, dx: (i - (r.pris.length - 1) / 2) * 12 });
+      });
+      CR.annoncer(scene, r.pris, r.laisse.length > 0);
+      devoilerReliques(r.reliques);
+      return r;
+    }
+
+    // Les reliques trouvees, une a une, au milieu de l'ecran.
+    function devoilerReliques(liste) {
+      if (!liste.length) return;
+      var avant = etat;
+      etat = 'fiche';
+      majBoutons();
+      (function suivante(i) {
+        if (i >= liste.length) { etat = avant === 'fiche' ? 'libre' : avant; majBoutons(); return; }
+        CR.devoiler(scene, liste[i], function () { suivante(i + 1); });
+      })(0);
+    }
+
+    function recolter(n) {
+      var liste = CR.recolte(n.type, a);
+      if (!CR.rentre(liste.slice(0, 1))) { CR.annoncer(scene, [], true); dire('Ton sac est plein. Ouvre-le pour faire de la place.'); return; }
+      visite.pris[n.k] = true;
+      var t = maintenant();
+      for (var i = 0; i < 8; i++) eclats.push({ t0: t, x: n.x, y: n.y - 4, a: i * 0.785, couleur: n.type === 'plante' ? palette.flore2 : '#fff2c8' });
+      gagner(liste, n.x, n.y);
+    }
+
+    function ouvrirCoffre(c) {
+      var contenu = CR.contenuCoffre(c, a);
+      if (!CR.rentre(contenu)) {
+        CR.annoncer(scene, [], true);
+        dire('Ton sac est trop plein pour vider ce coffre. Fais de la place et reviens.');
+        return;
+      }
+      CR.marquerCoffre(c.id);
+      ouverture[c.id] = maintenant();
+      dire(c.scelle ? 'Le sceau cède. Le coffre s’ouvre.' : 'Le coffre grince, puis s’ouvre.');
+      plusTard(function () {
+        if (!vivant()) return;
+        var t = maintenant();
+        for (var i = 0; i < 14; i++) eclats.push({ t0: t, x: c.x, y: c.y - 10, a: i * 0.45, couleur: c.scelle ? '#ff9ae0' : '#fff0a0', loin: 1.6 });
+        gagner(contenu, c.x, c.y - 6);
+      }, reduit ? 50 : 480);
+    }
+
+    // La pioche casse un rocher, la foreuse un cristal : la case devient
+    // des gravats, et ce qui en sort tombe dans le sac.
+    function casser(tx, ty, type) {
+      g[ty][tx] = T.GRAVATS;
+      visite.modifs.push([tx, ty, T.GRAVATS]);
+      M.repeindre(balade.monde, g, tx, ty, optsCarte);
+      miniBase = null;
+      var x = (tx + 0.5) * TS, y = (ty + 0.5) * TS, t = maintenant();
+      for (var i = 0; i < 12; i++) {
+        eclats.push({ t0: t, x: x, y: y - 6, a: i * 0.52, couleur: type === 'roche' ? palette.rocheHaut : palette.cristal2, loin: 1.2, gros: true });
+      }
+      scene.classList.remove('is-coup');
+      void scene.offsetWidth;
+      scene.classList.add('is-coup');
+      gagner(CR.recolte(type, a), x, y);
+    }
+
+    // ---------- Le sac ----------
+    function ouvrirSac() {
+      if (!CR || etat !== 'libre') return;
+      etat = 'sac';
+      majBoutons();
+      CR.ouvrir({
+        scene: scene,
+        dire: dire,
+        maj: function () { majJauge(); },
+        fermer: function () { if (etat === 'sac') etat = 'libre'; majJauge(); majBoutons(); },
+        utiliser: utiliser
+      });
+    }
+
+    // Les consommables. Rend le texte a afficher, ou false si l'objet ne
+    // sert a rien maintenant (on ne le gaspille pas).
+    function utiliser(o) {
+      var t = maintenant(), pm = pvMax();
+      if (o.soin) {
+        if (pv >= pm && !o.regen) { dire('Tu es déjà en pleine forme.'); return false; }
+        pv = Math.min(pm, pv + o.soin);
+        if (o.regen) regenJusqua = t + o.regen * 1000;
+        majJauge();
+        for (var i = 0; i < 10; i++) eclats.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 14, a: i * 0.63, couleur: '#7af0a8' });
+        return o.nom + ' : tu te sens mieux.';
+      }
+      if (o.bouclier) {
+        bouclierPV += o.bouclier;
+        majJauge();
+        eclats.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 14, bouclier: true });
+        return 'Un bouclier crépite autour de toi.';
+      }
+      if (o.bombe || o.givre) {
+        var touchees = 0;
+        betes.forEach(function (b) {
+          if (b.mort || Math.hypot(b.x - balade.chef.x, b.y - balade.chef.y) > 120) return;
+          touchees++;
+          if (o.givre) { b.gel = t + o.givre * 1000; return; }
+          b.pv = Math.max(0, b.pv - o.bombe);
+          b.touche = t;
+          b.agressif = true;
+          chiffres.push({ t0: t, x: b.x, y: b.y - 26, txt: '-' + o.bombe });
+          if (b.pv <= 0) abattre(b, t);
+        });
+        explosions.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 6, givre: !!o.givre });
+        scene.classList.remove('is-coup');
+        void scene.offsetWidth;
+        scene.classList.add('is-coup');
+        return touchees ? (o.givre ? 'Le givre fige ' + touchees + ' créature' + (touchees > 1 ? 's' : '') + '.'
+                                   : 'BOUM. ' + touchees + ' créature' + (touchees > 1 ? 's' : '') + ' touchée' + (touchees > 1 ? 's' : '') + '.')
+                        : (o.givre ? 'Le givre se perd dans le vide.' : 'BOUM. Rien n’était assez près.');
+      }
+      if (o.repulsif) {
+        repulsifJusqua = t + o.repulsif * 1000;
+        return 'Une odeur âcre : rien ne veut s’approcher de toi.';
+      }
+      return null;
+    }
+
+    // ---------- Les effets ----------
+    function effets(ctx, cam, t) {
+      var i;
+      // Les betes prises dans le givre.
+      betes.forEach(function (b) {
+        if (b.mort || !(b.gel > t)) return;
+        ctx.fillStyle = 'rgba(170,225,255,.45)';
+        ctx.fillRect(Math.round(b.x - cam.x - 12), Math.round(b.y - cam.y - 22), 24, 24);
+        ctx.fillStyle = 'rgba(255,255,255,.8)';
+        ctx.fillRect(Math.round(b.x - cam.x - 10), Math.round(b.y - cam.y - 20), 3, 1);
+        ctx.fillRect(Math.round(b.x - cam.x + 6), Math.round(b.y - cam.y - 8), 1, 3);
+      });
+      // Le bouclier et le repulsif, autour du voyageur.
+      var cx = balade.chef.x - cam.x, cy = balade.chef.y - cam.y - 12;
+      if (bouclierPV > 0) {
+        ctx.strokeStyle = 'rgba(120,190,255,' + (reduit ? 0.6 : 0.45 + 0.25 * Math.sin(t / 160)).toFixed(2) + ')';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(cx, cy, 16, 20, 0, 0, 6.3); ctx.stroke();
+      }
+      if (repulsifJusqua > t) {
+        ctx.fillStyle = 'rgba(220,210,60,.12)';
+        ctx.beginPath(); ctx.arc(cx, cy, 30 + (reduit ? 0 : 4 * Math.sin(t / 300)), 0, 6.3); ctx.fill();
+      }
+      // Les explosions : un anneau qui s'ouvre, un eclair au centre.
+      for (i = explosions.length - 1; i >= 0; i--) {
+        var ex = explosions[i], k = (t - ex.t0) / 600;
+        if (k >= 1) { explosions.splice(i, 1); continue; }
+        var col = ex.givre ? '170,225,255' : '255,170,60';
+        ctx.fillStyle = 'rgba(' + col + ',' + (0.5 * (1 - k)).toFixed(2) + ')';
+        ctx.beginPath(); ctx.arc(ex.x - cam.x, ex.y - cam.y, 10 + k * 110, 0, 6.3); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,' + (1 - k).toFixed(2) + ')';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(ex.x - cam.x, ex.y - cam.y, 14 + k * 116, 0, 6.3); ctx.stroke();
+      }
+      // Les eclats : des pixels qui jaillissent et retombent.
+      for (i = eclats.length - 1; i >= 0; i--) {
+        var e = eclats[i], ke = (t - e.t0) / 520;
+        if (ke < 0) continue;
+        if (ke >= 1) { eclats.splice(i, 1); continue; }
+        if (e.bouclier) {
+          ctx.strokeStyle = 'rgba(160,210,255,' + (1 - ke).toFixed(2) + ')';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.ellipse(e.x - cam.x, e.y - cam.y, 12 + ke * 14, 16 + ke * 14, 0, 0, 6.3); ctx.stroke();
+          continue;
+        }
+        var dist = (e.loin || 1) * 22 * ke;
+        ctx.fillStyle = e.couleur;
+        ctx.globalAlpha = 1 - ke;
+        var tl = e.gros ? 3 : 2;
+        ctx.fillRect(Math.round(e.x - cam.x + Math.cos(e.a) * dist), Math.round(e.y - cam.y + Math.sin(e.a) * dist * 0.7 + ke * ke * 14), tl, tl);
+        ctx.globalAlpha = 1;
+      }
+      // Les icones qui s'envolent vers le sac.
+      for (i = envols.length - 1; i >= 0; i--) {
+        var v = envols[i], kv = (t - v.t0) / 900;
+        if (kv < 0) continue;
+        if (kv >= 1) { envols.splice(i, 1); continue; }
+        var ic = CR.icone(v.id), mont = Math.sin(Math.min(1, kv * 1.4) * Math.PI / 2) * 30;
+        ctx.globalAlpha = kv > 0.7 ? (1 - kv) / 0.3 : 1;
+        ctx.drawImage(ic, Math.round(v.x - cam.x + v.dx * Math.min(1, kv * 2) - 9), Math.round(v.y - cam.y - mont - 18));
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // ---------- La mini-carte ----------
+    var miniCtx = mini.getContext('2d'), miniBase = null, miniBrume = null, dernierMini = -9999;
+    function couleurTuile(tu) {
+      if (tu === T.LIQUIDE) return palette.liquide;
+      if (tu === T.ROCHE_A) return palette.rocheOmbre;
+      if (tu === T.CRISTAL) return palette.cristal;
+      if (tu === T.PLANTE) return palette.flore || palette.roche;
+      if (tu === T.FLORE) return palette.flore2 || palette.sol;
+      if (tu === T.STRUCTURE || tu === T.RUINE) return palette.structureHaut;
+      if (tu === T.GRAVATS) return palette.sol2;
+      return palette.sol;
+    }
+    function peindreMiniBase() {
+      miniBase = document.createElement('canvas');
+      miniBase.width = MW; miniBase.height = MH;
+      var x = miniBase.getContext('2d');
+      for (var ty = 0; ty < MH; ty++) for (var tx = 0; tx < MW; tx++) {
+        x.fillStyle = couleurTuile(g[ty][tx]);
+        x.fillRect(tx, ty, 1, 1);
+      }
+    }
+    function majMini(t) {
+      if (!miniCtx || t - dernierMini < 200) return;
+      dernierMini = t;
+      if (!miniBase) peindreMiniBase();
+      if (!miniBrume) {
+        miniBrume = document.createElement('canvas');
+        miniBrume.width = MW; miniBrume.height = MH;
+        var bx = miniBrume.getContext('2d');
+        bx.fillStyle = '#05060c';
+        bx.fillRect(0, 0, MW, MH);
+        for (var k = 0; k < MW * MH; k++) if (visite.vu[k]) bx.clearRect(k % MW, (k / MW) | 0, 1, 1);
+      }
+      // Le brouillard se leve autour du voyageur.
+      var cx = Math.floor(balade.chef.x / TS), cy = Math.floor(balade.chef.y / TS), R = 9;
+      var brume = miniBrume.getContext('2d');
+      for (var y = cy - R; y <= cy + R; y++) for (var x = cx - R; x <= cx + R; x++) {
+        if (x < 0 || y < 0 || x >= MW || y >= MH || (x - cx) * (x - cx) + (y - cy) * (y - cy) > R * R) continue;
+        var i = y * MW + x;
+        if (!visite.vu[i]) { visite.vu[i] = 1; brume.clearRect(x, y, 1, 1); }
+      }
+      var m = miniCtx;
+      m.clearRect(0, 0, MW, MH);
+      m.drawImage(miniBase, 0, 0);
+      m.drawImage(miniBrume, 0, 0);
+      // Le point d'arrivee.
+      m.fillStyle = '#7cf0c8';
+      m.fillRect(DX - 1, DY - 1, 3, 3);
+      // Le repaire, une fois decouvert.
+      if (repaire && repaire.tx != null && visite.vu[repaire.ty * MW + repaire.tx]) {
+        m.fillStyle = bossBattu() ? '#6a6a7a' : '#ff3a3a';
+        m.fillRect(repaire.tx - 1, repaire.ty - 1, 3, 3);
+      }
+      // Les coffres : ceux qu'on a vus, ou tous avec le detecteur.
+      var detecte = CR && CR.aOutil('detecteur');
+      coffres.forEach(function (c) {
+        var vuC = visite.vu[c.ty * MW + c.tx];
+        if (!vuC && !detecte) return;
+        var ouvert = CR.coffreOuvert(c.id);
+        m.fillStyle = ouvert ? '#5a5a64' : c.scelle ? '#ff5ad8' : '#ffd23a';
+        m.fillRect(c.tx - 1, c.ty - 1, 2, 2);
+        if (!ouvert && detecte && !reduit && Math.floor(t / 400) % 2) { m.fillStyle = '#ffffff'; m.fillRect(c.tx, c.ty, 1, 1); }
+      });
+      // Le voyageur, qui clignote.
+      m.fillStyle = reduit || Math.floor(t / 300) % 2 ? '#ffffff' : '#ffd23a';
+      m.fillRect(cx - 1, cy - 1, 3, 3);
+    }
+
+
     balade = M.Balade({
       grille: g,
       canvas: cv,
       stick: stick, pomme: pomme,
-      opts: { palette: a.palette },
+      opts: optsCarte,
+      // Les bottes de flottaison : les liquides se marchent.
+      traverse: function (tu) { return tu === T.LIQUIDE && !!CR && CR.aOutil('bottes'); },
+      vitesse: function () { return 88 * (CR ? CR.bonus().vitesse : 1); },
       depart: ou ? { x: ou.x, y: ou.y } : DEPART,
       direction: ou ? ou.dir : undefined,
       // Le voyageur : le premier Dinder de la collection, ou le docteur
       // Islas a defaut — c'est lui qui aurait su quoi faire d'une comete.
       troupe: [voyageur()],
-      vitesse: 88,
       vivant: vivant,
       fige: function () { return etat !== 'libre'; },
       extras: extras,
@@ -2471,6 +2809,8 @@
         }
 
         if (ART && etat === 'libre') ART.ramasser(cachesO, balade.chef);
+        majMini(t);
+        prise = etat === 'libre' && CR ? chercherPrise() : null;
         cibleTir = chercherCibleTir();
         if (etat === 'libre') cible = chercherCible();
         majBoutons();
@@ -2481,13 +2821,16 @@
         });
         dire(menace ? (DP.aLArme() ? 'Une créature attaque — TIRER !'
                                    : 'Une créature attaque. Sans arme, mieux vaut fuir.')
+          : prise ? (prise.n ? CR.nomNoeud(prise.n.type, a) + '.'
+                     : prise.c ? (prise.c.scelle ? 'Un coffre scellé. Ce qui est dedans valait la peine d’être caché.' : 'Un coffre.')
+                     : prise.type === 'roche' ? 'Un rocher. La pioche en viendra à bout.' : 'Un cristal. La foreuse le percera.')
           : gestePelle() === 'prendre' ? 'Une pelle, couchée derrière le cabanon.'
           : gestePelle() === 'creuser' ? 'La terre est meuble, au pied du nain mauve.'
           : cible ? (DP.aScanne(cible.sujet.id) ? cible.sujet.nom + ' — déjà au carnet.'
                                                 : 'Quelque chose à portée de scanner.')
-          : (repaire && !bossBattu() && (lune ? balade.chef.y < 13 * TS : presDuRepaire(170)))
+          : (repaire && !bossBattu() && (lune ? balade.chef.y < (13 + O.y) * TS && Math.abs(balade.chef.x - GROTTE.x * TS) < 12 * TS : presDuRepaire(170)))
             ? gardien.textes.indice + (lune || DP.aLArme() ? '' : ' Sans arme, mieux vaut passer son chemin.')
-          : a.sous);
+          : indiceBarriere() || a.sous);
       }
     });
 
@@ -2512,7 +2855,9 @@
       // Se poser ou l'on veut : les essais s'en servent pour venir
       // devant un repaire sans traverser la carte a pied.
       poser: function (x, y) { balade.chef.x = x; balade.chef.y = y; },
-      holo: function () { reveillerMonstre(true); }
+      holo: function () { reveillerMonstre(true); },
+      noeuds: noeuds, coffres: coffres, prise: function () { return prise; }, agir: function () { agir(); },
+      sac: function () { ouvrirSac(); }
     };
   }
 

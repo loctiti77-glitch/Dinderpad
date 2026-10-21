@@ -14,12 +14,14 @@
 // pendant un geste (un clic) : les scenes appellent demander() au moment
 // ou on les ouvre.
 (function () {
-  var reduit = window.matchMedia &&
-               window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // L'effet a ete demande expressement : on ne le coupe pas quand le
+  // telephone demande moins d'animations (l'option est souvent active sur
+  // iPhone, et l'espace restait alors fige).
+  var reduit = false;
 
   var cible = { x: 0, y: 0 }, lisse = { x: 0, y: 0 };
   var neutre = null, ecoute = false, accorde = false, dernier = 0, capteur = 0;
-  var AMPLITUDE = 22;                      // degres pour aller au bout
+  var AMPLITUDE = 16;                      // degres pour aller au bout
 
   function borne(v) { return Math.max(-1, Math.min(1, v)); }
 
@@ -39,8 +41,11 @@
     else if (a === 180) { x = -g; y = -b; }
     else                { x = g;  y = b; }
     if (!neutre) neutre = { x: x, y: y };
-    neutre.x += (x - neutre.x) * 0.006;
-    neutre.y += (y - neutre.y) * 0.006;
+    // Le repere suit la main, mais lentement (une vingtaine de secondes) :
+    // trop vite, un telephone qu'on garde penche revenait au centre et
+    // l'espace semblait ne pas bouger.
+    neutre.x += (x - neutre.x) * 0.0008;
+    neutre.y += (y - neutre.y) * 0.0008;
     cible.x = borne((x - neutre.x) / AMPLITUDE);
     cible.y = borne((y - neutre.y) / AMPLITUDE);
   }
@@ -75,12 +80,11 @@
     cible.y = borne((e.clientY / h - 0.5) * 2);
   }, { passive: true });
 
-  // Le premier toucher, n'importe ou, suffit a demander la permission la
-  // ou elle ne se montre pas (Android) ; sur iPhone, les scenes la
-  // redemandent au bon moment.
-  var IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
-            (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
-  if (!IOS) window.addEventListener('touchend', function () { demander(); }, { passive: true });
+  // Le premier toucher, n'importe ou, demande la permission. Sur iPhone,
+  // seuls un "touchend" ou un "click" comptent comme un geste : un appui
+  // (pointerdown) ne suffit pas, et la demande echouait en silence.
+  window.addEventListener('touchend', function () { demander(); }, { passive: true });
+  window.addEventListener('click', function () { demander(); });
 
   // Le decalage du moment, adouci : on le lit a chaque image.
   function lire() {

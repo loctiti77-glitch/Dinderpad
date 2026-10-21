@@ -22,14 +22,17 @@
     ARBRE_COSMOS: 25,
     // Un arbre qui n'en est pas un : il se dessine comme les autres, mais
     // on passe au travers. Le niveau 6 de The Founder War en cache.
-    ARBRE_FAUX: 26
+    ARBRE_FAUX: 26,
+    // Les grandes cartes de l'Odyssee : une touffe qu'on traverse, une
+    // grande plante et un pilier de ruine qui barrent le passage.
+    FLORE: 27, PLANTE: 28, RUINE: 29
   };
 
   // Ce qu'on ne traverse pas. L'eau se longe, elle ne se marche pas.
   var BLOQUANT = {};
   [T.ARBRE, T.BUISSON, T.ROCHER, T.EAU, T.EAU_RAD, T.MUR, T.ROSEAU,
    T.CABANE, T.TOIT, T.SOUCHE, T.ARBRE_COSMOS,
-   T.ROCHE_A, T.LIQUIDE, T.CRISTAL, T.STRUCTURE].forEach(function (k) {
+   T.ROCHE_A, T.LIQUIDE, T.CRISTAL, T.STRUCTURE, T.PLANTE, T.RUINE].forEach(function (k) {
     BLOQUANT[k] = true;
   });
 
@@ -45,6 +48,27 @@
   }
 
   function borne(v, a, b) { return v < a ? a : (v > b ? b : v); }
+
+  // Deux couleurs melangees, k de l'une vers l'autre.
+  var melanges = {};
+  function melange(c1, c2, k) {
+    var cle = c1 + c2 + k;
+    if (melanges[cle]) return melanges[cle];
+    var a = parseInt(c1.slice(1), 16), b = parseInt(c2.slice(1), 16);
+    var r = Math.round(((a >> 16) & 255) * (1 - k) + ((b >> 16) & 255) * k);
+    var v = Math.round(((a >> 8) & 255) * (1 - k) + ((b >> 8) & 255) * k);
+    var u = Math.round((a & 255) * (1 - k) + (b & 255) * k);
+    return (melanges[cle] = 'rgb(' + r + ',' + v + ',' + u + ')');
+  }
+
+  // Un bruit lisse, interpole : des nappes plutot que du sel.
+  function nappe(x, y, ech, sel) {
+    var gx = x / ech, gy = y / ech, x0 = Math.floor(gx), y0 = Math.floor(gy);
+    var u = gx - x0, v = gy - y0;
+    u = u * u * (3 - 2 * u); v = v * v * (3 - 2 * v);
+    var a = bruit(x0, y0, sel), b = bruit(x0 + 1, y0, sel), c = bruit(x0, y0 + 1, sel), d = bruit(x0 + 1, y0 + 1, sel);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  }
 
   // Les feuillages d'automne : ombre, masse, lumiere, taches. Du brun de
   // noix au roux, avec un arbre jaune de loin en loin.
@@ -148,9 +172,23 @@
       return;
     }
 
-    // Le sol nu : deux tons en damier, du grain, et parfois une fissure.
-    x.fillStyle = (tx + ty) % 2 ? c.sol : c.sol2;
-    x.fillRect(px, py, TS, TS);
+    // Le sol nu. Sur les grandes cartes (opts.regions), sa teinte suit des
+    // nappes lisses — plus claires ici, plus sombres la — au lieu d'un
+    // damier qui, repete sur cent vingt cases, se voyait de loin. Sinon,
+    // deux tons en damier. Puis du grain, et parfois une fissure.
+    if (opts && opts.regions) {
+      var nap = nappe(tx, ty, 7, 401) * 0.75 + nappe(tx, ty, 3, 402) * 0.25;
+      x.fillStyle = nap < 0.42 ? c.sol2 : nap > 0.6 ? melange(c.sol, c.grain, 0.35) : c.sol;
+      x.fillRect(px, py, TS, TS);
+      // Le passage d'une nappe a l'autre se fait en pointilles.
+      if (nap > 0.4 && nap < 0.46) {
+        x.fillStyle = c.sol2;
+        for (i = 0; i < 6; i++) x.fillRect(px + ((bruit(tx, ty, 410 + i) * 22) | 0), py + ((bruit(tx, ty, 420 + i) * 22) | 0), 3, 3);
+      }
+    } else {
+      x.fillStyle = (tx + ty) % 2 ? c.sol : c.sol2;
+      x.fillRect(px, py, TS, TS);
+    }
     x.fillStyle = c.grain;
     for (i = 0; i < 5; i++) {
       n = bruit(tx, ty, 290 + i);
@@ -166,10 +204,145 @@
     }
   }
 
+  // ---------- La flore et les ruines des astres ----------
+  // Trois tuiles de plus pour les grandes cartes de l'Odyssee : une touffe
+  // qu'on traverse (FLORE), une grande plante qui barre le passage
+  // (PLANTE), un pilier de ruine (RUINE). Leur allure vient de la palette :
+  // "plante" dit quelle sorte de vegetation pousse sur cet astre.
+  function teinte(hex, k) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = Math.min(255, Math.round(((n >> 16) & 255) * k));
+    var v = Math.min(255, Math.round(((n >> 8) & 255) * k));
+    var b = Math.min(255, Math.round((n & 255) * k));
+    return 'rgb(' + r + ',' + v + ',' + b + ')';
+  }
+
+  function touffe(x, tx, ty, px, py, c) {
+    var f = c.flore || '#5a7a3a', f2 = c.flore2 || teinte(f, 1.3), fl = c.fleur || '#e8d27a';
+    var style = c.plante || 'arbre', i, n;
+    for (i = 0; i < 4; i++) {
+      n = bruit(tx, ty, 330 + i);
+      var bx = px + 2 + (n * 18 | 0), by = py + 6 + ((bruit(tx, ty, 335 + i) * 14) | 0);
+      if (style === 'pic' || style === 'givre' || style === 'prisme') {
+        // Des eclats plantes dans le sol.
+        x.fillStyle = f; x.fillRect(bx, by - 4, 2, 5);
+        x.fillStyle = f2; x.fillRect(bx, by - 4, 1, 3);
+      } else if (style === 'flamme') {
+        x.fillStyle = f; x.fillRect(bx, by - 3, 2, 4);
+        x.fillStyle = fl; x.fillRect(bx, by - 4, 1, 2);
+      } else {
+        // Trois brins, et parfois une fleur.
+        x.fillStyle = f;
+        x.fillRect(bx, by - 3, 1, 4); x.fillRect(bx + 2, by - 4, 1, 5); x.fillRect(bx + 4, by - 2, 1, 3);
+        x.fillStyle = f2; x.fillRect(bx + 2, by - 4, 1, 2);
+        if (bruit(tx, ty, 340 + i) < 0.35) { x.fillStyle = fl; x.fillRect(bx + 1, by - 6, 2, 2); }
+      }
+    }
+  }
+
+  // La grande plante : une silhouette par sorte de vegetation.
+  function grandePlante(x, tx, ty, px, py, c) {
+    var f = c.flore || '#5a7a3a', f2 = c.flore2 || teinte(f, 1.3), fo = teinte(f, 0.6);
+    var tronc = c.tronc || teinte(c.roche || '#6a5a4a', 0.9), fl = c.fleur || '#e8d27a';
+    var style = c.plante || 'arbre', i, n;
+    var h = bruit(tx, ty, 350);
+    x.fillStyle = 'rgba(0,0,0,.28)';
+    x.fillRect(px + 3, py + TS - 5, TS - 6, 4);
+
+    if (style === 'arbre' || style === 'fougere') {
+      x.fillStyle = tronc; x.fillRect(px + 10, py + 10, 4, 13);
+      x.fillStyle = teinte(tronc, 0.7); x.fillRect(px + 13, py + 10, 1, 13);
+      if (style === 'fougere') {
+        // Des palmes qui retombent de chaque cote.
+        for (i = 0; i < 4; i++) {
+          x.fillStyle = i % 2 ? f2 : f;
+          x.fillRect(px + 1 + i, py + 2 + i * 2, 10 - i, 2);
+          x.fillRect(px + 13, py + 2 + i * 2, 10 - i, 2);
+        }
+        x.fillStyle = f2; x.fillRect(px + 9, py - 2, 6, 6);
+      } else {
+        x.fillStyle = fo; x.fillRect(px + 1, py - 3, TS - 2, 15);
+        x.fillStyle = f; x.fillRect(px + 2, py - 5, TS - 4, 15);
+        x.fillStyle = f2; x.fillRect(px + 4, py - 5, 8, 4); x.fillRect(px + 3, py - 1, 4, 3);
+        if (h < 0.4) { x.fillStyle = fl; x.fillRect(px + 15, py + 1, 2, 2); x.fillRect(px + 7, py + 5, 2, 2); }
+      }
+      return;
+    }
+    if (style === 'champignon') {
+      x.fillStyle = c.cristal2 || '#e8e0d0'; x.fillRect(px + 9, py + 8, 6, 15);
+      x.fillStyle = fo; x.fillRect(px + 1, py + 2, TS - 2, 7);
+      x.fillStyle = f; x.fillRect(px + 3, py - 1, TS - 6, 7);
+      x.fillStyle = fl;
+      [[6, 1], [14, 0], [10, 4], [17, 3]].forEach(function (q) { x.fillRect(px + q[0], py + q[1], 2, 2); });
+      return;
+    }
+    if (style === 'cactus') {
+      x.fillStyle = f; x.fillRect(px + 9, py - 2, 6, 25);
+      x.fillRect(px + 3, py + 6, 6, 4); x.fillRect(px + 3, py + 1, 3, 6);
+      x.fillRect(px + 15, py + 9, 6, 4); x.fillRect(px + 18, py + 4, 3, 6);
+      x.fillStyle = f2; x.fillRect(px + 10, py - 2, 1, 24);
+      x.fillStyle = fl; x.fillRect(px + 11, py - 4, 2, 2);
+      return;
+    }
+    if (style === 'corail') {
+      x.fillStyle = f;
+      x.fillRect(px + 11, py + 6, 3, 17);
+      x.fillRect(px + 5, py + 2, 3, 12); x.fillRect(px + 5, py + 12, 7, 3);
+      x.fillRect(px + 17, py - 1, 3, 13); x.fillRect(px + 13, py + 10, 7, 3);
+      x.fillStyle = f2; x.fillRect(px + 5, py + 1, 3, 2); x.fillRect(px + 17, py - 2, 3, 2); x.fillRect(px + 11, py + 5, 3, 2);
+      return;
+    }
+    if (style === 'flamme') {
+      // Une colonne de basalte, du feu au sommet.
+      x.fillStyle = tronc; x.fillRect(px + 7, py + 6, 10, 17);
+      x.fillStyle = teinte(tronc, 1.3); x.fillRect(px + 7, py + 6, 2, 17);
+      x.fillStyle = f; x.fillRect(px + 8, py - 2, 8, 9);
+      x.fillStyle = fl; x.fillRect(px + 10, py - 5, 4, 8);
+      x.fillStyle = '#fff4b0'; x.fillRect(px + 11, py, 2, 3);
+      return;
+    }
+    // Les eclats : pic de roche ou de metal, aiguille de glace, prisme.
+    var haut = 18 + ((h * 10) | 0);
+    x.fillStyle = fo;
+    x.fillRect(px + 5, py + TS - haut + 6, 6, haut - 6);
+    x.fillRect(px + 13, py + TS - haut + 10, 6, haut - 10);
+    x.fillStyle = f;
+    x.fillRect(px + 6, py + TS - haut, 4, haut);
+    x.fillRect(px + 14, py + TS - haut + 5, 4, haut - 5);
+    x.fillStyle = f2;
+    x.fillRect(px + 7, py + TS - haut, 1, haut - 2);
+    x.fillRect(px + 15, py + TS - haut + 5, 1, haut - 7);
+    if (style === 'prisme') {
+      x.fillStyle = fl; x.fillRect(px + 7, py + TS - haut + 3, 2, 2); x.fillRect(px + 15, py + TS - haut + 8, 2, 2);
+    }
+  }
+
+  // Un pilier de ruine, brise a une hauteur differente a chaque case.
+  function pilierRuine(x, tx, ty, px, py, c) {
+    var s = c.structure, sh = c.structureHaut;
+    var haut = 12 + ((bruit(tx, ty, 360) * 14) | 0);
+    x.fillStyle = 'rgba(0,0,0,.28)';
+    x.fillRect(px + 2, py + TS - 5, TS - 4, 4);
+    x.fillStyle = s; x.fillRect(px + 4, py + TS - haut, TS - 8, haut);
+    x.fillStyle = sh; x.fillRect(px + 4, py + TS - haut, 3, haut);
+    x.fillRect(px + 3, py + TS - 4, TS - 6, 3);
+    x.fillStyle = 'rgba(0,0,0,.3)';
+    for (var i = 0; i < 3; i++) x.fillRect(px + 7 + i * 4, py + TS - haut + 3, 1, haut - 6);
+    // Le sommet casse, en dents.
+    x.fillStyle = sh;
+    x.fillRect(px + 5, py + TS - haut - 2, 3, 2); x.fillRect(px + 12, py + TS - haut - 3, 3, 3);
+    // Des gravats au pied.
+    x.fillStyle = c.rocheOmbre;
+    x.fillRect(px + 1, py + TS - 3, 3, 2); x.fillRect(px + TS - 4, py + TS - 2, 3, 2);
+  }
+
   // Le relief d'astre : les rochers, qu'on ne traverse pas.
   function objetAstre(x, g, tx, ty, opts) {
     var t = g[ty][tx], px = tx * TS, py = ty * TS, i, n;
     var c = palette(opts);
+    if (t === T.FLORE) { touffe(x, tx, ty, px, py, c); return true; }
+    if (t === T.PLANTE) { grandePlante(x, tx, ty, px, py, c); return true; }
+    if (t === T.RUINE) { pilierRuine(x, tx, ty, px, py, c); return true; }
     if (t !== T.ROCHE_A) return false;
     // Un bloc arrondi, plus ou moins haut selon la case : alignes, des
     // carres pleins faisaient un mur de briques.
@@ -724,6 +897,29 @@
     return c;
   }
 
+  // Repeint une case et ses voisines sur une carte deja peinte : une roche
+  // cassee a la pioche redevient du sol, sans tout repeindre. Les voisines
+  // suivent, parce que les objets debordent sur la case du dessus.
+  function repeindre(monde, g, tx, ty, opts) {
+    var x = monde.getContext('2d');
+    if (!x) return;
+    var MH = g.length, MW = g[0].length, i, j;
+    for (j = ty - 1; j <= ty + 2; j++) for (i = tx - 1; i <= tx + 1; i++) {
+      if (i < 0 || j < 0 || i >= MW || j >= MH) continue;
+      x.clearRect(i * TS, j * TS, TS, TS);
+      solTuile(x, g, i, j, opts);
+    }
+    x.save();
+    x.beginPath();
+    x.rect((tx - 1) * TS, (ty - 1) * TS, TS * 3, TS * 4);
+    x.clip();
+    for (j = ty - 1; j <= ty + 3; j++) for (i = tx - 1; i <= tx + 1; i++) {
+      if (i < 0 || j < 0 || i >= MW || j >= MH) continue;
+      objetTuile(x, g, i, j, opts);
+    }
+    x.restore();
+  }
+
   // ==========================================================
   //  La promenade
   // ==========================================================
@@ -741,7 +937,9 @@
 
     var monde = cfg.monde || peindre(g, cfg.opts);
     var VUE_W = cv.width, VUE_H = cv.height;
-    var VITESSE = cfg.vitesse || 86;
+    // La vitesse peut changer en route (des bottes, par exemple) : le jeu
+    // peut fournir une fonction plutot qu'un nombre.
+    function vitesse() { return typeof cfg.vitesse === 'function' ? cfg.vitesse() : (cfg.vitesse || 86); }
     var DIRS = (window.CHIBI && window.CHIBI.DIRS) || { bas: 0, gauche: 1, droite: 2, haut: 3 };
     var reduit = window.matchMedia &&
                  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -819,7 +1017,8 @@
       for (var i = 0; i < b.length; i++) {
         var tx = Math.floor(b[i][0] / TS), ty = Math.floor(b[i][1] / TS);
         if (tx < 0 || ty < 0 || tx >= MW || ty >= MH) return false;
-        if (BLOQUANT[g[ty][tx]]) return false;
+        // Le jeu peut ouvrir certaines tuiles (marcher sur un liquide).
+        if (BLOQUANT[g[ty][tx]] && !(cfg.traverse && cfg.traverse(g[ty][tx]))) return false;
       }
       return true;
     }
@@ -922,8 +1121,9 @@
       var fige = cfg.fige && cfg.fige();
       chef.bouge = !fige && !!(vx || vy);
       if (chef.bouge) {
-        var nx = chef.x + vx * VITESSE * dt;
-        var ny = chef.y + vy * VITESSE * dt;
+        var V = vitesse();
+        var nx = chef.x + vx * V * dt;
+        var ny = chef.y + vy * V * dt;
         if (libre(nx, chef.y)) chef.x = nx;
         if (libre(chef.x, ny)) chef.y = ny;
         chef.dir = window.CHIBI ? window.CHIBI.sens(vx, vy, chef.dir) : chef.dir;
@@ -978,6 +1178,6 @@
   window.MONDE = {
     TS: TS, T: T, BLOQUANT: BLOQUANT, estEau: estEau,
     bruit: bruit, borne: borne, vue: vue,
-    peindre: peindre, Balade: Balade
+    peindre: peindre, repeindre: repeindre, Balade: Balade
   };
 })();

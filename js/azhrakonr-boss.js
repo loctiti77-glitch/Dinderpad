@@ -560,12 +560,12 @@
       ctx.globalCompositeOperation = 'lighter';
       [[0.2, 0.25, 520, rage ? '160,30,70' : '90,50,200'], [0.82, 0.3, 480, rage ? '200,60,40' : '40,90,220'],
        [0.5, 0.08, 420, rage ? '120,20,60' : '140,60,220']].forEach(function (n, i) {
-        var gx = W * n[0] + Math.sin(T * 0.07 + i) * 40 + pc.x * 30, gy = H * n[1] + Math.cos(T * 0.05 + i) * 30 + pc.y * 24;
+        var gx = W * n[0] + Math.sin(T * 0.07 + i) * 40 + pc.x * 60, gy = H * n[1] + Math.cos(T * 0.05 + i) * 30 + pc.y * 48;
         glow(gx, gy, n[2], n[3], 0.22);
       });
       ctx.globalCompositeOperation = 'source-over';
       bg.forEach(function (s) {
-        var prof = 40 + s.r * 45;
+        var prof = 70 + s.r * 80;
         var sx = (((s.x + pc.x * prof) % W) + W) % W, sy = (((s.y + pc.y * prof) % (H * 0.8)) + H * 0.8) % (H * 0.8);
         ctx.fillStyle = 'rgba(200,215,255,' + (0.25 + 0.35 * Math.pow(Math.sin(T * 1.3 + s.p), 2)) + ')';
         ctx.beginPath(); ctx.arc(sx, sy, s.r, 0, 6.29); ctx.fill();

@@ -482,8 +482,8 @@
         var pc = penche();
         for (var i = 0; i < etoiles.length; i++) {
           var s = etoiles[i];
-          var x = (((s.x - decalage * s.par + pc.x * s.par * 12) % W) + W) % W | 0;
-          var y = (((s.y + pc.y * s.par * 12) % H) + H) % H | 0;
+          var x = (((s.x - decalage * s.par + pc.x * s.par * 22) % W) + W) % W | 0;
+          var y = (((s.y + pc.y * s.par * 22) % H) + H) % H | 0;
           var b = s.b * (reduit ? 1 : 0.75 + 0.25 * Math.sin(t / 500 + s.ph));
           var g = (b * 230) | 0;
           buf[y * W + x] = rgba(g, g, Math.min(255, g + 20));
@@ -1113,7 +1113,7 @@
         c.fillStyle = fond; c.fillRect(0, 0, w, h);
         // Les nebuleuses, qui derivent lentement — et glissent un peu
         // quand le telephone penche ; les etoiles, plus encore.
-        var tt = now / 1000, pc = penche(), amp = Math.min(w, h) * 0.06;
+        var tt = now / 1000, pc = penche(), amp = Math.min(w, h) * 0.13;
         [[0.28, 0.3, 0.55, '150,80,255', 0.22], [0.74, 0.36, 0.5, '60,110,255', 0.2], [0.52, 0.12, 0.4, '214,92,255', 0.14]]
           .forEach(function (n, i) {
             var x = w * (n[0] + Math.sin(tt * 0.05 + i) * 0.02) + pc.x * amp * 0.3,

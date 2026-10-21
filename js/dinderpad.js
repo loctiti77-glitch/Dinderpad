@@ -1295,6 +1295,18 @@
   }
   function aFouille(id) { return !!me().fouilles[id]; }
 
+  // ---------- Le sac de l'Odyssee ----------
+  // L'inventaire et le craft (js/odyssey-craft.js) gardent ici leur etat :
+  // le contenu du sac, sa taille, les outils et l'equipement, la vitrine
+  // des objets de collection et les coffres deja ouverts. Le module le
+  // modifie en place, puis appelle sauverSac().
+  function sacOdyssee() {
+    var p = me();
+    if (!p.odySac) p.odySac = { cases: [], taille: 16, outils: {}, equipe: {}, vitrine: {}, coffres: {}, fabrique: {} };
+    return p.odySac;
+  }
+  function sauverSac() { save(); }
+
   // Deux progressions pour le meme pistolet : celle de Fish n'Der (par
   // defaut) et celle de l'Odyssee (jeu === 'odyssee').
   function champNiveau(jeu) { return jeu === 'odyssee' ? 'armeNiveauOdyssee' : 'armeNiveau'; }
@@ -1721,6 +1733,7 @@
     cosmos: cosmos, prendreHache: prendreHache, abattreArbre: abattreArbre,
     noterCode: noterCode, codes: codes,
     aLaPelle: aLaPelle, prendrePelle: prendrePelle, noterFouille: noterFouille, aFouille: aFouille,
+    sacOdyssee: sacOdyssee, sauverSac: sauverSac,
     armeNiveau: armeNiveau, monterArme: monterArme,
     noyaux: noyaux, gagnerNoyaux: gagnerNoyaux, depenserNoyaux: depenserNoyaux,
     revetements: revetements, aRevetement: aRevetement,
