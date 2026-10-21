@@ -8,7 +8,12 @@
 // roche, du cristal ou un lac.
 //
 // Tout va dans un SAC a cases, limite : seize au depart, plus avec les
-// sacs qu'on fabrique. Ce qu'on fabrique :
+// sacs qu'on fabrique. On fabrique comme dans Minecraft : on pose les
+// objets dans une grille (2 x 2 dans le sac, 3 x 3 a cote d'un etabli
+// pose sur la carte), et la forme dit ce qui en sort. Un four, pose lui
+// aussi, cuit les minerais en lingots, le cristal en verre, la viande...
+// L'interface (grilles, livre de recettes, four) est dans
+// js/odyssey-atelier.js. Ce qu'on fabrique :
 //   - des consommables (soins, bouclier, bombe, grenade de givre,
 //     repulsif) pour survivre ;
 //   - des outils, qui ouvrent la carte : la pioche casse les rochers, la
@@ -47,6 +52,8 @@
   var CATS = {
     mat:     { nom: 'Matériau', pile: 30 },
     conso:   { nom: 'Consommable', pile: 10 },
+    repas:   { nom: 'Nourriture', pile: 10 },
+    bloc:    { nom: 'Station', pile: 4 },
     equip:   { nom: 'Équipement', pile: 1 },
     outil:   { nom: 'Outil', pile: 1 },
     sac:     { nom: 'Sac', pile: 1 },
@@ -122,6 +129,54 @@
     { id: 'braise', nom: 'Braise vive', cat: 'mat', f: 'braise', c: ['#ff5a14', '#ffe08a', '#6a1a0a'], monde: 'ignis',
       desc: 'Elle ne s’éteint pas, même au fond du sac.' },
 
+    // ---- Les pieces : ce qu'on fabrique pour fabriquer ----
+    { id: 'planches', nom: 'Planches', cat: 'mat', f: 'planches', c: ['#b8864a', '#e0b878', '#7a5428'],
+      desc: 'Du bois scié. On en tire presque tout.' },
+    { id: 'baton', nom: 'Bâton', cat: 'mat', f: 'baton', c: ['#a87a42', '#d8a868', '#5a3a1a'],
+      desc: 'Un manche, pour les outils et les brochettes.' },
+    { id: 'corde', nom: 'Corde', cat: 'mat', f: 'corde', c: ['#c8b07a', '#f0dca8', '#7a6438'],
+      desc: 'De la fibre tressée. Elle tient tout.' },
+    { id: 'lingot-fer', nom: 'Lingot de fer', cat: 'mat', f: 'lingot', c: ['#b8bcc4', '#ffffff', '#5a5e68'],
+      desc: 'Du minerai de fer fondu au four.' },
+    { id: 'lingot-cuivre', nom: 'Lingot de cuivre', cat: 'mat', f: 'lingot', c: ['#d8803a', '#ffc08a', '#7a3a14'],
+      desc: 'Il brille comme une pièce neuve.' },
+    { id: 'verre', nom: 'Verre', cat: 'mat', f: 'verre', c: ['#a8e0f0', '#ffffff', '#5a9ab0'],
+      desc: 'Du cristal fondu au four, puis refroidi d’un coup.' },
+    { id: 'plaque', nom: 'Plaque de fer', cat: 'mat', f: 'plaque', c: ['#9aa0aa', '#d8dce4', '#4a4e58'],
+      desc: 'Deux lingots battus en une feuille.' },
+    { id: 'rouage', nom: 'Rouage', cat: 'mat', f: 'rouage', c: ['#d8803a', '#ffc08a', '#7a3a14'],
+      desc: 'Il fait tourner ce qui doit tourner.' },
+    { id: 'charbon', nom: 'Charbon', cat: 'mat', f: 'charbon', c: ['#2a2a30', '#5a5a68', '#0a0a0e'],
+      desc: 'Le meilleur combustible qu’on trouve sans aller sur Ignis.' },
+    { id: 'bol', nom: 'Bol', cat: 'mat', f: 'bol', c: ['#b8864a', '#e0b878', '#7a5428'],
+      desc: 'Pour y servir un ragoût.' },
+
+    // ---- La nourriture ----
+    { id: 'viande-crue', nom: 'Viande crue', cat: 'repas', f: 'viande', c: ['#d8505a', '#ff9aa0', '#7a1a24'], soin: 4,
+      desc: 'Rend 4 PV. Mangeable, à peine : bien meilleure cuite au four.' },
+    { id: 'viande-cuite', nom: 'Viande grillée', cat: 'repas', f: 'viande', c: ['#9a5a2a', '#d8945a', '#4a2a10'], soin: 30,
+      desc: 'Rend 30 PV.' },
+    { id: 'baies', nom: 'Baies', cat: 'repas', f: 'baies', c: ['#c83a6a', '#ff8ab0', '#2a6a1a'], soin: 6,
+      desc: 'Rend 6 PV. Sucrées, un peu acides.' },
+    { id: 'champignon', nom: 'Champignon', cat: 'repas', f: 'champignon', c: ['#c8402a', '#f0e8d8', '#6a1a10'], soin: 3,
+      desc: 'Rend 3 PV. Cru, il ne vaut pas grand-chose ; grillé, si.' },
+    { id: 'champignon-grille', nom: 'Champignon grillé', cat: 'repas', f: 'champignon', c: ['#8a4a2a', '#d8b088', '#3a1a0a'], soin: 15,
+      desc: 'Rend 15 PV.' },
+    { id: 'racine', nom: 'Racine', cat: 'repas', f: 'racine', c: ['#c8945a', '#f0c88a', '#6a4a22'], soin: 3,
+      desc: 'Rend 3 PV. Dure comme du bois : à rôtir.' },
+    { id: 'racine-rotie', nom: 'Racine rôtie', cat: 'repas', f: 'racine', c: ['#a8642a', '#e0a060', '#5a2a0a'], soin: 15,
+      desc: 'Rend 15 PV.' },
+    { id: 'brochette', nom: 'Brochette', cat: 'repas', f: 'brochette', c: ['#9a5a2a', '#d8945a', '#a87a42'], soin: 45,
+      desc: 'Rend 45 PV.' },
+    { id: 'ragout', nom: 'Ragoût', cat: 'repas', f: 'ragout', c: ['#b8864a', '#c8703a', '#7a5428'], soin: 80, regen: 15,
+      desc: 'Rend 80 PV, puis soigne vite pendant 15 secondes.' },
+
+    // ---- Les stations : on les pose sur la carte ----
+    { id: 'etabli', nom: 'Établi', cat: 'bloc', f: 'etabli', c: ['#b8864a', '#e0b878', '#5a3a1a'],
+      desc: 'À poser sur la carte. À côté de lui, la grille de fabrication passe à 3 × 3.' },
+    { id: 'four', nom: 'Four', cat: 'bloc', f: 'four', c: ['#8a8680', '#b8b4ac', '#3a3834'],
+      desc: 'À poser sur la carte. Il cuit les minerais, le cristal et la nourriture, avec du combustible.' },
+
     // ---- Les consommables ----
     { id: 'bandage', nom: 'Bandage', cat: 'conso', f: 'bandage', c: ['#f0ece0', '#ffffff', '#e03a3a'],
       soin: 25, desc: 'Rend 25 PV.' },
@@ -152,15 +207,35 @@
     { id: 'anneau-ambre', nom: 'Anneau d’ambre', cat: 'equip', place: 'accessoire', f: 'anneau', c: ['#c8a040', '#ffb02a', '#6a5018'],
       degats: 1.3, desc: 'Ton pistolet fait 30 % de dégâts en plus.' },
 
-    // ---- Les outils ----
-    { id: 'pioche', nom: 'Pioche', cat: 'outil', f: 'pioche', c: ['#9aa4b0', '#e0e8f0', '#7a5a2a'],
-      desc: 'Casse les rochers : face à un rocher, MINER. Ouvre des passages, et les poches murées de roche.' },
-    { id: 'foreuse', nom: 'Foreuse à cristaux', cat: 'outil', f: 'foreuse', c: ['#e8a82a', '#fff0a0', '#5a5a64'],
-      desc: 'Perce les cristaux : face à un cristal, FORER. Ouvre les poches murées de cristal.' },
-    { id: 'bottes', nom: 'Bottes de flottaison', cat: 'outil', f: 'bottes', c: ['#3a8ad8', '#a8e0ff', '#1a3a6a'],
-      desc: 'Tu marches sur les liquides — lacs, lave, acide. Plus rien ne t’arrête.' },
-    { id: 'detecteur', nom: 'Détecteur', cat: 'outil', f: 'detecteur', c: ['#5a6070', '#7af0a8', '#2a2e38'],
-      desc: 'Montre les coffres sur la mini-carte, même ceux qu’on n’a pas encore vus.' },
+    // ---- Les outils : ils s'usent, et se reparent avec leur materiau ----
+    // "outil" est leur sorte, "rang" leur palier, "dur" leur solidite.
+    { id: 'pioche-pierre', nom: 'Pioche en pierre', cat: 'outil', outil: 'pioche', rang: 1, dur: 40, repare: 'pierre',
+      f: 'pioche', c: ['#8a8680', '#b8b4ac', '#7a5a2a'],
+      desc: 'Casse les rochers : face à un rocher, MINER. Elle s’use vite.' },
+    { id: 'pioche-fer', nom: 'Pioche en fer', cat: 'outil', outil: 'pioche', rang: 2, dur: 150, repare: 'lingot-fer',
+      f: 'pioche', c: ['#c8ccd4', '#ffffff', '#7a5a2a'],
+      desc: 'Casse les rochers, et en tire davantage. Solide.' },
+    { id: 'pioche-astrale', nom: 'Pioche astrale', cat: 'outil', outil: 'pioche', rang: 3, dur: 500, repare: 'lingot',
+      f: 'pioche', c: ['#7a6ae8', '#e0d8ff', '#2a2a5a'],
+      desc: 'Chaque rocher donne le double. Presque inusable.' },
+    { id: 'hache-pierre', nom: 'Hache en pierre', cat: 'outil', outil: 'hache', rang: 1, dur: 40, repare: 'pierre',
+      f: 'hache', c: ['#8a8680', '#b8b4ac', '#7a5a2a'],
+      desc: 'Coupe les grandes plantes : COUPER. Deux fois plus qu’à mains nues.' },
+    { id: 'hache-fer', nom: 'Hache en fer', cat: 'outil', outil: 'hache', rang: 2, dur: 150, repare: 'lingot-fer',
+      f: 'hache', c: ['#c8ccd4', '#ffffff', '#7a5a2a'],
+      desc: 'Coupe les grandes plantes, et en tire encore plus.' },
+    { id: 'foreuse', nom: 'Foreuse à cristaux', cat: 'outil', outil: 'foreuse', rang: 2, dur: 120, repare: 'lingot-fer',
+      f: 'foreuse', c: ['#e8a82a', '#fff0a0', '#5a5a64'],
+      desc: 'Perce les cristaux : face à un cristal, FORER. Elle s’use.' },
+    { id: 'foreuse-astrale', nom: 'Foreuse astrale', cat: 'outil', outil: 'foreuse', rang: 3, dur: 400, repare: 'lingot',
+      f: 'foreuse', c: ['#8a6ae8', '#e0d0ff', '#2a2a5a'],
+      desc: 'Perce les cristaux, et en tire le double.' },
+    { id: 'bottes', nom: 'Bottes de flottaison', cat: 'outil', outil: 'bottes', rang: 1, dur: 300, repare: 'resine',
+      f: 'bottes', c: ['#3a8ad8', '#a8e0ff', '#1a3a6a'],
+      desc: 'Dans le sac, tu marches sur les liquides. Chaque case de liquide les use un peu.' },
+    { id: 'detecteur', nom: 'Détecteur', cat: 'outil', outil: 'detecteur', rang: 1,
+      f: 'detecteur', c: ['#5a6070', '#7af0a8', '#2a2e38'],
+      desc: 'Dans le sac, il montre les coffres sur la mini-carte. Il ne s’use pas.' },
 
     // ---- Les sacs ----
     { id: 'sac-toile', nom: 'Sac de toile', cat: 'sac', f: 'sac', c: ['#c8a870', '#f0dca8', '#7a5a2a'],
@@ -248,38 +323,77 @@
   // ==========================================================
   //  Les recettes
   // ==========================================================
-  // "requis" : un sac ne se fabrique qu'apres le precedent.
+  // Comme dans Minecraft : une recette a une FORME (les lettres disent
+  // quoi mettre ou, l'espace laisse la case vide ; on peut la poser
+  // n'importe ou dans la grille, et en miroir), ou n'en a pas ("sans" :
+  // les ingredients, dans n'importe quel ordre). Ce qui tient en 2 x 2 se
+  // fait dans le sac ; le reste demande un etabli, et sa grille de 3 x 3.
   var RECETTES = [
-    { id: 'bandage', n: 2, mats: { fibre: 3 } },
-    { id: 'trousse', mats: { fibre: 2, resine: 2, glande: 1 } },
-    { id: 'elixir', mats: { 'coeur-bete': 1, poussiere: 3, cristal: 2 } },
-    { id: 'bouclier', mats: { ferraille: 4, cristal: 2 } },
-    { id: 'bombe', n: 2, mats: { ferraille: 3, pierre: 2, glande: 1 } },
-    { id: 'grenade-givre', n: 2, mats: { givre: 1, cristal: 2, ferraille: 1 } },
-    { id: 'repulsif', mats: { resine: 2, glande: 1, fibre: 2 } },
+    { id: 'planches', n: 4, sans: ['bois'] },
+    { id: 'baton', n: 4, forme: ['P', 'P'], cles: { P: 'planches' } },
+    { id: 'corde', sans: ['fibre', 'fibre', 'fibre'] },
+    { id: 'etabli', forme: ['PP', 'PP'], cles: { P: 'planches' } },
+    { id: 'bandage', n: 2, sans: ['corde', 'resine'] },
+    { id: 'trousse', sans: ['bandage', 'glande', 'resine'] },
+    { id: 'elixir', sans: ['verre', 'coeur-bete', 'poussiere', 'poussiere'] },
+    { id: 'repulsif', sans: ['resine', 'resine', 'glande', 'baies'] },
+    { id: 'plaque', forme: ['LL'], cles: { L: 'lingot-fer' } },
+    { id: 'ragout', sans: ['bol', 'viande-cuite', 'racine-rotie', 'champignon-grille'] },
 
-    { id: 'pioche', mats: { pierre: 5, fer: 2, fibre: 3 } },
-    { id: 'foreuse', mats: { fer: 6, cuivre: 4, cristal: 3, noyau: 1 } },
-    { id: 'bottes', mats: { cuir: 5, resine: 4, ecaille: 3 } },
-    { id: 'detecteur', mats: { cuivre: 5, cristal: 3, ferraille: 4 } },
-
-    { id: 'armure-ferraille', mats: { ferraille: 8, cuir: 3, pierre: 4 } },
-    { id: 'armure-ecailles', mats: { ecaille: 8, cuir: 4, fer: 4, croc: 2 } },
-    { id: 'armure-astrale', mats: { lingot: 3, poussiere: 6, noyau: 2, 'coeur-bete': 2 } },
-    { id: 'amulette-vie', mats: { os: 4, cristal: 3, 'coeur-bete': 1 } },
-    { id: 'bottes-course', mats: { cuir: 4, fer: 2, resine: 2, oxyde: 2 } },
-    { id: 'anneau-ambre', mats: { ambre: 2, cuivre: 3, cristal: 2 } },
-
-    { id: 'sac-toile', mats: { fibre: 10, cuir: 3 } },
-    { id: 'sac-renforce', requis: 'sac-toile', mats: { cuir: 8, fer: 4, ecaille: 4 } },
-    { id: 'sac-vide', requis: 'sac-renforce', mats: { 'eclat-vide': 3, poussiere: 8, noyau: 2 } }
+    { id: 'four', forme: ['PPP', 'P P', 'PPP'], cles: { P: 'pierre' } },
+    { id: 'bol', n: 4, forme: ['P P', ' P '], cles: { P: 'planches' } },
+    { id: 'rouage', n: 2, forme: [' L ', 'L L', ' L '], cles: { L: 'lingot-cuivre' } },
+    { id: 'brochette', forme: ['V', 'C', 'B'], cles: { V: 'viande-cuite', C: 'champignon-grille', B: 'baton' } },
+    { id: 'pioche-pierre', forme: ['PPP', ' B ', ' B '], cles: { P: 'pierre', B: 'baton' } },
+    { id: 'pioche-fer', forme: ['LLL', ' B ', ' B '], cles: { L: 'lingot-fer', B: 'baton' } },
+    { id: 'pioche-astrale', forme: ['NXN', ' B ', ' B '], cles: { N: 'lingot', X: 'noyau', B: 'baton' } },
+    { id: 'hache-pierre', forme: ['PP', 'PB', ' B'], cles: { P: 'pierre', B: 'baton' } },
+    { id: 'hache-fer', forme: ['LL', 'LB', ' B'], cles: { L: 'lingot-fer', B: 'baton' } },
+    { id: 'foreuse', forme: ['CCC', 'LRL', ' B '], cles: { C: 'cristal', L: 'lingot-fer', R: 'rouage', B: 'baton' } },
+    { id: 'foreuse-astrale', forme: ['PPP', 'NRN', ' X '], cles: { P: 'poussiere', N: 'lingot', R: 'rouage', X: 'noyau' } },
+    { id: 'bottes', forme: ['C C', 'E E'], cles: { C: 'cuir', E: 'ecaille' } },
+    { id: 'detecteur', forme: [' B ', 'LVL', 'LRL'], cles: { B: 'baton', L: 'lingot-cuivre', V: 'verre', R: 'rouage' } },
+    { id: 'bouclier', forme: ['FCF', 'FFF', ' F '], cles: { F: 'ferraille', C: 'cristal' } },
+    { id: 'bombe', n: 2, forme: [' C ', 'FGF', ' F '], cles: { C: 'corde', F: 'ferraille', G: 'glande' } },
+    { id: 'grenade-givre', n: 2, forme: [' C ', 'FGF', ' F '], cles: { C: 'corde', F: 'ferraille', G: 'givre' } },
+    { id: 'armure-ferraille', forme: ['F F', 'FCF', 'FFF'], cles: { F: 'ferraille', C: 'cuir' } },
+    { id: 'armure-ecailles', forme: ['E E', 'ECE', 'EEE'], cles: { E: 'ecaille', C: 'cuir' } },
+    { id: 'armure-astrale', forme: ['N N', 'PXP', 'NNN'], cles: { N: 'lingot', P: 'poussiere', X: 'noyau' } },
+    { id: 'amulette-vie', forme: [' C ', 'C C', ' H '], cles: { C: 'corde', H: 'coeur-bete' } },
+    { id: 'bottes-course', forme: ['C C', 'C C', 'O O'], cles: { C: 'cuir', O: 'oxyde' } },
+    { id: 'anneau-ambre', forme: [' A ', 'L L', ' L '], cles: { A: 'ambre', L: 'lingot-cuivre' } },
+    { id: 'sac-toile', forme: [' C ', 'F F', 'FFF'], cles: { C: 'corde', F: 'fibre' } },
+    { id: 'sac-renforce', forme: [' C ', 'K K', 'KEK'], cles: { C: 'corde', K: 'cuir', E: 'ecaille' } },
+    { id: 'sac-vide', forme: [' X ', 'V V', 'VPV'], cles: { X: 'noyau', V: 'eclat-vide', P: 'poussiere' } }
   ];
-  var GROUPES = [
-    { cat: 'conso', nom: 'Survie' },
-    { cat: 'outil', nom: 'Outils' },
-    { cat: 'equip', nom: 'Équipement' },
-    { cat: 'sac', nom: 'Sacs' }
-  ];
+
+  // La forme d'une recette en tableau d'identifiants (null : case vide),
+  // et la grille qu'il lui faut.
+  RECETTES.forEach(function (r) {
+    if (r.forme) {
+      r.motif = r.forme.map(function (ligne) {
+        return ligne.split('').map(function (ch) { return ch === ' ' ? null : r.cles[ch]; });
+      });
+      r.l = Math.max.apply(null, r.forme.map(function (x) { return x.length; }));
+      r.h = r.forme.length;
+      r.motif.forEach(function (ligne) { while (ligne.length < r.l) ligne.push(null); });
+      r.grille = Math.max(r.l, r.h) > 2 ? 3 : 2;
+      r.ingredients = [].concat.apply([], r.motif).filter(Boolean);
+    } else {
+      r.grille = r.sans.length > 4 ? 3 : 2;
+      r.ingredients = r.sans.slice();
+    }
+  });
+
+  // ---------- Le four ----------
+  // Ce qui cuit, ce que ca donne ; et combien de cuissons tient chaque
+  // combustible. Une cuisson dure CUISSON_S secondes.
+  var CUISSON = {
+    fer: 'lingot-fer', cuivre: 'lingot-cuivre', cristal: 'verre', 'sable-chantant': 'verre', regolithe: 'verre',
+    'viande-crue': 'viande-cuite', champignon: 'champignon-grille', racine: 'racine-rotie', bois: 'charbon'
+  };
+  var COMBUSTIBLE = { fibre: 1, corde: 1, baton: 0.5, planches: 1.5, bois: 4, resine: 2, charbon: 8, braise: 16 };
+  var CUISSON_S = 5;
 
   // ==========================================================
   //  Les icones
@@ -297,6 +411,81 @@
 
   // Chaque forme : p(x, y, l, h, couleur), c = [corps, clair, sombre].
   var FORMES = {
+    planches: function (p, c) {
+      p(1, 3, 14, 4, c[0]); p(1, 9, 14, 4, c[0]); p(1, 3, 14, 1, c[1]); p(1, 9, 14, 1, c[1]);
+      p(1, 6, 14, 1, c[2]); p(1, 12, 14, 1, c[2]); p(5, 4, 1, 2, c[2]); p(11, 10, 1, 2, c[2]); p(9, 4, 3, 1, c[2]);
+    },
+    baton: function (p, c) {
+      for (var i = 0; i < 11; i++) p(3 + i, 13 - i, 2, 2, i % 3 ? c[0] : c[1]);
+      p(4, 13, 1, 1, c[2]); p(13, 3, 1, 1, c[2]);
+    },
+    corde: function (p, c) {
+      ovale(p, 8, 8, 6, 5, c[0]); ovale(p, 8, 8, 3, 2, '#00000000');
+      for (var i = 0; i < 6; i++) { p(3 + i * 2, 4 + (i % 2) * 7, 1, 2, c[2]); p(4 + i * 2, 5 + (i % 2) * 6, 1, 1, c[1]); }
+      p(12, 11, 3, 3, c[0]); p(13, 13, 2, 2, c[2]);
+    },
+    verre: function (p, c) {
+      p(3, 2, 10, 12, c[0]); p(4, 3, 8, 10, c[1]); p(4, 3, 8, 10, 'rgba(255,255,255,0)');
+      p(4, 3, 8, 10, c[0]); p(5, 4, 1, 4, '#ffffff'); p(6, 4, 1, 2, '#ffffff'); p(10, 10, 1, 2, c[1]);
+      p(3, 2, 10, 1, c[2]); p(3, 13, 10, 1, c[2]);
+    },
+    plaque: function (p, c) {
+      p(2, 5, 12, 7, c[0]); p(2, 5, 12, 1, c[1]); p(2, 11, 12, 1, c[2]);
+      p(3, 6, 1, 1, c[2]); p(12, 6, 1, 1, c[2]); p(3, 10, 1, 1, c[2]); p(12, 10, 1, 1, c[2]); p(5, 7, 5, 1, c[1]);
+    },
+    rouage: function (p, c) {
+      ovale(p, 8, 8, 5, 5, c[0]);
+      [[7, 1], [7, 13], [1, 7], [13, 7], [3, 3], [11, 3], [3, 11], [11, 11]].forEach(function (q) { p(q[0], q[1], 2, 2, c[0]); });
+      ovale(p, 8, 8, 2, 2, c[2]); p(8, 8, 1, 1, '#00000000'); p(5, 5, 2, 1, c[1]);
+    },
+    charbon: function (p, c) {
+      ovale(p, 8, 9, 6, 5, c[0]); p(4, 6, 3, 2, c[1]); p(9, 5, 2, 1, c[1]); p(11, 9, 2, 1, c[1]); p(6, 11, 2, 1, c[1]);
+      p(8, 8, 1, 1, '#8a8a98');
+    },
+    viande: function (p, c) {
+      ovale(p, 7, 8, 5, 5, c[0]); ovale(p, 6, 7, 3, 2, c[1]);
+      p(11, 10, 4, 2, '#f0e8d8'); p(13, 9, 2, 1, '#f0e8d8'); p(13, 12, 2, 1, '#f0e8d8'); p(4, 11, 4, 1, c[2]);
+    },
+    baies: function (p, c) {
+      ovale(p, 5, 9, 3, 3, c[0]); ovale(p, 10, 10, 3, 3, c[0]); ovale(p, 8, 6, 3, 3, c[0]);
+      p(4, 8, 1, 1, c[1]); p(9, 9, 1, 1, c[1]); p(7, 5, 1, 1, c[1]);
+      p(8, 1, 1, 3, c[2]); p(9, 1, 3, 2, c[2]);
+    },
+    champignon: function (p, c) {
+      ovale(p, 8, 6, 6, 4, c[0]); p(2, 7, 13, 2, c[0]); p(6, 9, 4, 5, c[1]); p(6, 13, 4, 1, c[2]);
+      p(5, 4, 2, 2, c[1]); p(10, 3, 2, 2, c[1]); p(8, 6, 1, 1, c[1]);
+    },
+    racine: function (p, c) {
+      for (var i = 0; i < 10; i++) p(5 + Math.round(i * 0.3), 2 + i, Math.max(1, 5 - (i >> 1)), 1, c[0]);
+      p(6, 3, 1, 6, c[1]); p(7, 12, 1, 3, c[2]); p(4, 1, 2, 2, '#5ac83a'); p(7, 0, 2, 2, '#5ac83a');
+    },
+    bol: function (p, c) {
+      p(1, 6, 14, 2, c[1]); for (var y = 8; y < 13; y++) p(1 + (y - 7), y, 14 - (y - 7) * 2, 1, c[0]);
+      p(5, 13, 6, 1, c[2]); p(2, 6, 12, 1, c[2]);
+    },
+    ragout: function (p, c) {
+      p(1, 6, 14, 2, c[1]); for (var y = 8; y < 13; y++) p(1 + (y - 7), y, 14 - (y - 7) * 2, 1, c[0]);
+      p(5, 13, 6, 1, c[2]); p(2, 5, 12, 2, c[1]); p(2, 5, 12, 1, '#7a3a14');
+      p(4, 4, 2, 2, '#5ac83a'); p(8, 4, 2, 2, '#c8402a'); p(11, 4, 2, 2, '#e8c87a'); p(6, 1, 1, 2, '#e8e8f0'); p(10, 0, 1, 2, '#e8e8f0');
+    },
+    brochette: function (p, c) {
+      for (var i = 0; i < 14; i++) p(1 + i, 14 - i, 1, 1, c[2]);
+      ovale(p, 5, 10, 2, 2, c[0]); ovale(p, 9, 6, 2, 2, '#c8402a'); ovale(p, 12, 3, 2, 2, c[0]); p(4, 9, 1, 1, c[1]);
+    },
+    etabli: function (p, c) {
+      p(1, 3, 14, 4, c[1]); p(1, 3, 14, 1, '#fff0c8'); p(2, 7, 12, 6, c[0]); p(2, 13, 2, 2, c[2]); p(12, 13, 2, 2, c[2]);
+      p(4, 4, 1, 2, c[2]); p(8, 4, 1, 2, c[2]); p(12, 4, 1, 2, c[2]); p(5, 9, 6, 2, c[2]);
+      p(10, 0, 1, 3, '#9aa4b0'); p(9, 0, 3, 1, '#c8ccd4');
+    },
+    four: function (p, c) {
+      p(1, 2, 14, 13, c[0]); p(1, 2, 14, 1, c[1]); p(1, 14, 14, 1, c[2]);
+      p(4, 7, 8, 5, '#1a1410'); p(5, 9, 6, 3, '#ff8a2a'); p(6, 10, 4, 2, '#ffe08a'); p(4, 4, 8, 1, c[2]);
+      p(2, 4, 1, 1, c[2]); p(13, 6, 1, 1, c[2]);
+    },
+    hache: function (p, c) {
+      for (var i = 0; i < 11; i++) p(3 + i, 14 - i, 2, 1, c[2]);
+      p(8, 1, 5, 6, c[0]); p(7, 2, 2, 4, c[0]); p(12, 0, 2, 3, c[0]); p(8, 1, 5, 1, c[1]); p(12, 0, 1, 2, c[1]);
+    },
     galet: function (p, c) {
       ovale(p, 8, 9, 6, 5, c[0]); ovale(p, 7, 8, 4, 3, c[1]); ovale(p, 8, 9, 3, 2, c[0]);
       p(10, 12, 3, 1, c[2]); p(4, 11, 2, 1, c[2]); p(5, 6, 2, 1, '#ffffff');
@@ -601,46 +790,94 @@
   // ==========================================================
   //  Le sac
   // ==========================================================
-  function etat() { return DP.sacOdyssee(); }
+  // Des cases fixes, comme dans Minecraft : s.cases[i] est la case i, vide
+  // (null) ou { id, n } — un outil porte en plus son usure : { id, n: 1,
+  // u: ce qu'il lui reste }. La grille du sac (2 x 2), celle de l'etabli
+  // (3 x 3) et l'objet tenu en main sont gardes aussi : rien ne se perd en
+  // refermant le sac.
+  var OUTILS_V1 = { pioche: 'pioche-fer', foreuse: 'foreuse', bottes: 'bottes', detecteur: 'detecteur' };
+
+  function etat() {
+    var s = DP.sacOdyssee();
+    if ((s.version || 1) < 2) {
+      // L'ancien sac : des outils sans usure, qui ne prenaient pas de case.
+      // Ils deviennent des objets neufs, dans le sac.
+      s.grille2 = [null, null, null, null];
+      s.grille3 = [null, null, null, null, null, null, null, null, null];
+      s.main = null; s.vus = s.vus || {}; s.poses = s.poses || {};
+      s.cases = s.cases.filter(Boolean);
+      s.version = 2;
+      Object.keys(OUTILS_V1).forEach(function (vieux) {
+        if (!s.outils[vieux]) return;
+        delete s.outils[vieux];
+        var o = objet(OUTILS_V1[vieux]), cas = { id: o.id, n: 1 };
+        if (o.dur) cas.u = o.dur;
+        if (s.cases.length < s.taille) s.cases.push(cas);
+        else s.grille2[s.grille2.indexOf(null)] = cas;
+      });
+      s.cases.forEach(function (c) { s.vus[c.id] = 1; });
+      DP.sauverSac();
+    }
+    return s;
+  }
   function sauver() { DP.sauverSac(); }
   function taille() { return etat().taille; }
 
   function compter(id) {
     return etat().cases.reduce(function (n, c) { return n + (c && c.id === id ? c.n : 0); }, 0);
   }
+  function occupees(cases) {
+    var n = 0; for (var i = 0; i < cases.length; i++) if (cases[i]) n++; return n;
+  }
+  function libres(cases) { return Math.max(0, taille() - occupees(cases)); }
 
-  // Combien de "id" peuvent encore entrer, compte tenu des piles
-  // entamees et des cases libres.
-  function place(id, cases) {
-    cases = cases || etat().cases;
-    var P = pile(id), n = 0, occupees = 0;
-    cases.forEach(function (c) { if (!c) return; occupees++; if (c.id === id) n += P - c.n; });
-    return n + Math.max(0, taille() - occupees) * P;
+  // Une case neuve pour "id" : avec son usure si c'est un outil.
+  function neuve(id, n) {
+    var o = objet(id), c = { id: id, n: n };
+    if (o && o.dur) c.u = o.dur;
+    return c;
   }
 
-  // Ajoute ce qui rentre ; rend ce qui a vraiment ete ajoute.
-  function ajouterDans(cases, id, n) {
-    var P = pile(id), mis = 0;
-    cases.forEach(function (c) {
-      if (!c || c.id !== id || n <= 0) return;
-      var k = Math.min(P - c.n, n); c.n += k; n -= k; mis += k;
-    });
-    while (n > 0 && cases.filter(Boolean).length < taille()) {
-      var k = Math.min(P, n);
-      cases.push({ id: id, n: k }); n -= k; mis += k;
+  // Combien de "id" peuvent encore entrer.
+  function place(id, cases) {
+    cases = cases || etat().cases;
+    var P = pile(id), n = 0;
+    cases.forEach(function (c) { if (c && c.id === id && !c.u) n += P - c.n; });
+    return n + libres(cases) * P;
+  }
+
+  // Ajoute ce qui rentre (dans les piles entamees, puis dans les cases
+  // vides) ; rend ce qui a vraiment ete ajoute. "u" : l'usure d'un outil
+  // qu'on remet dans le sac.
+  function ajouterDans(cases, id, n, u) {
+    var P = pile(id), mis = 0, i;
+    if (u == null) {
+      for (i = 0; i < cases.length && n > 0; i++) {
+        var c = cases[i];
+        if (!c || c.id !== id || c.u != null) continue;
+        var k = Math.min(P - c.n, n); c.n += k; n -= k; mis += k;
+      }
+    }
+    var T_ = taille();
+    for (i = 0; i < T_ && n > 0; i++) {
+      if (cases[i]) continue;
+      var k2 = Math.min(P, n);
+      cases[i] = neuve(id, k2);
+      if (u != null) cases[i].u = u;
+      n -= k2; mis += k2;
     }
     return mis;
   }
 
-  function ajouter(id, n) {
+  function ajouter(id, n, u) {
     var o = objet(id);
     if (!o || n <= 0) return 0;
     var s = etat();
-    // Les outils, les sacs et les reliques ne prennent pas de case.
-    if (o.cat === 'outil') { s.outils[id] = true; sauver(); return n; }
+    s.vus[id] = 1;
+    // Les reliques vont dans la vitrine, les sacs agrandissent le sac.
     if (o.cat === 'relique') { if (!s.vitrine[id]) s.vitrine[id] = Date.now(); sauver(); return n; }
     if (o.cat === 'sac') { s.taille = Math.max(s.taille, o.taille); s.outils[id] = true; sauver(); return n; }
-    var mis = ajouterDans(s.cases, id, n);
+    var mis = ajouterDans(s.cases, id, n, u);
     sauver();
     return mis;
   }
@@ -651,7 +888,7 @@
       var c = s.cases[i];
       if (!c || c.id !== id) continue;
       var k = Math.min(c.n, n); c.n -= k; n -= k;
-      if (!c.n) s.cases.splice(i, 1);
+      if (!c.n) s.cases[i] = null;
     }
     sauver();
     return n === 0;
@@ -659,19 +896,53 @@
 
   // Est-ce qu'une liste [{id, n}] entre tout entiere dans le sac ?
   function rentre(liste) {
-    var copie = etat().cases.map(function (c) { return { id: c.id, n: c.n }; });
+    var copie = etat().cases.map(function (c) { return c ? { id: c.id, n: c.n, u: c.u } : null; });
     return liste.every(function (g) {
       var o = objet(g.id);
-      if (!o || o.cat === 'outil' || o.cat === 'relique' || o.cat === 'sac') return true;
+      if (!o || o.cat === 'relique' || o.cat === 'sac') return true;
       return ajouterDans(copie, g.id, g.n) === g.n;
     });
   }
 
-  function aOutil(id) { return !!etat().outils[id]; }
   function aRelique(id) { return !!etat().vitrine[id]; }
 
+  // ---------- Les outils ----------
+  // Le meilleur outil d'une sorte, dans le sac : le palier le plus haut.
+  function meilleur(sorte) {
+    var s = etat(), mieux = null;
+    s.cases.forEach(function (c, i) {
+      var o = c && objet(c.id);
+      if (!o || o.outil !== sorte) return;
+      if (!mieux || o.rang > mieux.o.rang) mieux = { i: i, c: c, o: o };
+    });
+    return mieux;
+  }
+  function aOutil(sorte) { return !!meilleur(sorte); }
+
+  // On se sert d'un outil : il s'use d'un cran. A zero, il casse. "garder"
+  // le laisse a un cran tant qu'on en a besoin (les bottes, au milieu d'un
+  // lac) : il cassera en touchant terre.
+  function user(sorte, garder) {
+    var m = meilleur(sorte);
+    if (!m) return null;
+    var r = { o: m.o, rang: m.o.rang, brise: false };
+    if (!m.o.dur) return r;
+    m.c.u = Math.max(garder ? 1 : 0, (m.c.u == null ? m.o.dur : m.c.u) - 1);
+    if (m.c.u <= 0) { etat().cases[m.i] = null; r.brise = true; }
+    sauver();
+    return r;
+  }
+  // Les bottes a bout, une fois revenu sur la terre ferme.
+  function finirBottes() {
+    var m = meilleur('bottes');
+    if (!m || !m.o.dur || m.c.u > 1) return null;
+    etat().cases[m.i] = null;
+    sauver();
+    return m.o;
+  }
+
   // ---------- L'equipement ----------
-  function equipe(place) { return etat().equipe[place] || null; }
+  function equipe(place_) { return etat().equipe[place_] || null; }
   function equiper(id) {
     var o = objet(id);
     if (!o || o.cat !== 'equip' || !compter(id)) return false;
@@ -682,16 +953,14 @@
     sauver();
     return true;
   }
-  function desequiper(place) {
-    var s = etat(), id = s.equipe[place];
-    if (!id || !place || !rentre([{ id: id, n: 1 }])) return false;
-    delete s.equipe[place];
+  function desequiper(place_) {
+    var s = etat(), id = s.equipe[place_];
+    if (!id || !rentre([{ id: id, n: 1 }])) return false;
+    delete s.equipe[place_];
     ajouterDans(s.cases, id, 1);
     sauver();
     return true;
   }
-
-  // Ce que l'equipement porte apporte.
   function bonus() {
     var b = { pv: 0, regen: 1, vitesse: 1, degats: 1 };
     var s = etat();
@@ -706,45 +975,181 @@
     return b;
   }
 
-  // ---------- La fabrication ----------
-  function recette(id) { for (var i = 0; i < RECETTES.length; i++) if (RECETTES[i].id === id) return RECETTES[i]; return null; }
-  function dejaFait(r) {
-    var o = objet(r.id);
-    return (o.cat === 'outil' || o.cat === 'sac') && aOutil(r.id);
-  }
-  function verrouillee(r) { return !!r.requis && !aOutil(r.requis); }
-  function manque(r) {
+  // ==========================================================
+  //  La grille de fabrication
+  // ==========================================================
+  // La grille est un tableau de n x n cases. On la reduit au rectangle
+  // occupe, puis on la compare a chaque forme, telle quelle et en miroir.
+  function cadre(grille, n) {
+    var x0 = n, y0 = n, x1 = -1, y1 = -1;
+    for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) {
+      if (!grille[y * n + x]) continue;
+      x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+    }
+    if (x1 < 0) return null;
     var m = [];
-    for (var id in r.mats) { var a = compter(id); if (a < r.mats[id]) m.push(id); }
+    for (y = y0; y <= y1; y++) {
+      var l = [];
+      for (x = x0; x <= x1; x++) { var c = grille[y * n + x]; l.push(c ? c.id : null); }
+      m.push(l);
+    }
     return m;
   }
-  function peutFabriquer(r) {
-    if (dejaFait(r) || verrouillee(r) || manque(r).length) return false;
-    // Ce qu'on fabrique doit trouver sa place, une fois les materiaux
-    // retires du sac.
-    var copie = etat().cases.map(function (c) { return { id: c.id, n: c.n }; });
-    for (var id in r.mats) {
-      var n = r.mats[id];
-      for (var i = copie.length - 1; i >= 0 && n > 0; i--) {
-        if (copie[i].id !== id) continue;
-        var k = Math.min(copie[i].n, n); copie[i].n -= k; n -= k;
-        if (!copie[i].n) copie.splice(i, 1);
-      }
+  function memeMotif(a, b, miroir) {
+    if (a.length !== b.length || a[0].length !== b[0].length) return false;
+    var L = a[0].length;
+    for (var y = 0; y < a.length; y++) for (var x = 0; x < L; x++) {
+      if (a[y][x] !== b[y][miroir ? L - 1 - x : x]) return false;
     }
-    var o = objet(r.id);
-    if (o.cat === 'outil' || o.cat === 'sac') return true;
-    return ajouterDans(copie, r.id, r.n || 1) === (r.n || 1);
-  }
-  function fabriquer(id) {
-    var r = recette(id);
-    if (!r || !peutFabriquer(r)) return false;
-    for (var m in r.mats) retirer(m, r.mats[m]);
-    ajouter(r.id, r.n || 1);
-    var s = etat();
-    s.fabrique[r.id] = (s.fabrique[r.id] || 0) + (r.n || 1);
-    sauver();
     return true;
   }
+
+  // Ce que la grille fabrique : { r, sortie: { id, n, u? } }, ou null.
+  function trouver(grille, n) {
+    var pleines = grille.filter(Boolean);
+    if (!pleines.length) return null;
+    // La reparation : un outil use et son materiau, n'importe ou.
+    if (pleines.length === 2) {
+      var outil = pleines.filter(function (c) { var o = objet(c.id); return o && o.dur; })[0];
+      var autre = pleines.filter(function (c) { return c !== outil; })[0];
+      var oo = outil && objet(outil.id);
+      if (oo && autre && autre.id === oo.repare && outil.u < oo.dur) {
+        return { r: { repare: true, id: oo.id }, sortie: { id: oo.id, n: 1, u: Math.min(oo.dur, outil.u + Math.ceil(oo.dur / 2)) } };
+      }
+    }
+    var motif = cadre(grille, n);
+    var ids = pleines.map(function (c) { return c.id; }).sort();
+    for (var i = 0; i < RECETTES.length; i++) {
+      var r = RECETTES[i];
+      if (r.grille > n) continue;
+      if (r.forme) {
+        if (memeMotif(motif, r.motif, false) || memeMotif(motif, r.motif, true)) return { r: r, sortie: neuve(r.id, r.n || 1) };
+      } else if (r.sans.length === ids.length && r.sans.slice().sort().join('|') === ids.join('|')) {
+        return { r: r, sortie: neuve(r.id, r.n || 1) };
+      }
+    }
+    return null;
+  }
+
+  // Fabrique une fois : chaque case de la grille perd un objet.
+  function consommer(grille) {
+    for (var i = 0; i < grille.length; i++) {
+      var c = grille[i];
+      if (!c) continue;
+      c.n--;
+      if (c.n <= 0) grille[i] = null;
+    }
+    sauver();
+  }
+  function noterFabrique(id, n) {
+    var s = etat();
+    s.fabrique[id] = (s.fabrique[id] || 0) + n;
+    s.vus[id] = 1;
+    sauver();
+  }
+
+  // Le livre : une recette s'y inscrit des qu'on a tenu un de ses
+  // ingredients, ou fabrique l'objet.
+  function debloquee(r) {
+    var s = etat();
+    if (s.fabrique[r.id]) return true;
+    return r.ingredients.some(function (id) { return s.vus[id]; });
+  }
+
+  // Remplit la grille avec une recette, en prenant dans le sac. Rend la
+  // liste de ce qui manque (vide : c'est fait).
+  function remplir(grille, n, r) {
+    var besoin = {};
+    r.ingredients.forEach(function (id) { besoin[id] = (besoin[id] || 0) + 1; });
+    var manque = Object.keys(besoin).filter(function (id) { return compter(id) < besoin[id]; });
+    if (manque.length) return manque;
+    // Ce qui occupait la grille retourne au sac.
+    var s = etat();
+    for (var i = 0; i < grille.length; i++) {
+      var c = grille[i];
+      if (!c) continue;
+      if (ajouterDans(s.cases, c.id, c.n, c.u) < c.n) return ['place'];
+      grille[i] = null;
+    }
+    if (r.forme) {
+      for (var y = 0; y < r.h; y++) for (var x = 0; x < r.l; x++) {
+        var id = r.motif[y][x];
+        if (!id) continue;
+        retirer(id, 1);
+        grille[y * n + x] = { id: id, n: 1 };
+      }
+    } else {
+      r.sans.forEach(function (id, k) { retirer(id, 1); grille[k] = { id: id, n: 1 }; });
+    }
+    sauver();
+    return [];
+  }
+
+  // ==========================================================
+  //  Les stations posees : l'etabli et le four
+  // ==========================================================
+  // Elles restent la ou on les a posees, monde par monde.
+  function poses(astre) {
+    var s = etat();
+    return s.poses[astre] || (s.poses[astre] = []);
+  }
+  function poser(astre, id, tx, ty) {
+    var o = objet(id), s = etat();
+    if (!o || o.cat !== 'bloc') return false;
+    // On la pose depuis la main, ou depuis le sac.
+    if (s.main && s.main.id === id) { s.main.n--; if (s.main.n <= 0) s.main = null; }
+    else if (compter(id)) retirer(id, 1);
+    else return false;
+    var p = { id: id, tx: tx, ty: ty, k: Date.now() };
+    if (id === 'four') { p.entree = null; p.combu = null; p.sortie = null; p.prog = 0; p.flamme = 0; p.t = Date.now(); }
+    poses(astre).push(p);
+    sauver();
+    return p;
+  }
+  // On ne ramasse un four que vide : on ne veut pas perdre ce qui cuit.
+  function ramasser(astre, p) {
+    if (p.id === 'four' && (p.entree || p.combu || p.sortie)) return 'plein';
+    if (!rentre([{ id: p.id, n: 1 }])) return 'place';
+    var l = poses(astre), i = l.indexOf(p);
+    if (i !== -1) l.splice(i, 1);
+    ajouter(p.id, 1);
+    return 'ok';
+  }
+
+  // Le four cuit en temps reel, meme quand on est loin : a chaque fois
+  // qu'on le regarde, on rattrape le temps passe.
+  function peutCuire(f) {
+    if (!f.entree || !CUISSON[f.entree.id]) return false;
+    var res = CUISSON[f.entree.id];
+    return !f.sortie || (f.sortie.id === res && f.sortie.n < pile(res));
+  }
+  function avancerFour(f, maintenant) {
+    maintenant = maintenant || Date.now();
+    var dt = Math.max(0, (maintenant - (f.t || maintenant)) / 1000), change = false;
+    f.t = maintenant;
+    while (dt > 0.0001) {
+      if (!peutCuire(f)) { f.prog = 0; break; }
+      if (f.flamme <= 0) {
+        if (!f.combu || !COMBUSTIBLE[f.combu.id]) break;
+        f.flamme += COMBUSTIBLE[f.combu.id];
+        f.combu.n--; if (f.combu.n <= 0) f.combu = null;
+        change = true;
+      }
+      var pas = Math.min(dt, (1 - f.prog) * CUISSON_S, f.flamme * CUISSON_S);
+      f.prog += pas / CUISSON_S; f.flamme -= pas / CUISSON_S; dt -= pas;
+      if (f.prog >= 0.9999) {
+        var res = CUISSON[f.entree.id];
+        f.prog = 0;
+        f.entree.n--; if (f.entree.n <= 0) f.entree = null;
+        if (f.sortie) f.sortie.n++; else f.sortie = { id: res, n: 1 };
+        etat().vus[res] = 1;
+        change = true;
+      }
+    }
+    if (change) sauver();
+    return f;
+  }
+  function fourActif(f) { return f.flamme > 0 && peutCuire(f); }
 
   // ==========================================================
   //  Le butin
@@ -754,15 +1159,21 @@
 
   // Ce que donne un noeud de la carte. "stellaire" : le monde est du
   // systeme stellaire (la poussiere d'etoile n'y tombe que la).
-  function recolte(type, astre) {
+  function recolte(type, astre, opts) {
     var out = [], mm = MAT_MONDE[astre.id];
     if (type === 'filon') {
       un(out, 'pierre', hasard(1, 2));
       un(out, chance(0.55) ? 'fer' : 'cuivre', 1);
+      if (chance(0.25)) un(out, 'charbon', 1);
       if (mm && chance(0.1)) un(out, mm, 1);
     } else if (type === 'plante') {
       un(out, 'fibre', hasard(2, 3));
       if (chance(0.35)) un(out, 'resine', 1);
+      // De quoi manger : des baies, une racine, un champignon.
+      var m = Math.random();
+      if (m < 0.4) un(out, 'baies', hasard(1, 3));
+      else if (m < 0.6) un(out, 'racine', 1);
+      else if (m < 0.78) un(out, 'champignon', 1);
       if (mm && chance(0.12)) un(out, mm, 1);
     } else if (type === 'debris') {
       un(out, 'ferraille', hasard(2, 3));
@@ -777,21 +1188,43 @@
     } else if (type === 'poussiere') {
       un(out, 'poussiere', hasard(2, 3));
     } else if (type === 'roche') {
-      un(out, 'pierre', 2);
-      if (chance(0.3)) un(out, 'fer', 1);
-      if (chance(0.15)) un(out, 'cuivre', 1);
-      if (mm && chance(0.06)) un(out, mm, 1);
+      // Le palier de la pioche compte : le fer en tire plus, l'astrale
+      // double tout.
+      var r = (opts && opts.rang) || 1;
+      un(out, 'pierre', 2 + (r >= 2 ? 1 : 0));
+      if (chance(0.3 + (r - 1) * 0.15)) un(out, 'fer', 1);
+      if (chance(0.15 + (r - 1) * 0.1)) un(out, 'cuivre', 1);
+      if (chance(0.2)) un(out, 'charbon', 1);
+      if (mm && chance(0.06 * r)) un(out, mm, 1);
     } else if (type === 'cristal') {
+      var rc = (opts && opts.rang) || 2;
       un(out, 'cristal', 3);
       if (mm && chance(0.15)) un(out, mm, 1);
       if (chance(0.03)) un(out, 'noyau', 1);
+    } else if (type === 'grande-plante') {
+      // Ce qu'on tire d'une grande plante depend de ce qu'elle est.
+      var st = (opts && opts.style) || 'arbre', h = (opts && opts.rang) || 0;
+      var k = h >= 2 ? 3 : h >= 1 ? 2 : 1;
+      if (st === 'pic') { un(out, 'ferraille', k); if (chance(0.3)) un(out, 'fer', 1); }
+      else if (st === 'givre') un(out, 'cristal', k);
+      else if (st === 'prisme') { un(out, 'cristal', k); if (mm && chance(0.2)) un(out, mm, 1); }
+      else if (st === 'flamme') { un(out, 'charbon', k); if (chance(0.25)) un(out, 'braise', 1); }
+      else {
+        un(out, 'bois', k);
+        if (chance(0.4)) un(out, 'fibre', hasard(1, 2));
+        if (st === 'champignon') un(out, 'champignon', hasard(1, 2));
+        else if (chance(0.3)) un(out, 'baies', hasard(1, 2));
+      }
     }
+    // Une pioche ou une foreuse astrale : tout est double.
+    if ((type === 'roche' || type === 'cristal') && opts && opts.rang >= 3) out.forEach(function (g) { g.n *= 2; });
     return out;
   }
 
   // Ce que laisse une bete abattue, selon sa force.
   function butinBete(v, astre) {
     var out = [], pal = v.palier || 1, mm = MAT_MONDE[astre.id];
+    if (chance(0.6)) un(out, 'viande-crue', pal >= 3 ? 2 : 1);
     if (pal <= 1) {
       if (chance(0.6)) un(out, 'os', 1);
       if (chance(0.6)) un(out, 'cuir', 1);
@@ -821,7 +1254,8 @@
   }
 
   // Le contenu d'un coffre. Tire une fois pour toutes a l'ouverture.
-  var COMMUNS = ['pierre', 'ferraille', 'fibre', 'resine', 'cristal', 'fer', 'cuivre', 'cuir', 'os'];
+  var COMMUNS = ['pierre', 'ferraille', 'fibre', 'resine', 'cristal', 'fer', 'cuivre', 'cuir', 'os',
+                 'charbon', 'baies', 'planches', 'corde', 'baton', 'lingot-fer'];
   function contenuCoffre(c, astre) {
     var out = [], mm = MAT_MONDE[astre.id];
     var stellaire = astre.systeme === 'stellaire';
@@ -980,6 +1414,65 @@
     }
   }
 
+  // Une station posee : l'etabli (une table de bois, une grille gravee, des
+  // outils accroches) ou le four (un cube de pierre, la gueule qui rougeoie
+  // quand il cuit, et sa fumee).
+  function dessinerPose(ctx, sx, sy, p, t, proche) {
+    var x = Math.round(sx), y = Math.round(sy);
+    function q(px, py, w, h, col) { ctx.fillStyle = col; ctx.fillRect(x + px, y + py, w, h); }
+    ctx.fillStyle = 'rgba(0,0,0,.3)';
+    ctx.beginPath(); ctx.ellipse(x, y + 3, 12, 3, 0, 0, 6.3); ctx.fill();
+    if (p.id === 'etabli') {
+      q(-11, -14, 22, 6, '#c8945a'); q(-11, -14, 22, 1, '#f0d0a0'); q(-11, -9, 22, 1, '#6a4422');
+      q(-10, -8, 3, 10, '#8a5a2a'); q(7, -8, 3, 10, '#8a5a2a'); q(-10, -3, 20, 2, '#7a4a22');
+      q(-6, -13, 1, 4, '#7a4a22'); q(-1, -13, 1, 4, '#7a4a22'); q(4, -13, 1, 4, '#7a4a22');
+      q(-9, -12, 12, 1, '#7a4a22');
+      // Une scie et un marteau poses dessus.
+      q(5, -17, 5, 2, '#c8ccd4'); q(9, -17, 2, 3, '#8a5a2a'); q(-8, -18, 1, 4, '#8a5a2a'); q(-10, -19, 5, 2, '#8a8e98');
+    } else {
+      var f = p;
+      avancerFour(f);
+      var actif = fourActif(f);
+      q(-11, -20, 22, 22, '#8a8680'); q(-11, -20, 22, 2, '#b8b4ac'); q(-11, 0, 22, 2, '#4a4844');
+      q(-10, -15, 4, 3, '#7a7670'); q(4, -12, 5, 3, '#7a7670'); q(-4, -18, 6, 2, '#9a968e');
+      q(-6, -10, 12, 8, '#1a1410');
+      if (actif) {
+        var ph = reduit ? 0.5 : (Math.sin(t / 120) + 1) / 2;
+        q(-5, -6, 10, 4, ph > 0.5 ? '#ff8a2a' : '#ff6a1a'); q(-3, -8, 6, 3, '#ffc23a'); q(-1, -9, 2, 2, '#fff4b0');
+        var g = ctx.createRadialGradient(x, y - 6, 1, x, y - 6, 22);
+        g.addColorStop(0, 'rgba(255,170,60,.35)'); g.addColorStop(1, 'rgba(255,170,60,0)');
+        ctx.fillStyle = g; ctx.fillRect(x - 22, y - 28, 44, 34);
+        // La fumee qui monte de la cheminee.
+        if (!reduit) for (var i = 0; i < 3; i++) {
+          var k = ((t / 1400) + i / 3) % 1;
+          ctx.fillStyle = 'rgba(200,200,210,' + (0.4 * (1 - k)).toFixed(2) + ')';
+          ctx.fillRect(Math.round(x + 6 + Math.sin(k * 6 + i) * 3), Math.round(y - 24 - k * 20), 3 + Math.round(k * 3), 3 + Math.round(k * 3));
+        }
+      }
+      q(5, -24, 4, 5, '#6a6660');
+      if (f.sortie) { q(-9, -19, 3, 3, '#ffd23a'); }
+    }
+    if (proche) {
+      var a = reduit ? 0.7 : 0.45 + 0.35 * Math.sin(t / 200);
+      ctx.strokeStyle = 'rgba(255,240,170,' + a.toFixed(2) + ')';
+      ctx.beginPath(); ctx.ellipse(x, y + 2, 15, 5, 0, 0, 6.3); ctx.stroke();
+    }
+  }
+
+  // Un outil qui casse : un bandeau rouge, l'icone qui se fend.
+  function annoncerBris(scene, o) {
+    var pile_ = scene.querySelector('.ocr-gains');
+    if (!pile_) { pile_ = el('div', 'ocr-gains'); scene.appendChild(pile_); }
+    var b = el('div', 'ocr-gain ocr-gain--bris');
+    var im = el('img', 'ocr-gain-ic ocr-bris-ic');
+    im.src = url(o.id); im.alt = '';
+    b.appendChild(im);
+    b.appendChild(el('span', 'ocr-gain-nom', o.nom + ' s’est brisé' + (/e$|ée$/.test(o.nom.split(' ')[0]) ? 'e' : '') + ' !'));
+    pile_.appendChild(b);
+    setTimeout(function () { b.classList.add('is-sortie'); }, 2800);
+    setTimeout(function () { b.remove(); }, 3300);
+  }
+
   // ==========================================================
   //  Les annonces
   // ==========================================================
@@ -1037,301 +1530,9 @@
   // ==========================================================
   //  Le panneau du sac
   // ==========================================================
-  // jeu : { scene, utiliser(objet) -> texte | null, pv(), pvMax(), fermer() }
-  function ouvrir(jeu, onglet) {
-    var vieux = jeu.scene.querySelector('.ocr');
-    if (vieux) vieux.remove();
-    var box = el('div', 'ocr');
-    box.setAttribute('role', 'dialog');
-    box.setAttribute('aria-label', 'Sac');
-    var fen = el('div', 'ocr-fen');
-    box.appendChild(fen);
-
-    var tete = el('div', 'ocr-tete');
-    var onglets = el('div', 'ocr-onglets');
-    var ONGLETS = [['sac', 'Sac'], ['fab', 'Fabrication'], ['equip', 'Équipement'], ['vitrine', 'Vitrine']];
-    var boutons = {};
-    ONGLETS.forEach(function (o) {
-      var b = el('button', 'ocr-onglet', o[1]);
-      b.type = 'button';
-      b.addEventListener('click', function () { montrer(o[0]); });
-      boutons[o[0]] = b;
-      onglets.appendChild(b);
-    });
-    tete.appendChild(onglets);
-    var fermer = el('button', 'ocr-fermer', '×');
-    fermer.type = 'button';
-    fermer.setAttribute('aria-label', 'Fermer le sac');
-    fermer.addEventListener('click', clore);
-    tete.appendChild(fermer);
-    fen.appendChild(tete);
-
-    var corps = el('div', 'ocr-corps');
-    fen.appendChild(corps);
-    var courant = onglet || 'sac', choisi = null;
-
-    function clore() {
-      box.classList.add('is-sortie');
-      window.removeEventListener('keydown', clavier, true);
-      setTimeout(function () { box.remove(); }, reduit ? 0 : 200);
-      if (jeu.fermer) jeu.fermer();
-    }
-    function clavier(e) {
-      if (e.key === 'Escape' || e.key === 'i' || e.key === 'I' || e.key === 'Tab') {
-        e.preventDefault(); e.stopPropagation(); clore();
-      }
-    }
-    window.addEventListener('keydown', clavier, true);
-
-    function montrer(o) {
-      courant = o;
-      for (var k in boutons) boutons[k].classList.toggle('is-actif', k === o);
-      corps.textContent = '';
-      corps.scrollTop = 0;
-      if (o === 'sac') vueSac();
-      else if (o === 'fab') vueFab();
-      else if (o === 'equip') vueEquip();
-      else vueVitrine();
-    }
-
-    // ---------- Le sac ----------
-    function vueSac() {
-      var s = etat();
-      var haut = el('div', 'ocr-ligne');
-      haut.appendChild(el('span', 'ocr-titre', 'Sac'));
-      haut.appendChild(el('span', 'ocr-cpt', s.cases.length + ' / ' + s.taille + ' cases'));
-      corps.appendChild(haut);
-      var grille = el('div', 'ocr-grille');
-      for (var i = 0; i < s.taille; i++) {
-        var c = s.cases[i];
-        var b = el('button', 'ocr-case' + (c ? '' : ' is-vide'));
-        b.type = 'button';
-        if (c) {
-          b.appendChild(imgIcone(c.id));
-          if (c.n > 1) b.appendChild(el('span', 'ocr-n', String(c.n)));
-          b.title = objet(c.id).nom;
-          (function (cc, bb) {
-            bb.addEventListener('click', function () { choisi = cc.id; detail(cc.id); marquer(bb); });
-          })(c, b);
-        } else b.disabled = true;
-        grille.appendChild(b);
-      }
-      corps.appendChild(grille);
-      var det = el('div', 'ocr-detail');
-      det.appendChild(el('p', 'ocr-aide', s.cases.length ? 'Touche un objet pour le voir.' :
-        'Ton sac est vide. Ramasse ce qui brille sur la carte : filons, plantes, débris, coffres…'));
-      corps.appendChild(det);
-      if (choisi && compter(choisi)) detail(choisi);
-    }
-    function marquer(b) {
-      corps.querySelectorAll('.ocr-case.is-choisi').forEach(function (x) { x.classList.remove('is-choisi'); });
-      b.classList.add('is-choisi');
-    }
-
-    function detail(id) {
-      var det = corps.querySelector('.ocr-detail');
-      if (!det) return;
-      det.textContent = '';
-      var o = objet(id);
-      var l = el('div', 'ocr-det-tete');
-      l.appendChild(imgIcone(id, 'ocr-det-ic'));
-      var txt = el('div', 'ocr-det-txt');
-      txt.appendChild(el('strong', 'ocr-det-nom', o.nom));
-      txt.appendChild(el('span', 'ocr-det-cat', CATS[o.cat].nom + (o.monde ? ' · ' + nomMonde(o.monde) : '') + '  ·  ×' + compter(id)));
-      txt.appendChild(el('p', 'ocr-det-desc', o.desc));
-      l.appendChild(txt);
-      det.appendChild(l);
-      var actions = el('div', 'ocr-actions');
-      if (o.cat === 'conso') {
-        var u = el('button', 'ocr-btn', 'Utiliser');
-        u.type = 'button';
-        u.addEventListener('click', function () {
-          var dit = jeu.utiliser ? jeu.utiliser(o) : null;
-          if (dit === false) return;
-          retirer(id, 1);
-          if (dit) jeu.dire && jeu.dire(dit);
-          // Une bombe, une grenade : on referme pour voir l'effet.
-          if (o.bombe || o.givre || o.repulsif) return clore();
-          montrer('sac');
-        });
-        actions.appendChild(u);
-      }
-      if (o.cat === 'equip') {
-        var e = el('button', 'ocr-btn', 'Équiper');
-        e.type = 'button';
-        e.addEventListener('click', function () { equiper(id); if (jeu.maj) jeu.maj(); montrer('equip'); });
-        actions.appendChild(e);
-      }
-      var j = el('button', 'ocr-btn ocr-btn--plat', 'Jeter 1');
-      j.type = 'button';
-      j.addEventListener('click', function () { retirer(id, 1); montrer('sac'); });
-      actions.appendChild(j);
-      det.appendChild(actions);
-    }
-
-    // ---------- La fabrication ----------
-    function vueFab() {
-      var s = etat();
-      if (s.cases.length >= s.taille) {
-        corps.appendChild(el('p', 'ocr-alerte', 'Ton sac est plein : fabriquer demande une case libre. Jette ou utilise quelque chose dans l’onglet Sac.'));
-      }
-      GROUPES.forEach(function (gr) {
-        corps.appendChild(el('span', 'ocr-titre ocr-titre--groupe', gr.nom));
-        var liste = el('div', 'ocr-recettes');
-        RECETTES.filter(function (r) { return objet(r.id).cat === gr.cat; }).forEach(function (r) {
-          liste.appendChild(carteRecette(r));
-        });
-        corps.appendChild(liste);
-      });
-    }
-
-    function carteRecette(r) {
-      var o = objet(r.id), fait = dejaFait(r), ferme = verrouillee(r), ok = peutFabriquer(r);
-      var c = el('div', 'ocr-recette' + (fait ? ' is-fait' : '') + (ok ? ' is-pret' : ''));
-      var res = el('div', 'ocr-rec-res');
-      res.appendChild(imgIcone(r.id, 'ocr-rec-ic'));
-      if (r.n > 1) res.appendChild(el('span', 'ocr-n', '×' + r.n));
-      c.appendChild(res);
-      var info = el('div', 'ocr-rec-info');
-      info.appendChild(el('strong', 'ocr-rec-nom', o.nom));
-      info.appendChild(el('span', 'ocr-rec-desc', o.desc));
-      var mats = el('div', 'ocr-mats');
-      for (var id in r.mats) {
-        var a = compter(id), b = r.mats[id];
-        var m = el('span', 'ocr-mat' + (a >= b ? ' is-ok' : ''));
-        m.title = objet(id).nom;
-        m.appendChild(imgIcone(id, 'ocr-mat-ic'));
-        m.appendChild(el('span', null, Math.min(a, b) + '/' + b));
-        m.dataset.id = id;
-        mats.appendChild(m);
-      }
-      info.appendChild(mats);
-      c.appendChild(info);
-      var b2 = el('button', 'ocr-btn ocr-fab', fait ? (o.cat === 'outil' ? 'Possédé' : 'Fait') : ferme ? 'Verrouillé' : 'Fabriquer');
-      b2.type = 'button';
-      b2.disabled = !ok;
-      if (ferme) b2.title = 'Il faut d’abord le ' + objet(r.requis).nom;
-      else if (!fait && !ok && !manque(r).length) b2.title = 'Plus de place dans le sac';
-      b2.addEventListener('click', function () {
-        if (!peutFabriquer(r)) return;
-        animerFabrication(c, r, function () {
-          fabriquer(r.id);
-          if (jeu.maj) jeu.maj();
-          montrer('fab');
-        });
-      });
-      c.appendChild(b2);
-      return c;
-    }
-
-    // Les materiaux s'envolent de la carte de la recette, convergent, un
-    // eclair, et l'objet apparait dans des rayons.
-    function animerFabrication(carte, r, fini) {
-      var o = objet(r.id);
-      var voile = el('div', 'ocr-fab-anim');
-      var centre = el('div', 'ocr-fab-centre');
-      voile.appendChild(centre);
-      box.appendChild(voile);
-      var rb = box.getBoundingClientRect(), cb = centre.getBoundingClientRect();
-      var cx = cb.left + cb.width / 2 - rb.left, cy = cb.top + cb.height / 2 - rb.top;
-      carte.querySelectorAll('.ocr-mat').forEach(function (m, i) {
-        var mb = m.getBoundingClientRect();
-        var vol = imgIcone(m.dataset.id, 'ocr-fab-vol');
-        vol.style.left = (mb.left - rb.left) + 'px';
-        vol.style.top = (mb.top - rb.top) + 'px';
-        vol.style.setProperty('--dx', (cx - (mb.left - rb.left) - 16) + 'px');
-        vol.style.setProperty('--dy', (cy - (mb.top - rb.top) - 16) + 'px');
-        vol.style.animationDelay = (i * 0.08) + 's';
-        voile.appendChild(vol);
-      });
-      var duree = reduit ? 0 : 750;
-      setTimeout(function () {
-        voile.classList.add('is-eclair');
-        var res = el('div', 'ocr-fab-res');
-        res.appendChild(el('div', 'ocr-fab-rayons'));
-        res.appendChild(imgIcone(r.id, 'ocr-fab-ic'));
-        res.appendChild(el('strong', 'ocr-fab-nom', (r.n > 1 ? r.n + ' × ' : '') + o.nom));
-        res.appendChild(el('span', 'ocr-fab-sous', o.cat === 'outil' ? 'Nouvel outil' : o.cat === 'sac' ? 'Le sac s’agrandit' : 'Fabriqué'));
-        voile.appendChild(res);
-        fini();
-        setTimeout(function () {
-          voile.classList.add('is-sortie');
-          setTimeout(function () { voile.remove(); }, 300);
-        }, reduit ? 600 : 1500);
-      }, duree);
-    }
-
-    // ---------- L'equipement ----------
-    function vueEquip() {
-      var b = bonus();
-      var st = el('div', 'ocr-stats');
-      [['PV max', String(100 + b.pv)], ['Régénération', '×' + b.regen], ['Vitesse', '×' + b.vitesse.toFixed(2)], ['Dégâts', '×' + b.degats.toFixed(2)]]
-        .forEach(function (q) { var s2 = el('span', 'ocr-stat'); s2.appendChild(el('em', null, q[0])); s2.appendChild(el('strong', null, q[1])); st.appendChild(s2); });
-      corps.appendChild(st);
-      corps.appendChild(el('span', 'ocr-titre ocr-titre--groupe', 'Porté'));
-      var porte = el('div', 'ocr-portes');
-      [['armure', 'Armure'], ['accessoire', 'Accessoire']].forEach(function (pl) {
-        var id = equipe(pl[0]);
-        var c = el('div', 'ocr-porte' + (id ? '' : ' is-vide'));
-        c.appendChild(el('span', 'ocr-porte-place', pl[1]));
-        if (id) {
-          c.appendChild(imgIcone(id, 'ocr-rec-ic'));
-          c.appendChild(el('strong', 'ocr-rec-nom', objet(id).nom));
-          c.appendChild(el('span', 'ocr-rec-desc', objet(id).desc));
-          var r = el('button', 'ocr-btn ocr-btn--plat', 'Retirer');
-          r.type = 'button';
-          r.addEventListener('click', function () {
-            if (!desequiper(pl[0])) { jeu.dire && jeu.dire('Pas de place dans le sac pour le retirer.'); return; }
-            if (jeu.maj) jeu.maj();
-            montrer('equip');
-          });
-          c.appendChild(r);
-        } else c.appendChild(el('span', 'ocr-rec-desc', 'Rien. Fabrique-en un dans l’onglet Fabrication.'));
-        porte.appendChild(c);
-      });
-      corps.appendChild(porte);
-      corps.appendChild(el('span', 'ocr-titre ocr-titre--groupe', 'Outils'));
-      var outils = el('div', 'ocr-outils');
-      ['pioche', 'foreuse', 'bottes', 'detecteur'].forEach(function (id) {
-        var a = aOutil(id), o = objet(id);
-        var c = el('div', 'ocr-outil' + (a ? '' : ' is-manque'));
-        c.appendChild(imgIcone(id, 'ocr-rec-ic'));
-        c.appendChild(el('strong', 'ocr-rec-nom', a ? o.nom : o.nom + ' · à fabriquer'));
-        c.appendChild(el('span', 'ocr-rec-desc', o.desc));
-        outils.appendChild(c);
-      });
-      corps.appendChild(outils);
-    }
-
-    // ---------- La vitrine ----------
-    function vueVitrine() {
-      var s = etat();
-      var haut = el('div', 'ocr-ligne');
-      haut.appendChild(el('span', 'ocr-titre', 'Vitrine'));
-      haut.appendChild(el('span', 'ocr-cpt', Object.keys(s.vitrine).length + ' / ' + RELIQUES.length));
-      corps.appendChild(haut);
-      var g = el('div', 'ocr-vitrine');
-      RELIQUES.forEach(function (o) {
-        var a = !!s.vitrine[o.id];
-        var c = el('div', 'ocr-vit' + (a ? '' : ' is-manque'));
-        if (a) {
-          c.appendChild(imgIcone(o.id, 'ocr-vit-ic'));
-          c.appendChild(el('strong', 'ocr-vit-nom', o.nom));
-          c.appendChild(el('span', 'ocr-vit-ou', o.monde ? nomMonde(o.monde) : 'Curiosité'));
-          c.title = o.desc;
-        } else {
-          c.appendChild(el('span', 'ocr-vit-q', '?'));
-          c.appendChild(el('span', 'ocr-vit-ou', o.monde ? nomMonde(o.monde) : 'Curiosité'));
-        }
-        g.appendChild(c);
-      });
-      corps.appendChild(g);
-    }
-
-    jeu.scene.appendChild(box);
-    montrer(courant);
-    fermer.focus();
-    return { fermer: clore };
+  // Il vit dans js/odyssey-atelier.js.
+  function ouvrir(jeu, opts) {
+    return window.ODYATELIER ? window.ODYATELIER.ouvrir(jeu, opts || {}) : null;
   }
 
   function nomMonde(id) {
@@ -1349,16 +1550,25 @@
     }[type] || 'Quelque chose à ramasser';
   }
 
+  // Les neuf premieres cases du sac forment la barre rapide, toujours
+  // visible en bas de l'ecran, comme dans Minecraft.
+  var BARRE = 9;
+
   window.ODYCRAFT = {
-    nomNoeud: nomNoeud,
-    LISTE: LISTE, RECETTES: RECETTES, RELIQUES: RELIQUES, MAT_MONDE: MAT_MONDE,
-    objet: objet, icone: icone, url: url,
-    compter: compter, ajouter: ajouter, retirer: retirer, place: place, rentre: rentre, taille: taille,
-    aOutil: aOutil, aRelique: aRelique, equipe: equipe, equiper: equiper, desequiper: desequiper, bonus: bonus,
-    peutFabriquer: function (id) { var r = recette(id); return !!r && peutFabriquer(r); }, fabriquer: fabriquer,
+    BARRE: BARRE,
+    nomNoeud: nomNoeud, nomMonde: nomMonde,
+    LISTE: LISTE, CATS: CATS, RECETTES: RECETTES, RELIQUES: RELIQUES, MAT_MONDE: MAT_MONDE,
+    CUISSON: CUISSON, COMBUSTIBLE: COMBUSTIBLE, CUISSON_S: CUISSON_S,
+    objet: objet, pile: pile, icone: icone, url: url, imgIcone: imgIcone,
+    etat: etat, sauver: sauver, taille: taille,
+    compter: compter, ajouter: ajouter, ajouterDans: ajouterDans, retirer: retirer, place: place, rentre: rentre,
+    aOutil: aOutil, meilleur: meilleur, user: user, finirBottes: finirBottes, aRelique: aRelique,
+    equipe: equipe, equiper: equiper, desequiper: desequiper, bonus: bonus,
+    trouver: trouver, consommer: consommer, noterFabrique: noterFabrique, debloquee: debloquee, remplir: remplir,
+    poses: poses, poser: poser, ramasser: ramasser, avancerFour: avancerFour, fourActif: fourActif, peutCuire: peutCuire,
     recolte: recolte, butinBete: butinBete, butinGardien: butinGardien, contenuCoffre: contenuCoffre,
     coffreOuvert: coffreOuvert, marquerCoffre: marquerCoffre, empocher: empocher,
-    dessinerNoeud: dessinerNoeud, dessinerCoffre: dessinerCoffre,
-    annoncer: annoncer, devoiler: devoiler, ouvrir: ouvrir
+    dessinerNoeud: dessinerNoeud, dessinerCoffre: dessinerCoffre, dessinerPose: dessinerPose,
+    annoncer: annoncer, annoncerBris: annoncerBris, devoiler: devoiler, ouvrir: ouvrir
   };
 })();

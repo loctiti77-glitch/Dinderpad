@@ -1317,6 +1317,15 @@
     mini.addEventListener('click', function () { mini.classList.toggle('is-grande'); });
     scene.appendChild(mini);
 
+    // La barre rapide : les neuf premieres cases du sac, toujours visibles
+    // en bas, au milieu. Toucher un soin ou un repas le consomme tout de
+    // suite (touches 1 a 9 au clavier) ; le reste ouvre le sac.
+    var barre = el('div', 'ody-barre');
+    var barreBulle = el('div', 'ody-barre-bulle');
+    barreBulle.hidden = true;
+    if (CR) { scene.appendChild(barre); scene.appendChild(barreBulle); }
+    var signatureBarre = '';
+
     var retour = el('a', 'ody-retour');
     retour.href = '#teleportail';
     retour.setAttribute('aria-label', 'Téléportail');
@@ -2004,6 +2013,7 @@
     });
 
     var auClavier = function (e) {
+      if (/^[1-9]$/.test(e.key) && etat === 'libre' && CR) { e.preventDefault(); return utiliserBarre(+e.key - 1); }
       if ((e.key === 'e' || e.key === 'E') && etat === 'libre' && prise) { e.preventDefault(); return agir(); }
       if ((e.key === 'i' || e.key === 'I' || e.key === 'Tab') && etat === 'libre' && CR) { e.preventDefault(); return ouvrirSac(); }
       if (e.key === 'f' || e.key === 'F' || e.key === 'x' || e.key === 'X') {
@@ -2097,6 +2107,11 @@
         if (visite.pris[n.k]) return;
         out.push({ x: n.x, y: n.y + 4, dessin: function (ctx, sx, sy) {
           CR.dessinerNoeud(ctx, sx, sy - 4, n, t, palette, a, prise && prise.n === n);
+        } });
+      });
+      CR.poses(a.id).forEach(function (p) {
+        out.push({ x: (p.tx + 0.5) * TS, y: (p.ty + 0.5) * TS + 6, dessin: function (ctx, sx, sy) {
+          CR.dessinerPose(ctx, sx, sy - 6, p, t, prise && prise.pose === p);
         } });
       });
       coffres.forEach(function (c) {
@@ -2477,12 +2492,19 @@
         var d = Math.hypot(c.x - ch.x, c.y - ch.y);
         if (d < 30 && d < d0 + 6) { d0 = d; mieux = { c: c, quoi: 'OUVRIR' }; }
       });
+      CR.poses(a.id).forEach(function (p) {
+        var px = (p.tx + 0.5) * TS, py = (p.ty + 0.5) * TS;
+        var d = Math.hypot(px - ch.x, py - ch.y);
+        if (d < 32 && d < d0 + 6) { d0 = d; mieux = { pose: p, quoi: p.id === 'four' ? 'FOUR' : 'ÉTABLI' }; }
+      });
       if (mieux) return mieux;
       var dv = balade.caseDevant(), tx = dv[0], ty = dv[1];
       if (tx < 2 || ty < 2 || tx >= MW - 2 || ty >= MH - 2) return null;
       var tu = g[ty][tx];
       if (tu === T.ROCHE_A && CR.aOutil('pioche')) return { tx: tx, ty: ty, quoi: 'MINER', type: 'roche' };
       if (tu === T.CRISTAL && CR.aOutil('foreuse')) return { tx: tx, ty: ty, quoi: 'FORER', type: 'cristal' };
+      // Une grande plante se coupe, a la hache ou a mains nues.
+      if (tu === T.PLANTE) return { tx: tx, ty: ty, quoi: 'COUPER', type: 'plante' };
       return null;
     }
 
@@ -2507,6 +2529,7 @@
       if (!prise || etat !== 'libre') return;
       if (prise.n) recolter(prise.n);
       else if (prise.c) ouvrirCoffre(prise.c);
+      else if (prise.pose) ouvrirSac(prise.pose);
       else casser(prise.tx, prise.ty, prise.type);
       prise = null;
       majBoutons();
@@ -2567,22 +2590,124 @@
     // La pioche casse un rocher, la foreuse un cristal : la case devient
     // des gravats, et ce qui en sort tombe dans le sac.
     function casser(tx, ty, type) {
-      g[ty][tx] = T.GRAVATS;
-      visite.modifs.push([tx, ty, T.GRAVATS]);
+      // L'outil qui sert : il s'use d'un cran, et peut casser. A mains
+      // nues, on coupe une plante, mais elle donne moins.
+      var outil = CR.user(type === 'roche' ? 'pioche' : type === 'cristal' ? 'foreuse' : 'hache');
+      if (!outil && type !== 'plante') return;
+      var reste = type === 'plante' ? T.FLORE : T.GRAVATS;
+      g[ty][tx] = reste;
+      visite.modifs.push([tx, ty, reste]);
       M.repeindre(balade.monde, g, tx, ty, optsCarte);
       miniBase = null;
       var x = (tx + 0.5) * TS, y = (ty + 0.5) * TS, t = maintenant();
       for (var i = 0; i < 12; i++) {
-        eclats.push({ t0: t, x: x, y: y - 6, a: i * 0.52, couleur: type === 'roche' ? palette.rocheHaut : palette.cristal2, loin: 1.2, gros: true });
+        eclats.push({ t0: t, x: x, y: y - 6, a: i * 0.52, loin: 1.2, gros: true,
+                      couleur: type === 'roche' ? palette.rocheHaut : type === 'cristal' ? palette.cristal2 : (palette.flore2 || '#8ac85a') });
       }
       scene.classList.remove('is-coup');
       void scene.offsetWidth;
       scene.classList.add('is-coup');
-      gagner(CR.recolte(type, a), x, y);
+      var rang = outil ? outil.rang : 0;
+      gagner(type === 'plante' ? CR.recolte('grande-plante', a, { style: palette.plante, rang: rang })
+                               : CR.recolte(type, a, { rang: rang }), x, y);
+      if (outil && outil.brise) briser(outil.o, x, y);
+    }
+
+    // Un outil a bout : il se fend en eclats, et on le dit.
+    function briser(o, x, y) {
+      var t = maintenant();
+      for (var i = 0; i < 10; i++) eclats.push({ t0: t, x: x, y: y - 12, a: i * 0.63, couleur: o.c[0], loin: 1.4, gros: true });
+      CR.annoncerBris(scene, o);
+      dire(o.nom + ' s’est brisé. Répare-le avant : un outil abîmé et son matériau, dans la grille.');
+    }
+
+    // Poser une station (etabli, four) sur la case devant soi.
+    function poserStation(id) {
+      var dv = balade.caseDevant(), tx = dv[0], ty = dv[1];
+      if (tx < 2 || ty < 2 || tx >= MW - 2 || ty >= MH - 2) return 'Pas ici : trop près du bord.';
+      var tu = g[ty][tx];
+      if (M.BLOQUANT[tu] || tu === T.LIQUIDE) return 'Il faut une case libre devant toi pour la poser.';
+      var x = (tx + 0.5) * TS, y = (ty + 0.5) * TS;
+      var encombre = CR.poses(a.id).some(function (p) { return Math.abs(p.tx - tx) + Math.abs(p.ty - ty) < 2; }) ||
+        coffres.some(function (c) { return Math.hypot(c.x - x, c.y - y) < TS; }) ||
+        noeuds.some(function (n) { return !visite.pris[n.k] && Math.hypot(n.x - x, n.y - y) < TS * 0.8; });
+      if (encombre) return 'Il y a déjà quelque chose ici.';
+      if (!CR.poser(a.id, id, tx, ty)) return 'Impossible de la poser.';
+      var t = maintenant();
+      for (var i = 0; i < 12; i++) eclats.push({ t0: t, x: x, y: y - 4, a: i * 0.52, couleur: '#fff2c8', loin: 1.3 });
+      scene.classList.remove('is-coup');
+      void scene.offsetWidth;
+      scene.classList.add('is-coup');
+      dire(id === 'four' ? 'Le four est posé. Approche-toi pour y faire cuire quelque chose.'
+                         : 'L’établi est posé. À côté de lui, la grille passe à 3 × 3.');
+      miniBase = null;
+      return true;
+    }
+
+    // ---------- La barre rapide ----------
+    function majBarre() {
+      if (!CR) return;
+      var sac = CR.etat(), cases = sac.cases.slice(0, CR.BARRE);
+      var sig = JSON.stringify(cases) + etat;
+      if (sig === signatureBarre) return;
+      signatureBarre = sig;
+      barre.textContent = '';
+      barre.classList.toggle('is-cachee', etat === 'sac' || etat === 'ko');
+      for (var i = 0; i < CR.BARRE; i++) {
+        (function (i) {
+          var c = cases[i], b = el('button', 'ody-barre-case' + (c ? '' : ' is-vide'));
+          b.type = 'button';
+          b.appendChild(el('span', 'ody-barre-touche', String(i + 1)));
+          if (c) {
+            var o = CR.objet(c.id);
+            b.appendChild(CR.imgIcone(c.id, 'ody-barre-ic'));
+            if (c.n > 1) b.appendChild(el('span', 'ody-barre-n', String(c.n)));
+            if (o.dur && c.u != null && c.u < o.dur) {
+              var u = el('span', 'ody-barre-usure'), plein = el('i'), k = c.u / o.dur;
+              plein.style.width = Math.round(k * 100) + '%';
+              plein.style.background = k > 0.5 ? '#5ad06a' : k > 0.2 ? '#ffd23a' : '#ff5a4a';
+              u.appendChild(plein); b.appendChild(u);
+            }
+            if (o.cat === 'conso' || o.cat === 'repas') b.classList.add('is-utilisable');
+            // Au survol : le nom et la description, au-dessus de la barre.
+            b.addEventListener('pointerenter', function (e) {
+              if (e.pointerType !== 'mouse') return;
+              barreBulle.textContent = '';
+              barreBulle.appendChild(el('strong', null, o.nom + (c.n > 1 ? '  ×' + c.n : '')));
+              barreBulle.appendChild(el('span', null, o.desc));
+              if (o.dur && c.u != null) barreBulle.appendChild(el('em', null, 'Usure : ' + c.u + ' / ' + o.dur));
+              if (o.cat === 'conso' || o.cat === 'repas') barreBulle.appendChild(el('em', null, 'Touche ' + (i + 1) + ' ou clic : ' + (o.cat === 'repas' ? 'manger' : 'utiliser')));
+              barreBulle.hidden = false;
+            });
+            b.addEventListener('pointerleave', function () { barreBulle.hidden = true; });
+          }
+          b.addEventListener('click', function () { barreBulle.hidden = true; utiliserBarre(i); });
+          barre.appendChild(b);
+        })(i);
+      }
+    }
+
+    // Utiliser la case i de la barre : un soin, un repas, une bombe... Le
+    // reste ouvre le sac.
+    function utiliserBarre(i) {
+      if (!CR || etat !== 'libre') return;
+      var sac = CR.etat(), c = sac.cases[i], o = c && CR.objet(c.id);
+      if (!o || !(o.cat === 'conso' || o.cat === 'repas')) return ouvrirSac();
+      var dit = utiliser(o);
+      if (dit === false) return;
+      c.n--;
+      if (c.n <= 0) sac.cases[i] = null;
+      CR.sauver();
+      if (dit) dire(dit);
+      signatureBarre = '';
+      majBarre();
+      // Un petit eclat sur la case.
+      var nd = barre.children[i];
+      if (nd) { nd.classList.add('is-utilise'); setTimeout(function () { nd.classList.remove('is-utilise'); }, 400); }
     }
 
     // ---------- Le sac ----------
-    function ouvrirSac() {
+    function ouvrirSac(pose) {
       if (!CR || etat !== 'libre') return;
       etat = 'sac';
       majBoutons();
@@ -2591,8 +2716,9 @@
         dire: dire,
         maj: function () { majJauge(); },
         fermer: function () { if (etat === 'sac') etat = 'libre'; majJauge(); majBoutons(); },
-        utiliser: utiliser
-      });
+        utiliser: utiliser,
+        poser: poserStation
+      }, { station: pose ? pose.id : null, pose: pose || null, astre: a });
     }
 
     // Les consommables. Rend le texte a afficher, ou false si l'objet ne
@@ -2767,6 +2893,11 @@
         m.fillRect(c.tx - 1, c.ty - 1, 2, 2);
         if (!ouvert && detecte && !reduit && Math.floor(t / 400) % 2) { m.fillStyle = '#ffffff'; m.fillRect(c.tx, c.ty, 1, 1); }
       });
+      // Les stations posees.
+      CR.poses(a.id).forEach(function (p) {
+        m.fillStyle = p.id === 'four' ? '#ff9a3a' : '#e0b878';
+        m.fillRect(p.tx - 1, p.ty - 1, 2, 2);
+      });
       // Le voyageur, qui clignote.
       m.fillStyle = reduit || Math.floor(t / 300) % 2 ? '#ffffff' : '#ffd23a';
       m.fillRect(cx - 1, cy - 1, 3, 3);
@@ -2780,6 +2911,14 @@
       opts: optsCarte,
       // Les bottes de flottaison : les liquides se marchent.
       traverse: function (tu) { return tu === T.LIQUIDE && !!CR && CR.aOutil('bottes'); },
+      // Chaque case de liquide use les bottes ; elles ne cassent qu'une
+      // fois revenu sur la terre ferme.
+      surCase: function (tx, ty, tu) {
+        if (!CR) return;
+        if (tu === T.LIQUIDE) { CR.user('bottes', true); return; }
+        var usees = CR.finirBottes();
+        if (usees) briser(usees, balade.chef.x, balade.chef.y);
+      },
       vitesse: function () { return 88 * (CR ? CR.bonus().vitesse : 1); },
       depart: ou ? { x: ou.x, y: ou.y } : DEPART,
       direction: ou ? ou.dir : undefined,
@@ -2810,6 +2949,7 @@
 
         if (ART && etat === 'libre') ART.ramasser(cachesO, balade.chef);
         majMini(t);
+        majBarre();
         prise = etat === 'libre' && CR ? chercherPrise() : null;
         cibleTir = chercherCibleTir();
         if (etat === 'libre') cible = chercherCible();
@@ -2822,6 +2962,8 @@
         dire(menace ? (DP.aLArme() ? 'Une créature attaque — TIRER !'
                                    : 'Une créature attaque. Sans arme, mieux vaut fuir.')
           : prise ? (prise.n ? CR.nomNoeud(prise.n.type, a) + '.'
+                     : prise.pose ? (prise.pose.id === 'four' ? (CR.fourActif(prise.pose) ? 'Le four chauffe.' : 'Ton four.') : 'Ton établi : la grille 3 × 3.')
+                     : prise.type === 'plante' ? (CR.aOutil('hache') ? 'Une grande plante. La hache en tirera plus.' : 'Une grande plante. À mains nues, ça se coupe aussi.')
                      : prise.c ? (prise.c.scelle ? 'Un coffre scellé. Ce qui est dedans valait la peine d’être caché.' : 'Un coffre.')
                      : prise.type === 'roche' ? 'Un rocher. La pioche en viendra à bout.' : 'Un cristal. La foreuse le percera.')
           : gestePelle() === 'prendre' ? 'Une pelle, couchée derrière le cabanon.'
