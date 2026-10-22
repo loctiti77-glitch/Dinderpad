@@ -680,7 +680,7 @@
       glisse.bouge += Math.abs(dx) + Math.abs(dy);
       var rc = cv.getBoundingClientRect(), w = rc.width || 400, h = rc.height || 300;
       regard += dx / w * FOV * 1.7;
-      regardV += dy / h * RH * 1.4;
+      regardV -= dy / h * RH * 1.4;   // glisser vers le haut : lever les yeux
     });
     function finGlisse(e) {
       if (!glisse || e.pointerId !== glisse.id) return;
