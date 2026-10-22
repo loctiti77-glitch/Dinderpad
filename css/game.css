@@ -9154,3 +9154,174 @@ body.is-locked .pad-titre { display: none; }
   pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) { .ody-barre-case.is-utilise { animation: none; } }
+
+/* ==========================================================
+   L'Odyssee a la premiere personne (js/odyssey-fps.js)
+   ========================================================== */
+
+/* Le viseur : une croix fine au centre. Il rougit sur une cible, il
+   verdit sur ce qu'on peut scanner. */
+.ody-viseur {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: calc(26 * var(--px)); height: calc(26 * var(--px));
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+}
+.ody-viseur::before, .ody-viseur::after {
+  content: "";
+  position: absolute;
+  background: rgba(220, 250, 255, .75);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .45);
+}
+.ody-viseur::before { left: 50%; top: 0; bottom: 0; width: calc(2 * var(--px)); transform: translateX(-50%);
+  -webkit-mask: linear-gradient(#000 35%, transparent 35% 65%, #000 65%); mask: linear-gradient(#000 35%, transparent 35% 65%, #000 65%); }
+.ody-viseur::after { top: 50%; left: 0; right: 0; height: calc(2 * var(--px)); transform: translateY(-50%);
+  -webkit-mask: linear-gradient(90deg, #000 35%, transparent 35% 65%, #000 65%); mask: linear-gradient(90deg, #000 35%, transparent 35% 65%, #000 65%); }
+.ody-viseur.is-vise::before, .ody-viseur.is-vise::after { background: #ff5a4a; }
+.ody-viseur.is-vise { animation: ody-viseur .5s ease-in-out infinite alternate; }
+.ody-viseur.is-scan::before, .ody-viseur.is-scan::after { background: #7cf0c8; }
+.ody-scene[data-etat="sac"] .ody-viseur, .ody-scene[data-etat="ko"] .ody-viseur,
+.ody-scene[data-etat="boss"] .ody-viseur, .ody-scene[data-etat="fiche"] .ody-viseur { display: none; }
+@keyframes ody-viseur { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(.82); } }
+
+/* Le pointeur verrouille : la souris tourne la tete. */
+.ody-scene.is-verrou { cursor: none; }
+
+/* D'ou vient le coup : un croissant rouge sur le bord, tourne vers
+   l'agresseur. */
+.ody-coup-venu {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: min(70vh, 70%); aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(var(--a, 0deg));
+  border-radius: 50%;
+  border-top: calc(10 * var(--px)) solid rgba(255, 40, 30, .85);
+  filter: blur(calc(3 * var(--px)));
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.ody-coup-venu.is-la { animation: ody-coup-venu .9s ease-out; }
+@keyframes ody-coup-venu { from { opacity: 1; } to { opacity: 0; } }
+
+/* Les commandes, a l'arrivee. */
+.ody-aide {
+  position: absolute;
+  left: 50%; top: calc(60 * var(--px));
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: calc(4 * var(--px));
+  padding: calc(8 * var(--px)) calc(16 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(124, 240, 200, .45);
+  border-radius: calc(8 * var(--px));
+  background: rgba(2, 12, 16, .78);
+  color: #d8f8ff;
+  font: 700 max(calc(13 * var(--px)), 10px) "Courier New", monospace;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity .8s ease;
+  z-index: 3;
+  max-width: 86%;
+}
+.ody-aide.is-fini { opacity: 0; }
+
+/* Sous l'eau : REMONTER, et la jauge d'air. */
+.ody-remonter {
+  padding: calc(10 * var(--px)) calc(20 * var(--px));
+  border: calc(4 * var(--px)) solid #7ad8ff;
+  border-radius: calc(12 * var(--px));
+  background: rgba(4, 30, 52, .92);
+  color: #d8f4ff;
+  font: 700 max(calc(19 * var(--px)), 14px) "Courier New", monospace;
+  letter-spacing: calc(2 * var(--px));
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.ody-remonter[hidden] { display: none; }
+.ody-remonter:hover, .ody-remonter:focus-visible { background: rgba(10, 60, 96, .95); outline: none; }
+.ody-recolte[data-quoi="PLONGER"] { border-color: #7ad8ff; background: rgba(4, 30, 52, .92); color: #d8f4ff; }
+
+.ody-o2 {
+  position: absolute;
+  top: calc(66 * var(--px));
+  left: calc(16 * var(--px));
+  display: flex; align-items: center; gap: calc(8 * var(--px));
+  font: 700 max(calc(15 * var(--px)), 11px) "Courier New", monospace;
+  color: #a8e8ff;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+  z-index: 3;
+}
+.ody-o2[hidden] { display: none; }
+.ody-o2-barre {
+  width: calc(170 * var(--px)); height: calc(12 * var(--px));
+  border: calc(2 * var(--px)) solid #0a1d2e;
+  border-radius: calc(4 * var(--px));
+  background: rgba(2, 10, 14, .8);
+  overflow: hidden;
+}
+.ody-o2-plein { height: 100%; background: linear-gradient(180deg, #c8f4ff, #3aa8e8); transition: width .2s linear; }
+.ody-o2[data-bas="1"] .ody-o2-plein { background: linear-gradient(180deg, #ffb0a0, #e8483a); animation: ody-o2 .5s ease-in-out infinite alternate; }
+@keyframes ody-o2 { from { opacity: 1; } to { opacity: .45; } }
+
+/* Le chant d'une sirene : un voile rose qui se resserre sur les bords. */
+.ody-chant {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 120, 220, 0) 30%, rgba(255, 110, 210, .55) 100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .4s ease;
+  mix-blend-mode: screen;
+  z-index: 1;
+  animation: ody-chant 2.4s ease-in-out infinite alternate;
+}
+@keyframes ody-chant { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(-30deg); } }
+
+/* Sous la surface, le cadre prend la couleur du liquide. */
+.ody-scene.is-sousleau .ody-canvas { filter: saturate(1.1) contrast(1.05); }
+.ody-scene.is-sousleau::before {
+  content: "";
+  position: absolute; inset: 0;
+  box-shadow: inset 0 0 calc(80 * var(--px)) color-mix(in srgb, var(--liquide, #2a68c4) 70%, #000);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Le plouf : un rideau de liquide qui monte (ou retombe) et des bulles. */
+.ody-plouf {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  overflow: hidden;
+}
+.ody-plouf::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, var(--ecume, #fff) 0%, var(--liquide, #2a68c4) 18%, var(--liquide, #2a68c4) 100%);
+}
+.ody-plouf.is-entree::before { animation: ody-plouf-entree 1.1s ease-in both; }
+.ody-plouf.is-sortie::before { animation: ody-plouf-sortie 1.1s ease-out both; }
+@keyframes ody-plouf-entree {
+  0%   { transform: translateY(100%); opacity: 1; }
+  35%  { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+@keyframes ody-plouf-sortie {
+  0%   { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(105%); opacity: .6; }
+}
+.ody-plouf i {
+  position: absolute; bottom: -20px;
+  width: var(--t, 10px); height: var(--t, 10px);
+  border: 2px solid rgba(235, 250, 255, .85);
+  border-radius: 50%;
+  animation: ody-plouf-bulle 1s ease-in both;
+}
+@keyframes ody-plouf-bulle { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-110vh); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ody-viseur.is-vise, .ody-coup-venu.is-la, .ody-chant, .ody-o2[data-bas="1"] .ody-o2-plein,
+  .ody-plouf::before, .ody-plouf i { animation: none; }
+  .ody-plouf i { display: none; }
+}

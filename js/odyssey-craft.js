@@ -122,6 +122,9 @@
       desc: 'Elle éclaire la jungle la nuit. Elle soigne aussi.' },
     { id: 'lingot', nom: 'Lingot natif', cat: 'mat', f: 'lingot', c: ['#9aa4b0', '#e0e8f0', '#4a525c'], monde: 'ferron',
       desc: 'Du fer si pur qu’il sort du sol déjà en barre.' },
+    // ---- Ce que laissent les sirenes ----
+    { id: 'conque-sirene', nom: 'Conque de sirène', cat: 'mat', f: 'conque', c: ['#f0b8d0', '#fff0f6', '#a8587a'],
+      desc: 'Lâchée par une sirène en fuite. Contre l’oreille, elle chante encore.' },
     { id: 'eclat-vide', nom: 'Éclat du vide', cat: 'mat', f: 'eclat', c: ['#2a1a3a', '#ff5aa8', '#0a0410'], monde: 'brisure',
       desc: 'Un morceau de rien. Il pèse plus lourd qu’il ne devrait.' },
     { id: 'sable-chantant', nom: 'Sable chantant', cat: 'mat', f: 'sable', c: ['#e8c87a', '#fff0c0', '#a8884a'], monde: 'pyrrhe',
@@ -192,6 +195,10 @@
       givre: 6, desc: 'Fige les créatures proches pendant 6 secondes.' },
     { id: 'repulsif', nom: 'Répulsif', cat: 'conso', f: 'spray', c: ['#d8c82a', '#fff8a0', '#5a5a20'],
       repulsif: 20, desc: 'Les créatures te fuient pendant 20 secondes.' },
+    { id: 'bouchons', nom: 'Bouchons de résine', cat: 'conso', f: 'bouchons', c: ['#e8a83a', '#ffe0a0', '#8a5a14'],
+      bouchons: 90, desc: 'Plus aucun chant de sirène ne t’atteint pendant 90 secondes.' },
+    { id: 'bulle-air', nom: 'Bulle d’air', cat: 'conso', f: 'bulle', c: ['#a8e8ff', '#ffffff', '#3a8ac8'],
+      air: 25, desc: 'Sous l’eau : 25 secondes d’air en plus. Une conque en garde toujours un peu.' },
 
     // ---- L'equipement ----
     { id: 'armure-ferraille', nom: 'Armure de ferraille', cat: 'equip', place: 'armure', f: 'armure', c: ['#8a929c', '#c8d0d8', '#4a5058'],
@@ -337,6 +344,8 @@
     { id: 'trousse', sans: ['bandage', 'glande', 'resine'] },
     { id: 'elixir', sans: ['verre', 'coeur-bete', 'poussiere', 'poussiere'] },
     { id: 'repulsif', sans: ['resine', 'resine', 'glande', 'baies'] },
+    { id: 'bouchons', n: 2, sans: ['resine', 'fibre'] },
+    { id: 'bulle-air', n: 2, sans: ['conque-sirene', 'verre'] },
     { id: 'plaque', forme: ['LL'], cles: { L: 'lingot-fer' } },
     { id: 'ragout', sans: ['bol', 'viande-cuite', 'racine-rotie', 'champignon-grille'] },
 
@@ -601,6 +610,23 @@
     bombe: function (p, c) {
       ovale(p, 7, 10, 5, 5, c[0]); ovale(p, 5, 8, 2, 2, c[1]); p(9, 3, 2, 3, '#8a8478'); p(11, 2, 2, 1, '#a8824a');
       p(13, 1, 1, 1, c[2]); p(12, 0, 1, 1, '#fff4b0'); p(14, 2, 1, 1, c[2]);
+    },
+    // Une conque en spirale, nacree a l'interieur.
+    conque: function (p, c) {
+      ovale(p, 8, 9, 6, 5, c[0]); ovale(p, 9, 10, 3, 2, c[2]); ovale(p, 9, 10, 2, 1, c[1]);
+      p(3, 5, 3, 2, c[0]); p(2, 4, 2, 2, c[1]); p(12, 12, 3, 2, c[0]); p(14, 13, 1, 2, c[2]);
+      p(5, 6, 6, 1, c[1]); p(4, 8, 1, 3, c[2]); p(6, 13, 5, 1, c[2]); p(7, 4, 4, 1, c[0]);
+    },
+    // Deux bouchons de resine, tasses du bout des doigts.
+    bouchons: function (p, c) {
+      ovale(p, 5, 9, 3, 4, c[0]); ovale(p, 11, 8, 3, 4, c[0]);
+      p(4, 6, 2, 2, c[1]); p(10, 5, 2, 2, c[1]); p(5, 12, 2, 1, c[2]); p(11, 11, 2, 1, c[2]);
+      p(7, 2, 1, 2, '#ffffff'); p(3, 3, 1, 1, '#ffffff');
+    },
+    // Une bulle, avec son reflet.
+    bulle: function (p, c) {
+      ovale(p, 8, 8, 6, 6, c[2]); ovale(p, 8, 8, 5, 5, c[0]); ovale(p, 9, 9, 3, 3, c[2]);
+      p(5, 4, 2, 2, c[1]); p(4, 6, 1, 2, c[1]); p(12, 3, 2, 2, c[0]); p(13, 1, 1, 1, c[1]);
     },
     spray: function (p, c) {
       p(5, 5, 6, 10, c[0]); p(5, 5, 6, 1, c[1]); p(6, 8, 4, 4, c[1]); p(7, 9, 2, 2, c[2]);

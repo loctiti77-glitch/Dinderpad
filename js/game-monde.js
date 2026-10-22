@@ -1178,6 +1178,9 @@
   window.MONDE = {
     TS: TS, T: T, BLOQUANT: BLOQUANT, estEau: estEau,
     bruit: bruit, borne: borne, vue: vue,
-    peindre: peindre, repeindre: repeindre, Balade: Balade
+    peindre: peindre, repeindre: repeindre, Balade: Balade,
+    // Pour la vue a la premiere personne de l'Odyssee (js/odyssey-fps.js) :
+    // le sol seul, sans ce qui pousse ou se dresse dessus.
+    solTuile: solTuile, teinte: teinte
   };
 })();

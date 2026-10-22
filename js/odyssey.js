@@ -1221,6 +1221,30 @@
     p(-3, -61, L + 6, 2, '#b04634');
   }
 
+  // Ce qu'on voit dans le ciel de chaque monde, a la premiere personne :
+  // le Soleil (plus gros sur Mercure que sur Neptune), les lunes, la
+  // Terre vue de la Lune ; dans le systeme stellaire, son etoile et une
+  // geante gazeuse a anneaux.
+  function astresCiel(a) {
+    var out = [];
+    if (a.systeme === 'stellaire') {
+      out.push({ az: 0.1, haut: 0.62, r: 7, c1: '#ffc890', c2: '#ffffff', halo: true });
+      var h = M.bruit(a.rang || 1, 3, 77);
+      out.push({ az: 0.45 + h * 0.3, haut: 0.42, r: 12 + Math.round(h * 8), c1: a.ciel[2], c2: a.palette.cristal2 || '#ffffff',
+                 bandes: true, anneau: h > 0.4, ombre: true });
+      return out;
+    }
+    var r = Math.max(2, Math.round(13 - (a.rang || 3) * 1.4));
+    out.push({ az: 0.1, haut: 0.65, r: r, c1: '#fff4c8', c2: '#ffffff', halo: true });
+    if (a.id === 'terre') out.push({ az: 0.58, haut: 0.7, r: 5, c1: '#d8d8e0', c2: '#ffffff', ombre: true });
+    if (a.id === 'lune') out.push({ az: 0.6, haut: 0.55, r: 14, c1: '#3a7ad8', c2: '#7ac85a', ombre: true });
+    if (a.id === 'mars') { out.push({ az: 0.5, haut: 0.7, r: 2, c1: '#a89888' }); out.push({ az: 0.72, haut: 0.5, r: 1, c1: '#a89888' }); }
+    if (a.id === 'jupiter') { out.push({ az: 0.4, haut: 0.6, r: 3, c1: '#f0d060', ombre: true }); out.push({ az: 0.66, haut: 0.75, r: 2, c1: '#c8b8a0' }); }
+    if (a.id === 'saturne') out.push({ az: 0.55, haut: 0.58, r: 4, c1: '#e0a050', ombre: true });
+    if (a.id === 'uranus' || a.id === 'neptune') out.push({ az: 0.6, haut: 0.66, r: 3, c1: '#c8c8d8', ombre: true });
+    return out;
+  }
+
   function ecranMonde(jeu, idAstre, ou) {
     var a = V.astre(idAstre);
     if (!a) { location.hash = '#teleportail'; return; }
@@ -1228,6 +1252,8 @@
     jeu.textContent = '';
     DP.noterAstre(a.id);
     ongletSys = a.systeme;
+    // Chaque monde a sa musique.
+    if (window.MUSIQUE_JEUX && window.MUSIQUE_JEUX.planete) window.MUSIQUE_JEUX.planete(a.id);
     var lune = a.id === 'lune';
     var CR = window.ODYCRAFT;
     if (!ou || !visite || visite.astre !== a.id) {
@@ -1293,6 +1319,11 @@
     recolteB.type = 'button';
     recolteB.hidden = true;
     boutons.appendChild(recolteB);
+    // Sous l'eau : remonter a la surface, a tout moment.
+    var remonterB = el('button', 'ody-remonter', 'REMONTER');
+    remonterB.type = 'button';
+    remonterB.hidden = true;
+    boutons.appendChild(remonterB);
     scene.appendChild(boutons);
 
     // Le sac, en haut, a cote du Teleportail.
@@ -1332,6 +1363,24 @@
     retour.title = 'Téléportail';
     retour.appendChild(imageTelecommande('ody-retour-img'));
     scene.appendChild(retour);
+
+    // La vue a la premiere personne : un viseur au centre, une lueur
+    // rouge sur le bord d'ou vient le coup qu'on recoit.
+    var viseur = el('div', 'ody-viseur');
+    scene.appendChild(viseur);
+    var coupVenu = el('div', 'ody-coup-venu');
+    scene.appendChild(coupVenu);
+    // Les commandes, rappelees a l'arrivee, puis qui s'effacent.
+    var tactile = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    var aide = el('div', 'ody-aide');
+    aide.appendChild(el('span', null, tactile
+      ? 'Joystick : avancer · Glisser l’écran : regarder · Toucher : tirer'
+      : 'Clic : prendre la souris · ZQSD / WASD : avancer · Souris ou ← → : regarder'));
+    aide.appendChild(el('span', null, tactile
+      ? 'Face à l’eau : PLONGER'
+      : 'Clic : tirer · Clic droit / Espace : scanner · E : agir, plonger · R : remonter · Échap : libérer la souris'));
+    scene.appendChild(aide);
+    setTimeout(function () { aide.classList.add('is-fini'); }, 9000);
 
     var panneau = el('div', 'ody-panneau');
     panneau.hidden = true;
@@ -1395,7 +1444,7 @@
     }
 
     reprise = { astre: a.id, x: ou ? ou.x : DEPART.x, y: ou ? ou.y : DEPART.y,
-                dir: ou ? ou.dir : 0 };
+                dir: ou ? ou.dir : 0, ang: ou ? ou.ang : undefined };
 
     // --- Le voyageur ---
     // Les PV max suivent l'armure portee.
@@ -1456,7 +1505,7 @@
     // Les rochers deja casses de cette visite.
     visite.modifs.forEach(function (m) { g[m[1]][m[0]] = m[2]; });
 
-    var balade = null;
+    var balade = null, PL = null;
     var cible = null, cibleTir = null;
     var scan = null, tirs = [], chiffres = [];
     var SCAN_DUREE = 2000;
@@ -1471,6 +1520,10 @@
     function maintenant() { return performance.now(); }
 
     function dire(txt) { if (hudTxt.textContent !== txt) hudTxt.textContent = txt; }
+    // Un message qui reste affiche un moment, par-dessus ce que le bandeau
+    // dit d'habitude a chaque image.
+    var messageJusqua = 0;
+    function direPour(txt, ms) { dire(txt); messageJusqua = maintenant() + (ms || 2600); }
 
     function majJauge() {
       var k = pv / pvMax();
@@ -1488,36 +1541,59 @@
       return Math.hypot(b.x - balade.chef.x, b.y - balade.chef.y);
     }
 
-    // --- Le scanner ---
+    // --- Ce qu'on a dans le viseur ---
+    // L'ecart entre le regard et la chose, rapporte a sa distance et a sa
+    // taille ; null si elle est trop loin, hors du champ, ou derriere un
+    // mur. Le meilleur score est la chose la plus au centre.
+    function dansLeViseur(x, y, portee, demiLarg, h) {
+      var ch = balade.chef, dx = x - ch.x, dy = y - ch.y, d = Math.hypot(dx, dy);
+      if (d > portee || d < 1) return null;
+      var c = Math.cos(ch.ang), sn = Math.sin(ch.ang);
+      var prof = dx * c + dy * sn;
+      if (prof < 4) return null;
+      var lat = -dx * sn + dy * c;
+      var ecart = Math.max(0, Math.abs(lat) - (demiLarg || 10));
+      if (ecart / prof > 0.17) return null;
+      var pr = balade.projeter ? balade.projeter(x, y, h || 12) : null;
+      if (pr && balade.visible && !balade.visible(pr.x, prof)) return null;
+      return { d: d, score: ecart / prof + d / 5000 };
+    }
+
+    // Devant soi, a portee de main.
+    function aPortee(x, y, dmax) {
+      var ch = balade.chef, dx = x - ch.x, dy = y - ch.y, d = Math.hypot(dx, dy);
+      if (d > dmax) return null;
+      if (d < 14) return d;
+      var cosA = (dx * Math.cos(ch.ang) + dy * Math.sin(ch.ang)) / d;
+      return cosA > 0.55 ? d : null;
+    }
+
+    // --- Le scanner : ce qu'on vise, jusqu'a six cases ---
     function chercherCible() {
-      var mieux = null, d2 = 46;
-      betes.forEach(function (b) {
-        if (b.mort) return;
-        var d = distance(b);
-        if (d < d2) { d2 = d; mieux = { sujet: b.v, ref: b }; }
-      });
-      choses.forEach(function (c) {
-        var d = Math.hypot(c.x - balade.chef.x, c.y - balade.chef.y);
-        if (d < d2) { d2 = d; mieux = { sujet: c.o, ref: c }; }
-      });
+      if (PL && PL.actif()) return null;
+      var mieux = null, s0 = Infinity;
+      function voir(sujet, ref, x, y, larg, h) {
+        var v = dansLeViseur(x, y, 150, larg, h);
+        if (v && v.score < s0) { s0 = v.score; mieux = { sujet: sujet, ref: ref }; }
+      }
+      betes.forEach(function (b) { if (!b.mort) voir(b.v, b, b.x, b.y, 12 * (b.v.taille || 1)); });
+      choses.forEach(function (c) { voir(c.o, c, c.x, c.y, 14); });
       if (cur && (!lune || bossBattu())) {
         var lx = (lieu.x + 0.5) * TS, ly = (lieu.y + 0.5) * TS;
-        var d3 = Math.hypot(lx - balade.chef.x, ly - balade.chef.y);
-        if (d3 < d2 + (lune ? 30 : 0)) mieux = { sujet: cur, ref: { x: lx, y: ly } };
+        voir(cur, { x: lx, y: ly }, lx, ly, lune ? 70 : 34, 20);
       }
       return mieux;
     }
 
-    // --- La cible du pistolet : la plus menacante a portee ---
+    // --- La cible du pistolet : ce qui est au bout du canon ---
     function chercherCibleTir() {
       if (!DP.aLArme()) return null;
-      var mieux = null, score = Infinity;
-      betes.forEach(function (b) {
-        if (b.mort) return;
-        var d = distance(b);
-        if (d > 170) return;
-        var s = d - (b.agressif ? 80 : 0);
-        if (s < score) { score = s; mieux = b; }
+      var mieux = null, s0 = Infinity;
+      var liste = PL && PL.actif() ? [] : betes.filter(function (b) { return !b.mort; });
+      if (PL) liste = liste.concat(PL.sirenes());
+      liste.forEach(function (b) {
+        var v = dansLeViseur(b.x, b.y, 240, 12 * ((b.v && b.v.taille) || 1), b.sirene && b.surface ? 26 : 12);
+        if (v && v.score < s0) { s0 = v.score; mieux = b; }
       });
       return mieux;
     }
@@ -1557,12 +1633,17 @@
         if (bSac.textContent !== txtSac) bSac.textContent = txtSac;
         sacB.classList.toggle('is-plein', nSac.cases.length >= nSac.taille);
       }
-      tir.hidden = !(libre || etat === 'scan') || !cibleTir;
+      // On peut toujours tirer : le viseur dit seulement si l'on vise juste.
+      tir.hidden = !(libre || etat === 'scan') || !DP.aLArme();
       if (!tir.hidden) {
         var A = window.ARME;
         var pret = maintenant() - dernierTir >= (A ? A.niveauJeu('odyssee').cadence : 620);
         tir.classList.toggle('is-recharge', !pret);
+        tir.classList.toggle('is-vise', !!cibleTir);
       }
+      viseur.classList.toggle('is-vise', !!cibleTir);
+      viseur.classList.toggle('is-scan', !cibleTir && !!cible && libre);
+      remonterB.hidden = !(PL && PL.actif()) || !libre;
     }
 
     // ---------- La pelle ----------
@@ -1746,7 +1827,7 @@
       // les pieds sur son point d'attache. Le scan suit la bete si elle
       // bouge, d'ou la reference gardee plutot que sa position.
       var fs = V.feuille(sujet.id);
-      var ech = sujet.objet ? 1.1 : sujet.forme ? 2.2 : (sujet.taille || 1);
+      var ech = sujet.objet ? 1.1 : sujet.forme ? 2.2 : (sujet.taille || 1) * 0.78;
       var sw = (fs ? fs.L : 40) * ech, sh = (fs ? fs.H : 32) * ech;
       scan = {
         t0: maintenant(), ref: ref, sujet: sujet, w: sw, h: sh,
@@ -1835,18 +1916,27 @@
       // Le bouton est cache sans l'arme, mais le clavier, lui, ne l'est
       // pas : c'est donc ici que se tranche la question.
       if (!DP.aLArme()) return;
-      if (!(etat === 'libre' || etat === 'scan') || !cibleTir) return;
+      if (!(etat === 'libre' || etat === 'scan')) return;
       var A = window.ARME;
       var nv = A ? A.niveauJeu('odyssee') : { degats: 6, cadence: 620 };
       var t = maintenant();
       if (t - dernierTir < nv.cadence) return;
       dernierTir = t;
+      bruitTir();
       var b = cibleTir;
       var deg = Math.round(nv.degats * (CR ? CR.bonus().degats : 1));
-      tirs.push({ t0: t, x: b.x, y: b.y - 10 });
+      // Rien dans le viseur : le tir part quand meme, et se perd.
+      if (!b) { tirs.push({ t0: t, rate: true }); majBoutons(); return; }
+      tirs.push({ t0: t, x: b.x, y: b.y, h: b.sirene ? (b.surface ? 24 : 26) : 12 });
+      if (b.sirene) {
+        chiffres.push({ t0: t, x: b.x, y: b.y, h: 40, txt: '-' + deg });
+        PL.toucher(b, deg);
+        majBoutons();
+        return;
+      }
       b.pv = Math.max(0, b.pv - deg);
       b.touche = t;
-      chiffres.push({ t0: t, x: b.x, y: b.y - 26, txt: '-' + deg });
+      chiffres.push({ t0: t, x: b.x, y: b.y, h: 30, txt: '-' + deg });
 
       // Une bete qu'on blesse ne reste pas indifferente : les plus fortes
       // se retournent, les plus faibles detalent.
@@ -1865,7 +1955,7 @@
       // monnaie de l'armurerie d'ici.
       DP.gagnerRoches(b.f.noyaux);
       DP.noterAbattu(b.v.id);
-      chiffres.push({ t0: t, x: b.x, y: b.y - 40, txt: '+' + b.f.noyaux + ' ☀', noyau: true });
+      chiffres.push({ t0: t, x: b.x, y: b.y, h: 44, txt: '+' + b.f.noyaux + ' ☀', noyau: true });
       dire(b.v.nom + ' abattu.');
       if (CR) gagner(CR.butinBete(b.v, a), b.x, b.y);
       var A = window.ARME;
@@ -1900,16 +1990,27 @@
 
     // --- Les coups recus ---
     function encaisser(b, t) {
-      var coup = b.f.degats;
+      b.coup = t;
+      subir(b.f.degats, b, t);
+    }
+
+    // Un coup recu : le bouclier d'abord, puis les PV. "src" dit d'ou il
+    // vient, pour la lueur sur le bord de l'ecran.
+    function subir(coup, src, t) {
+      t = t || maintenant();
       if (bouclierPV > 0) {
         var absorbe = Math.min(bouclierPV, coup);
         bouclierPV -= absorbe; coup -= absorbe;
-        eclats.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 14, bouclier: true });
+        eclats.push({ t0: t, moi: true, bouclier: true });
       }
       pv = Math.max(0, pv - coup);
       dernierCoupRecu = t;
-      b.coup = t;
-      chiffres.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 30, txt: coup ? '-' + coup : '◈', moi: true });
+      if (src && src.x != null) {
+        var ang = Math.atan2(src.y - balade.chef.y, src.x - balade.chef.x) - balade.chef.ang;
+        coupVenu.style.setProperty('--a', (ang * 180 / Math.PI + 90).toFixed(0) + 'deg');
+        coupVenu.classList.remove('is-la'); void coupVenu.offsetWidth; coupVenu.classList.add('is-la');
+      }
+      chiffres.push({ t0: t, moi: true, txt: coup ? '-' + coup : '◈' });
       scene.classList.remove('is-touche');
       void scene.offsetWidth;
       scene.classList.add('is-touche');
@@ -1921,6 +2022,7 @@
       if (etat === 'ko') return;
       etat = 'ko';
       scan = null;
+      if (PL) PL.arreter();
       scene.classList.remove('is-scan');
       majBoutons();
       panneau.hidden = false;
@@ -2006,6 +2108,7 @@
     surAppui(action, lancerScan);
     surAppui(tir, tirer);
     surAppui(recolteB, function () { if (etat === 'libre' && prise) agir(); });
+    surAppui(remonterB, function () { if (etat === 'libre' && PL && PL.actif()) PL.remonter(); });
     sacB.addEventListener('click', function () { if (etat === 'libre') ouvrirSac(); });
     surAppui(holo, function () {
       if (etat !== 'libre' || !gardien || !bossBattu()) return;
@@ -2015,6 +2118,7 @@
     var auClavier = function (e) {
       if (/^[1-9]$/.test(e.key) && etat === 'libre' && CR) { e.preventDefault(); return utiliserBarre(+e.key - 1); }
       if ((e.key === 'e' || e.key === 'E') && etat === 'libre' && prise) { e.preventDefault(); return agir(); }
+      if ((e.key === 'r' || e.key === 'R') && etat === 'libre' && PL && PL.actif()) { e.preventDefault(); return PL.remonter(); }
       if ((e.key === 'i' || e.key === 'I' || e.key === 'Tab') && etat === 'libre' && CR) { e.preventDefault(); return ouvrirSac(); }
       if (e.key === 'f' || e.key === 'F' || e.key === 'x' || e.key === 'X') {
         if (etat === 'boss') return;
@@ -2035,9 +2139,11 @@
       derniere = t;
       var chefX = balade.chef.x, chefY = balade.chef.y;
       var chassent = (etat === 'libre' || etat === 'scan') && pv > 0;
+      var plonge = PL && PL.actif();
+      if (PL) PL.animer(dt, t, etat === 'libre' && pv > 0);
 
       betes.forEach(function (b, i) {
-        if (b.mort) return;
+        if (b.mort || plonge) return;
         // Prise dans le givre : elle ne bouge ni ne mord.
         if (b.gel > t) return;
         var dx = chefX - b.x, dy = chefY - b.y;
@@ -2049,8 +2155,11 @@
         } else if (b.fuite > t) {
           vx = -dx / d; vy = -dy / d; vit = b.f.vitesse * 1.3;
         } else if (b.agressif && chassent && d < 135) {
-          if (d > 16) { vx = dx / d; vy = dy / d; vit = b.f.vitesse; }
-          else if (t - b.coup > 1150) encaisser(b, t);
+          // En vue subjective, elle s'arrete a un pas : on la voit mordre
+          // au lieu de l'avoir collee aux yeux.
+          var pas = 34 + 10 * (b.v.taille || 1);
+          if (d > pas) { vx = dx / d; vy = dy / d; vit = b.f.vitesse; }
+          if (d < pas + 10 && t - b.coup > 1150) encaisser(b, t);
         } else if (!reduit) {
           // L'errance : un point qui tourne lentement autour de l'attache.
           var tx = b.ax + Math.sin(t / (1500 + i * 70) + b.ph) * 30;
@@ -2070,7 +2179,7 @@
       // plus vite et plus tot avec l'amulette, tout de suite avec l'elixir.
       var rg = CR ? CR.bonus().regen : 1, pm = pvMax();
       if (pv > pm) { pv = pm; majJauge(); }
-      if (pv > 0 && pv < pm && etat !== 'boss') {
+      if (pv > 0 && pv < pm && etat !== 'boss' && !plonge) {
         if (regenJusqua > t) { pv = Math.min(pm, pv + 14 * dt); majJauge(); }
         else if (t - dernierCoupRecu > (rg > 1 ? 2000 : 4000)) { pv = Math.min(pm, pv + 4 * rg * dt); majJauge(); }
       }
@@ -2078,12 +2187,13 @@
 
     // --- Ce qu'on peint avec le decor, a sa profondeur ---
     function extras(t) {
-      var out = [];
+      // Sous l'eau, on ne voit plus que ce qui est sous l'eau.
+      if (PL && PL.actif()) return PL.extras(t);
+      var out = PL ? PL.extras(t) : [];
 
-      // Le cabanon, et la pelle derriere lui tant qu'on ne l'a pas prise.
+      // La pelle derriere le cabanon, tant qu'on ne l'a pas prise. Le
+      // cabanon lui-meme, ce sont ses murs de planches.
       if (CABANON) {
-        out.push({ x: (CABANON.x0 + CABANON.x1 + 1) / 2 * TS, y: (CABANON.y1 + 1) * TS - 1,
-          dessin: function (ctx, sx, sy) { dessinerCabanon(ctx, sx, sy); } });
         if (!DP.aLaPelle()) {
           out.push({ x: PELLE.x, y: PELLE.y,
             dessin: function (ctx, sx, sy) {
@@ -2192,36 +2302,42 @@
       if (ART) out = out.concat(ART.extras(cachesO, balade && balade.chef, t));
 
       if (repaire && !lune) {
-        // Le repaire : un gouffre borde de la couleur du gardien, des
-        // griffures, et deux yeux qui s'allument tant qu'il n'est pas vaincu.
+        // Le repaire, a hauteur d'yeux : une butte de roche percee d'une
+        // gueule noire, bordee de la couleur du gardien, des griffures
+        // tout autour, et deux yeux qui s'allument tant qu'il vit.
         out.push({
-          x: repaire.px, y: repaire.py - 30,
+          x: repaire.px, y: repaire.py - 30, sol: 30,
           dessin: function (ctx, sx, sy) {
             var gx = sx, gy = sy + 30, battu = bossBattu();
             var puls = reduit || battu ? 0.5 : 0.5 + 0.5 * Math.sin(t / 500);
+            ctx.fillStyle = palette.rocheOmbre;
+            ctx.beginPath(); ctx.ellipse(gx, gy, 46, 36, 0, Math.PI, 0); ctx.fill();
+            ctx.fillStyle = palette.roche;
+            ctx.beginPath(); ctx.ellipse(gx - 4, gy - 2, 40, 31, 0, Math.PI, 0); ctx.fill();
+            ctx.fillStyle = palette.rocheHaut;
+            ctx.fillRect(Math.round(gx - 30), Math.round(gy - 26), 18, 3);
+            ctx.fillRect(Math.round(gx + 6), Math.round(gy - 31), 12, 2);
             ctx.save();
-            ctx.globalAlpha = battu ? 0.5 : 0.35 + 0.4 * puls;
+            ctx.globalAlpha = battu ? 0.4 : 0.35 + 0.45 * puls;
             ctx.fillStyle = gardien.c[2];
-            ctx.beginPath(); ctx.ellipse(gx, gy, 34, 17, 0, 0, 6.3); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(gx, gy, 25, 22, 0, Math.PI, 0); ctx.fill();
             ctx.restore();
-            ctx.fillStyle = '#0a0a0e';
-            ctx.beginPath(); ctx.ellipse(gx, gy, 28, 13, 0, 0, 6.3); ctx.fill();
-            ctx.fillStyle = '#000';
-            ctx.beginPath(); ctx.ellipse(gx, gy + 2, 20, 8, 0, 0, 6.3); ctx.fill();
-            ctx.strokeStyle = 'rgba(10,10,10,.6)';
+            ctx.fillStyle = '#07070a';
+            ctx.beginPath(); ctx.ellipse(gx, gy, 21, 19, 0, Math.PI, 0); ctx.fill();
+            ctx.strokeStyle = 'rgba(10,10,10,.55)';
             ctx.lineWidth = 2;
             for (var k = 0; k < 5; k++) {
-              var an = k / 5 * 6.28 + 0.3;
+              var an = Math.PI + (k + 0.5) / 5 * Math.PI;
               ctx.beginPath();
-              ctx.moveTo(gx + Math.cos(an) * 36, gy + Math.sin(an) * 18);
-              ctx.lineTo(gx + Math.cos(an) * 46, gy + Math.sin(an) * 23);
+              ctx.moveTo(gx + Math.cos(an) * 27, gy + Math.sin(an) * 24);
+              ctx.lineTo(gx + Math.cos(an) * 37, gy + Math.sin(an) * 31);
               ctx.stroke();
             }
             if (!battu) {
               var lueur = reduit ? 0.6 : Math.max(0, Math.sin(t / 800)) * 0.95;
               ctx.fillStyle = 'rgba(232,72,58,' + lueur.toFixed(2) + ')';
-              ctx.fillRect(Math.round(gx - 9), Math.round(gy - 2), 4, 3);
-              ctx.fillRect(Math.round(gx + 5), Math.round(gy - 2), 4, 3);
+              ctx.fillRect(Math.round(gx - 9), Math.round(gy - 11), 4, 3);
+              ctx.fillRect(Math.round(gx + 5), Math.round(gy - 11), 4, 3);
             }
           }
         });
@@ -2230,7 +2346,7 @@
       betes.forEach(function (b) {
         if (b.mort && t - b.mortT > 700) return;
         out.push({
-          x: b.x, y: b.y,
+          x: b.x, y: b.y, echelle: 0.78,
           dessin: function (ctx, sx, sy) {
             var fb = V.feuille(b.v.id);
             if (!fb) return;
@@ -2287,11 +2403,15 @@
     // le faisceau le balaie de haut en bas puis de bas en haut en
     // revelant sa silhouette, et l'eclat final renvoie le releve vers le
     // Teleportail.
-    function dessinerScan(ctx, cam, t) {
+    function dessinerScan(ctx, V, t) {
       var k = Math.min(1, (t - scan.t0) / (reduit ? 200 : SCAN_DUREE));
-      var w = scan.w, h = scan.h;
-      var bx = scan.ref.x - cam.x, by = scan.ref.y - cam.y + scan.dy;
-      var ox = balade.chef.x - cam.x, oy = balade.chef.y - cam.y - 16;
+      // Le sujet, la ou il est a l'ecran : sa taille suit sa distance. Le
+      // faisceau part du scanner, dans la main gauche.
+      var pr = V.projeter(scan.ref.x, scan.ref.y, -scan.dy);
+      if (!pr) return;
+      var w = Math.max(6, scan.w * pr.s), h = Math.max(6, scan.h * pr.s);
+      var bx = pr.x, by = pr.y;
+      var ox = mainG.x, oy = mainG.y;
       var verrou = Math.min(1, k / 0.14);
       var lect = Math.max(0, Math.min(1, (k - 0.14) / 0.68));
       var fin = Math.max(0, (k - 0.82) / 0.18);
@@ -2408,70 +2528,176 @@
       ctx.textAlign = 'left';
     }
 
-    // --- Par-dessus tout : les tirs, le scan, les chiffres, le monstre ---
-    function apres(ctx, cam, t) {
-      var i;
-      for (i = tirs.length - 1; i >= 0; i--) {
-        var r = tirs[i], ag = Math.max(0, (t - r.t0) / 180);
-        if (ag >= 1) { tirs.splice(i, 1); continue; }
-        ctx.strokeStyle = 'rgba(124,240,255,' + (1 - ag).toFixed(2) + ')';
-        ctx.lineWidth = 2.5 - ag * 1.5;
-        ctx.beginPath();
-        ctx.moveTo(balade.chef.x - cam.x, balade.chef.y - cam.y - 16);
-        ctx.lineTo(r.x - cam.x, r.y - cam.y);
-        ctx.stroke();
-        ctx.strokeStyle = 'rgba(255,200,120,' + (1 - ag).toFixed(2) + ')';
-        ctx.beginPath();
-        ctx.arc(r.x - cam.x, r.y - cam.y, 3 + ag * 10, 0, 6.3);
-        ctx.stroke();
-      }
-
-      if (scan) dessinerScan(ctx, cam, t);
-      effets(ctx, cam, t);
-
-      ctx.textAlign = 'center';
-      ctx.font = 'bold 11px "Courier New", monospace';
-      for (i = chiffres.length - 1; i >= 0; i--) {
-        var c = chiffres[i], ac = Math.max(0, (t - c.t0) / 900);
-        if (ac >= 1) { chiffres.splice(i, 1); continue; }
-        ctx.fillStyle = c.moi ? 'rgba(255,90,74,' + (1 - ac).toFixed(2) + ')'
-          : c.noyau ? 'rgba(255,209,102,' + (1 - ac).toFixed(2) + ')'
-          : 'rgba(255,236,200,' + (1 - ac).toFixed(2) + ')';
-        ctx.fillText(c.txt, c.x - cam.x, c.y - cam.y - ac * 18);
-      }
-      ctx.textAlign = 'left';
+    // --- Par-dessus tout : le monstre, les effets, les tirs, le scan, les
+    // chiffres, et les mains du voyageur ---
+    var mainG = { x: 60, y: 170 }, mainD = { x: 200, y: 165 };
+    function apres(ctx, V, t) {
+      var i, W = V.L, H = V.H;
+      ctx.imageSmoothingEnabled = false;
 
       // Le monstre qui sort : la poussiere, puis la tete, gueule ouverte.
       if (surgi) {
         var ks = Math.min(1, (t - surgi.t0) / SURGIT_DUREE);
-        var gx = repaire.x * TS - cam.x, gy = repaire.y * TS - cam.y;
-        for (i = 0; i < 16; i++) {
-          var ph = (ks * 1.6 + i / 16) % 1;
-          ctx.fillStyle = 'rgba(160,160,150,' + (0.5 * (1 - ph)).toFixed(2) + ')';
-          ctx.beginPath();
-          ctx.arc(gx + Math.cos(i * 2.4) * (20 + ph * 60), gy + 30 - ph * 20,
-                  4 + ph * 10, 0, 6.3);
-          ctx.fill();
-        }
-        var B = window.BOSS;
-        var fm = B && B.feuille(gardien.id, ks > 0.55);
-        if (fm) {
-          var montee = Math.min(1, ks * 1.35);
-          var e2 = 0.35 + montee * 0.55;
-          ctx.save();
-          ctx.imageSmoothingEnabled = false;
-          ctx.beginPath();
-          ctx.rect(gx - 200, -40, 400, gy + 84);
-          ctx.clip();
-          ctx.drawImage(fm.canvas, gx - fm.L * e2 / 2, gy + 40 - fm.H * e2 * montee,
-                        fm.L * e2, fm.H * e2);
-          ctx.restore();
+        var pg = V.projeter(repaire.x * TS, repaire.y * TS, 0);
+        if (pg) {
+          for (i = 0; i < 16; i++) {
+            var ph = (ks * 1.6 + i / 16) % 1;
+            ctx.fillStyle = 'rgba(160,160,150,' + (0.5 * (1 - ph)).toFixed(2) + ')';
+            ctx.beginPath();
+            ctx.arc(pg.x + Math.cos(i * 2.4) * (20 + ph * 60) * pg.s, pg.y - (ph * 30) * pg.s,
+                    (4 + ph * 10) * pg.s, 0, 6.3);
+            ctx.fill();
+          }
+          var B = window.BOSS;
+          var fm = B && B.feuille(gardien.id, ks > 0.55);
+          if (fm) {
+            var montee = Math.min(1, ks * 1.35);
+            // Il surgit grand, mais on doit encore le voir en entier.
+            var e2 = Math.min((0.35 + montee * 0.55) * pg.s, H * 0.95 / fm.H);
+            ctx.save();
+            ctx.beginPath(); ctx.rect(0, 0, W, pg.y); ctx.clip();
+            ctx.drawImage(fm.canvas, pg.x - fm.L * e2 / 2, pg.y + 10 * pg.s - fm.H * e2 * montee, fm.L * e2, fm.H * e2);
+            ctx.restore();
+          }
         }
         if (ks > 0.8) {
           ctx.fillStyle = 'rgba(20,4,4,' + ((ks - 0.8) / 0.2 * 0.9).toFixed(2) + ')';
-          ctx.fillRect(0, 0, cv.width, cv.height);
+          ctx.fillRect(0, 0, W, H);
         }
       }
+
+      effets(ctx, V, t);
+      if (PL) PL.apres(ctx, V, t);
+
+      // Les tirs : un trait du canon vers la cible, un eclat au bout.
+      for (i = tirs.length - 1; i >= 0; i--) {
+        var r = tirs[i], ag = Math.max(0, (t - r.t0) / 170);
+        if (ag >= 1) { tirs.splice(i, 1); continue; }
+        var fin = r.rate ? { x: W / 2, y: V.hor(), s: 0.2 } : V.projeter(r.x, r.y, r.h);
+        if (!fin) continue;
+        ctx.strokeStyle = 'rgba(124,240,255,' + (1 - ag).toFixed(2) + ')';
+        ctx.lineWidth = 2.5 - ag * 1.5;
+        ctx.beginPath(); ctx.moveTo(mainD.x, mainD.y); ctx.lineTo(fin.x, fin.y); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,200,120,' + (1 - ag).toFixed(2) + ')';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(fin.x, fin.y, (3 + ag * 10) * Math.max(0.4, Math.min(2, fin.s)), 0, 6.3); ctx.stroke();
+      }
+
+      if (scan) dessinerScan(ctx, V, t);
+
+      // Les chiffres : au-dessus de ce qui a ete touche ; les notres, en
+      // bas, au milieu.
+      ctx.textAlign = 'center';
+      for (i = chiffres.length - 1; i >= 0; i--) {
+        var c = chiffres[i], ac = Math.max(0, (t - c.t0) / 900);
+        if (ac >= 1) { chiffres.splice(i, 1); continue; }
+        var px, py, taille = 11;
+        if (c.moi) { px = W / 2; py = H * 0.7 - ac * 18; taille = 13; }
+        else {
+          var pc = V.projeter(c.x, c.y, (c.h || 24) + ac * 14);
+          if (!pc) continue;
+          px = pc.x; py = pc.y;
+          taille = Math.max(8, Math.min(16, Math.round(7 + pc.s * 4)));
+        }
+        ctx.font = 'bold ' + taille + 'px "Courier New", monospace';
+        ctx.fillStyle = 'rgba(0,0,0,' + (0.6 * (1 - ac)).toFixed(2) + ')';
+        ctx.fillText(c.txt, px + 1, py + 1);
+        ctx.fillStyle = c.moi ? 'rgba(255,90,74,' + (1 - ac).toFixed(2) + ')'
+          : c.noyau ? 'rgba(255,209,102,' + (1 - ac).toFixed(2) + ')'
+          : 'rgba(255,236,200,' + (1 - ac).toFixed(2) + ')';
+        ctx.fillText(c.txt, px, py);
+      }
+      ctx.textAlign = 'left';
+
+      mains(ctx, V, t);
+    }
+
+    // Les mains : le scanner a gauche, le pistolet a droite. Ils
+    // balancent au pas ; le pistolet recule au tir et crache un eclair.
+    var imgArme = null, imgArmeSrc = '', imgScan = null;
+    function chargerImages() {
+      var A = window.ARME;
+      var src = A ? A.url(null, DP.armeNiveau('odyssee')) : '';
+      if (src && src !== imgArmeSrc) { imgArmeSrc = src; imgArme = new Image(); imgArme.src = src; }
+      if (!imgScan) { imgScan = new Image(); imgScan.src = visuelScanneur(); }
+    }
+    function mains(ctx, V, t) {
+      var W = V.L, H = V.H, ch = balade.chef;
+      chargerImages();
+      var pas = reduit ? 0 : ch.pas, bouge = ch.bouge && !reduit;
+      var bx = bouge ? Math.sin(pas * 0.5) * 4 : 0;
+      var by = bouge ? Math.abs(Math.cos(pas * 0.5)) * 4 : (reduit ? 0 : Math.sin(t / 900) * 1.2);
+      var plonge = PL && PL.actif();
+      if (plonge && !reduit) { bx += Math.sin(t / 700) * 3; by += Math.sin(t / 520) * 2; }
+
+      // Le scanner, dans la main gauche : il se leve quand on scanne.
+      if (imgScan && imgScan.complete && imgScan.naturalWidth) {
+        var sh = Math.round(H * 0.3), sw = Math.round(sh * imgScan.naturalWidth / imgScan.naturalHeight);
+        var scanne = etat === 'scan';
+        var sx = Math.round(W * 0.06 - bx * 0.6), sy = Math.round(H - sh * (scanne ? 0.95 : 0.72) + by);
+        ctx.save();
+        ctx.translate(sx + sw / 2, sy + sh / 2);
+        ctx.rotate(scanne ? -0.05 : 0.12);
+        ctx.drawImage(imgScan, -sw / 2, -sh / 2, sw, sh);
+        ctx.restore();
+        mainG.x = sx + sw * 0.55; mainG.y = sy + sh * 0.15;
+        if (scanne) {
+          ctx.fillStyle = 'rgba(124,240,200,' + (0.35 + 0.25 * Math.sin(t / 60)).toFixed(2) + ')';
+          ctx.beginPath(); ctx.arc(mainG.x, mainG.y, 6, 0, 6.3); ctx.fill();
+        }
+      }
+
+      // Le pistolet, tenu de la main droite, canon vers le centre.
+      if (DP.aLArme() && imgArme && imgArme.complete && imgArme.naturalWidth) {
+        var A = window.ARME;
+        var cad = A ? A.niveauJeu('odyssee').cadence : 620;
+        var kr = Math.max(0, 1 - (maintenant() - dernierTir) / Math.min(220, cad));
+        var aw = Math.round(W * 0.36), ah = Math.round(aw * imgArme.naturalHeight / imgArme.naturalWidth);
+        var ax = Math.round(W * 0.6 + bx + kr * 10), ay = Math.round(H - ah * 0.78 + by + kr * 12);
+        ctx.save();
+        ctx.translate(ax + aw / 2, ay + ah / 2);
+        ctx.rotate(-0.18 - kr * 0.22);
+        ctx.scale(-1, 1);
+        ctx.drawImage(imgArme, -aw / 2, -ah / 2, aw, ah);
+        ctx.restore();
+        mainD.x = ax + aw * 0.06; mainD.y = ay + ah * 0.2;
+        // L'eclair au bout du canon.
+        if (kr > 0.45) {
+          var e = (kr - 0.45) / 0.55, R = 6 + e * 9;
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = 'rgba(124,240,255,' + (0.6 * e).toFixed(2) + ')';
+          ctx.beginPath(); ctx.arc(mainD.x, mainD.y, R, 0, 6.3); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,' + e.toFixed(2) + ')';
+          ctx.fillRect(Math.round(mainD.x - R), Math.round(mainD.y), Math.round(R * 2), 1);
+          ctx.fillRect(Math.round(mainD.x), Math.round(mainD.y - R), 1, Math.round(R * 2));
+          ctx.restore();
+        }
+      } else {
+        mainD.x = W * 0.62; mainD.y = H * 0.85;
+      }
+    }
+
+    // Le claquement du pistolet : une note carree qui degringole, et un
+    // souffle de bruit.
+    function bruitTir() {
+      var MJ = window.MUSIQUE_JEUX, A = MJ && MJ.audio ? MJ.audio() : null;
+      if (!A) return;
+      var ac = A.ac, t = ac.currentTime;
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'square';
+      o.frequency.setValueAtTime(1300, t);
+      o.frequency.exponentialRampToValueAtTime(180, t + 0.12);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.12, t + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+      o.connect(g); g.connect(A.sortie);
+      o.start(t); o.stop(t + 0.15);
+      var b = ac.createBufferSource(), f = ac.createBiquadFilter(), gb = ac.createGain();
+      b.buffer = A.bruit; f.type = 'highpass'; f.frequency.value = 2500;
+      gb.gain.setValueAtTime(0.18, t); gb.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+      b.connect(f); f.connect(gb); gb.connect(A.sortie);
+      b.start(t, Math.random() * 0.5); b.stop(t + 0.09);
     }
 
     // ==========================================================
@@ -2481,21 +2707,21 @@
     // Ce qu'on a a portee : un noeud, un coffre ferme, ou la roche et le
     // cristal qu'on a juste devant soi, si l'on a l'outil.
     function chercherPrise() {
-      var ch = balade.chef, mieux = null, d0 = 26;
+      var mieux = null, d0 = 40;
       noeuds.forEach(function (n) {
         if (visite.pris[n.k]) return;
-        var d = Math.hypot(n.x - ch.x, n.y - ch.y);
-        if (d < d0) { d0 = d; mieux = { n: n, quoi: 'RÉCOLTER' }; }
+        var d = aPortee(n.x, n.y, 40);
+        if (d != null && d < d0) { d0 = d; mieux = { n: n, quoi: 'RÉCOLTER' }; }
       });
       coffres.forEach(function (c) {
         if (CR.coffreOuvert(c.id) || ouverture[c.id]) return;
-        var d = Math.hypot(c.x - ch.x, c.y - ch.y);
-        if (d < 30 && d < d0 + 6) { d0 = d; mieux = { c: c, quoi: 'OUVRIR' }; }
+        var d = aPortee(c.x, c.y, 44);
+        if (d != null && d < d0 + 6) { d0 = d; mieux = { c: c, quoi: 'OUVRIR' }; }
       });
       CR.poses(a.id).forEach(function (p) {
         var px = (p.tx + 0.5) * TS, py = (p.ty + 0.5) * TS;
-        var d = Math.hypot(px - ch.x, py - ch.y);
-        if (d < 32 && d < d0 + 6) { d0 = d; mieux = { pose: p, quoi: p.id === 'four' ? 'FOUR' : 'ÉTABLI' }; }
+        var d = aPortee(px, py, 46);
+        if (d != null && d < d0 + 6) { d0 = d; mieux = { pose: p, quoi: p.id === 'four' ? 'FOUR' : 'ÉTABLI' }; }
       });
       if (mieux) return mieux;
       var dv = balade.caseDevant(), tx = dv[0], ty = dv[1];
@@ -2527,7 +2753,12 @@
 
     function agir() {
       if (!prise || etat !== 'libre') return;
-      if (prise.n) recolter(prise.n);
+      if (prise.plonge) {
+        if (PL.interdit()) direPour(PL.interdit(), 3000);
+        else PL.plonger(prise.plonge.tx, prise.plonge.ty);
+      }
+      else if (prise.coq) PL.ouvrir(prise.coq);
+      else if (prise.n) recolter(prise.n);
       else if (prise.c) ouvrirCoffre(prise.c);
       else if (prise.pose) ouvrirSac(prise.pose);
       else casser(prise.tx, prise.ty, prise.type);
@@ -2597,7 +2828,8 @@
       var reste = type === 'plante' ? T.FLORE : T.GRAVATS;
       g[ty][tx] = reste;
       visite.modifs.push([tx, ty, reste]);
-      M.repeindre(balade.monde, g, tx, ty, optsCarte);
+      if (balade.repeindre) balade.repeindre(tx, ty);
+      else M.repeindre(balade.monde, g, tx, ty, optsCarte);
       miniBase = null;
       var x = (tx + 0.5) * TS, y = (ty + 0.5) * TS, t = maintenant();
       for (var i = 0; i < 12; i++) {
@@ -2730,13 +2962,13 @@
         pv = Math.min(pm, pv + o.soin);
         if (o.regen) regenJusqua = t + o.regen * 1000;
         majJauge();
-        for (var i = 0; i < 10; i++) eclats.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 14, a: i * 0.63, couleur: '#7af0a8' });
+        for (var i = 0; i < 10; i++) eclats.push({ t0: t, moi: true, a: i * 0.63, couleur: '#7af0a8' });
         return o.nom + ' : tu te sens mieux.';
       }
       if (o.bouclier) {
         bouclierPV += o.bouclier;
         majJauge();
-        eclats.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 14, bouclier: true });
+        eclats.push({ t0: t, moi: true, bouclier: true });
         return 'Un bouclier crépite autour de toi.';
       }
       if (o.bombe || o.givre) {
@@ -2748,16 +2980,26 @@
           b.pv = Math.max(0, b.pv - o.bombe);
           b.touche = t;
           b.agressif = true;
-          chiffres.push({ t0: t, x: b.x, y: b.y - 26, txt: '-' + o.bombe });
+          chiffres.push({ t0: t, x: b.x, y: b.y, h: 30, txt: '-' + o.bombe });
           if (b.pv <= 0) abattre(b, t);
         });
-        explosions.push({ t0: t, x: balade.chef.x, y: balade.chef.y - 6, givre: !!o.givre });
+        explosions.push({ t0: t, moi: true, givre: !!o.givre });
         scene.classList.remove('is-coup');
         void scene.offsetWidth;
         scene.classList.add('is-coup');
         return touchees ? (o.givre ? 'Le givre fige ' + touchees + ' créature' + (touchees > 1 ? 's' : '') + '.'
                                    : 'BOUM. ' + touchees + ' créature' + (touchees > 1 ? 's' : '') + ' touchée' + (touchees > 1 ? 's' : '') + '.')
                         : (o.givre ? 'Le givre se perd dans le vide.' : 'BOUM. Rien n’était assez près.');
+      }
+      if (o.bouchons) {
+        if (!PL) return false;
+        PL.proteger(o.bouchons * 1000);
+        return 'Bouchons en place : plus aucun chant ne passe.';
+      }
+      if (o.air) {
+        if (!PL || !PL.actif()) { dire('Ça ne sert que sous l’eau.'); return false; }
+        PL.air(o.air);
+        return 'Une grande bouffée d’air.';
       }
       if (o.repulsif) {
         repulsifJusqua = t + o.repulsif * 1000;
@@ -2767,38 +3009,45 @@
     }
 
     // ---------- Les effets ----------
-    function effets(ctx, cam, t) {
-      var i;
+    // Ce qui arrive dans le monde est projete a sa place ; ce qui arrive
+    // au voyageur lui-meme (un soin, le bouclier, une bombe a ses pieds)
+    // se voit sur l'ecran entier.
+    function effets(ctx, V, t) {
+      var i, W = V.L, H = V.H;
       // Les betes prises dans le givre.
       betes.forEach(function (b) {
         if (b.mort || !(b.gel > t)) return;
+        var p = V.projeter(b.x, b.y, 12);
+        if (!p || !V.visible(p.x, p.d)) return;
+        var l = 24 * p.s;
         ctx.fillStyle = 'rgba(170,225,255,.45)';
-        ctx.fillRect(Math.round(b.x - cam.x - 12), Math.round(b.y - cam.y - 22), 24, 24);
+        ctx.fillRect(Math.round(p.x - l / 2), Math.round(p.y - l / 2), Math.round(l), Math.round(l));
         ctx.fillStyle = 'rgba(255,255,255,.8)';
-        ctx.fillRect(Math.round(b.x - cam.x - 10), Math.round(b.y - cam.y - 20), 3, 1);
-        ctx.fillRect(Math.round(b.x - cam.x + 6), Math.round(b.y - cam.y - 8), 1, 3);
+        ctx.fillRect(Math.round(p.x - l * 0.4), Math.round(p.y - l * 0.4), Math.max(1, Math.round(3 * p.s)), 1);
       });
-      // Le bouclier et le repulsif, autour du voyageur.
-      var cx = balade.chef.x - cam.x, cy = balade.chef.y - cam.y - 12;
+      // Le bouclier : un lisere bleu qui palpite au bord de l'ecran.
       if (bouclierPV > 0) {
-        ctx.strokeStyle = 'rgba(120,190,255,' + (reduit ? 0.6 : 0.45 + 0.25 * Math.sin(t / 160)).toFixed(2) + ')';
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.ellipse(cx, cy, 16, 20, 0, 0, 6.3); ctx.stroke();
+        ctx.strokeStyle = 'rgba(120,190,255,' + (reduit ? 0.5 : 0.35 + 0.2 * Math.sin(t / 160)).toFixed(2) + ')';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(2, 2, W - 4, H - 4);
       }
+      // Le repulsif : un voile jaune, sur les bords.
       if (repulsifJusqua > t) {
-        ctx.fillStyle = 'rgba(220,210,60,.12)';
-        ctx.beginPath(); ctx.arc(cx, cy, 30 + (reduit ? 0 : 4 * Math.sin(t / 300)), 0, 6.3); ctx.fill();
+        var gr = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, W * 0.7);
+        gr.addColorStop(0, 'rgba(220,210,60,0)');
+        gr.addColorStop(1, 'rgba(220,210,60,.22)');
+        ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
       }
-      // Les explosions : un anneau qui s'ouvre, un eclair au centre.
+      // Les explosions : a nos pieds, l'ecran entier s'embrase.
       for (i = explosions.length - 1; i >= 0; i--) {
         var ex = explosions[i], k = (t - ex.t0) / 600;
         if (k >= 1) { explosions.splice(i, 1); continue; }
         var col = ex.givre ? '170,225,255' : '255,170,60';
-        ctx.fillStyle = 'rgba(' + col + ',' + (0.5 * (1 - k)).toFixed(2) + ')';
-        ctx.beginPath(); ctx.arc(ex.x - cam.x, ex.y - cam.y, 10 + k * 110, 0, 6.3); ctx.fill();
+        ctx.fillStyle = 'rgba(' + col + ',' + (0.45 * (1 - k)).toFixed(2) + ')';
+        ctx.fillRect(0, 0, W, H);
         ctx.strokeStyle = 'rgba(255,255,255,' + (1 - k).toFixed(2) + ')';
         ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(ex.x - cam.x, ex.y - cam.y, 14 + k * 116, 0, 6.3); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(W / 2, H * 0.8, 20 + k * W * 0.6, 6 + k * H * 0.25, 0, 0, 6.3); ctx.stroke();
       }
       // Les eclats : des pixels qui jaillissent et retombent.
       for (i = eclats.length - 1; i >= 0; i--) {
@@ -2807,25 +3056,42 @@
         if (ke >= 1) { eclats.splice(i, 1); continue; }
         if (e.bouclier) {
           ctx.strokeStyle = 'rgba(160,210,255,' + (1 - ke).toFixed(2) + ')';
-          ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.ellipse(e.x - cam.x, e.y - cam.y, 12 + ke * 14, 16 + ke * 14, 0, 0, 6.3); ctx.stroke();
+          ctx.lineWidth = 3;
+          ctx.strokeRect(4 + ke * 10, 4 + ke * 10, W - 8 - ke * 20, H - 8 - ke * 20);
           continue;
         }
-        var dist = (e.loin || 1) * 22 * ke;
         ctx.fillStyle = e.couleur;
         ctx.globalAlpha = 1 - ke;
-        var tl = e.gros ? 3 : 2;
-        ctx.fillRect(Math.round(e.x - cam.x + Math.cos(e.a) * dist), Math.round(e.y - cam.y + Math.sin(e.a) * dist * 0.7 + ke * ke * 14), tl, tl);
+        if (e.moi) {
+          // Un soin : des etincelles qui montent devant les yeux.
+          var mx = W / 2 + Math.cos(e.a) * W * 0.3 * ke, my = H * 0.8 - ke * H * 0.4 + Math.sin(e.a) * 10;
+          ctx.fillRect(Math.round(mx), Math.round(my), 3, 3);
+        } else {
+          var dist = (e.loin || 1) * 22 * ke;
+          var p2 = V.projeter(e.x + Math.cos(e.a) * dist, e.y + Math.sin(e.a) * dist,
+                              10 + Math.sin(ke * Math.PI) * 14 - ke * ke * 6);
+          if (p2 && V.visible(p2.x, p2.d)) {
+            var tl = Math.max(1, Math.round((e.gros ? 3 : 2) * p2.s));
+            ctx.fillRect(Math.round(p2.x), Math.round(p2.y), tl, tl);
+          }
+        }
         ctx.globalAlpha = 1;
       }
-      // Les icones qui s'envolent vers le sac.
+      // Les icones gagnees : elles sautent de la ou on les a prises, puis
+      // filent vers la barre, en bas.
       for (i = envols.length - 1; i >= 0; i--) {
         var v = envols[i], kv = (t - v.t0) / 900;
         if (kv < 0) continue;
         if (kv >= 1) { envols.splice(i, 1); continue; }
-        var ic = CR.icone(v.id), mont = Math.sin(Math.min(1, kv * 1.4) * Math.PI / 2) * 30;
-        ctx.globalAlpha = kv > 0.7 ? (1 - kv) / 0.3 : 1;
-        ctx.drawImage(ic, Math.round(v.x - cam.x + v.dx * Math.min(1, kv * 2) - 9), Math.round(v.y - cam.y - mont - 18));
+        var ic = CR.icone(v.id);
+        var p3 = V.projeter(v.x, v.y, 14);
+        var dep = p3 || { x: W / 2, y: H / 2, s: 1 };
+        var u = Math.max(0, (kv - 0.35) / 0.65);
+        var ix = dep.x + v.dx * Math.min(1, kv * 2) * Math.min(2, dep.s);
+        var iy = dep.y - Math.sin(Math.min(1, kv * 2) * Math.PI / 2) * 20;
+        ix += (W / 2 - ix) * u * u; iy += (H - 8 - iy) * u * u;
+        ctx.globalAlpha = kv > 0.8 ? (1 - kv) / 0.2 : 1;
+        ctx.drawImage(ic, Math.round(ix - 9), Math.round(iy - 9));
         ctx.globalAlpha = 1;
       }
     }
@@ -2898,15 +3164,44 @@
         m.fillStyle = p.id === 'four' ? '#ff9a3a' : '#e0b878';
         m.fillRect(p.tx - 1, p.ty - 1, 2, 2);
       });
-      // Le voyageur, qui clignote.
+      // Le voyageur, qui clignote, et la ou il regarde.
+      m.fillStyle = 'rgba(255,255,255,.55)';
+      for (var r = 2; r <= 5; r++) {
+        m.fillRect(Math.round(cx + Math.cos(balade.chef.ang) * r), Math.round(cy + Math.sin(balade.chef.ang) * r), 1, 1);
+      }
       m.fillStyle = reduit || Math.floor(t / 300) % 2 ? '#ffffff' : '#ffd23a';
       m.fillRect(cx - 1, cy - 1, 3, 3);
     }
 
 
-    balade = M.Balade({
+    // La plongee, et les sirenes (js/odyssey-plongee.js).
+    PL = window.ODYPLONGEE ? window.ODYPLONGEE.creer({
+      astre: a, grille: g, palette: palette, scene: scene,
+      balade: function () { return balade; },
+      dire: direPour,
+      blesser: function (n, src) { if (etat === 'libre' || etat === 'scan') subir(n, src); },
+      gagner: function (liste, x, y) { return gagner(liste, x, y); },
+      pris: function (k) { return !!visite.pris[k]; },
+      prendre: function (k) { visite.pris[k] = true; },
+      sacPlein: function () { CR.annoncer(scene, [], true); direPour('Ton sac est plein. Ouvre-le pour faire de la place.'); }
+    }) : null;
+
+    // A la premiere personne (js/odyssey-fps.js) ; la vue du dessus ne
+    // sert plus que de repli, si le moteur manquait.
+    var Promenade = window.ODYFPS ? window.ODYFPS.Balade : M.Balade;
+    balade = Promenade({
       grille: g,
       canvas: cv,
+      ciel: a.ciel,
+      astres: astresCiel(a),
+      angle: ou && ou.ang != null ? ou.ang : undefined,
+      // Le cabanon du jardin est en planches.
+      texture: function (tx, ty) {
+        return CABANON && tx >= CABANON.x0 && tx <= CABANON.x1 && ty >= CABANON.y0 && ty <= CABANON.y1 ? 'cabane' : null;
+      },
+      surTir: function () { if (etat === 'libre' || etat === 'scan') tirer(); },
+      surScan: function () { if (etat === 'libre') lancerScan(); },
+      surVerrou: function (v) { scene.classList.toggle('is-verrou', v); if (v) aide.classList.add('is-fini'); },
       stick: stick, pomme: pomme,
       opts: optsCarte,
       // Les bottes de flottaison : les liquides se marchent.
@@ -2932,36 +3227,65 @@
 
       chaqueImage: function (t) {
         animer(t);
+        var plonge = PL && PL.actif();
         if (reprise) {
-          reprise.x = balade.chef.x;
-          reprise.y = balade.chef.y;
+          // Sous l'eau, on reprendra la ou l'on a plonge.
+          var ici = plonge ? PL.retour() : balade.chef;
+          reprise.x = ici.x;
+          reprise.y = ici.y;
           reprise.dir = balade.chef.dir;
+          reprise.ang = plonge ? ici.ang : balade.chef.ang;
         }
         scene.dataset.etat = etat;
         if (etat === 'ko' || etat === 'boss') { majBoutons(); return; }
 
         // La grotte : on n'en approche pas impunement.
         // Hors de la Lune, un gardien ne se reveille que devant une arme.
-        if (repaire && etat === 'libre' && !bossBattu() && (lune || DP.aLArme()) &&
+        if (!plonge && repaire && etat === 'libre' && !bossBattu() && (lune || DP.aLArme()) &&
             presDuRepaire(lune ? 60 : 40)) {
           return reveillerMonstre();
         }
 
-        if (ART && etat === 'libre') ART.ramasser(cachesO, balade.chef);
+        if (ART && etat === 'libre' && !plonge) ART.ramasser(cachesO, balade.chef);
         majMini(t);
         majBarre();
-        prise = etat === 'libre' && CR ? chercherPrise() : null;
+        prise = null;
+        if (etat === 'libre') {
+          if (plonge) prise = PL.chercherPrise();
+          else {
+            if (CR) prise = chercherPrise();
+            // Face a l'eau, et rien d'autre a portee : on peut plonger.
+            var dv = !prise && PL ? PL.devant() : null;
+            if (dv) prise = { plonge: dv, quoi: 'PLONGER' };
+          }
+        }
         cibleTir = chercherCibleTir();
         if (etat === 'libre') cible = chercherCible();
         majBoutons();
         if (etat !== 'libre') return;
+        if (maintenant() < messageJusqua) return;
+
+        if (plonge) {
+          var o2 = Math.ceil(PL.o2());
+          dire(PL.charme() > 0.05 ? (DP.aLArme() ? 'Le chant t’attire… TIRE sur la sirène !' : 'Le chant t’attire… REMONTE !')
+            : prise ? 'Une coquille géante, posée au fond.'
+            : PL.protege() && PL.sirenes().length ? 'Elle chante, mais tu n’entends rien.'
+            : 'Sous ' + window.ODYPLONGEE.nomLiquide(a) + ' · air : ' + o2 + ' s · REMONTER (R)');
+          return;
+        }
+        if (PL && PL.sirenes().length) {
+          dire(PL.protege() ? 'Une sirène chante. Les bouchons tiennent.'
+                            : 'Une sirène chante — ne te laisse pas attirer vers l’eau !');
+          return;
+        }
 
         var menace = betes.some(function (b) {
           return !b.mort && b.agressif && distance(b) < 135;
         });
         dire(menace ? (DP.aLArme() ? 'Une créature attaque — TIRER !'
                                    : 'Une créature attaque. Sans arme, mieux vaut fuir.')
-          : prise ? (prise.n ? CR.nomNoeud(prise.n.type, a) + '.'
+          : prise ? (prise.plonge ? (PL.interdit() || 'Face à ' + window.ODYPLONGEE.nomLiquide(a) + '. On peut plonger (E).')
+                     : prise.n ? CR.nomNoeud(prise.n.type, a) + '.'
                      : prise.pose ? (prise.pose.id === 'four' ? (CR.fourActif(prise.pose) ? 'Le four chauffe.' : 'Ton four.') : 'Ton établi : la grille 3 × 3.')
                      : prise.type === 'plante' ? (CR.aOutil('hache') ? 'Une grande plante. La hache en tirera plus.' : 'Une grande plante. À mains nues, ça se coupe aussi.')
                      : prise.c ? (prise.c.scelle ? 'Un coffre scellé. Ce qui est dedans valait la peine d’être caché.' : 'Un coffre.')
@@ -2984,6 +3308,7 @@
       window.removeEventListener('keydown', auClavier);
       minuteurs.forEach(clearTimeout);
       if (duel) duel.arreter();
+      if (PL) PL.arreter();
       balade.arreter();
     }, 400);
 
@@ -2999,7 +3324,9 @@
       poser: function (x, y) { balade.chef.x = x; balade.chef.y = y; },
       holo: function () { reveillerMonstre(true); },
       noeuds: noeuds, coffres: coffres, prise: function () { return prise; }, agir: function () { agir(); },
-      sac: function () { ouvrirSac(); }
+      sac: function () { ouvrirSac(); },
+      balade: balade, plongee: PL,
+      cibleTir: function () { return cibleTir; }, cible: function () { return cible; }
     };
   }
 
