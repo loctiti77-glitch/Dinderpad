@@ -436,7 +436,11 @@
     s: 'ar', S: 'ar', ArrowDown: 'ar',
     q: 'g', a: 'g', Q: 'g', A: 'g',
     d: 'd', D: 'd',
-    ArrowLeft: 'tg', ArrowRight: 'td'
+    ArrowLeft: 'tg', ArrowRight: 'td',
+    // Lever et baisser les yeux, au clavier.
+    PageUp: 'lh', PageDown: 'lb', Home: 'lc',
+    // Courir : Maj enfoncee.
+    Shift: 'cours'
   };
 
   function Balade(cfg) {
@@ -465,6 +469,10 @@
                : cfg.direction === DIRS.droite ? 0 : -Math.PI / 2;
     }
     var vivant = true, dernier = 0, derniereCase = '', mode = 'surface', regard = 0;
+    // Le regard vertical : de combien de pixels l'horizon descend (on
+    // leve les yeux) ou monte (on les baisse). Comme dans les vieux jeux
+    // de tir, l'image glisse au lieu de pivoter.
+    var tangage = 0, regardV = 0, TANG_MAX = Math.round(HAUT_IMAGE * 0.65);
     function vitesse() { return typeof cfg.vitesse === 'function' ? cfg.vitesse() : (cfg.vitesse || 86); }
 
     // ---------- Le sol ----------
@@ -549,7 +557,7 @@
     }
 
     // ---------- Le ciel et le brouillard ----------
-    var PW = Math.round(RW * Math.PI * 2 / FOV), PH = RH + 60, PHOR = (RH >> 1) + 30;
+    var PW = Math.round(RW * Math.PI * 2 / FOV), PH = RH + TANG_MAX * 2 + 20, PHOR = (RH >> 1) + TANG_MAX + 10;
     var pano = null, panoPx = null;
     var brume, PRES, LOIN, lutEau = new Uint32Array(256), lutFond = new Uint32Array(256), lutPlafond = new Uint32Array(256);
     var brumeR, brumeV, brumeB;
@@ -597,11 +605,13 @@
       if (!actif) return;
       var dx = e.clientX - centre.x, dy = e.clientY - centre.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
       var k = Math.min(1, d / (rayon * 0.72));
+      // Au doigt : pousser le joystick jusqu'au bord, c'est courir.
+      joy.cours = d > rayon * 0.92;
       joy.x = dx / d * k; joy.y = dy / d * k;
       pomme.style.transform = 'translate(' + (joy.x * rayon * 0.5) + 'px,' + (joy.y * rayon * 0.5) + 'px)';
     }
     function lacherStick() {
-      actif = false; joy.x = joy.y = 0;
+      actif = false; joy.x = joy.y = 0; joy.cours = false;
       stick.classList.remove('is-actif'); pomme.style.transform = '';
     }
     if (stick) {
@@ -637,6 +647,7 @@
     var surSouris = function (e) {
       if (!verrou) return;
       regard += (e.movementX || 0) * 0.0026;
+      regardV -= (e.movementY || 0) * 0.32;
     };
     var surClic = function (e) {
       if (!verrou) return;
@@ -659,16 +670,17 @@
           return;
         }
       }
-      glisse = { id: e.pointerId, x: e.clientX, t0: performance.now(), bouge: 0 };
+      glisse = { id: e.pointerId, x: e.clientX, y: e.clientY, t0: performance.now(), bouge: 0 };
       try { cv.setPointerCapture(e.pointerId); } catch (err) {}
     });
     cv.addEventListener('pointermove', function (e) {
       if (!glisse || e.pointerId !== glisse.id) return;
-      var dx = e.clientX - glisse.x;
-      glisse.x = e.clientX;
-      glisse.bouge += Math.abs(dx);
-      var w = cv.getBoundingClientRect().width || 400;
+      var dx = e.clientX - glisse.x, dy = e.clientY - glisse.y;
+      glisse.x = e.clientX; glisse.y = e.clientY;
+      glisse.bouge += Math.abs(dx) + Math.abs(dy);
+      var rc = cv.getBoundingClientRect(), w = rc.width || 400, h = rc.height || 300;
       regard += dx / w * FOV * 1.7;
+      regardV += dy / h * RH * 1.4;
     });
     function finGlisse(e) {
       if (!glisse || e.pointerId !== glisse.id) return;
@@ -787,7 +799,7 @@
 
       // 2. Le sol.
       var a1 = temps * 0.012;
-      for (y = hor + 1; y < H; y++) {
+      for (y = Math.max(0, hor + 1); y < H; y++) {
         var dist = OEIL * F / (y - hor);
         var rowS = y * W;
         var k = dist <= PRES ? 0 : dist >= LOIN ? 1 : (dist - PRES) / (LOIN - PRES);
@@ -966,22 +978,30 @@
       var tourne = (touches.td ? 1 : 0) - (touches.tg ? 1 : 0);
       if (!gel || cfg.regardLibre) {
         chef.ang += tourne * 2.3 * dt + regard;
+        var lv = (touches.lh ? 1 : 0) - (touches.lb ? 1 : 0);
+        tangage += regardV + lv * RH * 1.1 * dt;
+        if (touches.lc) tangage = 0;
+        tangage = Math.max(-TANG_MAX, Math.min(TANG_MAX, tangage));
       }
-      regard = 0;
+      regard = 0; regardV = 0;
       chef.ang = Math.atan2(Math.sin(chef.ang), Math.cos(chef.ang));
       var n = Math.sqrt(av * av + la * la);
       if (n > 1) { av /= n; la /= n; }
       chef.bouge = !gel && (Math.abs(av) > 0.05 || Math.abs(la) > 0.05);
       if (chef.bouge) {
-        var V = vitesse() * dt, c = Math.cos(chef.ang), s = Math.sin(chef.ang);
+        // On court vers l'avant, pas a reculons.
+        chef.court = (touches.cours || joy.cours) && av > 0.3;
+        var V = vitesse() * dt * (chef.court ? (mode === 'sous' ? 1.4 : 1.75) : 1);
+        var c = Math.cos(chef.ang), s = Math.sin(chef.ang);
         deplacer((c * av - s * la) * V, (s * av + c * la) * V);
-        chef.pas += Math.sqrt(av * av + la * la) * dt * 9;
+        chef.pas += Math.sqrt(av * av + la * la) * dt * (chef.court ? 14 : 9);
       }
       chef.dir = sensDe(chef.ang);
       if (cfg.pousse) cfg.pousse(dt, chef);
-      bob = reduit || !chef.bouge ? 0 : Math.round(Math.sin(chef.pas) * (mode === 'sous' ? 1.5 : 1.2));
+      if (!chef.bouge) chef.court = false;
+      bob = reduit || !chef.bouge ? 0 : Math.round(Math.sin(chef.pas) * (mode === 'sous' ? 1.5 : chef.court ? 2.4 : 1.2));
       if (mode === 'sous' && !reduit) bob += Math.round(Math.sin(t / 900) * 1.5);
-      hor = (RH >> 1) + bob;
+      hor = (RH >> 1) + bob + Math.round(tangage);
 
       var cc = caseDuChef(), casier = cc[0] + ',' + cc[1];
       if (casier !== derniereCase) {
@@ -1040,6 +1060,7 @@
       repeindre: repeindre, changer: changer, projeter: projeter, visible: visible,
       mode: function () { return mode; },
       verrouille: function () { return verrou; },
+      tangage: function () { return tangage; },
       lacherVerrou: lacherVerrou,
       vue: { projeter: projeter, visible: visible, L: RW, H: RH, F: F,
              hor: function () { return hor; }, bob: function () { return bob; } }

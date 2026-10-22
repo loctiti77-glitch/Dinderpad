@@ -1374,8 +1374,8 @@
     var tactile = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     var aide = el('div', 'ody-aide');
     aide.appendChild(el('span', null, tactile
-      ? 'Joystick : avancer · Glisser l’écran : regarder · Toucher : tirer'
-      : 'Clic : prendre la souris · ZQSD / WASD : avancer · Souris ou ← → : regarder'));
+      ? 'Joystick : avancer (à fond : courir) · Glisser l’écran : regarder · Toucher : tirer'
+      : 'Clic : prendre la souris · ZQSD / WASD : avancer · Maj : courir · Souris (ou ← → Page↑ Page↓) : regarder'));
     aide.appendChild(el('span', null, tactile
       ? 'Face à l’eau : PLONGER'
       : 'Clic : tirer · Clic droit / Espace : scanner · E : agir, plonger · R : remonter · Échap : libérer la souris'));
@@ -2573,7 +2573,7 @@
       for (i = tirs.length - 1; i >= 0; i--) {
         var r = tirs[i], ag = Math.max(0, (t - r.t0) / 170);
         if (ag >= 1) { tirs.splice(i, 1); continue; }
-        var fin = r.rate ? { x: W / 2, y: V.hor(), s: 0.2 } : V.projeter(r.x, r.y, r.h);
+        var fin = r.rate ? { x: W / 2, y: H / 2, s: 0.2 } : V.projeter(r.x, r.y, r.h);
         if (!fin) continue;
         ctx.strokeStyle = 'rgba(124,240,255,' + (1 - ag).toFixed(2) + ')';
         ctx.lineWidth = 2.5 - ag * 1.5;
@@ -2625,8 +2625,10 @@
       var W = V.L, H = V.H, ch = balade.chef;
       chargerImages();
       var pas = reduit ? 0 : ch.pas, bouge = ch.bouge && !reduit;
-      var bx = bouge ? Math.sin(pas * 0.5) * 4 : 0;
-      var by = bouge ? Math.abs(Math.cos(pas * 0.5)) * 4 : (reduit ? 0 : Math.sin(t / 900) * 1.2);
+      // En courant, les mains balancent plus fort.
+      var ampl = ch.court ? 8 : 4;
+      var bx = bouge ? Math.sin(pas * 0.5) * ampl : 0;
+      var by = bouge ? Math.abs(Math.cos(pas * 0.5)) * ampl : (reduit ? 0 : Math.sin(t / 900) * 1.2);
       var plonge = PL && PL.actif();
       if (plonge && !reduit) { bx += Math.sin(t / 700) * 3; by += Math.sin(t / 520) * 2; }
 
