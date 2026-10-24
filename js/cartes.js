@@ -152,6 +152,7 @@
       B.ORDRE.forEach(function (id) {
         var g = B.GARDIENS[id], a = V.astre(g.astre);
         if (a && a.systeme === 'stellaire' && !V.stellaireOuvert()) return;
+        if (a && V.cache && V.cache(a)) return;
         var m = V.parId(id);
         out.push({
           id: 'b:' + id, famille: 'boss', nom: g.nom,

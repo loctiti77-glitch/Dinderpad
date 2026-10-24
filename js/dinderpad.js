@@ -1689,6 +1689,19 @@
     save();
   }
 
+  // Les cinq de Gaming Legends, offerts d'un coup (les yeux de Wade, au
+  // menu du jeu) : on les marque comme offerts, sinon le chargement les
+  // retirerait. Rend la liste de ceux qui viennent d'arriver.
+  var LEGENDS = ['freddy-fazbear', 'bonnie-the-bunny', 'chica-the-chicken', 'foxy-the-fox-pirate', 'golden-freddy'];
+  function offrirGamingLegends() {
+    var p = me(), neufs = [];
+    p.spookinder.offerts = true;
+    p.spookinder.golden = true;
+    LEGENDS.forEach(function (id) { if (p.owned.indexOf(id) === -1) { p.owned.push(id); neufs.push(id); } });
+    save();
+    return neufs;
+  }
+
   function wadePerso(niv) {
     me().wade.perso = Object.assign({}, niv);
     save();
@@ -1741,6 +1754,7 @@
     equiperRevetement: equiperRevetement,
     requins: requins, noterRequin: noterRequin,
     aLaTelecommande: aLaTelecommande, prendreTelecommande: prendreTelecommande,
+    offrirGamingLegends: offrirGamingLegends, LEGENDS: LEGENDS,
     aLeTelescope: aLeTelescope, prendreTelescope: prendreTelescope,
     chapitre: chapitre, ouvrirChapitre: ouvrirChapitre,
     astresVus: astresVus, aVuAstre: aVuAstre, noterAstre: noterAstre,

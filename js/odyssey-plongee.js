@@ -30,7 +30,8 @@
   // Les astres ou le "liquide" n'en est pas un.
   var DUR = {
     lune: 'Ces cratères d’ombre ne sont pas de l’eau : on y tomberait, on n’y nagerait pas.',
-    mars: 'C’est de la glace. On ne plonge pas dans de la glace.'
+    mars: 'C’est de la glace. On ne plonge pas dans de la glace.',
+    aurelle: 'Entre les anneaux, il n’y a que des nuages, et très loin dessous, la géante. On n’y nagerait pas : on y tomberait.'
   };
   var LIQUIDES = {};
   [T.LIQUIDE, T.EAU, T.EAU_RAD, T.ROSEAU].forEach(function (k) { LIQUIDES[k] = true; });

@@ -1,7 +1,7 @@
 // Le Telescope : voir les deux systemes, de loin, puis de pres.
 //
-// Il n'arrive qu'une fois deux failles de securite contenues et le
-// gardien d'Ignis (ST-I8) vaincu. Il montre le systeme solaire et le
+// Il est en cinq pieces, dispersees sur cinq mondes de l'Odyssee : on le
+// recoit quand la derniere est ramassee (js/odyssey-lunette.js). Il montre le systeme solaire et le
 // systeme stellaire, l'etoile au centre et les mondes qui tournent sur
 // leurs orbites. Un monde touche ouvre sa fiche ; « GO ! » y emmene en
 // un instant, et ses lieux s'affichent un a un, avec les Dinders qui y
@@ -23,11 +23,10 @@
   //  Le deblocage
   // ==========================================================
 
-  var GARDIEN_IGNIS = 'soleil-noye';
 
   function deblocable() {
-    var B = window.BOSS;
-    return DP.faillesContenues() >= 2 && !!B && B.vaincu(GARDIEN_IGNIS);
+    var F = window.ODYFRAG;
+    return !!F && F.complet();
   }
 
   // L'annonce : la carte des trouvailles, avec le Telescope dedans.

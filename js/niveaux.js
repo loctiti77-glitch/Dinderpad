@@ -97,6 +97,7 @@
         if (!B) return 0;
         return B.ORDRE.filter(function (id) {
           var a = V && V.astre(B.GARDIENS[id].astre);
+          if (a && V.cache && V.cache(a)) return false;
           return !a || a.systeme !== 'stellaire' || V.stellaireOuvert();
         }).length;
       } },

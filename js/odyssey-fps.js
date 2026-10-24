@@ -646,8 +646,8 @@
     };
     var surSouris = function (e) {
       if (!verrou) return;
-      regard += (e.movementX || 0) * 0.0026;
-      regardV -= (e.movementY || 0) * 0.32;
+      regard += (e.movementX || 0) * 0.0042;
+      regardV -= (e.movementY || 0) * 0.52;
     };
     var surClic = function (e) {
       if (!verrou) return;
@@ -679,8 +679,8 @@
       glisse.x = e.clientX; glisse.y = e.clientY;
       glisse.bouge += Math.abs(dx) + Math.abs(dy);
       var rc = cv.getBoundingClientRect(), w = rc.width || 400, h = rc.height || 300;
-      regard += dx / w * FOV * 1.7;
-      regardV -= dy / h * RH * 1.4;   // glisser vers le haut : lever les yeux
+      regard += dx / w * FOV * 2.7;
+      regardV -= dy / h * RH * 2.2;   // glisser vers le haut : lever les yeux
     });
     function finGlisse(e) {
       if (!glisse || e.pointerId !== glisse.id) return;
@@ -976,8 +976,9 @@
       var av = (touches.av ? 1 : 0) - (touches.ar ? 1 : 0) - joy.y;
       var la = (touches.d ? 1 : 0) - (touches.g ? 1 : 0) + joy.x;
       var tourne = (touches.td ? 1 : 0) - (touches.tg ? 1 : 0);
-      if (!gel || cfg.regardLibre) {
-        chef.ang += tourne * 2.3 * dt + regard;
+      var libreRegard = typeof cfg.regardLibre === 'function' ? cfg.regardLibre() : cfg.regardLibre;
+      if (!gel || libreRegard) {
+        chef.ang += tourne * 3 * dt + regard;
         var lv = (touches.lh ? 1 : 0) - (touches.lb ? 1 : 0);
         tangage += regardV + lv * RH * 1.1 * dt;
         if (touches.lc) tangage = 0;

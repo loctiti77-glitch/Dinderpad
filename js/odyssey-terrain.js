@@ -232,6 +232,41 @@
     return out;
   }
 
+  // Une seule poche de plus, pour une cache precise (un fragment du
+  // Telescope) : meme anneau de deux cases, loin des poches deja posees.
+  // Rend { x, y, barriere }, ou null si la carte n'a pas la place.
+  function pocheSeule(g, sel, barId) {
+    var bar = BARRIERES.filter(function (b) { return b.id === barId; })[0];
+    if (!bar) return null;
+    var avant = accessibles(g), nAvant = compte(avant), deja = g.poches || [];
+    for (var essai = 0; essai < 1500; essai++) {
+      var cx = 6 + Math.floor(bruit(essai, 31, sel + 40) * (MW - 12));
+      var cy = 6 + Math.floor(bruit(essai, 37, sel + 41) * (MH - 12));
+      if (Math.abs(cx - DX) + Math.abs(cy - DY) < 26) continue;
+      if (deja.some(function (p) { return Math.abs(p.x - cx) + Math.abs(p.y - cy) < 16; })) continue;
+      var ok = true, x, y;
+      for (y = cy - 1; y <= cy + 1 && ok; y++) for (x = cx - 1; x <= cx + 1; x++) {
+        if (!avant[x + ',' + y]) { ok = false; break; }
+      }
+      for (y = cy - 3; y <= cy + 3 && ok; y++) for (x = cx - 3; x <= cx + 3; x++) {
+        if (g[y][x] === T.STRUCTURE || g[y][x] === T.RUINE) { ok = false; break; }
+      }
+      if (!ok) continue;
+      var sauve = [];
+      for (y = cy - 3; y <= cy + 3; y++) {
+        sauve.push(g[y].slice(cx - 3, cx + 4));
+        for (x = cx - 3; x <= cx + 3; x++) {
+          var d = Math.max(Math.abs(x - cx), Math.abs(y - cy));
+          g[y][x] = d <= 1 ? T.SOL : bar.tuile;
+        }
+      }
+      var apres = accessibles(g);
+      if (nAvant - compte(apres) <= 49 && !apres[cx + ',' + cy]) return { x: cx, y: cy, barriere: bar.id };
+      for (y = cy - 3; y <= cy + 3; y++) for (x = cx - 3; x <= cx + 3; x++) g[y][x] = sauve[y - cy + 3][x - cx + 3];
+    }
+    return null;
+  }
+
   // ---------- Le monde ----------
   function construire(a) {
     var g = [], x, y, sel = a.rang * 17 + 5;
@@ -338,7 +373,7 @@
   // repoussent quand on revient sur le monde ; les coffres, eux, ne se
   // vident qu'une fois.
   function placer(g, a, eviter) {
-    var vu = accessibles(g), sel = a.rang * 31 + 11, stellaire = a.systeme === 'stellaire';
+    var vu = accessibles(g), sel = a.rang * 31 + 11, stellaire = a.systeme && a.systeme !== 'solaire';
     var pris = {}, noeuds = [], coffres = [];
     function prendre(x, y, marge) {
       for (var j = -marge; j <= marge; j++) for (var i = -marge; i <= marge; i++) if (pris[(x + i) + ',' + (y + j)]) return false;
@@ -401,6 +436,7 @@
     MW: MW, MH: MH, DX: DX, DY: DY, O: O, FLORE: FLORE,
     palette: palette, lisse: lisse,
     construire: construire, construireAutour: construireAutour,
-    accessibles: accessibles, relier: relier, placer: placer
+    accessibles: accessibles, relier: relier, placer: placer,
+    combler: combler, ruines: ruines, poches: poches, pocheSeule: pocheSeule, dans: dans
   };
 })();

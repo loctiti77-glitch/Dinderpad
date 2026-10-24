@@ -314,8 +314,18 @@
     return !!(window.DP && window.DP.stellaire && window.DP.stellaire());
   }
 
+  // Un monde secret n'existe pour le joueur qu'une fois qu'il y a pose le
+  // pied : avant, aucune liste, aucun compteur ne doit le trahir.
+  function cacheSecret(a) {
+    return !!(a && a.secret && !(window.DP && window.DP.aVuAstre && window.DP.aVuAstre(a.id)));
+  }
+
   function systemes() {
-    return SYSTEMES.filter(function (s) { return s.id !== 'stellaire' || stellaireOuvert(); });
+    return SYSTEMES.filter(function (s) {
+      if (s.id === 'stellaire') return stellaireOuvert();
+      if (s.secret) return ASTRES.some(function (a) { return a.systeme === s.id && !cacheSecret(a); });
+      return true;
+    });
   }
 
   function astresDe(sys) {
@@ -324,7 +334,7 @@
 
   // Les mondes dont le joueur peut entendre parler.
   function connus() {
-    return ASTRES.filter(function (a) { return a.systeme !== 'stellaire' || stellaireOuvert(); });
+    return ASTRES.filter(function (a) { return (a.systeme !== 'stellaire' || stellaireOuvert()) && !cacheSecret(a); });
   }
 
   function astre(code) {
@@ -922,9 +932,13 @@
   //  Le dessin des curiosites
   // ==========================================================
 
+  // Les lieux qui ont leur propre dessin (ajoutes par d'autres fichiers).
+  var CURIO_DESSINS = {};
+
   function dessinerCuriosite(p, q) {
     var a = q.c[0], b = q.c[1], d = q.c[2];
     var i, j;
+    if (CURIO_DESSINS[q.forme]) { CURIO_DESSINS[q.forme](p, a, b, d); return; }
 
     if (q.forme === 'falaise') {
       for (i = 0; i < 34; i++) {
@@ -1277,6 +1291,8 @@
   }
 
   function ouvert(id) {
+    var aa = astre(id);
+    if (aa && aa.secret) return !cacheSecret(aa);
     if (systemeDe(id) === 'stellaire') {
       return stellaireOuvert() && window.DP.aVuAstre(id);
     }
@@ -1290,7 +1306,8 @@
   window.ODYVIE = {
     ASTRES: ASTRES, VIES: VIES, CURIOSITES: CURIOSITES, OBJETS: OBJETS,
     SYSTEMES: SYSTEMES, systemes: systemes, astresDe: astresDe, connus: connus,
-    stellaireOuvert: stellaireOuvert, prochainStellaire: prochainStellaire,
+    stellaireOuvert: stellaireOuvert, prochainStellaire: prochainStellaire, cache: cacheSecret,
+    CURIO_DESSINS: CURIO_DESSINS,
     ordre: ordre, suivant: suivant, precedent: precedent,
     gardienDe: gardienDe, ouvert: ouvert,
     MONSTRE: MONSTRE, MONSTRES: MONSTRES, monstre: monstre, FORCE: FORCE, force: force, teintes: teintes,

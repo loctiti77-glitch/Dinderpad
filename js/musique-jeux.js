@@ -310,6 +310,7 @@
     ferron:  { tonique: 57, mode: 'phryg', tempo: 132, lead: 0.25, densite: 1, arp: 'aucun', basse: 'pulse', batterie: 'indus', A: [0, 0, 1, 0], B: [5, 6, 1, 0] },
     brisure: { tonique: 60, mode: 'loc', tempo: 140, lead: 0.125, densite: 2, arp: 'rapide', basse: 'pulse', batterie: 'glitch', A: [0, 1, 4, 0], B: [5, 1, 3, 1] },
     pyrrhe:  { tonique: 62, mode: 'hijaz', tempo: 104, swing: 0.25, lead: 0.5, densite: 1, arp: 'alterne', basse: 'marche', batterie: 'tribal', A: [0, 1, 0, 6], B: [5, 6, 1, 0] },
+    aurelle: { tonique: 69, mode: 'lyd', tempo: 78, lead: 'sine', densite: 0, arp: 'vague', basse: 'tenue', batterie: 'aucune', echo: true, A: [0, 4, 1, 5], B: [3, 1, 4, 0] },
     ignis:   { tonique: 52, mode: 'phryg', tempo: 160, lead: 0.5, densite: 2, arp: 'rapide', basse: 'pulse', batterie: 'rapide', A: [0, 1, 0, 6], B: [5, 6, 1, 0] }
   };
 

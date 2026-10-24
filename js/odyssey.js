@@ -785,7 +785,8 @@
       solaire: ['S', 'M', 'V', 'T', 'J', 'U', 'N', 'L', '-',
                 '1', '2', '3', '4', '5', '6', '7', '8'],
       stellaire: ['S', 'T', 'C', 'O', 'A', 'V', 'F', 'B', 'P', 'I', '-',
-                  '1', '2', '3', '4', '5', '6', '7', '8']
+                  '1', '2', '3', '4', '5', '6', '7', '8'],
+      anneaux: ['A', 'N', 'R', '-', '9']
     };
     var effacer = el('button', 'tp-touche tp-touche--eff', '←');
     effacer.type = 'button';
@@ -991,7 +992,7 @@
       var a = V.astre(saisie);
       // Un monde stellaire qui n'est pas au journal ne repond pas du tout :
       // son nom ne doit pas sortir d'un message de refus.
-      if (!a || (a.systeme === 'stellaire' && !V.ouvert(a.id))) {
+      if (!a || (a.systeme !== 'solaire' && !V.ouvert(a.id))) {
         return refuser('Coordonnées refusées. Rien ne répond.');
       }
       // On ne saute pas une escale : le gardien du monde d'avant barre
@@ -1016,7 +1017,7 @@
   //  La carte d'un monde
   // ==========================================================
 
-  function construireCarte(a) { return TER.construire(a); }
+  function construireCarte(a) { return a.construire ? a.construire(a) : TER.construire(a); }
 
   // Les cases qu'on atteint a pied depuis le point d'arrivee, et le
   // percement des poches isolees : voir js/odyssey-terrain.js.
@@ -1227,11 +1228,12 @@
   // geante gazeuse a anneaux.
   function astresCiel(a) {
     var out = [];
+    if (a.ciel3d) return a.ciel3d();
     if (a.systeme === 'stellaire') {
       out.push({ az: 0.1, haut: 0.62, r: 7, c1: '#ffc890', c2: '#ffffff', halo: true });
       var h = M.bruit(a.rang || 1, 3, 77);
       out.push({ az: 0.45 + h * 0.3, haut: 0.42, r: 12 + Math.round(h * 8), c1: a.ciel[2], c2: a.palette.cristal2 || '#ffffff',
-                 bandes: true, anneau: h > 0.4, ombre: true });
+                 bandes: true, anneau: h > 0.4 || a.id === 'viridia', ombre: true });
       return out;
     }
     var r = Math.max(2, Math.round(13 - (a.rang || 3) * 1.4));
@@ -1319,6 +1321,17 @@
     recolteB.type = 'button';
     recolteB.hidden = true;
     boutons.appendChild(recolteB);
+    // Le Telescope, a l'oeil (touche T).
+    var lunB = el('button', 'ody-lunette');
+    lunB.type = 'button';
+    lunB.hidden = true;
+    lunB.title = 'Télescope (T)';
+    lunB.setAttribute('aria-label', 'Regarder au télescope');
+    var lunIm = el('img', 'ody-lunette-img');
+    lunIm.src = 'assets/items/telescope.webp';
+    lunIm.alt = '';
+    lunB.appendChild(lunIm);
+    lunB.appendChild(el('span', 'ody-lunette-mot', 'TÉLESCOPE'));
     // Sous l'eau : remonter a la surface, a tout moment.
     var remonterB = el('button', 'ody-remonter', 'REMONTER');
     remonterB.type = 'button';
@@ -1339,6 +1352,7 @@
       sacB.appendChild(el('span', 'ody-sac-n', ''));
       scene.appendChild(sacB);
     }
+    scene.appendChild(lunB);
 
     // La mini-carte : la carte entiere en un pixel par case, couverte d'un
     // brouillard qui se leve la ou l'on passe. Un clic l'agrandit.
@@ -1356,6 +1370,9 @@
     barreBulle.hidden = true;
     if (CR) { scene.appendChild(barre); scene.appendChild(barreBulle); }
     var signatureBarre = '';
+    var XPm = CR ? window.ODYXP : null;
+    var barreXp = XPm ? XPm.Barre(scene) : null;
+    var orbes = XPm ? XPm.Orbes() : null;
 
     var retour = el('a', 'ody-retour');
     retour.href = '#teleportail';
@@ -1406,6 +1423,8 @@
         for (cx0 = CABANON.x0; cx0 <= CABANON.x1; cx0++) g[cy0][cx0] = T.STRUCTURE;
       relier(g);
     }
+    var FR = window.ODYFRAG;
+    var fragC = FR && !lune ? FR.preparer(g, a) : null;
     var libres = accessibles(g);
     var cur = V.curiosite(a.id);
     var lieu = lune ? { x: Math.floor(GROTTE.x), y: Math.floor(DEVANT_GROTTE.y) - 1 }
@@ -1495,7 +1514,8 @@
     });
 
     // --- Ce qui se ramasse ---
-    var recoltes = CR ? TER.placer(g, a, [lieu, repaire && repaire.tx != null ? { x: repaire.tx, y: repaire.ty, loin: 8 } : null]
+    var recoltes = CR ? TER.placer(g, a, [lieu, repaire && repaire.tx != null ? { x: repaire.tx, y: repaire.ty, loin: 8 } : null,
+      fragC ? { x: fragC.tx, y: fragC.ty, loin: 5 } : null]
       .filter(Boolean).concat(choses.map(function (c) { return { x: Math.floor(c.x / TS), y: Math.floor(c.y / TS), loin: 3 }; })))
       : { noeuds: [], coffres: [] };
     var noeuds = recoltes.noeuds, coffres = recoltes.coffres;
@@ -1520,6 +1540,25 @@
     function maintenant() { return performance.now(); }
 
     function dire(txt) { if (hudTxt.textContent !== txt) hudTxt.textContent = txt; }
+
+    // Des orbes qui tombent la ou ca s'est passe ; elles filent vers le
+    // voyageur quand il approche. Sans position, les points arrivent tout
+    // de suite (le four, dans le sac).
+    function semerXp(n, x, y) {
+      if (!orbes || !(n > 0)) return;
+      if (x == null) return recevoirXp(n);
+      orbes.semer(x, y, n, maintenant());
+    }
+    function recevoirXp(n) {
+      if (!XPm || !(n > 0)) return;
+      var r = XPm.gagner(n);
+      XPm.ding();
+      if (!barreXp || !r) return;
+      barreXp.maj();
+      barreXp.tic();
+      if (r.apres > r.avant) barreXp.monter(r.apres);
+    }
+    function hasardXp(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
     // Un message qui reste affiche un moment, par-dessus ce que le bandeau
     // dit d'habitude a chaque image.
     var messageJusqua = 0;
@@ -1644,6 +1683,10 @@
       viseur.classList.toggle('is-vise', !!cibleTir);
       viseur.classList.toggle('is-scan', !cibleTir && !!cible && libre);
       remonterB.hidden = !(PL && PL.actif()) || !libre;
+      var lunVu = (libre && !(PL && PL.actif()) && DP.aLeTelescope && DP.aLeTelescope()) || etat === 'telescope';
+      lunB.hidden = !lunVu;
+      lunB.classList.toggle('is-actif', etat === 'telescope');
+      if (barreXp) barreXp.cacher(etat === 'sac' || etat === 'ko' || etat === 'telescope' || etat === 'saut');
     }
 
     // ---------- La pelle ----------
@@ -1842,6 +1885,7 @@
         scene.classList.remove('is-scan');
         scan = null;
         var r = DP.noterScan(sujet.id, a.id);
+        if (r.neuf) semerXp(sujet.forme ? 8 : 3, ref.x, ref.y);
         etat = 'fiche';
         // Dans le systeme stellaire, le lieu remarquable garde les
         // coordonnees d'un monde encore inconnu.
@@ -1955,6 +1999,8 @@
       // monnaie de l'armurerie d'ici.
       DP.gagnerRoches(b.f.noyaux);
       DP.noterAbattu(b.v.id);
+      var pal = b.v.palier || 1;
+      semerXp(hasardXp([1, 1, 3, 5, 8, 12][pal] || 1, [3, 3, 5, 8, 12, 18][pal] || 3), b.x, b.y);
       chiffres.push({ t0: t, x: b.x, y: b.y, h: 44, txt: '+' + b.f.noyaux + ' ☀', noyau: true });
       dire(b.v.nom + ' abattu.');
       if (CR) gagner(CR.butinBete(b.v, a), b.x, b.y);
@@ -1992,12 +2038,24 @@
     function encaisser(b, t) {
       b.coup = t;
       subir(b.f.degats, b, t);
+      // Epines : ce qui mord peut s'y blesser.
+      var ep = CR ? CR.bonus().epines : 0;
+      if (ep && !b.mort && Math.random() < 0.15 * ep) {
+        var dd = 3 + Math.floor(Math.random() * 3) * ep;
+        b.pv = Math.max(0, b.pv - dd);
+        b.touche = t;
+        chiffres.push({ t0: t, x: b.x, y: b.y, h: 30, txt: '-' + dd + ' ✦' });
+        if (b.pv <= 0) abattre(b, t);
+      }
     }
 
     // Un coup recu : le bouclier d'abord, puis les PV. "src" dit d'ou il
     // vient, pour la lueur sur le bord de l'ecran.
     function subir(coup, src, t) {
       t = t || maintenant();
+      // Protection : 8 % de moins par niveau.
+      var prot = CR ? CR.bonus().protection : 0;
+      if (prot && coup > 0) coup = Math.max(1, Math.round(coup * (1 - 0.08 * prot)));
       if (bouclierPV > 0) {
         var absorbe = Math.min(bouclierPV, coup);
         bouclierPV -= absorbe; coup -= absorbe;
@@ -2077,6 +2135,7 @@
               else {
                 dire(lune ? 'La grotte est silencieuse.' : 'Le repaire est silencieux.');
                 ouvrirSuivante();
+                semerXp(40 + Math.round((gardien.rang || 1) * 4), repaire ? repaire.px : balade.chef.x, repaire ? repaire.py : balade.chef.y);
                 if (CR) gagner(CR.butinGardien(a), repaire ? repaire.px : balade.chef.x, repaire ? repaire.py : balade.chef.y);
               }
               majBoutons();
@@ -2087,6 +2146,55 @@
           }
         });
       }, reduit ? 100 : SURGIT_DUREE);
+    }
+
+    // ---------- Le Telescope ----------
+    var ciel = astresCiel(a), lunette = null, dernierLun = 0;
+    // Echap referme la lunette au lieu de quitter le jeu.
+    var echapLunette = function (e) {
+      if (e.key !== 'Escape' || etat !== 'telescope') return;
+      e.preventDefault(); e.stopPropagation();
+      basculerLunette();
+    };
+    window.addEventListener('keydown', echapLunette, true);
+    function basculerLunette() {
+      if (etat === 'telescope') {
+        etat = 'libre';
+        lunette = null;
+        scene.classList.remove('is-lunette');
+        dire(a.sous);
+        majBoutons();
+        return;
+      }
+      if (etat !== 'libre' || !FR || !DP.aLeTelescope || !DP.aLeTelescope() || (PL && PL.actif())) return;
+      etat = 'telescope';
+      // Depuis Viridia, la geante a anneaux est une cible.
+      var cible = a.id === 'viridia' ? ciel.filter(function (x) { return x.anneau; })[0] || null : null;
+      lunette = FR.Lunette({ astre: a, astres: ciel, cible: cible });
+      lunette.cible = cible;
+      dernierLun = 0;
+      scene.classList.add('is-lunette');
+      direPour('Télescope · lève les yeux vers le ciel. T ou Échap pour le ranger.', 5000);
+      majBoutons();
+    }
+    function dessinerLunette(ctx, Vv, t) {
+      var dt = dernierLun ? Math.min(0.05, (t - dernierLun) / 1000) : 0;
+      dernierLun = t;
+      var v = lunette.dessiner(ctx, Vv, t, balade.chef, dt);
+      if (v >= 1 && lunette.cible && etat === 'telescope') sauterVersAnneaux(lunette.cible);
+    }
+    function sauterVersAnneaux(cible) {
+      etat = 'saut';
+      lunette = null;
+      scene.classList.remove('is-lunette');
+      scene.classList.add('is-saut');
+      majBoutons();
+      dire('…');
+      FR.sauter(scene, cible, function () {
+        DP.noterAstre('aurelle');
+        reprise = null;
+        location.hash = '#odyssee/aurelle';
+      });
     }
 
     // Tenir le joystick ne doit pas empecher de tirer ni de scanner : on
@@ -2109,6 +2217,7 @@
     surAppui(tir, tirer);
     surAppui(recolteB, function () { if (etat === 'libre' && prise) agir(); });
     surAppui(remonterB, function () { if (etat === 'libre' && PL && PL.actif()) PL.remonter(); });
+    surAppui(lunB, function () { basculerLunette(); });
     sacB.addEventListener('click', function () { if (etat === 'libre') ouvrirSac(); });
     surAppui(holo, function () {
       if (etat !== 'libre' || !gardien || !bossBattu()) return;
@@ -2116,6 +2225,8 @@
     });
 
     var auClavier = function (e) {
+      if ((e.key === 't' || e.key === 'T') && (etat === 'libre' || etat === 'telescope')) { e.preventDefault(); return basculerLunette(); }
+      if (etat === 'telescope' || etat === 'saut') return;
       if (/^[1-9]$/.test(e.key) && etat === 'libre' && CR) { e.preventDefault(); return utiliserBarre(+e.key - 1); }
       if ((e.key === 'e' || e.key === 'E') && etat === 'libre' && prise) { e.preventDefault(); return agir(); }
       if ((e.key === 'r' || e.key === 'R') && etat === 'libre' && PL && PL.actif()) { e.preventDefault(); return PL.remonter(); }
@@ -2141,6 +2252,10 @@
       var chassent = (etat === 'libre' || etat === 'scan') && pv > 0;
       var plonge = PL && PL.actif();
       if (PL) PL.animer(dt, t, etat === 'libre' && pv > 0);
+      if (orbes && balade) {
+        var prisXp = orbes.animer(dt, t, balade.chef, etat === 'libre' && pv > 0 && !plonge);
+        if (prisXp) recevoirXp(prisXp);
+      }
 
       betes.forEach(function (b, i) {
         if (b.mort || plonge) return;
@@ -2300,6 +2415,8 @@
       }
 
       if (ART) out = out.concat(ART.extras(cachesO, balade && balade.chef, t));
+      if (FR && fragC) out = out.concat(FR.extras(fragC, t));
+      if (orbes) out = out.concat(orbes.extras(t));
 
       if (repaire && !lune) {
         // Le repaire, a hauteur d'yeux : une butte de roche percee d'une
@@ -2610,6 +2727,7 @@
       ctx.textAlign = 'left';
 
       mains(ctx, V, t);
+      if (etat === 'telescope' && lunette) dessinerLunette(ctx, V, t);
     }
 
     // Les mains : le scanner a gauche, le pistolet a droite. Ils
@@ -2723,7 +2841,10 @@
       CR.poses(a.id).forEach(function (p) {
         var px = (p.tx + 0.5) * TS, py = (p.ty + 0.5) * TS;
         var d = aPortee(px, py, 46);
-        if (d != null && d < d0 + 6) { d0 = d; mieux = { pose: p, quoi: p.id === 'four' ? 'FOUR' : 'ÉTABLI' }; }
+        if (d != null && d < d0 + 6) {
+          d0 = d;
+          mieux = { pose: p, quoi: p.id === 'four' ? 'FOUR' : p.id === 'table-enchant' ? 'ENCHANTER' : p.id === 'enclume' ? 'ENCLUME' : 'ÉTABLI' };
+        }
       });
       if (mieux) return mieux;
       var dv = balade.caseDevant(), tx = dv[0], ty = dv[1];
@@ -2800,6 +2921,7 @@
       var t = maintenant();
       for (var i = 0; i < 8; i++) eclats.push({ t0: t, x: n.x, y: n.y - 4, a: i * 0.785, couleur: n.type === 'plante' ? palette.flore2 : '#fff2c8' });
       gagner(liste, n.x, n.y);
+      semerXp({ filon: hasardXp(0, 1), eclats: hasardXp(0, 1), gisement: hasardXp(1, 2), poussiere: hasardXp(1, 2) }[n.type] || 0, n.x, n.y);
     }
 
     function ouvrirCoffre(c) {
@@ -2817,6 +2939,7 @@
         var t = maintenant();
         for (var i = 0; i < 14; i++) eclats.push({ t0: t, x: c.x, y: c.y - 10, a: i * 0.45, couleur: c.scelle ? '#ff9ae0' : '#fff0a0', loin: 1.6 });
         gagner(contenu, c.x, c.y - 6);
+        semerXp(c.scelle ? hasardXp(8, 12) : hasardXp(2, 4), c.x, c.y);
       }, reduit ? 50 : 480);
     }
 
@@ -2842,8 +2965,20 @@
       void scene.offsetWidth;
       scene.classList.add('is-coup');
       var rang = outil ? outil.rang : 0;
-      gagner(type === 'plante' ? CR.recolte('grande-plante', a, { style: palette.plante, rang: rang })
-                               : CR.recolte(type, a, { rang: rang }), x, y);
+      var butin = type === 'plante' ? CR.recolte('grande-plante', a, { style: palette.plante, rang: rang })
+                                    : CR.recolte(type, a, { rang: rang });
+      // Fortune : un peu plus de chaque chose, sauf de la pierre.
+      var fo = outil && outil.e && outil.e.fortune;
+      if (fo) butin.forEach(function (gg) { if (gg.id !== 'pierre') gg.n += Math.floor(Math.random() * (fo + 1)); });
+      gagner(butin, x, y);
+      // Les minerais lachent un peu d'XP, comme dans Minecraft.
+      var px = 0;
+      butin.forEach(function (gg) {
+        if (gg.id === 'fer' || gg.id === 'cuivre' || gg.id === 'charbon') px += hasardXp(0, gg.n);
+        if (gg.id === 'noyau') px += 4 * gg.n;
+      });
+      if (type === 'cristal') px += hasardXp(1, 2);
+      semerXp(px, x, y);
       if (outil && outil.brise) briser(outil.o, x, y);
     }
 
@@ -2873,7 +3008,9 @@
       void scene.offsetWidth;
       scene.classList.add('is-coup');
       dire(id === 'four' ? 'Le four est posé. Approche-toi pour y faire cuire quelque chose.'
-                         : 'L’établi est posé. À côté de lui, la grille passe à 3 × 3.');
+         : id === 'table-enchant' ? 'La table d’enchantement est posée. Approche-toi pour dépenser tes niveaux.'
+         : id === 'enclume' ? 'L’enclume est posée. Elle répare tes outils contre des niveaux.'
+         : 'L’établi est posé. À côté de lui, la grille passe à 3 × 3.');
       miniBase = null;
       return true;
     }
@@ -2949,7 +3086,8 @@
         scene: scene,
         dire: dire,
         maj: function () { majJauge(); },
-        fermer: function () { if (etat === 'sac') etat = 'libre'; majJauge(); majBoutons(); },
+        fermer: function () { if (etat === 'sac') etat = 'libre'; majJauge(); majBoutons(); if (barreXp) barreXp.maj(); },
+        xp: function (n) { recevoirXp(n); },
         utiliser: utiliser,
         poser: poserStation
       }, { station: pose ? pose.id : null, pose: pose || null, astre: a });
@@ -3161,9 +3299,13 @@
         m.fillRect(c.tx - 1, c.ty - 1, 2, 2);
         if (!ouvert && detecte && !reduit && Math.floor(t / 400) % 2) { m.fillStyle = '#ffffff'; m.fillRect(c.tx, c.ty, 1, 1); }
       });
+      if (fragC && !fragC.pris && visite.vu[fragC.ty * MW + fragC.tx]) {
+        m.fillStyle = reduit || Math.floor(t / 350) % 2 ? '#ffd86a' : '#fff6c8';
+        m.fillRect(fragC.tx - 1, fragC.ty - 1, 3, 3);
+      }
       // Les stations posees.
       CR.poses(a.id).forEach(function (p) {
-        m.fillStyle = p.id === 'four' ? '#ff9a3a' : '#e0b878';
+        m.fillStyle = p.id === 'four' ? '#ff9a3a' : p.id === 'table-enchant' ? '#c8a8ff' : p.id === 'enclume' ? '#9aa0aa' : '#e0b878';
         m.fillRect(p.tx - 1, p.ty - 1, 2, 2);
       });
       // Le voyageur, qui clignote, et la ou il regarde.
@@ -3195,8 +3337,10 @@
       grille: g,
       canvas: cv,
       ciel: a.ciel,
-      astres: astresCiel(a),
+      astres: ciel,
       angle: ou && ou.ang != null ? ou.ang : undefined,
+      // Au telescope, on ne marche plus mais on regarde toujours.
+      regardLibre: function () { return etat === 'telescope'; },
       // Le cabanon du jardin est en planches.
       texture: function (tx, ty) {
         return CABANON && tx >= CABANON.x0 && tx <= CABANON.x1 && ty >= CABANON.y0 && ty <= CABANON.y1 ? 'cabane' : null;
@@ -3249,6 +3393,13 @@
         }
 
         if (ART && etat === 'libre' && !plonge) ART.ramasser(cachesO, balade.chef);
+        if (FR && fragC && etat === 'libre' && !plonge &&
+            FR.ramasser(fragC, balade.chef, scene, function () { etat = 'libre'; majBoutons(); })) {
+          etat = 'fiche';
+          semerXp(15, fragC.x, fragC.y);
+          majBoutons();
+        }
+        if (etat === 'telescope') { majBoutons(); return; }
         majMini(t);
         majBarre();
         prise = null;
@@ -3298,7 +3449,7 @@
                                                 : 'Quelque chose à portée de scanner.')
           : (repaire && !bossBattu() && (lune ? balade.chef.y < (13 + O.y) * TS && Math.abs(balade.chef.x - GROTTE.x * TS) < 12 * TS : presDuRepaire(170)))
             ? gardien.textes.indice + (lune || DP.aLArme() ? '' : ' Sans arme, mieux vaut passer son chemin.')
-          : indiceBarriere() || a.sous);
+          : (FR && fragC ? FR.indice(fragC, balade.chef) : null) || indiceBarriere() || a.sous);
       }
     });
 
@@ -3308,6 +3459,7 @@
       if (vivant()) return;
       clearInterval(veille);
       window.removeEventListener('keydown', auClavier);
+      window.removeEventListener('keydown', echapLunette, true);
       minuteurs.forEach(clearTimeout);
       if (duel) duel.arreter();
       if (PL) PL.arreter();
@@ -3328,8 +3480,29 @@
       noeuds: noeuds, coffres: coffres, prise: function () { return prise; }, agir: function () { agir(); },
       sac: function () { ouvrirSac(); },
       balade: balade, plongee: PL,
-      cibleTir: function () { return cibleTir; }, cible: function () { return cible; }
+      cibleTir: function () { return cibleTir; }, cible: function () { return cible; },
+      orbes: orbes, fragment: fragC, lunette: function () { return lunette; }, basculerLunette: basculerLunette,
+      semerXp: semerXp
     };
+    arriveeSecrete();
+
+    // La premiere fois sur Aurelle : un carton, le nom qui se revele.
+    function arriveeSecrete() {
+      if (!a.secret || !CR) return;
+      var s = CR.etat();
+      if (s.arrives && s.arrives[a.id]) return;
+      s.arrives = s.arrives || {};
+      s.arrives[a.id] = Date.now();
+      CR.sauver();
+      var c = el('div', 'ody-secret');
+      c.appendChild(el('span', 'ody-secret-haut', 'Coordonnées inconnues'));
+      c.appendChild(el('strong', 'ody-secret-nom', a.nom));
+      c.appendChild(el('span', 'ody-secret-sous', a.sous + '  ·  ' + a.code));
+      c.appendChild(el('p', 'ody-secret-txt', 'Tu as sauté depuis Viridia. Le Téléportail vient d’inscrire ce monde au journal.'));
+      scene.appendChild(c);
+      plusTard(function () { c.classList.add('is-sortie'); }, reduit ? 2500 : 5200);
+      plusTard(function () { c.remove(); }, reduit ? 2600 : 5800);
+    }
   }
 
   // Ce que dit la fiche du genre d'une entree.

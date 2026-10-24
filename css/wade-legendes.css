@@ -1,0 +1,86 @@
+/* ==========================================================
+   Wade and Friends : les yeux de Wade, au menu, et les cinq de
+   Gaming Legends qui en sortent (js/wade.js).
+   ========================================================== */
+
+.wf-menu-visage { cursor: default; }
+
+/* L'oeil touche : une lueur rouge qui s'allume puis s'eteint. */
+.wf-oeil-touche {
+  position: absolute;
+  z-index: 3;
+  width: calc(60 * var(--px));
+  height: calc(60 * var(--px));
+  margin: calc(-30 * var(--px)) 0 0 calc(-30 * var(--px));
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, .95) 0 12%, rgba(255, 40, 30, .8) 30%, rgba(255, 0, 0, 0) 70%);
+  pointer-events: none;
+  animation: wf-oeil .9s ease-out both;
+}
+@keyframes wf-oeil {
+  0% { transform: scale(.3); opacity: 0; }
+  25% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(.8); opacity: 0; }
+}
+
+/* La revelation : un eclair rouge, puis les cinq qui sortent du noir. */
+.wf-legendes {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(10 * var(--px));
+  background: radial-gradient(circle at 50% 45%, rgba(40, 0, 0, .9), rgba(0, 0, 0, .97));
+  font-family: Consolas, "Courier New", monospace;
+  color: #f4f0e6;
+  text-align: center;
+  animation: wf-leg-in .5s ease both;
+}
+.wf-legendes.is-sortie { animation: wf-leg-out .4s ease both; }
+@keyframes wf-leg-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes wf-leg-out { to { opacity: 0; } }
+.wf-legendes-eclair {
+  position: absolute;
+  inset: 0;
+  background: #ff2a1a;
+  pointer-events: none;
+  animation: wf-leg-eclair .7s ease-out both;
+}
+@keyframes wf-leg-eclair { 0% { opacity: .85; } 100% { opacity: 0; } }
+.wf-legendes-haut { font-size: max(calc(15 * var(--px)), 11px); letter-spacing: calc(4 * var(--px)); color: #ff6a5a; text-transform: uppercase; animation: wf-leg-in .5s ease .3s both; }
+.wf-legendes-rang { display: flex; gap: calc(14 * var(--px)); flex-wrap: wrap; justify-content: center; }
+.wf-legende {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  width: calc(130 * var(--px));
+  animation: wf-leg-sort 1s cubic-bezier(.2, 1.3, .4, 1) both;
+  animation-delay: calc(.5s + var(--i) * .35s);
+}
+@keyframes wf-leg-sort {
+  0% { opacity: 0; transform: translateY(calc(30 * var(--px))) scale(.6); filter: brightness(0); }
+  50% { opacity: 1; filter: brightness(0) drop-shadow(0 0 calc(10 * var(--px)) #ff2a1a); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+.wf-legende-img {
+  width: calc(120 * var(--px));
+  height: calc(120 * var(--px));
+  object-fit: contain;
+  filter: drop-shadow(0 0 calc(10 * var(--px)) rgba(255, 60, 40, .55));
+}
+.wf-legende.is-or .wf-legende-img { filter: drop-shadow(0 0 calc(14 * var(--px)) rgba(255, 210, 80, .9)); }
+.wf-legende-nom { font-size: max(calc(14 * var(--px)), 10px); color: #e8dcc8; }
+.wf-legende.is-or .wf-legende-nom { color: #ffd84a; }
+.wf-legendes-titre { font-size: max(calc(34 * var(--px)), 20px); letter-spacing: calc(3 * var(--px)); color: #fff; text-shadow: 0 0 calc(14 * var(--px)) rgba(255, 60, 40, .8); animation: wf-leg-in .5s ease 2.3s both; }
+.wf-legendes-sous { font-size: max(calc(14 * var(--px)), 11px); color: #c8b8a8; animation: wf-leg-in .5s ease 2.4s both; }
+.wf-legendes-ok { animation: wf-leg-in .5s ease 2.5s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wf-oeil-touche, .wf-legendes, .wf-legendes-eclair, .wf-legende, .wf-legendes-haut,
+  .wf-legendes-titre, .wf-legendes-sous, .wf-legendes-ok { animation: none; }
+  .wf-legendes-eclair { display: none; }
+}

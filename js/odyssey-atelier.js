@@ -27,6 +27,8 @@
     return n;
   }
   var objet = CR.objet, pile = CR.pile;
+  // L'XP et les enchantements (js/odyssey-xp.js).
+  function XP() { return window.ODYXP || null; }
 
   // Les familles du livre, d'apres ce que la recette fabrique.
   var FAMILLES = [
@@ -48,13 +50,15 @@
 
     var box = el('div', 'ocr');
     box.setAttribute('role', 'dialog');
-    box.setAttribute('aria-label', station === 'four' ? 'Four' : station === 'etabli' ? 'Établi' : 'Sac');
+    box.setAttribute('aria-label', station === 'four' ? 'Four' : station === 'etabli' ? 'Établi' :
+      station === 'table-enchant' ? 'Table d’enchantement' : station === 'enclume' ? 'Enclume' : 'Sac');
     var fen = el('div', 'ocr-fen');
     box.appendChild(fen);
 
     var tete = el('div', 'ocr-tete');
     var onglets = el('div', 'ocr-onglets');
-    var ONGLETS = (station === 'four' ? [['four', 'Four']] : [])
+    var ONGLETS = (station === 'four' ? [['four', 'Four']] : station === 'table-enchant' ? [['enchant', 'Enchanter']] :
+                   station === 'enclume' ? [['enclume', 'Enclume']] : [])
       .concat([['sac', station === 'etabli' ? 'Établi' : 'Sac'], ['livre', 'Recettes'], ['equip', 'Équipement'], ['vitrine', 'Vitrine']]);
     var boutons = {};
     ONGLETS.forEach(function (o) {
@@ -65,6 +69,21 @@
       onglets.appendChild(b);
     });
     tete.appendChild(onglets);
+    // Le niveau d'XP, toujours sous les yeux dans l'atelier.
+    var puce = el('span', 'ocr-xp');
+    function majPuce() {
+      var X = XP();
+      if (!X) return;
+      var e = X.etat();
+      puce.textContent = '';
+      puce.appendChild(el('strong', null, String(e.niveau)));
+      var j = el('span', 'ocr-xp-j'), i = el('i');
+      i.style.width = Math.round(e.k * 100) + '%';
+      j.appendChild(i);
+      puce.appendChild(j);
+      puce.title = 'Niveau ' + e.niveau + ' · ' + e.reste + ' / ' + e.besoin + ' points';
+    }
+    if (XP()) { tete.appendChild(puce); majPuce(); }
     var fermer = el('button', 'ocr-fermer', '×');
     fermer.type = 'button';
     fermer.setAttribute('aria-label', 'Fermer');
@@ -74,7 +93,8 @@
 
     var corps = el('div', 'ocr-corps');
     fen.appendChild(corps);
-    var courant = opts.onglet || (station === 'four' ? 'four' : 'sac');
+    var courant = opts.onglet || (station === 'four' ? 'four' : station === 'table-enchant' ? 'enchant' :
+                                  station === 'enclume' ? 'enclume' : 'sac');
 
     // L'objet tenu, qui suit le pointeur.
     // La bulle : le nom et la description d'un objet, des qu'on le survole
@@ -95,6 +115,7 @@
       t.appendChild(n);
       bulle.appendChild(t);
       bulle.appendChild(el('p', 'ocr-bulle-desc', o.desc));
+      if (c.e && XP()) bulle.appendChild(el('span', 'ocr-bulle-ench', XP().texte(c.e)));
       if (o.dur && c.u != null) bulle.appendChild(el('span', 'ocr-bulle-usure', 'Usure : ' + c.u + ' / ' + o.dur));
       if (CR.CUISSON[c.id]) bulle.appendChild(el('span', 'ocr-bulle-plus', 'Au four : ' + objet(CR.CUISSON[c.id]).nom.toLowerCase()));
       if (CR.COMBUSTIBLE[c.id]) bulle.appendChild(el('span', 'ocr-bulle-plus', 'Combustible : ' + CR.COMBUSTIBLE[c.id] + ' cuisson' + (CR.COMBUSTIBLE[c.id] > 1 ? 's' : '')));
@@ -133,7 +154,7 @@
     // ---------- Fermer : ce qui est en main et dans la grille rentre ----------
     function ranger() {
       if (s.main) {
-        var m = s.main, mis = CR.ajouterDans(s.cases, m.id, m.n, m.u);
+        var m = s.main, mis = CR.ajouterDans(s.cases, m.id, m.n, m.u, m.e);
         m.n -= mis;
         if (m.n <= 0) s.main = null;
       }
@@ -141,7 +162,7 @@
         for (var i = 0; i < g.length; i++) {
           var c = g[i];
           if (!c) continue;
-          var mis2 = CR.ajouterDans(s.cases, c.id, c.n, c.u);
+          var mis2 = CR.ajouterDans(s.cases, c.id, c.n, c.u, c.e);
           c.n -= mis2;
           if (c.n <= 0) g[i] = null;
         }
@@ -174,13 +195,15 @@
       corps.textContent = '';
       if (o === 'sac') vueSac();
       else if (o === 'four') vueFour();
+      else if (o === 'enchant') vueEnchant();
+      else if (o === 'enclume') vueEnclume();
       else if (o === 'livre') vueLivre();
       else if (o === 'equip') vueEquip();
       else vueVitrine();
       corps.scrollTop = haut;
       majCurseur();
     }
-    function redessiner() { CR.sauver(); montrer(courant); }
+    function redessiner() { CR.sauver(); montrer(courant); majPuce(); }
 
     // ==========================================================
     //  Les cases, et la main
@@ -201,8 +224,11 @@
       if (cs.sortie) {
         // On ne fait qu'y prendre.
         if (!c) return;
-        if (!m) { s.main = c; cs.set(null); }
-        else if (m.id === c.id && m.u == null && m.n + c.n <= pile(c.id)) { m.n += c.n; cs.set(null); }
+        var pris = false;
+        if (!m) { s.main = c; cs.set(null); pris = true; }
+        else if (m.id === c.id && m.u == null && m.n + c.n <= pile(c.id)) { m.n += c.n; cs.set(null); pris = true; }
+        // Ce qui sort du four lache son XP, comme dans Minecraft.
+        if (pris && cs.four && jeu.xp) { var gx = CR.prendreXpFour(cs.four); if (gx) jeu.xp(gx); }
         return redessiner();
       }
       if (!m) {
@@ -233,7 +259,7 @@
     // le fantome d'une recette quand la case est vide.
     function caseEl(cs, cls, fant) {
       var c = cs.get();
-      var b = el('button', 'ocr-case ' + (cls || '') + (c ? '' : ' is-vide'));
+      var b = el('button', 'ocr-case ' + (cls || '') + (c ? '' : ' is-vide') + (c && c.e ? ' is-enchante' : ''));
       b.type = 'button';
       if (c) {
         var o = objet(c.id);
@@ -382,6 +408,7 @@
       txt.appendChild(el('strong', 'ocr-det-nom', o.nom + (m.n > 1 ? '  ×' + m.n : '')));
       txt.appendChild(el('span', 'ocr-det-cat', 'En main · ' + CR.CATS[o.cat].nom +
         (o.dur ? '  ·  usure ' + m.u + ' / ' + o.dur : '')));
+      if (m.e && XP()) txt.appendChild(el('span', 'ocr-det-ench', XP().texte(m.e)));
       txt.appendChild(el('p', 'ocr-det-desc', o.desc));
       l.appendChild(txt);
       z.appendChild(l);
@@ -405,11 +432,14 @@
       }
       if (o.cat === 'equip') {
         bouton('Équiper', function () {
-          var avant = s.equipe[o.place];
-          s.equipe[o.place] = m.id;
+          var avant = s.equipe[o.place], avantE = CR.enchPorte(o.place);
+          CR.porter(o.place, m.id, m.e || null);
           m.n--;
           if (m.n <= 0) s.main = null;
-          if (avant) { if (!s.main) s.main = { id: avant, n: 1 }; else CR.ajouterDans(s.cases, avant, 1); }
+          if (avant) {
+            if (!s.main) { s.main = { id: avant, n: 1 }; if (avantE) s.main.e = avantE; }
+            else CR.ajouterDans(s.cases, avant, 1, null, avantE);
+          }
           if (jeu.maj) jeu.maj();
           redessiner();
         });
@@ -422,7 +452,7 @@
         });
       }
       bouton('Ranger dans le sac', function () {
-        var mis = CR.ajouterDans(s.cases, m.id, m.n, m.u);
+        var mis = CR.ajouterDans(s.cases, m.id, m.n, m.u, m.e);
         m.n -= mis;
         if (m.n <= 0) s.main = null;
         else if (jeu.dire) jeu.dire('Plus de place dans le sac.');
@@ -584,7 +614,9 @@
       fleche.appendChild(pr);
       four.appendChild(fleche);
       var d = el('div', 'ocr-four-d');
-      d.appendChild(caseEl(caseFour('sortie', function () { return false; }, true), 'ocr-case--res'));
+      var cSortie = caseFour('sortie', function () { return false; }, true);
+      cSortie.four = f;
+      d.appendChild(caseEl(cSortie, 'ocr-case--res'));
       d.appendChild(el('span', 'ocr-four-lab', 'Sortie'));
       four.appendChild(d);
       corps.appendChild(four);
@@ -603,6 +635,181 @@
       bas.appendChild(ram);
       corps.appendChild(bas);
       corps.appendChild(grilleSac());
+    }
+
+    // ==========================================================
+    //  La table d'enchantement
+    // ==========================================================
+    // Une case pour l'objet, une pour le cristal, et trois offres : la
+    // premiere coute un niveau et un cristal, la troisieme trois de chaque,
+    // mais demande d'etre deja bien monte.
+    var GLYPHES = 'ᔑʖᓵ↸ᒷ⎓⊣⍑╎⋮ꖌꖎᒲリ𝙹!¡ᑑ∷ᓭℸ⚍⍊∴̇/||⨅';
+    function glyphes(n, graine) {
+      var t = '';
+      for (var i = 0; i < n; i++) t += GLYPHES.charAt((graine * 7 + i * 13) % GLYPHES.length);
+      return t;
+    }
+    function vueEnchant() {
+      var X = XP();
+      if (!X) return;
+      if (!pose.objet) pose.objet = null;
+      if (!pose.lapis) pose.lapis = null;
+      var tab = el('div', 'ocr-ench');
+      var g = el('div', 'ocr-ench-g');
+      var livre = el('div', 'ocr-ench-livre');
+      livre.appendChild(CR.imgIcone('grimoire', 'ocr-ench-livre-ic'));
+      g.appendChild(livre);
+      var cases = el('div', 'ocr-ench-cases');
+      var cObj = { get: function () { return pose.objet || null; }, set: function (v) { pose.objet = v; },
+                   accepte: function (id) { return X.enchantable(objet(id)); } };
+      var cLap = { get: function () { return pose.lapis || null; }, set: function (v) { pose.lapis = v; },
+                   accepte: function (id) { return id === 'cristal'; } };
+      var c1 = el('div', 'ocr-ench-case');
+      c1.appendChild(caseEl(cObj));
+      c1.appendChild(el('span', 'ocr-four-lab', 'Objet'));
+      var c2 = el('div', 'ocr-ench-case');
+      c2.appendChild(caseEl(cLap, '', pose.lapis ? null : 'cristal'));
+      c2.appendChild(el('span', 'ocr-four-lab', 'Cristal'));
+      cases.appendChild(c1); cases.appendChild(c2);
+      g.appendChild(cases);
+      tab.appendChild(g);
+
+      var liste = el('div', 'ocr-ench-offres');
+      var c = pose.objet, o = c && objet(c.id);
+      var dispo = (pose.lapis ? pose.lapis.n : 0);
+      var n = X.niveau();
+      if (!c) liste.appendChild(el('p', 'ocr-aide', 'Pose un outil (pioche, hache, foreuse, bottes) ou une armure, puis du cristal brut.'));
+      else if (c.e) liste.appendChild(el('p', 'ocr-aide', o.nom + ' est déjà enchanté : ' + X.texte(c.e) + '.'));
+      else {
+        X.offres(c).forEach(function (of) {
+          var ok = n >= of.requis && dispo >= of.cristal && !!of.e;
+          var b = el('button', 'ocr-offre' + (ok ? ' is-pret' : ''));
+          b.type = 'button';
+          var gauche = el('span', 'ocr-offre-cout');
+          gauche.appendChild(el('strong', null, String(of.cout)));
+          gauche.appendChild(el('em', null, 'niv.'));
+          b.appendChild(gauche);
+          var mil = el('span', 'ocr-offre-txt');
+          mil.appendChild(el('span', 'ocr-offre-glyphes', glyphes(10 + of.i * 3, of.requis + of.i)));
+          // Comme dans Minecraft : on voit le premier enchantement, et un
+          // indice s'il y en a d'autres.
+          var cles = of.e ? Object.keys(of.e) : [];
+          mil.appendChild(el('span', 'ocr-offre-nom', cles.length ? X.nomEnchant(cles[0], of.e[cles[0]]) + (cles.length > 1 ? ' . . . ?' : '') : '—'));
+          b.appendChild(mil);
+          var droite = el('span', 'ocr-offre-req' + (n >= of.requis ? '' : ' is-manque'), 'niv. ' + of.requis);
+          b.appendChild(droite);
+          var cr = el('span', 'ocr-offre-cr' + (dispo >= of.cristal ? '' : ' is-manque'));
+          cr.appendChild(CR.imgIcone('cristal', 'ocr-offre-cr-ic'));
+          cr.appendChild(document.createTextNode('×' + of.cristal));
+          b.appendChild(cr);
+          b.addEventListener('click', function () {
+            // On ne prend le cristal que dans la case de la table.
+            if (dispo < of.cristal) { if (jeu.dire) jeu.dire('Mets ' + of.cristal + ' cristal brut dans la case de la table.'); return; }
+            if (n < of.requis) { if (jeu.dire) jeu.dire('Il faut être au niveau ' + of.requis + '.'); return; }
+            var r = X.enchanter(c, of, true);
+            if (r !== true) { if (jeu.dire) jeu.dire(r); return; }
+            pose.lapis.n -= of.cristal;
+            if (pose.lapis.n <= 0) pose.lapis = null;
+            X.sonEnchant();
+            redessiner();
+            animerEnchant(o, c.e);
+          });
+          liste.appendChild(b);
+        });
+      }
+      tab.appendChild(liste);
+      corps.appendChild(tab);
+      corps.appendChild(el('p', 'ocr-aide', 'Tu es au niveau ' + n + '. Les orbes vertes tombent des créatures, des minerais, des coffres et du four.'));
+      var bas = el('div', 'ocr-atelier');
+      bas.appendChild(zoneMain());
+      bas.appendChild(boutonRamasser('la table'));
+      corps.appendChild(bas);
+      corps.appendChild(grilleSac());
+    }
+
+    // L'objet s'illumine, les glyphes du livre volent vers lui, puis le nom
+    // de l'enchantement s'inscrit.
+    function animerEnchant(o, e) {
+      var X = XP();
+      var voile = el('div', 'ocr-ench-anim');
+      var cadre = el('div', 'ocr-ench-anim-cadre');
+      cadre.appendChild(CR.imgIcone(o.id, 'ocr-ench-anim-ic'));
+      voile.appendChild(cadre);
+      for (var i = 0; i < 18; i++) {
+        var gl = el('span', 'ocr-ench-anim-gl', GLYPHES.charAt((i * 5) % GLYPHES.length));
+        gl.style.setProperty('--a', (i * 20) + 'deg');
+        gl.style.setProperty('--d', (i % 6) * 0.08 + 's');
+        voile.appendChild(gl);
+      }
+      voile.appendChild(el('strong', 'ocr-ench-anim-nom', o.nom));
+      voile.appendChild(el('span', 'ocr-ench-anim-e', X.texte(e)));
+      box.appendChild(voile);
+      setTimeout(function () { voile.classList.add('is-sortie'); setTimeout(function () { voile.remove(); }, 300); }, reduit ? 900 : 2200);
+    }
+
+    // ==========================================================
+    //  L'enclume
+    // ==========================================================
+    function vueEnclume() {
+      var X = XP();
+      if (!X) return;
+      var tab = el('div', 'ocr-ench ocr-enclume');
+      var cObj = { get: function () { return pose.objet || null; }, set: function (v) { pose.objet = v; },
+                   accepte: function (id) { return !!objet(id).dur; } };
+      var g = el('div', 'ocr-ench-case');
+      g.appendChild(caseEl(cObj));
+      g.appendChild(el('span', 'ocr-four-lab', 'Outil abîmé'));
+      tab.appendChild(g);
+      var droite = el('div', 'ocr-enclume-d');
+      var c = pose.objet, o = c && objet(c.id), n = X.niveau();
+      if (!c) droite.appendChild(el('p', 'ocr-aide', 'Pose un outil abîmé : l’enclume le remet à neuf contre des niveaux, et il garde ses enchantements.'));
+      else {
+        var cout = X.coutReparation(c);
+        droite.appendChild(el('strong', 'ocr-rec-nom', o.nom));
+        droite.appendChild(el('span', 'ocr-rec-desc', 'Usure : ' + c.u + ' / ' + o.dur + (c.e ? ' · ' + X.texte(c.e) : '')));
+        if (!cout) droite.appendChild(el('p', 'ocr-aide', 'Il est comme neuf.'));
+        else {
+          var b = el('button', 'ocr-btn' + (n >= cout ? '' : ' is-off'), 'Réparer · ' + cout + ' niveau' + (cout > 1 ? 'x' : ''));
+          b.type = 'button';
+          b.addEventListener('click', function () {
+            var r = X.reparer(c);
+            if (r !== true) { if (jeu.dire) jeu.dire(r); return; }
+            X.sonEnclume();
+            redessiner();
+            var e = el('div', 'ocr-enclume-anim');
+            e.appendChild(CR.imgIcone(c.id, 'ocr-ench-anim-ic'));
+            e.appendChild(el('span', null, 'Comme neuf'));
+            box.appendChild(e);
+            setTimeout(function () { e.remove(); }, reduit ? 700 : 1400);
+          });
+          droite.appendChild(b);
+        }
+      }
+      tab.appendChild(droite);
+      corps.appendChild(tab);
+      var bas = el('div', 'ocr-atelier');
+      bas.appendChild(zoneMain());
+      bas.appendChild(boutonRamasser('l’enclume'));
+      corps.appendChild(bas);
+      corps.appendChild(grilleSac());
+    }
+
+    function boutonRamasser(nom) {
+      var ram = el('button', 'ocr-btn ocr-btn--plat', 'Ramasser ' + nom);
+      ram.type = 'button';
+      ram.addEventListener('click', function () {
+        // Ce qui y est pose revient d'abord dans le sac.
+        ['objet', 'lapis'].forEach(function (k) {
+          var c = pose[k];
+          if (!c) return;
+          var mis = CR.ajouterDans(s.cases, c.id, c.n, c.u, c.e);
+          c.n -= mis;
+          if (c.n <= 0) pose[k] = null;
+        });
+        if (pose.objet || pose.lapis) { if (jeu.dire) jeu.dire('Plus de place dans le sac.'); return redessiner(); }
+        ramasserPose();
+      });
+      return ram;
     }
 
     function ramasserPose() {
@@ -734,6 +941,8 @@
       var b = CR.bonus();
       var st = el('div', 'ocr-stats');
       [['PV max', String(100 + b.pv)], ['Régénération', '×' + b.regen], ['Vitesse', '×' + b.vitesse.toFixed(2)], ['Dégâts', '×' + b.degats.toFixed(2)]]
+        .concat(b.protection ? [['Protection', '-' + (b.protection * 8) + ' %']] : [])
+        .concat(XP() ? [['Niveau XP', String(XP().niveau())]] : [])
         .forEach(function (q) { var s2 = el('span', 'ocr-stat'); s2.appendChild(el('em', null, q[0])); s2.appendChild(el('strong', null, q[1])); st.appendChild(s2); });
       corps.appendChild(st);
       corps.appendChild(el('span', 'ocr-titre ocr-titre--groupe', 'Porté'));
@@ -745,6 +954,8 @@
         if (id) {
           c.appendChild(CR.imgIcone(id, 'ocr-rec-ic'));
           c.appendChild(el('strong', 'ocr-rec-nom', objet(id).nom));
+          var ep = CR.enchPorte(pl[0]);
+          if (ep && XP()) c.appendChild(el('span', 'ocr-det-ench', XP().texte(ep)));
           c.appendChild(el('span', 'ocr-rec-desc', objet(id).desc));
           var r = el('button', 'ocr-btn ocr-btn--plat', 'Retirer');
           r.type = 'button';
@@ -767,6 +978,7 @@
         c.appendChild(CR.imgIcone(m ? m.o.id : q[2], 'ocr-rec-ic'));
         c.appendChild(el('strong', 'ocr-rec-nom', m ? m.o.nom : q[1] + ' · à fabriquer'));
         c.appendChild(el('span', 'ocr-rec-desc', m && m.o.dur ? 'Usure : ' + m.c.u + ' / ' + m.o.dur : (m ? m.o.desc : objet(q[2]).desc)));
+        if (m && m.c.e && XP()) c.appendChild(el('span', 'ocr-det-ench', XP().texte(m.c.e)));
         outils.appendChild(c);
       });
       corps.appendChild(outils);
@@ -775,10 +987,14 @@
     function vueVitrine() {
       var haut = el('div', 'ocr-ligne');
       haut.appendChild(el('span', 'ocr-titre', 'Vitrine'));
-      haut.appendChild(el('span', 'ocr-cpt', Object.keys(s.vitrine).length + ' / ' + CR.RELIQUES.length));
+      var visibles = CR.reliquesVisibles();
+      haut.appendChild(el('span', 'ocr-cpt', visibles.filter(function (o) { return s.vitrine[o.id]; }).length + ' / ' + visibles.length));
       corps.appendChild(haut);
+      // Les fragments du telescope, des le premier trouve.
+      var FR = window.ODYFRAG;
+      if (FR && FR.nombre() > 0 && !FR.complet()) corps.appendChild(FR.panneau());
       var g = el('div', 'ocr-vitrine');
-      CR.RELIQUES.forEach(function (o) {
+      visibles.forEach(function (o) {
         var a = !!s.vitrine[o.id];
         var c = el('div', 'ocr-vit' + (a ? '' : ' is-manque'));
         if (a) {

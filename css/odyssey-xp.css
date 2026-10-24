@@ -1,0 +1,420 @@
+/* ==========================================================
+   L'Odyssee : l'XP, les enchantements, l'enclume (js/odyssey-xp.js,
+   js/odyssey-atelier.js), les fragments et la visee du Telescope
+   (js/odyssey-lunette.js), et l'arrivee sur un monde secret.
+   ========================================================== */
+
+/* ---------- La barre d'XP, au-dessus de la barre rapide ---------- */
+.oxp {
+  position: absolute;
+  left: 50%;
+  bottom: calc(80 * var(--px));
+  z-index: 3;
+  width: calc(430 * var(--px));
+  height: calc(14 * var(--px));
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.oxp.is-cachee { opacity: 0; }
+.oxp-fond {
+  position: absolute;
+  inset: calc(3 * var(--px)) 0;
+  border: calc(2 * var(--px)) solid #0c1608;
+  border-radius: calc(3 * var(--px));
+  background: rgba(10, 20, 6, .85);
+  overflow: hidden;
+}
+.oxp-plein {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(180deg, #d8ff6a, #7cd02a 55%, #4a9a14);
+  box-shadow: 0 0 calc(6 * var(--px)) rgba(160, 255, 60, .6);
+  transition: width .25s ease;
+}
+.oxp.is-tic .oxp-plein { animation: oxp-tic .35s ease; }
+@keyframes oxp-tic { 40% { filter: brightness(1.8); } }
+.oxp-n {
+  position: absolute;
+  left: 50%;
+  bottom: calc(6 * var(--px));
+  transform: translateX(-50%);
+  font: 900 max(calc(22 * var(--px)), 14px) "Courier New", monospace;
+  color: #a8ff3a;
+  text-shadow: calc(2 * var(--px)) 0 #0c1608, calc(-2 * var(--px)) 0 #0c1608, 0 calc(2 * var(--px)) #0c1608, 0 calc(-2 * var(--px)) #0c1608;
+  line-height: 1;
+}
+.oxp-n.is-monte { animation: oxp-monte .6s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes oxp-monte { 0% { transform: translateX(-50%) scale(1); } 40% { transform: translateX(-50%) scale(1.9); color: #ffffff; } 100% { transform: translateX(-50%) scale(1); } }
+
+/* Le niveau gagne : le chiffre monte au milieu de l'ecran, des etincelles
+   vertes jaillissent autour. Tous les cinq niveaux, c'est plus grand. */
+.oxp-annonce {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  font-family: "Courier New", monospace;
+  animation: oxp-annonce 2.1s ease both;
+}
+@keyframes oxp-annonce {
+  0% { opacity: 0; transform: translate(-50%, -20%) scale(.5); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  25% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -80%); }
+}
+.oxp-annonce-haut { font-size: max(calc(14 * var(--px)), 11px); letter-spacing: calc(4 * var(--px)); color: #d8ffb0; text-transform: uppercase; text-shadow: 0 0 calc(6 * var(--px)) #000; }
+.oxp-annonce-n {
+  font-size: max(calc(64 * var(--px)), 34px);
+  line-height: 1;
+  color: #a8ff3a;
+  text-shadow: 0 0 calc(18 * var(--px)) rgba(160, 255, 60, .9), calc(3 * var(--px)) calc(3 * var(--px)) 0 #0c1608;
+}
+.oxp-annonce.is-grand .oxp-annonce-n { font-size: max(calc(96 * var(--px)), 48px); color: #ffe86a; text-shadow: 0 0 calc(24 * var(--px)) rgba(255, 230, 90, .9), calc(3 * var(--px)) calc(3 * var(--px)) 0 #2a1a04; }
+.oxp-annonce.is-grand .oxp-annonce-haut { color: #fff2a8; }
+.oxp-annonce-p {
+  position: absolute;
+  left: 50%; top: 60%;
+  width: calc(6 * var(--px)); height: calc(6 * var(--px));
+  background: #c8ff3a;
+  box-shadow: 0 0 calc(6 * var(--px)) #a8ff3a;
+  animation: oxp-p .9s ease-out .1s both;
+}
+.oxp-annonce.is-grand .oxp-annonce-p { background: #ffe86a; box-shadow: 0 0 calc(8 * var(--px)) #ffd23a; }
+@keyframes oxp-p {
+  from { transform: rotate(var(--a)) translateY(0); opacity: 1; }
+  to { transform: rotate(var(--a)) translateY(calc(-110 * var(--px))); opacity: 0; }
+}
+
+/* ---------- Le Telescope, a l'oeil ---------- */
+.ody-lunette {
+  position: absolute;
+  top: calc(250 * var(--px));
+  left: calc(16 * var(--px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2 * var(--px));
+  padding: calc(6 * var(--px)) calc(8 * var(--px));
+  border: calc(2 * var(--px)) solid rgba(200, 122, 58, .75);
+  border-radius: calc(8 * var(--px));
+  background: rgba(14, 8, 2, .8);
+  color: #ffd8a8;
+  font-family: "Courier New", monospace;
+  cursor: pointer;
+  line-height: 1;
+  z-index: 4;
+}
+.ody-lunette[hidden] { display: none; }
+.ody-lunette:hover, .ody-lunette:focus-visible { background: rgba(60, 30, 6, .95); outline: none; }
+.ody-lunette.is-actif { border-color: #7cf0c8; color: #d8fff0; }
+.ody-lunette-img { width: calc(42 * var(--px)); height: calc(42 * var(--px)); object-fit: contain; pointer-events: none; }
+.ody-lunette-mot { font-size: max(calc(11 * var(--px)), 9px); letter-spacing: calc(1 * var(--px)); }
+.ody-lunette.is-actif .ody-lunette-mot::before { content: '× '; }
+
+/* A l'oeil, le reste de l'ecran s'efface. */
+.ody-scene.is-lunette .ody-barre,
+.ody-scene.is-lunette .ody-boutons,
+.ody-scene.is-lunette .ody-sac,
+.ody-scene.is-lunette .ody-mini,
+.ody-scene.is-lunette .ody-viseur,
+.ody-scene.is-lunette .pe-stick,
+.ody-scene.is-saut .ody-barre,
+.ody-scene.is-saut .ody-boutons,
+.ody-scene.is-saut .ody-sac,
+.ody-scene.is-saut .ody-mini,
+.ody-scene.is-saut .ody-lunette,
+.ody-scene.is-saut .ody-viseur { opacity: 0; pointer-events: none; }
+
+/* Le saut : une toile par-dessus tout. */
+.ofr-saut {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  animation: ocr-in .25s ease both;
+}
+
+/* ---------- Les fragments du Telescope ---------- */
+.ofr-annonce {
+  position: absolute;
+  left: 50%; top: 50%;
+  z-index: 9;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  width: min(90%, calc(470 * var(--px)));
+  padding: calc(22 * var(--px)) calc(20 * var(--px));
+  border: calc(3 * var(--px)) solid #c87a3a;
+  border-radius: calc(14 * var(--px));
+  background: linear-gradient(180deg, #2a1a0c, #100804);
+  box-shadow: 0 0 calc(40 * var(--px)) rgba(255, 190, 110, .4);
+  text-align: center;
+  font-family: "Courier New", monospace;
+  line-height: 1.25;
+  color: #ffe8c8;
+  overflow: hidden;
+  isolation: isolate;
+  animation: ocr-relique-in .6s cubic-bezier(.2, 1.4, .4, 1) both;
+}
+.ofr-annonce.is-sortie { animation: ocr-out .3s ease both; }
+.ofr-rayons {
+  position: absolute;
+  left: 50%; top: calc(80 * var(--px));
+  z-index: -1;
+  width: calc(520 * var(--px)); height: calc(520 * var(--px));
+  margin: calc(-260 * var(--px)) 0 0 calc(-260 * var(--px));
+  background: repeating-conic-gradient(rgba(255, 200, 120, .16) 0 10deg, transparent 10deg 20deg);
+  border-radius: 50%;
+  animation: ofr-tourne 9s linear infinite;
+}
+@keyframes ofr-tourne { to { transform: rotate(360deg); } }
+.ofr-grand { width: calc(110 * var(--px)); height: calc(110 * var(--px)); image-rendering: pixelated; filter: drop-shadow(0 0 calc(12 * var(--px)) rgba(255, 200, 120, .85)); animation: ocr-flotte 2.4s ease-in-out infinite alternate; }
+.ofr-haut { font-size: max(calc(13 * var(--px)), 10px); letter-spacing: calc(3 * var(--px)); color: #ffb06a; text-transform: uppercase; }
+.ofr-nom { font-size: max(calc(24 * var(--px)), 17px); }
+.ofr-txt { margin: 0; font-size: max(calc(15 * var(--px)), 11px); color: #e0d0b8; }
+.ofr-cpt { font-size: max(calc(14 * var(--px)), 11px); color: #ffd8a8; letter-spacing: calc(2 * var(--px)); }
+.ofr-rangee { display: flex; gap: calc(6 * var(--px)); margin: calc(4 * var(--px)) 0; }
+.ofr-place {
+  display: grid;
+  place-items: center;
+  width: calc(46 * var(--px)); height: calc(46 * var(--px));
+  border: calc(2 * var(--px)) dashed rgba(200, 122, 58, .5);
+  border-radius: calc(8 * var(--px));
+  background: rgba(0, 0, 0, .35);
+  color: rgba(255, 216, 168, .4);
+  font: 700 max(calc(16 * var(--px)), 12px) "Courier New", monospace;
+}
+.ofr-place em { font-style: normal; }
+.ofr-place.is-la { border-style: solid; border-color: #ffb06a; background: rgba(90, 50, 20, .5); box-shadow: 0 0 calc(10 * var(--px)) rgba(255, 176, 106, .45); }
+.ofr-ic { width: 80%; height: 80%; image-rendering: pixelated; }
+.ofr-panneau { margin-bottom: calc(12 * var(--px)); }
+
+/* Les cinq pieces se rejoignent, un eclair, le Telescope. */
+.ofr-assemble {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8 * var(--px));
+  background: radial-gradient(circle at 50% 45%, rgba(60, 30, 10, .92), rgba(4, 2, 0, .96));
+  font-family: "Courier New", monospace;
+  color: #ffe8c8;
+  text-align: center;
+  animation: ocr-in .3s ease both;
+}
+.ofr-assemble.is-sortie { animation: ocr-out .3s ease both; }
+.ofr-assemble-c { position: relative; width: 0; height: calc(150 * var(--px)); }
+.ofr-assemble-p {
+  position: absolute;
+  left: calc(-28 * var(--px)); top: calc(47 * var(--px));
+  width: calc(56 * var(--px)); height: calc(56 * var(--px));
+  image-rendering: pixelated;
+  animation: ofr-vient 1.6s cubic-bezier(.5, 0, .3, 1) both;
+  animation-delay: calc(var(--i) * .12s);
+}
+@keyframes ofr-vient {
+  0% { transform: rotate(var(--a)) translateX(calc(260 * var(--px))) rotate(calc(var(--a) * -1)); opacity: 0; }
+  20% { opacity: 1; }
+  80% { transform: rotate(calc(var(--a) + 360deg)) translateX(0) rotate(calc(var(--a) * -1)); opacity: 1; }
+  100% { transform: rotate(calc(var(--a) + 360deg)) translateX(0) rotate(calc(var(--a) * -1)) scale(.2); opacity: 0; }
+}
+.ofr-assemble-eclair {
+  position: absolute;
+  left: 50%; top: 42%;
+  width: calc(30 * var(--px)); height: calc(30 * var(--px));
+  margin: calc(-15 * var(--px)) 0 0 calc(-15 * var(--px));
+  border-radius: 50%;
+  background: #fff6e0;
+  box-shadow: 0 0 calc(60 * var(--px)) calc(30 * var(--px)) rgba(255, 220, 160, .9);
+  opacity: 0;
+  animation: ofr-eclair .9s ease-out 1.75s both;
+}
+@keyframes ofr-eclair { 0% { opacity: 0; transform: scale(.2); } 25% { opacity: 1; transform: scale(3); } 100% { opacity: 0; transform: scale(8); } }
+.ofr-assemble-tel {
+  width: calc(180 * var(--px)); height: calc(180 * var(--px));
+  object-fit: contain;
+  margin-top: calc(-150 * var(--px));
+  filter: drop-shadow(0 0 calc(16 * var(--px)) rgba(255, 210, 140, .8));
+  animation: ofr-tel .7s cubic-bezier(.2, 1.5, .4, 1) 1.9s both;
+}
+@keyframes ofr-tel { from { transform: scale(.2) rotate(-20deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.ofr-assemble-nom { font-size: max(calc(30 * var(--px)), 20px); color: #ffd8a8; animation: ocr-in .4s ease 2.2s both; }
+.ofr-assemble-txt { font-size: max(calc(15 * var(--px)), 11px); color: #e0d0b8; animation: ocr-in .4s ease 2.4s both; }
+.ofr-assemble-ok { animation: ocr-in .4s ease 2.5s both; }
+
+/* ---------- La premiere arrivee sur un monde secret ---------- */
+.ody-secret {
+  position: absolute;
+  left: 50%; top: 40%;
+  z-index: 8;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  width: min(92%, calc(640 * var(--px)));
+  pointer-events: none;
+  text-align: center;
+  font-family: "Courier New", monospace;
+  color: #fff0c8;
+  text-shadow: 0 0 calc(10 * var(--px)) rgba(0, 0, 0, .9);
+  animation: ody-secret-in 1.4s ease both;
+}
+.ody-secret.is-sortie { animation: ocr-out .6s ease both; }
+@keyframes ody-secret-in { from { opacity: 0; letter-spacing: calc(12 * var(--px)); filter: blur(4px); } to { opacity: 1; filter: none; } }
+.ody-secret-haut { font-size: max(calc(13 * var(--px)), 10px); letter-spacing: calc(4 * var(--px)); color: #ffd86a; text-transform: uppercase; }
+.ody-secret-nom { font-size: max(calc(64 * var(--px)), 32px); line-height: 1; letter-spacing: calc(6 * var(--px)); color: #fff6c8; text-shadow: 0 0 calc(24 * var(--px)) rgba(255, 216, 106, .8), 0 0 calc(6 * var(--px)) #000; }
+.ody-secret-sous { font-size: max(calc(15 * var(--px)), 11px); color: #e8d0a0; }
+.ody-secret-txt { margin: calc(6 * var(--px)) 0 0; font-size: max(calc(14 * var(--px)), 11px); color: #d8c8b0; }
+
+/* ---------- L'atelier : le niveau, les enchantements ---------- */
+.ocr-xp {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(4 * var(--px)) calc(8 * var(--px));
+  margin-bottom: calc(4 * var(--px));
+  border: calc(2 * var(--px)) solid #3a5a1a;
+  border-radius: calc(8 * var(--px));
+  background: #0e1608;
+  color: #a8ff3a;
+  font: 900 max(calc(16 * var(--px)), 12px) "Courier New", monospace;
+}
+.ocr-xp-j { display: block; width: calc(60 * var(--px)); height: calc(6 * var(--px)); background: #1a2a0c; border-radius: calc(2 * var(--px)); overflow: hidden; }
+.ocr-xp-j i { display: block; height: 100%; background: #8ae83a; }
+.ocr-bulle-ench, .ocr-det-ench { display: block; color: #c8a8ff; font-size: max(calc(13 * var(--px)), 10px); text-shadow: 0 0 calc(4 * var(--px)) rgba(160, 110, 255, .6); }
+
+/* Le reflet violet d'un objet enchante, qui passe en boucle. */
+.ocr-case.is-enchante { position: relative; overflow: hidden; }
+.ocr-case.is-enchante::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(190, 120, 255, .55) 45%, rgba(255, 200, 255, .35) 50%, transparent 65%);
+  background-size: 300% 100%;
+  mix-blend-mode: screen;
+  animation: ocr-glint 2.6s linear infinite;
+}
+@keyframes ocr-glint { from { background-position: 150% 0; } to { background-position: -150% 0; } }
+
+.ocr-ench { display: flex; flex-wrap: wrap; gap: calc(16 * var(--px)); align-items: flex-start; margin-bottom: calc(10 * var(--px)); }
+.ocr-ench-g { display: flex; flex-direction: column; align-items: center; gap: calc(8 * var(--px)); }
+.ocr-ench-livre { padding: calc(8 * var(--px)); border-radius: calc(10 * var(--px)); background: radial-gradient(circle, rgba(160, 110, 255, .35), transparent 70%); }
+.ocr-ench-livre-ic { width: calc(64 * var(--px)); height: calc(64 * var(--px)); image-rendering: pixelated; animation: ocr-flotte 2s ease-in-out infinite alternate; }
+.ocr-ench-cases { display: flex; gap: calc(10 * var(--px)); }
+.ocr-ench-case { display: flex; flex-direction: column; align-items: center; gap: calc(4 * var(--px)); }
+.ocr-ench-offres { flex: 1; min-width: calc(300 * var(--px)); display: flex; flex-direction: column; gap: calc(8 * var(--px)); }
+.ocr-offre {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: calc(10 * var(--px));
+  padding: calc(8 * var(--px)) calc(10 * var(--px));
+  border: calc(2 * var(--px)) solid #3a3048;
+  border-radius: calc(8 * var(--px));
+  background: #16121e;
+  color: #8a8098;
+  font-family: "Courier New", monospace;
+  text-align: left;
+  cursor: pointer;
+}
+.ocr-offre.is-pret { border-color: #8a5ad8; background: linear-gradient(90deg, #2a1a40, #1a1228); color: #e8dcff; }
+.ocr-offre.is-pret:hover { border-color: #c8a8ff; box-shadow: 0 0 calc(12 * var(--px)) rgba(170, 120, 255, .45); }
+.ocr-offre-cout { display: flex; flex-direction: column; align-items: center; color: #a8ff3a; line-height: 1; }
+.ocr-offre-cout strong { font-size: max(calc(22 * var(--px)), 15px); }
+.ocr-offre-cout em { font-style: normal; font-size: max(calc(10 * var(--px)), 9px); }
+.ocr-offre-txt { display: flex; flex-direction: column; min-width: 0; }
+.ocr-offre-glyphes { font-size: max(calc(13 * var(--px)), 10px); letter-spacing: calc(2 * var(--px)); color: #6a5a88; white-space: nowrap; overflow: hidden; }
+.ocr-offre.is-pret .ocr-offre-glyphes { color: #a888e0; }
+.ocr-offre-nom { font-size: max(calc(15 * var(--px)), 11px); font-weight: 700; }
+.ocr-offre-req { font-size: max(calc(13 * var(--px)), 10px); color: #a8ff3a; }
+.ocr-offre-req.is-manque, .ocr-offre-cr.is-manque { color: #ff7a6a; }
+.ocr-offre-cr { display: flex; align-items: center; gap: calc(2 * var(--px)); font-size: max(calc(13 * var(--px)), 10px); color: #a8e0ff; }
+.ocr-offre-cr-ic { width: calc(20 * var(--px)); height: calc(20 * var(--px)); image-rendering: pixelated; }
+
+/* L'enchantement : l'objet au centre, les glyphes qui convergent sur lui. */
+.ocr-ench-anim {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--px));
+  background: radial-gradient(circle, rgba(60, 30, 100, .85), rgba(6, 2, 14, .92));
+  font-family: "Courier New", monospace;
+  pointer-events: none;
+  animation: ocr-in .2s ease both;
+}
+.ocr-ench-anim.is-sortie { animation: ocr-out .3s ease both; }
+.ocr-ench-anim-cadre { position: relative; }
+.ocr-ench-anim-ic { width: calc(110 * var(--px)); height: calc(110 * var(--px)); image-rendering: pixelated; animation: ocr-ench-brille 1.6s ease both; }
+@keyframes ocr-ench-brille {
+  0% { filter: brightness(1) drop-shadow(0 0 0 #c8a8ff); transform: scale(.8); }
+  60% { filter: brightness(2.2) drop-shadow(0 0 calc(30 * var(--px)) #c8a8ff); transform: scale(1.15); }
+  100% { filter: brightness(1.2) drop-shadow(0 0 calc(14 * var(--px)) #a878ff); transform: scale(1); }
+}
+.ocr-ench-anim-gl {
+  position: absolute;
+  left: 50%; top: 42%;
+  font-size: max(calc(20 * var(--px)), 13px);
+  color: #c8a8ff;
+  text-shadow: 0 0 calc(8 * var(--px)) #a878ff;
+  animation: ocr-ench-gl 1.1s ease-in both;
+  animation-delay: var(--d);
+}
+@keyframes ocr-ench-gl {
+  from { transform: rotate(var(--a)) translateY(calc(-220 * var(--px))) rotate(calc(var(--a) * -1)); opacity: 0; }
+  30% { opacity: 1; }
+  to { transform: rotate(var(--a)) translateY(0) rotate(calc(var(--a) * -1)); opacity: 0; }
+}
+.ocr-ench-anim-nom { font-size: max(calc(20 * var(--px)), 14px); color: #fff; animation: ocr-in .3s ease 1s both; }
+.ocr-ench-anim-e { font-size: max(calc(17 * var(--px)), 12px); color: #c8a8ff; text-shadow: 0 0 calc(8 * var(--px)) #a878ff; animation: ocr-in .3s ease 1.2s both; }
+
+/* L'enclume. */
+.ocr-enclume-d { flex: 1; min-width: calc(260 * var(--px)); display: flex; flex-direction: column; gap: calc(8 * var(--px)); align-items: flex-start; }
+.ocr-btn.is-off { opacity: .5; }
+.ocr-enclume-anim {
+  position: absolute;
+  left: 50%; top: 45%;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  transform: translate(-50%, -50%);
+  font: 700 max(calc(18 * var(--px)), 13px) "Courier New", monospace;
+  color: #e8f0ff;
+  pointer-events: none;
+  animation: ocr-enclume 1.3s ease both;
+}
+@keyframes ocr-enclume {
+  0% { opacity: 0; transform: translate(-50%, -80%) scale(.6); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  30% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oxp-n.is-monte, .oxp-annonce, .oxp-annonce-p, .ofr-rayons, .ofr-grand, .ofr-assemble-p, .ofr-assemble-eclair,
+  .ofr-assemble-tel, .ody-secret, .ocr-case.is-enchante::after, .ocr-ench-livre-ic, .ocr-ench-anim-ic,
+  .ocr-ench-anim-gl, .ocr-enclume-anim { animation: none; }
+  .ofr-assemble-p, .ofr-assemble-eclair { display: none; }
+}

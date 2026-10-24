@@ -1857,6 +1857,39 @@
       visage.appendChild(vi);
       box.appendChild(visage);
 
+      // Les yeux de Wade : le 24 octobre 2026, jusqu'a 20 h, toucher l'un
+      // puis l'autre fait sortir de l'ombre les cinq de Gaming Legends.
+      // Rien ne l'annonce : il faut oser y toucher.
+      var tYeux = DP.maintenant ? DP.maintenant() : Date.now();
+      var yeuxOuverts = tYeux >= new Date(2026, 9, 24, 0, 0, 0).getTime() && tYeux < new Date(2026, 9, 24, 20, 0, 0).getTime();
+      var geoTete = null, touches = {};
+      if (yeuxOuverts && DP.offrirGamingLegends) {
+        visage.addEventListener('click', function (ev) {
+          var ou = ouSontLesYeux();
+          if (!ou) return;
+          var b = visage.getBoundingClientRect(), x = ev.clientX - b.left, y = ev.clientY - b.top;
+          ou.forEach(function (o, k) {
+            if (Math.hypot(x - o.x, y - o.y) > o.r) return;
+            touches[k] = true;
+            SON.servo(0.5);
+            var lueur = el('span', 'wf-oeil-touche');
+            lueur.style.left = o.x + 'px'; lueur.style.top = o.y + 'px';
+            visage.appendChild(lueur);
+            setTimeout(function () { lueur.remove(); }, 900);
+          });
+          if (touches[0] && touches[1]) { touches = {}; reveler(); }
+        });
+      }
+      // La ou sont les yeux a l'ecran, d'apres le dessin du visage : la
+      // marionnette (WebGL) ou l'image fixe.
+      function ouSontLesYeux() {
+        var Rg = PANT && PANT.RIGS && PANT.RIGS['wade-horror'];
+        var yeux = Rg && Rg.yeux ? Rg.yeux : [[300, 169], [379, 164]];
+        if (geoTete) return yeux.map(function (p) { return { x: geoTete.tx + p[0] * geoTete.s, y: geoTete.ty + p[1] * geoTete.s, r: Math.max(26, 42 * geoTete.s) }; });
+        if (!vi.naturalWidth) return null;
+        var bi = vi.getBoundingClientRect(), bv = visage.getBoundingClientRect(), k = bi.width / vi.naturalWidth;
+        return yeux.map(function (p) { return { x: bi.left - bv.left + p[0] * k, y: bi.top - bv.top + p[1] * k, r: Math.max(26, 42 * k) }; });
+      }
       var gauche = el('div', 'wf-menu-g');
       var titre = el('h2', 'wf-menu-titre');
       ['Wade', 'and', 'Friends'].forEach(function (m) { titre.appendChild(el('span', null, m)); });
@@ -1888,6 +1921,8 @@
       // les six nuits sont ouvertes a tout le monde.
       var tt = DP.maintenant ? DP.maintenant() : Date.now();
       var fenetre = tt >= new Date(2026, 9, 15, 21, 56, 0).getTime() && tt < new Date(2026, 9, 15, 22, 15, 0).getTime();
+      // Le 24 octobre 2026, jusqu'a 22 h : toutes les nuits, pour tout le monde.
+      fenetre = fenetre || (tt >= new Date(2026, 9, 24, 0, 0, 0).getTime() && tt < new Date(2026, 9, 24, 22, 0, 0).getTime());
       var essai = local || fenetre;
       try { essai = essai || sessionStorage.getItem('wade.essai') === '1'; } catch (er) {}
       if (essai) {
@@ -1973,6 +2008,7 @@
           if (e_ > 0) { q.jaw = Math.max(q.jaw, e_); q.pitch -= 0.1 * e_; }
           var lum = tM < eclair ? 0.95 : tM < noirM ? 0.015 : 0.24 + Math.sin(tM * 1.3) * 0.03;
           var s = h * 0.34 * (1 + e_ * 0.3) / Rg.tete[2];
+          geoTete = { s: s, tx: w * 0.56 - Rg.tete[0] * s, ty: h * 0.42 - Rg.tete[1] * s };
           PANT.dessiner(mx, qui_, im, q,
             { s: s, tx: w * 0.56 - Rg.tete[0] * s, ty: h * 0.42 - Rg.tete[1] * s, vw: w, vh: h },
             { lum: lum, yeux: 1, contraste: 1.35, desat: 0.35, taillesYeux: 1.25, integre: false,
@@ -2244,6 +2280,62 @@
       });
     }
 
+    // Les cinq sortent du noir, un par un, derriere les yeux de Wade.
+    function reveler() {
+      var neufs = DP.offrirGamingLegends();
+      SON.grain();
+      var c = el('div', 'wf-legendes');
+      c.appendChild(el('div', 'wf-legendes-eclair'));
+      c.appendChild(el('span', 'wf-legendes-haut', neufs.length ? 'Ils attendaient derrière ses yeux' : 'Ils sont déjà avec toi'));
+      var rang = el('div', 'wf-legendes-rang');
+      DP.LEGENDS.forEach(function (id, i) {
+        var d = DP.byId(id);
+        var f = el('div', 'wf-legende' + (id === 'golden-freddy' ? ' is-or' : ''));
+        f.style.setProperty('--i', String(i));
+        var im = el('img', 'wf-legende-img');
+        im.src = DP.dinderImg(id); im.alt = '';
+        f.appendChild(im);
+        f.appendChild(el('span', 'wf-legende-nom', d ? d.name : id));
+        rang.appendChild(f);
+      });
+      c.appendChild(rang);
+      c.appendChild(el('strong', 'wf-legendes-titre', 'Gaming Legends'));
+      c.appendChild(el('span', 'wf-legendes-sous', neufs.length ? neufs.length + ' Dinder' + (neufs.length > 1 ? 's' : '') + ' rejoignent ta collection' : 'Les cinq sont déjà dans ta collection'));
+      var ok = el('button', 'wf-menu-opt wf-legendes-ok', 'OK');
+      ok.type = 'button';
+      ok.addEventListener('click', function () { c.classList.add('is-sortie'); setTimeout(function () { c.remove(); }, 400); });
+      c.appendChild(ok);
+      box.appendChild(c);
+      setTimeout(function () { ok.focus(); }, reduit ? 50 : 2600);
+    }
+
+
+    // L'ecran d'accueil : la jaquette, avec Wade le loup a gauche. Ses deux
+    // yeux se touchent aussi, le 24 octobre 2026 jusqu'a 20 h.
+    function yeuxJaquette(ecran) {
+      var t = DP.maintenant ? DP.maintenant() : Date.now();
+      if (!(t >= new Date(2026, 9, 24, 0, 0, 0).getTime() && t < new Date(2026, 9, 24, 20, 0, 0).getTime())) return;
+      var jq = ecran.querySelector('.intro-jaquette');
+      if (!jq || !DP.offrirGamingLegends) return;
+      var YEUX = [[121, 123], [148, 119]], vus = {};
+      jq.style.cursor = 'default';
+      jq.addEventListener('click', function (ev) {
+        var bj = jq.getBoundingClientRect(), k = bj.width / (jq.naturalWidth || 600);
+        var x = (ev.clientX - bj.left) / k, y = (ev.clientY - bj.top) / k;
+        YEUX.forEach(function (p, i) {
+          if (Math.hypot(x - p[0], y - p[1]) > 16) return;
+          vus[i] = true;
+          SON.servo(0.5);
+          var lueur = el('span', 'wf-oeil-touche');
+          var bb = box.getBoundingClientRect();
+          lueur.style.left = (bj.left - bb.left + p[0] * k) + 'px'; lueur.style.top = (bj.top - bb.top + p[1] * k) + 'px';
+          box.appendChild(lueur);
+          setTimeout(function () { lueur.remove(); }, 900);
+        });
+        if (vus[0] && vus[1]) { vus = {}; reveler(); }
+      });
+    }
+
     if (window.INTRO) {
       box.appendChild(window.INTRO.ecran({
         icone: JAQUETTE,
@@ -2257,6 +2349,7 @@
         ],
         commencer: menu
       }));
+      yeuxJaquette(box);
     } else {
       menu();
     }
