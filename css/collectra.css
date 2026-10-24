@@ -1,0 +1,635 @@
+/* ==========================================================
+   Collectra : le carnet de collection (js/collectra.js)
+   Mesures en pixels de l'image du pad, via --px, comme le reste.
+   Le pad garde son bleu et son cyan ; Collectra y ajoute son or.
+   ========================================================== */
+
+/* ---------- La tuile de l'accueil, posee sur l'ancienne "Quests" ---------- */
+
+.hotspot--collectra {
+  text-indent: 0;
+  overflow: visible;
+  border-radius: calc(22 * var(--px));
+}
+
+/* Un cache du bleu du menu efface l'ancienne tuile dessinee, qui deborde
+   un peu de la zone cliquable. */
+.hotspot--collectra::before {
+  content: '';
+  position: absolute;
+  inset: calc(1 * var(--px)) calc(-4 * var(--px)) calc(-26 * var(--px)) calc(-8 * var(--px));
+  background: #00538f;
+  pointer-events: none;
+}
+
+/* La tuile laisse le meme ecart que les autres avec ses voisines. */
+.cx-tuile {
+  position: absolute;
+  inset: calc(8 * var(--px)) calc(5 * var(--px)) calc(-12 * var(--px)) calc(2 * var(--px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(4 * var(--px));
+  border: calc(6 * var(--px)) solid #000;
+  border-radius: calc(22 * var(--px));
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, .55), transparent 46%),
+    linear-gradient(115deg, transparent 22%, rgba(255, 255, 255, .28) 24%, rgba(255, 255, 255, .28) 34%,
+                    transparent 36%, transparent 60%, rgba(255, 255, 255, .16) 62%, rgba(255, 255, 255, .16) 67%,
+                    transparent 69%),
+    linear-gradient(180deg, #ffe46b 0%, #ffbf1f 48%, #e08a00 100%);
+  box-shadow:
+    inset 0 0 0 calc(5 * var(--px)) #fff3b0,
+    inset 0 0 0 calc(8 * var(--px)) #b86a00,
+    inset 0 calc(-14 * var(--px)) calc(20 * var(--px)) rgba(140, 60, 0, .45);
+  overflow: hidden;
+  line-height: 1;
+}
+
+.cx-tuile-logo {
+  width: calc(86 * var(--px));
+  height: calc(86 * var(--px));
+  background: #fff;
+  display: block;
+  -webkit-mask: url("../assets/collectra-logo.png") center / contain no-repeat;
+          mask: url("../assets/collectra-logo.png") center / contain no-repeat;
+}
+
+/* Le logo blanc, cerne de noir comme les lettrages du pad */
+.cx-tuile-logo-wrap {
+  display: block;
+  filter:
+    drop-shadow(calc(3 * var(--px)) 0 0 #000) drop-shadow(calc(-3 * var(--px)) 0 0 #000)
+    drop-shadow(0 calc(3 * var(--px)) 0 #000) drop-shadow(0 calc(-3 * var(--px)) 0 #000)
+    drop-shadow(0 calc(5 * var(--px)) calc(4 * var(--px)) rgba(90, 40, 0, .6));
+}
+
+.cx-tuile-nom {
+  font-family: Impact, "Arial Black", "Trebuchet MS", sans-serif;
+  font-size: calc(33 * var(--px));
+  font-weight: 900;
+  letter-spacing: calc(1 * var(--px));
+  text-transform: uppercase;
+  color: #fff;
+  -webkit-text-stroke: calc(6 * var(--px)) #000;
+  paint-order: stroke fill;
+  transform: rotate(-6deg) skewX(-8deg);
+  text-shadow: 0 calc(4 * var(--px)) 0 #000;
+}
+
+/* Deux eclats qui scintillent, comme sur les autres tuiles */
+.cx-tuile-eclat {
+  position: absolute;
+  width: calc(22 * var(--px));
+  height: calc(22 * var(--px));
+  background: #fff;
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  filter: drop-shadow(0 0 calc(4 * var(--px)) #fff);
+  animation: cx-scintille 2.4s ease-in-out infinite;
+}
+.cx-tuile-eclat--a { left: 12%; top: 14%; }
+.cx-tuile-eclat--b { right: 11%; top: 46%; width: calc(15 * var(--px)); height: calc(15 * var(--px)); animation-delay: -1.2s; }
+
+@keyframes cx-scintille {
+  0%, 100% { transform: scale(.3) rotate(0deg); opacity: .2; }
+  50%      { transform: scale(1) rotate(45deg); opacity: 1; }
+}
+
+/* ---------- La page ---------- */
+
+.view--collectra {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  font-family: "Courier New", Courier, ui-monospace, monospace;
+  line-height: 1.15;
+  color: #fff;
+  background:
+    radial-gradient(circle at 85% 0%, rgba(255, 200, 40, .16), transparent 45%),
+    radial-gradient(circle at 10% 100%, rgba(0, 241, 253, .14), transparent 50%),
+    #00142a;
+}
+
+.cx-tete {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: calc(20 * var(--px));
+  padding: calc(16 * var(--px)) calc(26 * var(--px)) calc(14 * var(--px));
+  border-bottom: calc(5 * var(--px)) solid #000;
+  box-shadow: 0 calc(3 * var(--px)) 0 #00f1fd, 0 calc(8 * var(--px)) calc(18 * var(--px)) rgba(0, 241, 253, .25);
+  background: linear-gradient(180deg, #0a74c6, #03599f);
+}
+
+.cx-logo {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc(84 * var(--px));
+  height: calc(84 * var(--px));
+}
+
+.cx-logo-c {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, #fff6c2, #ffcf3a 45%, #f09400);
+  -webkit-mask: url("../assets/collectra-logo.png") center / contain no-repeat;
+          mask: url("../assets/collectra-logo.png") center / contain no-repeat;
+  filter: drop-shadow(0 0 calc(8 * var(--px)) rgba(255, 207, 58, .6));
+}
+
+/* L'etoile du logo qui brille de temps en temps */
+.cx-logo-eclat {
+  position: absolute;
+  left: 55%;
+  top: 51%;
+  width: calc(60 * var(--px));
+  height: calc(60 * var(--px));
+  margin: calc(-30 * var(--px)) 0 0 calc(-30 * var(--px));
+  background: radial-gradient(circle, rgba(255, 255, 255, .95), rgba(255, 230, 120, .4) 30%, transparent 62%);
+  border-radius: 50%;
+  animation: cx-lueur 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes cx-lueur {
+  0%, 70%, 100% { transform: scale(.2); opacity: 0; }
+  80%           { transform: scale(1.1); opacity: 1; }
+  90%           { transform: scale(.6); opacity: .5; }
+}
+
+.cx-titres { min-width: 0; display: flex; flex-direction: column; gap: calc(6 * var(--px)); }
+
+.cx-titre {
+  margin: 0;
+  font-size: calc(46 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(3 * var(--px));
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 calc(3 * var(--px)) 0 #000, 0 0 calc(14 * var(--px)) rgba(0, 241, 253, .6);
+}
+
+.cx-fil {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: calc(8 * var(--px));
+  min-width: 0;
+  font-size: calc(22 * var(--px));
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.cx-fil-pas { color: #8ef3ff; text-decoration: none; overflow: hidden; text-overflow: ellipsis; }
+a.cx-fil-pas:hover { color: #fff; text-decoration: underline; }
+.cx-fil-pas.is-ici { color: #ffd84a; }
+.cx-fil-sep { color: rgba(255, 255, 255, .5); }
+
+.cx-corps {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: calc(24 * var(--px)) calc(24 * var(--px)) calc(30 * var(--px));
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+.cx-corps::-webkit-scrollbar { width: 0; height: 0; }
+
+.cx-attente, .cx-conseil {
+  margin: calc(24 * var(--px)) auto 0;
+  max-width: calc(700 * var(--px));
+  text-align: center;
+  font-size: calc(26 * var(--px));
+  color: rgba(255, 255, 255, .7);
+}
+
+/* ---------- Les cases ---------- */
+
+.cx-grille {
+  display: grid;
+  gap: calc(20 * var(--px));
+}
+.cx-grille--dossiers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cx-grille--objets   { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.cx-case {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--px));
+  min-width: 0;
+  margin: 0;
+  padding: calc(16 * var(--px));
+  border: calc(6 * var(--px)) solid #000;
+  border-radius: calc(24 * var(--px));
+  box-shadow:
+    inset 0 0 0 calc(7 * var(--px)) #00f1fd,
+    inset 0 0 calc(16 * var(--px)) calc(8 * var(--px)) rgba(0, 241, 253, .4),
+    0 0 calc(10 * var(--px)) rgba(0, 241, 253, .2);
+  background:
+    linear-gradient(115deg, transparent 18%, rgba(255, 255, 255, .1) 20%, rgba(255, 255, 255, .1) 33%, transparent 35%),
+    linear-gradient(180deg, #0a74c6 0%, #0568b8 55%, #03599f 100%);
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter .12s ease, transform .12s ease;
+}
+
+.cx-case:hover, .cx-case:focus-visible { filter: brightness(1.15) saturate(1.1); transform: translateY(calc(-3 * var(--px))); outline: none; }
+.cx-case:active { transform: scale(.98); }
+
+/* Un theme porte le liseré or de Collectra */
+.cx-case.is-theme {
+  box-shadow:
+    inset 0 0 0 calc(7 * var(--px)) #ffcf3a,
+    inset 0 0 calc(16 * var(--px)) calc(8 * var(--px)) rgba(255, 207, 58, .35),
+    0 0 calc(12 * var(--px)) rgba(255, 207, 58, .25);
+}
+
+.cx-cadre {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border: calc(4 * var(--px)) solid #000;
+  border-radius: calc(14 * var(--px));
+  overflow: hidden;
+  background: #021c36;
+}
+.cx-grille--objets .cx-cadre { aspect-ratio: 1 / 1; }
+
+.cx-photo { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* Une case sans photo : l'etoile de Collectra, en filigrane */
+.cx-vide {
+  position: absolute;
+  inset: 18%;
+  background: rgba(0, 241, 253, .22);
+  -webkit-mask: url("../assets/collectra-logo.png") center / contain no-repeat;
+          mask: url("../assets/collectra-logo.png") center / contain no-repeat;
+}
+
+.cx-numero {
+  position: absolute;
+  left: calc(6 * var(--px));
+  top: calc(6 * var(--px));
+  padding: calc(2 * var(--px)) calc(8 * var(--px));
+  border-radius: calc(8 * var(--px));
+  background: rgba(0, 0, 0, .7);
+  color: #ffd84a;
+  font-size: calc(18 * var(--px));
+  font-weight: 700;
+}
+
+.cx-nom { display: flex; flex-direction: column; gap: calc(4 * var(--px)); min-width: 0; padding: 0 calc(4 * var(--px)); }
+.cx-nom-main, .cx-nom-sub { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cx-nom-main {
+  font-size: calc(30 * var(--px));
+  font-weight: 700;
+  text-shadow: 0 calc(3 * var(--px)) calc(4 * var(--px)) rgba(0, 0, 0, .7);
+}
+.cx-grille--objets .cx-nom-main { font-size: calc(24 * var(--px)); }
+.cx-nom-sub { font-size: calc(19 * var(--px)); color: rgba(255, 255, 255, .78); }
+
+/* La case "+" */
+.cx-case--plus {
+  align-items: center;
+  justify-content: center;
+  min-height: calc(200 * var(--px));
+  border-style: dashed;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 207, 58, .07) 0 calc(14 * var(--px)), transparent calc(14 * var(--px)) calc(28 * var(--px))),
+    linear-gradient(180deg, #06345c, #021c36);
+  box-shadow: inset 0 0 0 calc(4 * var(--px)) rgba(255, 207, 58, .55);
+  text-align: center;
+}
+.cx-plus-signe {
+  display: grid;
+  place-items: center;
+  width: calc(84 * var(--px));
+  height: calc(84 * var(--px));
+  border: calc(5 * var(--px)) solid #000;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffe46b, #f0a000);
+  color: #000;
+  font-size: calc(62 * var(--px));
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 calc(16 * var(--px)) rgba(255, 207, 58, .55);
+}
+.cx-plus-mot { font-size: calc(24 * var(--px)); font-weight: 700; color: #ffe46b; }
+
+/* Le bouton "..." d'une case */
+.cx-reglages {
+  position: absolute;
+  right: calc(22 * var(--px));
+  top: calc(22 * var(--px));
+  z-index: 2;
+  min-width: calc(54 * var(--px));
+  height: calc(38 * var(--px));
+  padding: 0 calc(8 * var(--px));
+  border: calc(3 * var(--px)) solid #000;
+  border-radius: calc(12 * var(--px));
+  background: rgba(0, 20, 42, .85);
+  color: #fff;
+  font: inherit;
+  font-size: calc(16 * var(--px));
+  letter-spacing: calc(1 * var(--px));
+  cursor: pointer;
+}
+.cx-reglages:hover { background: #00f1fd; color: #000; }
+
+/* ---------- La fiche d'un objet ---------- */
+
+.cx-fiche {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: calc(28 * var(--px));
+  align-items: start;
+}
+
+.cx-fiche-cadre {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border: calc(6 * var(--px)) solid #000;
+  border-radius: calc(22 * var(--px));
+  overflow: hidden;
+  background: #021c36;
+  box-shadow: 0 0 0 calc(4 * var(--px)) #ffcf3a, 0 0 calc(24 * var(--px)) rgba(255, 207, 58, .35);
+}
+.cx-fiche-photo { display: block; width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+.cx-fiche-info { display: flex; flex-direction: column; gap: calc(12 * var(--px)); min-width: 0; }
+.cx-fiche-nom {
+  margin: 0;
+  font-size: calc(44 * var(--px));
+  overflow-wrap: anywhere;
+  text-shadow: 0 calc(3 * var(--px)) 0 #000, 0 0 calc(12 * var(--px)) rgba(0, 241, 253, .5);
+}
+.cx-fiche-ou   { margin: 0; font-size: calc(22 * var(--px)); color: #8ef3ff; }
+.cx-fiche-date { margin: 0; font-size: calc(20 * var(--px)); color: rgba(255, 255, 255, .6); }
+.cx-fiche-note {
+  margin: calc(6 * var(--px)) 0 0;
+  padding: calc(14 * var(--px));
+  border: calc(3 * var(--px)) solid #000;
+  border-radius: calc(12 * var(--px));
+  background: rgba(0, 241, 253, .1);
+  font-size: calc(22 * var(--px));
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cx-fiche-actions { display: flex; flex-direction: column; gap: calc(12 * var(--px)); margin-top: calc(10 * var(--px)); }
+
+/* ---------- Boutons ---------- */
+
+.cx-bouton {
+  min-height: calc(62 * var(--px));
+  padding: calc(8 * var(--px)) calc(22 * var(--px));
+  border: calc(5 * var(--px)) solid #000;
+  border-radius: calc(16 * var(--px));
+  background: linear-gradient(180deg, #0a74c6, #03599f);
+  box-shadow: inset 0 0 0 calc(4 * var(--px)) #00f1fd;
+  color: #fff;
+  font: inherit;
+  font-size: calc(24 * var(--px));
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter .12s ease, transform .12s ease;
+}
+.cx-bouton:hover { filter: brightness(1.15); }
+.cx-bouton:active { transform: scale(.97); }
+.cx-bouton.is-principal {
+  background: linear-gradient(180deg, #ffe46b, #f0a000);
+  box-shadow: inset 0 0 0 calc(4 * var(--px)) #fff3b0;
+  color: #000;
+}
+.cx-bouton.is-danger {
+  background: linear-gradient(180deg, #e0343a, #9e1016);
+  box-shadow: inset 0 0 0 calc(4 * var(--px)) #ff8a8a;
+}
+.cx-bouton.is-discret { background: #0b2440; box-shadow: inset 0 0 0 calc(3 * var(--px)) rgba(255, 255, 255, .3); }
+
+/* ---------- Les feuilles ---------- */
+
+.cx-voile {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: calc(24 * var(--px));
+  background: rgba(0, 6, 16, .72);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+.cx-voile.is-ouvert { opacity: 1; }
+
+.cx-feuille {
+  width: min(100%, calc(640 * var(--px)));
+  max-height: 100%;
+  overflow-y: auto;
+  padding: calc(26 * var(--px));
+  border: calc(6 * var(--px)) solid #000;
+  border-radius: calc(26 * var(--px));
+  background: linear-gradient(180deg, #0a3f72, #021c36);
+  box-shadow: inset 0 0 0 calc(5 * var(--px)) #ffcf3a, 0 0 calc(40 * var(--px)) rgba(255, 207, 58, .25);
+  transform: scale(.92) translateY(calc(16 * var(--px)));
+  transition: transform .22s cubic-bezier(.2, 1.4, .4, 1);
+  scrollbar-width: none;
+}
+.cx-voile.is-ouvert .cx-feuille { transform: none; }
+
+.cx-feuille-titre {
+  margin: 0 0 calc(16 * var(--px));
+  font-size: calc(32 * var(--px));
+  color: #ffe46b;
+  text-shadow: 0 calc(3 * var(--px)) 0 #000;
+  overflow-wrap: anywhere;
+}
+
+.cx-form { display: flex; flex-direction: column; gap: calc(14 * var(--px)); }
+.cx-aide { margin: 0 0 calc(4 * var(--px)); font-size: calc(22 * var(--px)); color: rgba(255, 255, 255, .78); }
+
+.cx-champ {
+  width: 100%;
+  padding: calc(12 * var(--px)) calc(16 * var(--px));
+  border: calc(4 * var(--px)) solid #000;
+  border-radius: calc(12 * var(--px));
+  background: #001a33;
+  box-shadow: inset 0 0 0 calc(3 * var(--px)) #00f1fd;
+  color: #fff;
+  font: inherit;
+  /* 16px minimum : en dessous, l'iPhone zoome sur le champ */
+  font-size: max(16px, calc(28 * var(--px)));
+  outline: none;
+}
+.cx-champ::placeholder { color: rgba(255, 255, 255, .4); }
+.cx-champ:focus { box-shadow: inset 0 0 0 calc(3 * var(--px)) #ffcf3a; }
+.cx-champ.is-erreur { box-shadow: inset 0 0 0 calc(3 * var(--px)) #ff4d4d; animation: cx-non .3s; }
+.cx-champ--note { resize: none; font-size: max(16px, calc(22 * var(--px))); }
+
+@keyframes cx-non {
+  25% { transform: translateX(calc(-8 * var(--px))); }
+  75% { transform: translateX(calc(8 * var(--px))); }
+}
+
+.cx-apercu {
+  display: block;
+  width: calc(220 * var(--px));
+  height: calc(220 * var(--px));
+  margin: 0 auto;
+  object-fit: cover;
+  border: calc(5 * var(--px)) solid #000;
+  border-radius: calc(16 * var(--px));
+  box-shadow: 0 0 0 calc(3 * var(--px)) #ffcf3a;
+  animation: cx-polaroid .5s cubic-bezier(.2, 1.4, .4, 1);
+}
+@keyframes cx-polaroid {
+  from { transform: rotate(-10deg) scale(.6); opacity: 0; }
+  to   { transform: rotate(0) scale(1); opacity: 1; }
+}
+
+.cx-idees { display: flex; flex-wrap: wrap; gap: calc(8 * var(--px)); }
+.cx-idee {
+  padding: calc(6 * var(--px)) calc(14 * var(--px));
+  border: calc(3 * var(--px)) solid #000;
+  border-radius: 999px;
+  background: rgba(255, 207, 58, .16);
+  color: #ffe46b;
+  font: inherit;
+  font-size: calc(20 * var(--px));
+  cursor: pointer;
+}
+.cx-idee:hover { background: #ffcf3a; color: #000; }
+
+.cx-feuille-boutons { display: flex; gap: calc(12 * var(--px)); justify-content: flex-end; margin-top: calc(18 * var(--px)); }
+.cx-feuille-boutons .cx-bouton { flex: 1 1 0; }
+.cx-choix { display: flex; flex-direction: column; gap: calc(12 * var(--px)); }
+
+/* Appareil photo / phototheque */
+.cx-sources { display: grid; grid-template-columns: 1fr 1fr; gap: calc(16 * var(--px)); }
+.cx-source {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(12 * var(--px));
+  padding: calc(24 * var(--px)) calc(12 * var(--px));
+  border: calc(5 * var(--px)) solid #000;
+  border-radius: calc(20 * var(--px));
+  background: linear-gradient(180deg, #0a74c6, #03599f);
+  box-shadow: inset 0 0 0 calc(5 * var(--px)) #00f1fd;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+  transition: filter .12s ease, transform .12s ease;
+}
+.cx-source:hover { filter: brightness(1.15); transform: translateY(calc(-3 * var(--px))); }
+.cx-source-mot { font-size: calc(24 * var(--px)); font-weight: 700; }
+.cx-source-ico {
+  width: calc(86 * var(--px));
+  height: calc(86 * var(--px));
+  background: #ffe46b;
+  filter: drop-shadow(0 calc(3 * var(--px)) 0 #000);
+}
+/* Un appareil photo et une image, dessines en masque */
+.cx-source--camera .cx-source-ico {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 3 7.2 5.5H4A2 2 0 0 0 2 7.5v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-11a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 3 7.2 5.5H4A2 2 0 0 0 2 7.5v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-11a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.cx-source--album .cx-source-ico {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm0 2.5V16l4.5-5 3.5 3.8 2.5-2.6L20 18V5.5H4zM16 7a2 2 0 1 1 0 4 2 2 0 0 1 0-4z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm0 2.5V16l4.5-5 3.5 3.8 2.5-2.6L20 18V5.5H4zM16 7a2 2 0 1 1 0 4 2 2 0 0 1 0-4z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* ---------- Les mises en scene ---------- */
+
+/* Le declic de l'appareil */
+.cx-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: #fff;
+  pointer-events: none;
+  animation: cx-flash .6s ease-out forwards;
+}
+@keyframes cx-flash { from { opacity: .95; } to { opacity: 0; } }
+
+/* Une case qui vient d'arriver */
+.cx-case.is-neuve { animation: cx-surgit .7s cubic-bezier(.2, 1.5, .4, 1); z-index: 3; }
+@keyframes cx-surgit {
+  0%   { transform: scale(.3) rotate(-8deg); filter: brightness(3); }
+  60%  { transform: scale(1.08) rotate(2deg); filter: brightness(1.5); }
+  100% { transform: none; filter: none; }
+}
+
+.cx-fx { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+
+.cx-fx-etoile {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: calc(150 * var(--px));
+  height: calc(150 * var(--px));
+  margin: calc(-75 * var(--px)) 0 0 calc(-75 * var(--px));
+  background: radial-gradient(circle, #fff 0 18%, #ffe46b 40%, transparent 70%);
+  clip-path: polygon(50% 0, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0 50%, 42% 42%);
+  animation: cx-etoile 1.2s ease-out forwards;
+}
+@keyframes cx-etoile {
+  0%   { transform: scale(0) rotate(-90deg); opacity: 0; }
+  30%  { transform: scale(1.4) rotate(0deg); opacity: 1; }
+  100% { transform: scale(.2) rotate(180deg); opacity: 0; }
+}
+
+.cx-fx-p {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: calc(16 * var(--px));
+  height: calc(16 * var(--px));
+  margin: calc(-8 * var(--px)) 0 0 calc(-8 * var(--px));
+  background: #ffe46b;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: cx-eclat 1s ease-out .15s forwards;
+  opacity: 0;
+}
+.cx-fx-p:nth-child(odd) { background: #00f1fd; }
+@keyframes cx-eclat {
+  0%   { transform: rotate(var(--a)) translateY(0) scale(.4); opacity: 1; }
+  100% { transform: rotate(var(--a)) translateY(calc(var(--d) * -1 * var(--px))) scale(1.2); opacity: 0; }
+}
+
+.cx-fx-tampon {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  padding: calc(6 * var(--px)) calc(16 * var(--px));
+  border: calc(4 * var(--px)) solid #000;
+  border-radius: calc(10 * var(--px));
+  background: #ffcf3a;
+  color: #000;
+  font-size: calc(26 * var(--px));
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-10deg);
+  animation: cx-tampon 2s ease-out forwards;
+}
+@keyframes cx-tampon {
+  0%   { transform: translate(-50%, -50%) rotate(-10deg) scale(3); opacity: 0; }
+  15%  { transform: translate(-50%, -50%) rotate(-10deg) scale(1); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(-10deg) scale(1); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-tuile-eclat, .cx-logo-eclat, .cx-apercu, .cx-case.is-neuve { animation: none; }
+  .cx-voile, .cx-feuille { transition: none; }
+}

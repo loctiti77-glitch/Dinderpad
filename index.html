@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="css/style.css?v=20261021x">
 <link rel="stylesheet" href="css/game.css?v=20261022i">
 <link rel="stylesheet" href="css/cartes.css?v=20261020a">
+<link rel="stylesheet" href="css/collectra.css?v=20261024b">
 <script src="js/transition.js?v=20261013d"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/icon/favicon-16.png">
@@ -41,7 +42,15 @@
         <a class="hotspot" href="#credits"     style="--x:18.89%; --y:40.67%; --w:38.31%; --h:17.46%;" aria-label="Credits"><span>Cr&eacute;dits</span></a>
         <a class="hotspot" href="#win-dinders" style="--x:58.23%; --y:40.67%; --w:22.26%; --h:17.46%;" aria-label="Win Dinders"><span>Win Dinders</span></a>
         <a class="hotspot" href="#codanex"     style="--x:18.89%; --y:60.02%; --w:22.78%; --h:17.35%;" aria-label="Codanex"><span>Codanex</span></a>
-        <a class="hotspot" href="#quests"      style="--x:41.98%; --y:60.02%; --w:12.63%; --h:17.35%;" aria-label="Quests"><span>Quests</span></a>
+        <!-- Collectra remplace Quests : sa tuile se pose sur celle qui est dessinee. -->
+        <a class="hotspot hotspot--collectra" href="#collectra" style="--x:41.98%; --y:60.02%; --w:12.63%; --h:17.35%;" aria-label="Collectra">
+          <span class="cx-tuile" aria-hidden="true">
+            <span class="cx-tuile-logo-wrap"><span class="cx-tuile-logo"></span></span>
+            <span class="cx-tuile-nom">Collectra</span>
+            <span class="cx-tuile-eclat cx-tuile-eclat--a"></span>
+            <span class="cx-tuile-eclat cx-tuile-eclat--b"></span>
+          </span>
+        </a>
         <a class="hotspot" href="#badges"      style="--x:55.13%; --y:60.02%; --w:25.37%; --h:17.35%;" aria-label="Badges"><span>Badges</span></a>
       </div>
 
@@ -175,6 +184,7 @@
   <script src="js/wade-nuit.js?v=20261021a"></script>
   <script src="js/wade.js?v=20261021c"></script>
   <script src="js/cartes.js?v=20261020a"></script>
+  <script src="js/collectra.js?v=20261024a"></script>
   <script src="js/niveaux.js?v=20261016b"></script>
   <script src="js/router.js?v=20261021a"></script>
   <script src="js/access.js?v=20261013d"></script>
