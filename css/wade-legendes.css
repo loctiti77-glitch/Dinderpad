@@ -1,27 +1,7 @@
 /* ==========================================================
-   Wade and Friends : les yeux de Wade, au menu, et les cinq de
-   Gaming Legends qui en sortent (js/wade.js).
+   Wade and Friends : les cinq de Gaming Legends, offerts a l'entree
+   du jeu (js/wade.js).
    ========================================================== */
-
-.wf-menu-visage { cursor: default; }
-
-/* L'oeil touche : une lueur rouge qui s'allume puis s'eteint. */
-.wf-oeil-touche {
-  position: absolute;
-  z-index: 3;
-  width: calc(60 * var(--px));
-  height: calc(60 * var(--px));
-  margin: calc(-30 * var(--px)) 0 0 calc(-30 * var(--px));
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, .95) 0 12%, rgba(255, 40, 30, .8) 30%, rgba(255, 0, 0, 0) 70%);
-  pointer-events: none;
-  animation: wf-oeil .9s ease-out both;
-}
-@keyframes wf-oeil {
-  0% { transform: scale(.3); opacity: 0; }
-  25% { transform: scale(1.3); opacity: 1; }
-  100% { transform: scale(.8); opacity: 0; }
-}
 
 /* La revelation : un eclair rouge, puis les cinq qui sortent du noir. */
 .wf-legendes {
@@ -80,7 +60,7 @@
 .wf-legendes-ok { animation: wf-leg-in .5s ease 2.5s both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wf-oeil-touche, .wf-legendes, .wf-legendes-eclair, .wf-legende, .wf-legendes-haut,
+  .wf-legendes, .wf-legendes-eclair, .wf-legende, .wf-legendes-haut,
   .wf-legendes-titre, .wf-legendes-sous, .wf-legendes-ok { animation: none; }
   .wf-legendes-eclair { display: none; }
 }
