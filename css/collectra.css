@@ -22,79 +22,31 @@
   pointer-events: none;
 }
 
-/* La tuile laisse le meme ecart que les autres avec ses voisines. */
-.cx-tuile {
+/* L'icone Collectra (assets/collectralogo.PNG, recadree) : meme hauteur
+   que Codanex et Badges, de y=580 a y=765 dans l'image du pad, et centree
+   entre les deux. La zone cliquable, elle, garde sa place. */
+.cx-tuile-img {
   position: absolute;
-  inset: calc(8 * var(--px)) calc(5 * var(--px)) calc(-12 * var(--px)) calc(2 * var(--px));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: calc(4 * var(--px));
-  border: calc(6 * var(--px)) solid #000;
-  border-radius: calc(22 * var(--px));
-  background:
-    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, .55), transparent 46%),
-    linear-gradient(115deg, transparent 22%, rgba(255, 255, 255, .28) 24%, rgba(255, 255, 255, .28) 34%,
-                    transparent 36%, transparent 60%, rgba(255, 255, 255, .16) 62%, rgba(255, 255, 255, .16) 67%,
-                    transparent 69%),
-    linear-gradient(180deg, #ffe46b 0%, #ffbf1f 48%, #e08a00 100%);
-  box-shadow:
-    inset 0 0 0 calc(5 * var(--px)) #fff3b0,
-    inset 0 0 0 calc(8 * var(--px)) #b86a00,
-    inset 0 calc(-14 * var(--px)) calc(20 * var(--px)) rgba(140, 60, 0, .45);
-  overflow: hidden;
-  line-height: 1;
+  left: calc(9 * var(--px));
+  top: calc(2 * var(--px));
+  width: calc(189 * var(--px));
+  height: calc(185 * var(--px));
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: transform .12s ease, filter .12s ease;
 }
 
-.cx-tuile-logo {
-  width: calc(86 * var(--px));
-  height: calc(86 * var(--px));
-  background: #fff;
-  display: block;
-  -webkit-mask: url("../assets/collectra-logo.png") center / contain no-repeat;
-          mask: url("../assets/collectra-logo.png") center / contain no-repeat;
+/* Le survol eclaire l'icone elle-meme plutot que le rectangle cliquable. */
+.hotspot--collectra:hover,
+.hotspot--collectra:focus-visible { background: none; box-shadow: none; transform: none; }
+.hotspot--collectra:hover .cx-tuile-img,
+.hotspot--collectra:focus-visible .cx-tuile-img {
+  transform: scale(1.03);
+  filter: brightness(1.12) drop-shadow(0 0 calc(14 * var(--px)) rgba(255, 220, 80, .9));
 }
-
-/* Le logo blanc, cerne de noir comme les lettrages du pad */
-.cx-tuile-logo-wrap {
-  display: block;
-  filter:
-    drop-shadow(calc(3 * var(--px)) 0 0 #000) drop-shadow(calc(-3 * var(--px)) 0 0 #000)
-    drop-shadow(0 calc(3 * var(--px)) 0 #000) drop-shadow(0 calc(-3 * var(--px)) 0 #000)
-    drop-shadow(0 calc(5 * var(--px)) calc(4 * var(--px)) rgba(90, 40, 0, .6));
-}
-
-.cx-tuile-nom {
-  font-family: Impact, "Arial Black", "Trebuchet MS", sans-serif;
-  font-size: calc(33 * var(--px));
-  font-weight: 900;
-  letter-spacing: calc(1 * var(--px));
-  text-transform: uppercase;
-  color: #fff;
-  -webkit-text-stroke: calc(6 * var(--px)) #000;
-  paint-order: stroke fill;
-  transform: rotate(-6deg) skewX(-8deg);
-  text-shadow: 0 calc(4 * var(--px)) 0 #000;
-}
-
-/* Deux eclats qui scintillent, comme sur les autres tuiles */
-.cx-tuile-eclat {
-  position: absolute;
-  width: calc(22 * var(--px));
-  height: calc(22 * var(--px));
-  background: #fff;
-  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
-  filter: drop-shadow(0 0 calc(4 * var(--px)) #fff);
-  animation: cx-scintille 2.4s ease-in-out infinite;
-}
-.cx-tuile-eclat--a { left: 12%; top: 14%; }
-.cx-tuile-eclat--b { right: 11%; top: 46%; width: calc(15 * var(--px)); height: calc(15 * var(--px)); animation-delay: -1.2s; }
-
-@keyframes cx-scintille {
-  0%, 100% { transform: scale(.3) rotate(0deg); opacity: .2; }
-  50%      { transform: scale(1) rotate(45deg); opacity: 1; }
-}
+.hotspot--collectra:active .cx-tuile-img { transform: scale(.985); }
 
 /* ---------- La page ---------- */
 
@@ -630,7 +582,7 @@ a.cx-fil-pas:hover { color: #fff; text-decoration: underline; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cx-tuile-eclat, .cx-logo-eclat, .cx-apercu, .cx-case.is-neuve { animation: none; }
+  .cx-logo-eclat, .cx-apercu, .cx-case.is-neuve { animation: none; }
   .cx-voile, .cx-feuille { transition: none; }
 }
 
