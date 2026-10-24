@@ -633,3 +633,111 @@ a.cx-fil-pas:hover { color: #fff; text-decoration: underline; }
   .cx-tuile-eclat, .cx-logo-eclat, .cx-apercu, .cx-case.is-neuve { animation: none; }
   .cx-voile, .cx-feuille { transition: none; }
 }
+
+/* ---------- Le viseur : l'appareil photo dans l'ecran du pad ---------- */
+
+.cx-viseur {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  background: #000;
+  opacity: 0;
+  transition: opacity .2s ease;
+  overflow: hidden;
+}
+.cx-viseur.is-ouvert { opacity: 1; }
+
+.cx-viseur-video,
+.cx-viseur-fige {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cx-viseur-video.is-miroir { transform: scaleX(-1); }
+.cx-viseur-fige { display: none; object-fit: contain; background: #000; }
+.cx-viseur.is-fige .cx-viseur-fige { display: block; animation: cx-polaroid .45s cubic-bezier(.2, 1.4, .4, 1); }
+.cx-viseur.is-fige .cx-viseur-video,
+.cx-viseur.is-fige .cx-viseur-mire { display: none; }
+
+/* Les coins de visee, dores, qui respirent doucement */
+.cx-viseur-mire {
+  position: absolute;
+  inset: 12% 18% 26%;
+  pointer-events: none;
+  animation: cx-mire 2.4s ease-in-out infinite;
+}
+@keyframes cx-mire { 50% { transform: scale(1.03); opacity: .7; } }
+.cx-coin {
+  position: absolute;
+  width: calc(60 * var(--px));
+  height: calc(60 * var(--px));
+  border: 0 solid #ffcf3a;
+  filter: drop-shadow(0 0 calc(3 * var(--px)) #000);
+}
+.cx-coin--a { left: 0;  top: 0;    border-left-width: calc(6 * var(--px)); border-top-width: calc(6 * var(--px)); border-top-left-radius: calc(12 * var(--px)); }
+.cx-coin--b { right: 0; top: 0;    border-right-width: calc(6 * var(--px)); border-top-width: calc(6 * var(--px)); border-top-right-radius: calc(12 * var(--px)); }
+.cx-coin--c { left: 0;  bottom: 0; border-left-width: calc(6 * var(--px)); border-bottom-width: calc(6 * var(--px)); border-bottom-left-radius: calc(12 * var(--px)); }
+.cx-coin--d { right: 0; bottom: 0; border-right-width: calc(6 * var(--px)); border-bottom-width: calc(6 * var(--px)); border-bottom-right-radius: calc(12 * var(--px)); }
+
+.cx-viseur-etat {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 40%;
+  margin: 0;
+  text-align: center;
+  font-size: calc(26 * var(--px));
+  color: #fff;
+  text-shadow: 0 calc(2 * var(--px)) calc(4 * var(--px)) #000;
+}
+
+.cx-viseur-barre {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: calc(20 * var(--px));
+  padding: calc(16 * var(--px)) calc(26 * var(--px));
+  background: linear-gradient(180deg, transparent, rgba(0, 10, 25, .85) 40%);
+}
+.cx-viseur-annuler { justify-self: start; }
+.cx-viseur-tourner { justify-self: end; }
+
+.cx-viseur-choix { display: none; grid-template-columns: 1fr 1fr; }
+.cx-viseur.is-fige .cx-viseur-choix { display: grid; }
+.cx-viseur.is-fige .cx-viseur-barre:not(.cx-viseur-choix) { display: none; }
+
+/* Le declencheur : un gros bouton or cercle de noir */
+.cx-declic {
+  width: calc(110 * var(--px));
+  height: calc(110 * var(--px));
+  padding: 0;
+  border: calc(6 * var(--px)) solid #000;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff6c2 0 38%, #ffcf3a 40% 62%, #f09400 64%);
+  box-shadow: 0 0 0 calc(4 * var(--px)) #fff, 0 0 calc(20 * var(--px)) rgba(255, 207, 58, .7);
+  cursor: pointer;
+  transition: transform .1s ease, filter .1s ease;
+}
+.cx-declic:active { transform: scale(.88); }
+.cx-declic:disabled { filter: grayscale(1) brightness(.6); cursor: default; }
+
+/* Le declic : l'ecran blanchit d'un coup */
+.cx-viseur.is-declic::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  pointer-events: none;
+  animation: cx-flash .45s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-viseur-mire, .cx-viseur.is-fige .cx-viseur-fige { animation: none; }
+  .cx-viseur.is-declic::after { display: none; }
+}

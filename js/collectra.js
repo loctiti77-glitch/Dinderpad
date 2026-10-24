@@ -435,7 +435,7 @@
     var numero = ctx.A.de(s.id).length + 1;
     feuillePhoto(ctx.view, 'Ajouter à « ' + s.nom + ' »').then(function (f) {
       if (!f) return;
-      flash(ctx.view);
+      if (f instanceof File) flash(ctx.view);
       return preparerPhoto(f).then(function (p) {
         return feuilleNom(ctx.view, {
           titre: 'Nom de l’objet',
@@ -500,7 +500,7 @@
     bouton('Changer la photo', '', function () {
       feuillePhoto(ctx.view, 'Nouvelle photo').then(function (f) {
         if (!f) return;
-        flash(ctx.view);
+        if (f instanceof File) flash(ctx.view);
         return preparerPhoto(f).then(function (p) {
           o.photo = p.photo; o.vignette = p.vignette;
           return poser(o).then(recharger);
@@ -624,6 +624,19 @@
           b.appendChild(el('span', 'cx-source-ico'));
           b.appendChild(el('span', 'cx-source-mot', c[1]));
           b.addEventListener('click', function () {
+            // L'appareil photo s'ouvre dans l'ecran du pad quand le
+            // navigateur le permet ; sinon, celui du telephone prend le relais.
+            if (c[0] && cameraPossible()) {
+              f.voile.style.visibility = 'hidden';
+              viseur(view).then(function (photo) {
+                if (photo === 'secours') {
+                  f.voile.style.visibility = '';
+                  choisirPhoto(true).then(function (fichier) { if (fichier) finir(fichier); });
+                } else if (photo) finir(photo);
+                else f.voile.style.visibility = '';
+              });
+              return;
+            }
             choisirPhoto(c[0]).then(function (fichier) { if (fichier) finir(fichier); });
           });
           choix.appendChild(b);
@@ -631,6 +644,160 @@
       f.panneau.appendChild(choix);
       rangeeBoutons(f, [{ mot: 'Annuler', cls: 'is-discret', fn: function () { finir(null); } }]);
       f.voile.addEventListener('click', function (e) { if (e.target === f.voile) finir(null); });
+    });
+  }
+
+  // ==========================================================
+  //  L'appareil photo du pad
+  // ==========================================================
+
+  function cameraPossible() {
+    return !!(window.isSecureContext && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  }
+
+  // Le viseur, pose sur l'ecran du pad : l'image de la camera en direct,
+  // un declencheur, et de quoi passer d'une camera a l'autre. Rend la
+  // photo (Blob), null si on annule, ou 'secours' si la camera refuse de
+  // s'ouvrir ici.
+  function viseur(view) {
+    return new Promise(function (ok) {
+      var face = 'environment';
+      var flux = null;
+      var fini = false;
+
+      var v = el('div', 'cx-viseur');
+      var video = el('video', 'cx-viseur-video');
+      video.setAttribute('playsinline', '');
+      video.setAttribute('autoplay', '');
+      video.muted = true;
+      v.appendChild(video);
+      var fige = el('img', 'cx-viseur-fige');
+      fige.alt = '';
+      v.appendChild(fige);
+      // Les quatre coins de visee
+      var mire = el('div', 'cx-viseur-mire');
+      ['a', 'b', 'c', 'd'].forEach(function (k) { mire.appendChild(el('span', 'cx-coin cx-coin--' + k)); });
+      v.appendChild(mire);
+      var etat = el('p', 'cx-viseur-etat', 'Ouverture de la caméra…');
+      v.appendChild(etat);
+
+      var barre = el('div', 'cx-viseur-barre');
+      var annuler = el('button', 'cx-bouton is-discret cx-viseur-annuler', 'Annuler');
+      annuler.type = 'button';
+      var declic = el('button', 'cx-declic');
+      declic.type = 'button';
+      declic.setAttribute('aria-label', 'Prendre la photo');
+      declic.disabled = true;
+      var tourner = el('button', 'cx-bouton is-discret cx-viseur-tourner', '⟲ Caméra');
+      tourner.type = 'button';
+      tourner.style.visibility = 'hidden';
+      barre.appendChild(annuler);
+      barre.appendChild(declic);
+      barre.appendChild(tourner);
+      v.appendChild(barre);
+
+      // Une fois la photo prise : la garder ou la reprendre.
+      var choix = el('div', 'cx-viseur-barre cx-viseur-choix');
+      var reprendre = el('button', 'cx-bouton is-discret', 'Reprendre');
+      reprendre.type = 'button';
+      var garder = el('button', 'cx-bouton is-principal', 'Utiliser la photo');
+      garder.type = 'button';
+      choix.appendChild(reprendre);
+      choix.appendChild(garder);
+      v.appendChild(choix);
+
+      view.appendChild(v);
+      requestAnimationFrame(function () { v.classList.add('is-ouvert'); });
+
+      var photo = null, urlFige = null;
+
+      function couper() {
+        if (flux) flux.getTracks().forEach(function (t) { t.stop(); });
+        flux = null;
+      }
+      function finir(res) {
+        if (fini) return;
+        fini = true;
+        couper();
+        window.removeEventListener('hashchange', surDepart);
+        if (urlFige) URL.revokeObjectURL(urlFige);
+        v.classList.remove('is-ouvert');
+        setTimeout(function () { v.remove(); }, 200);
+        ok(res);
+      }
+      // On quitte la page : la camera s'eteint avec elle.
+      function surDepart() { finir(null); }
+      window.addEventListener('hashchange', surDepart);
+
+      function demarrer() {
+        couper();
+        declic.disabled = true;
+        etat.textContent = 'Ouverture de la caméra…';
+        etat.style.display = '';
+        navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: face }, width: { ideal: 1920 }, height: { ideal: 1440 } }
+        }).then(function (s) {
+          if (fini) { s.getTracks().forEach(function (t) { t.stop(); }); return; }
+          flux = s;
+          video.srcObject = s;
+          video.classList.toggle('is-miroir', face === 'user');
+          var p = video.play();
+          if (p && p.catch) p.catch(function () {});
+          video.onloadedmetadata = function () {
+            etat.style.display = 'none';
+            declic.disabled = false;
+          };
+          // Le bouton pour changer de camera, seulement s'il y en a deux.
+          navigator.mediaDevices.enumerateDevices().then(function (ds) {
+            var n = ds.filter(function (d) { return d.kind === 'videoinput'; }).length;
+            tourner.style.visibility = n > 1 ? '' : 'hidden';
+          }).catch(function () {});
+        }).catch(function (e) {
+          if (fini) return;
+          // Acces refuse : on le dit ; autre souci : la camera du
+          // telephone prend le relais.
+          if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) {
+            etat.textContent = 'Accès à la caméra refusé. Autorise-la dans les réglages du navigateur, ou utilise la photothèque.';
+          } else {
+            finir('secours');
+          }
+        });
+      }
+
+      declic.addEventListener('click', function () {
+        if (!flux || !video.videoWidth) return;
+        var c = document.createElement('canvas');
+        c.width = video.videoWidth;
+        c.height = video.videoHeight;
+        var g = c.getContext('2d');
+        if (face === 'user') { g.translate(c.width, 0); g.scale(-1, 1); }
+        g.drawImage(video, 0, 0, c.width, c.height);
+        v.classList.add('is-declic');
+        setTimeout(function () { v.classList.remove('is-declic'); }, 450);
+        c.toBlob(function (b) {
+          if (!b || fini) return;
+          photo = b;
+          if (urlFige) URL.revokeObjectURL(urlFige);
+          urlFige = URL.createObjectURL(b);
+          fige.src = urlFige;
+          v.classList.add('is-fige');
+          couper();
+        }, 'image/jpeg', 0.92);
+      });
+      reprendre.addEventListener('click', function () {
+        photo = null;
+        v.classList.remove('is-fige');
+        demarrer();
+      });
+      garder.addEventListener('click', function () { if (photo) finir(photo); });
+      annuler.addEventListener('click', function () { finir(null); });
+      tourner.addEventListener('click', function () {
+        face = face === 'environment' ? 'user' : 'environment';
+        demarrer();
+      });
+
+      demarrer();
     });
   }
 
