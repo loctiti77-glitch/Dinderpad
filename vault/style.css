@@ -40,9 +40,6 @@ body {
 .page {
   position: fixed;
   inset: 0;
-  /* --hauteur n'est posée que dans l'appli installée sur iPhone, qui
-     annonce une fenêtre plus courte que l'écran (voir script.js). */
-  height: var(--hauteur, auto);
   display: flex;
   padding:
     max(10px, env(safe-area-inset-top, 0px))
