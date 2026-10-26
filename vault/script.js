@@ -3,6 +3,9 @@
 (function () {
   "use strict";
 
+  // Les sons (vault/son.js). S'il manque, tout marche quand même, en silence.
+  var son = window.VaultSon || new Proxy({}, { get: function () { return function () {}; } });
+
   // ================== RÉGLAGES ==================
   // Le code qui ouvre le coffre (en lettres / chiffres normaux).
   var CODE_SECRET = "dinder3307";
@@ -65,7 +68,7 @@
       img.alt = "";
       img.draggable = false;
       b.appendChild(img);
-      b.addEventListener("click", function () { ajouter(c, b); });
+      b.addEventListener("click", function () { son.touche(i); ajouter(c, b); });
       grille.appendChild(b);
     });
     if (avecAnimation) {
@@ -101,6 +104,7 @@
     if (ouvert) return;
     reinitEtat();
     if (!saisie.length) return;
+    son.retour();
     saisie.pop();
     var b = touchesTapees.pop();
     if (b) majLueur(b);
@@ -128,6 +132,7 @@
     reinitEtat();
     if (!saisie.length) {
       statut.textContent = "AUCUN MOTIF";
+      son.vide();
       return;
     }
     void vault.offsetWidth;
@@ -135,11 +140,12 @@
       vault.classList.add("accepte");
       statut.className = "statut ok";
       statut.textContent = "ACCÈS AUTORISÉ";
-      ouvrir();
+      ouvrir(son.autorise());
     } else {
       vault.classList.add("refuse");
       statut.className = "statut non";
       statut.textContent = "ACCÈS REFUSÉ";
+      son.refuse();
       setTimeout(vider, 500);
     }
   }
@@ -148,7 +154,9 @@
   // Les touches s'allument en vague, l'écran s'ouvre en deux, puis on
   // entre sur le DinderPad.
   var ouvert = false;
-  function ouvrir() {
+  // finVoix : ms jusqu'à la fin de « Accès autorisé… Bienvenue patron »
+  // (0 si la voix n'a pas pu être jouée).
+  function ouvrir(finVoix) {
     ouvert = true;
     try { sessionStorage.setItem(CLE_SESSION, "1"); } catch (e) {}
     var reduit = window.matchMedia &&
@@ -158,8 +166,13 @@
     });
     grille.classList.remove("melange");
     document.body.classList.add("ouverture");
-    setTimeout(function () { document.body.classList.add("ouverture-portes"); }, reduit ? 0 : 900);
-    setTimeout(function () { location.replace(DESTINATION); }, reduit ? 150 : 1900);
+    // Les battants se ferment une fois la voix finie, puis on entre.
+    setTimeout(function () {
+      document.body.classList.add("ouverture-portes");
+      son.portes();
+    }, Math.max(reduit ? 0 : 900, (finVoix || 0) - 200));
+    setTimeout(function () { location.replace(DESTINATION); },
+      Math.max(reduit ? 300 : 1900, (finVoix || 0) + 800));
   }
 
   // ---------- Portrait uniquement ----------
@@ -191,6 +204,7 @@
 
   // ---------- Boutons ----------
   document.getElementById("btn-clear").addEventListener("click", function () {
+    if (!ouvert) son.effacer();
     reinitEtat();
     vider();
   });
@@ -198,6 +212,7 @@
   document.getElementById("btn-retour").addEventListener("click", retirer);
   document.getElementById("btn-melanger").addEventListener("click", function () {
     if (ouvert) return;
+    son.melanger();
     construireGrille(true);
   });
 
