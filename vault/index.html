@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VAULT</title>
+<meta name="theme-color" content="#06080b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/icon/favicon-32.png">
+<link rel="apple-touch-icon" href="../assets/icon/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+  <main class="vault" id="vault">
+    <span class="coin hg"></span><span class="coin hd"></span>
+    <span class="coin bg"></span><span class="coin bd"></span>
+
+    <header class="entete">
+      <div>
+        <p class="surtitre">SYSTÈME 01 · PRIVÉ</p>
+        <h1 class="titre">VAULT</h1>
+      </div>
+      <button class="melanger" id="btn-melanger" type="button" aria-label="Mélanger les touches" title="Mélanger les touches">
+        <span class="compteur" id="compteur">00</span>
+      </button>
+    </header>
+
+    <section class="saisie">
+      <div class="saisie-ligne">
+        <span class="etiquette">ENTRER LE MOTIF</span>
+        <div class="champ" id="champ" aria-live="polite"></div>
+        <button class="retour" id="btn-retour" type="button" aria-label="Effacer le dernier symbole">⌫</button>
+      </div>
+      <p class="statut" id="statut" role="status"></p>
+    </section>
+
+    <section class="panneau" aria-label="Clavier">
+      <div class="grille-zone"><div class="grille" id="grille"></div></div>
+    </section>
+
+    <div class="commandes">
+      <button class="commande" id="btn-clear" type="button">CLEAR</button>
+      <button class="commande valider" id="btn-enter" type="button">ENTER</button>
+    </div>
+  </main>
+</div>
+
+<!-- Le vault ne s'utilise qu'en portrait : en paysage, il demande de
+     tourner l'appareil. -->
+<div class="tourner" role="alert">
+  <span class="tourner-appareil" aria-hidden="true"></span>
+  <p class="tourner-texte">TOURNE TON APPAREIL</p>
+  <p class="tourner-sous">LE VAULT S'UTILISE EN PORTRAIT</p>
+</div>
+
+<!-- Les deux battants qui se referment avant l'entrée sur le DinderPad -->
+<div class="portes" aria-hidden="true"><span></span><span></span></div>
+<script src="script.js"></script>
+</body>
+</html>

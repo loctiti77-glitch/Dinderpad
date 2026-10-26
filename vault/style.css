@@ -1,0 +1,426 @@
+/* VAULT — écran de coffre sombre, touches en relief, symboles lumineux.
+   Une seule ambiance (sombre) assumée. */
+:root {
+  --fond: #06080b;
+  --ecran: #0b1015;
+  --trait: #26313c;
+  --texte: #e9f2f8;
+  --pale: #6e7d8b;
+  --lueur: #cfe9ff;
+  --rouge: #ff2b47;
+  --vert: #3dffa0;
+  --touche-haut: #6a7e90;
+  --touche-milieu: #3b4b5a;
+  --touche-bas: #232e38;
+  --panneau-haut: #1c2631;
+  --panneau-bas: #0e141a;
+  --titre: "Black Ops One", "Impact", "Arial Black", sans-serif;
+  --mono: "Share Tech Mono", ui-monospace, "Courier New", monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: var(--mono);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Le vault occupe tout l'écran, encoches comprises. */
+.page {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  padding:
+    max(10px, env(safe-area-inset-top, 0px))
+    max(10px, env(safe-area-inset-right, 0px))
+    max(10px, env(safe-area-inset-bottom, 0px))
+    max(10px, env(safe-area-inset-left, 0px));
+}
+
+/* ---------- Écran ---------- */
+.vault {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 22px 18px 20px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 4px),
+    radial-gradient(120% 60% at 50% 0%, #121a22 0%, var(--ecran) 70%);
+  border: 1px solid var(--trait);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.entete, .saisie, .commandes { flex: none; }
+
+/* coins en équerre */
+.coin {
+  position: absolute;
+  width: 22px; height: 22px;
+  border-color: var(--texte);
+  border-style: solid;
+  border-width: 0;
+  opacity: .85;
+}
+.coin.hg { top: -4px; left: -4px; border-top-width: 3px; border-left-width: 3px; }
+.coin.hd { top: -4px; right: -4px; border-top-width: 3px; border-right-width: 3px; }
+.coin.bg { bottom: -4px; left: -4px; border-bottom-width: 3px; border-left-width: 3px; }
+.coin.bd { bottom: -4px; right: -4px; border-bottom-width: 3px; border-right-width: 3px; }
+
+/* ---------- En-tête ---------- */
+.entete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.surtitre {
+  margin: 0;
+  font-family: var(--titre);
+  font-size: .62rem;
+  letter-spacing: .18em;
+  color: var(--pale);
+}
+.titre {
+  margin: 2px 0 0;
+  font-family: var(--titre);
+  font-weight: 400;
+  font-size: clamp(2.4rem, 11vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: .04em;
+  color: var(--texte);
+  text-shadow: 0 0 18px rgba(207,233,255,.25);
+}
+
+.melanger {
+  position: relative;
+  flex: none;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  border: 1px solid #3c4b59;
+  background: radial-gradient(circle at 50% 40%, #1a242e, #0a0f14);
+  box-shadow: 0 0 0 4px #0a0e12, 0 0 16px rgba(207,233,255,.15);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.melanger::before {
+  content: "";
+  width: 22px; height: 14px;
+  border-radius: 50%;
+  background: var(--lueur);
+  box-shadow: 0 0 12px var(--lueur), 0 0 24px rgba(207,233,255,.5);
+  transition: transform .3s;
+}
+.melanger:hover::before { transform: scale(1.1); }
+.compteur {
+  position: absolute;
+  right: -6px; bottom: -8px;
+  min-width: 24px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #13324a;
+  color: #7cc8ff;
+  font-size: .7rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* ---------- Champ du code ---------- */
+.saisie {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.saisie-ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.etiquette {
+  flex: none;
+  font-family: var(--titre);
+  font-size: .72rem;
+  letter-spacing: .12em;
+}
+.champ {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 2px solid var(--trait);
+  transition: border-color .2s;
+}
+.champ::-webkit-scrollbar { display: none; }
+.champ img {
+  flex: none;
+  width: 22px; height: 22px;
+  object-fit: contain;
+  filter: invert(1) drop-shadow(0 0 3px rgba(207,233,255,.8));
+  animation: apparait .18s ease-out;
+}
+@keyframes apparait { from { transform: scale(.4); opacity: 0; } }
+
+.retour {
+  flex: none;
+  width: 34px; height: 28px;
+  border: 1px solid var(--trait);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--pale);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.retour:hover { color: var(--texte); border-color: var(--pale); }
+
+.statut {
+  min-height: 1.1em;
+  margin: 0;
+  font-family: var(--titre);
+  font-size: .72rem;
+  letter-spacing: .2em;
+  color: var(--pale);
+}
+.statut.ok { color: var(--vert); text-shadow: 0 0 10px var(--vert); }
+.statut.non { color: var(--rouge); text-shadow: 0 0 10px var(--rouge); }
+
+.vault.refuse .champ { border-color: var(--rouge); }
+.vault.refuse { animation: secoue .35s; }
+.vault.accepte .champ { border-color: var(--vert); }
+@keyframes secoue {
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* ---------- Grille de touches ---------- */
+/* Le panneau prend toute la hauteur libre ; la grille y tient entière,
+   que l'écran soit étroit ou large. */
+.panneau {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--panneau-haut), var(--panneau-bas));
+  border: 1px solid #3a4856;
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 0 30px rgba(140,190,230,.12);
+}
+.grille-zone {
+  flex: 1;
+  align-self: stretch;
+  min-width: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+.grille {
+  /* 8 colonnes × 9 rangées de touches 1:1.05 et 7 px d'écart */
+  width: min(100cqw, calc((100cqh - 56px) * .8466 + 49px));
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.touche {
+  aspect-ratio: 1 / 1.05;
+  max-width: 100%;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid #8297a9;
+  border-bottom-color: #1a232b;
+  background: linear-gradient(180deg, var(--touche-haut) 0%, var(--touche-milieu) 55%, var(--touche-bas) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.35),
+    inset 0 -2px 0 rgba(0,0,0,.35),
+    0 3px 0 #0c1116,
+    0 5px 8px rgba(0,0,0,.55);
+  cursor: pointer;
+  transition: transform .06s, box-shadow .06s, filter .15s;
+}
+.touche img {
+  width: 52%;
+  height: 52%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: invert(1) drop-shadow(0 0 2px rgba(207,233,255,.9));
+}
+.touche:hover { filter: brightness(1.12); }
+.touche:active,
+.touche.appuyee {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.25),
+    inset 0 0 12px rgba(207,233,255,.25),
+    0 0 0 #0c1116,
+    0 2px 4px rgba(0,0,0,.5);
+}
+.touche:active img,
+.touche.appuyee img {
+  filter: invert(1) drop-shadow(0 0 5px var(--lueur)) drop-shadow(0 0 9px rgba(207,233,255,.7));
+}
+
+/* touches déjà sélectionnées dans le motif : lueur blanche */
+.touche.selectionnee {
+  border-color: #ffffff;
+  background: linear-gradient(180deg, #8ea2b3 0%, #52657a 55%, #2f3d4a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    inset 0 0 14px rgba(255,255,255,.35),
+    0 3px 0 #0c1116,
+    0 0 10px rgba(255,255,255,.85),
+    0 0 24px rgba(255,255,255,.45);
+}
+.touche.selectionnee img {
+  filter: invert(1) drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px rgba(255,255,255,.8));
+}
+
+.grille.melange .touche { animation: bascule .35s ease-out backwards; }
+@keyframes bascule { from { transform: rotateX(80deg); opacity: .2; } }
+
+/* ---------- Boutons du bas ---------- */
+.commandes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.commande {
+  height: 48px;
+  font-family: var(--titre);
+  font-size: 1rem;
+  letter-spacing: .14em;
+  color: var(--texte);
+  background: linear-gradient(180deg, #161e26, #0d1217);
+  border: 1px solid #34414e;
+  cursor: pointer;
+  transform: skewX(-6deg);
+}
+.commande:hover { border-color: var(--pale); }
+.commande:active { transform: skewX(-6deg) translateY(2px); }
+.commande.valider {
+  color: var(--rouge);
+  border: 2px solid var(--rouge);
+  box-shadow: 0 0 12px rgba(255,43,71,.35), inset 0 0 12px rgba(255,43,71,.15);
+  text-shadow: 0 0 8px rgba(255,43,71,.6);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--lueur);
+  outline-offset: 2px;
+}
+
+@media (max-width: 420px) {
+  .vault { padding: 18px 12px 16px; }
+  .panneau { padding: 9px; border-radius: 18px; }
+  .grille { gap: 5px; width: min(100cqw, calc((100cqh - 40px) * .8466 + 35px)); }
+  .touche { border-radius: 7px; }
+}
+
+/* ---------- Ouverture du coffre ---------- */
+/* Les touches s'allument en vert, en vague... */
+.ouverture .touche {
+  animation: allume .45s ease-out forwards;
+}
+@keyframes allume {
+  50% {
+    border-color: var(--vert);
+    box-shadow: 0 0 14px var(--vert), inset 0 0 12px rgba(61,255,160,.4), 0 3px 0 #0c1116;
+  }
+  to {
+    border-color: var(--vert);
+    background: linear-gradient(180deg, #2d6b52 0%, #1b4434 55%, #10261e 100%);
+    box-shadow: 0 0 8px rgba(61,255,160,.6), inset 0 0 10px rgba(61,255,160,.3), 0 3px 0 #0c1116;
+  }
+}
+.ouverture .touche img {
+  filter: invert(1) drop-shadow(0 0 4px var(--vert));
+}
+/* ...puis deux battants noirs se referment par-dessus. */
+.portes {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  pointer-events: none;
+}
+.portes span {
+  background: var(--fond);
+  transform: translateX(-101%);
+  transition: transform .7s cubic-bezier(.7, 0, .3, 1);
+}
+.portes span:last-child { transform: translateX(101%); }
+.portes span:first-child { border-right: 2px solid var(--vert); }
+.portes span:last-child  { border-left: 2px solid var(--vert); }
+.ouverture-portes .portes span { transform: none; box-shadow: 0 0 30px rgba(61,255,160,.35); }
+
+/* ---------- Portrait uniquement ---------- */
+/* Sur téléphone ou tablette tenus en paysage, le vault est masqué. Sur
+   ordinateur, il garde déjà sa colonne étroite façon écran portrait. */
+.tourner {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: var(--fond);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  text-align: center;
+}
+.tourner-appareil {
+  width: 70px; height: 42px;
+  margin-bottom: 18px;
+  border: 3px solid var(--texte);
+  border-radius: 8px;
+  box-shadow: 0 0 16px rgba(207,233,255,.25);
+  animation: pivote 2.2s ease-in-out infinite;
+}
+@keyframes pivote {
+  0%, 25%   { transform: rotate(0deg); }
+  55%, 100% { transform: rotate(-90deg); }
+}
+.tourner-texte {
+  margin: 0;
+  font-family: var(--titre);
+  font-size: 1.2rem;
+  letter-spacing: .14em;
+}
+.tourner-sous {
+  margin: 0;
+  font-size: .75rem;
+  letter-spacing: .14em;
+  color: var(--pale);
+}
+@media (orientation: landscape) and (pointer: coarse) {
+  .tourner { display: flex; }
+  .page { visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vault.refuse, .grille.melange .touche, .champ img, .tourner-appareil { animation: none; }
+  .ouverture .touche { animation-duration: 1ms; }
+  .portes span { transition: none; }
+  .touche, .melanger::before { transition: none; }
+}

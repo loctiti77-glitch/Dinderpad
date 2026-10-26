@@ -7,6 +7,18 @@
      mouliner a la peche. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>DinderPad</title>
+<!-- On entre sur le DinderPad par le vault : tant que son code n'a pas
+     ete tape pendant cette session, on y renvoie avant tout affichage. -->
+<script>
+  (function () {
+    var ok = false;
+    try { ok = sessionStorage.getItem('dinderpad.vault') === '1'; } catch (e) {}
+    if (!ok) {
+      document.documentElement.style.visibility = 'hidden';
+      location.replace('vault/');
+    }
+  })();
+</script>
 <link rel="stylesheet" href="css/style.css?v=20261021x">
 <link rel="stylesheet" href="css/game.css?v=20261022i">
 <link rel="stylesheet" href="css/cartes.css?v=20261020a">
