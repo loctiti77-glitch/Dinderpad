@@ -189,6 +189,30 @@
   verrouillerPortrait();
   document.addEventListener("pointerdown", pleinEcran, { once: true });
 
+  // ---------- Hauteur réelle sur iPhone ----------
+  // Dans l'appli installée sur l'écran d'accueil, avec la barre d'état
+  // transparente, iOS annonce une fenêtre plus courte que l'écran de la
+  // hauteur de cette barre : il restait une bande vide en bas. On cale
+  // alors la page sur la vraie hauteur de l'écran.
+  function caler() {
+    var installee = window.navigator.standalone === true ||
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+    var ios = /iP(hone|od|ad)/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    var racine = document.documentElement;
+    if (!installee || !ios || !window.screen) {
+      racine.style.removeProperty("--hauteur");
+      return;
+    }
+    var portrait = window.innerHeight >= window.innerWidth;
+    var ecran = portrait ? Math.max(screen.width, screen.height)
+                         : Math.min(screen.width, screen.height);
+    racine.style.setProperty("--hauteur", Math.max(ecran, window.innerHeight) + "px");
+  }
+  caler();
+  window.addEventListener("resize", caler);
+  window.addEventListener("orientationchange", function () { setTimeout(caler, 300); });
+
   // ---------- Boutons ----------
   document.getElementById("btn-clear").addEventListener("click", function () {
     reinitEtat();
